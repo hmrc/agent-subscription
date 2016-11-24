@@ -1,0 +1,68 @@
+<endpoint>
+    <name>Get Subscription Request</name>
+    <description>Get a submitted subscription request</description>
+    <section id="resource">
+        <title>Resource</title>
+        <resource>Get /agencies/subscriptions/{subscriptionId}</resource>
+    </section>
+    <section id="path-parameters">
+        <title>Path Parameters</title>
+        <table>
+            <headings>
+                <cell>Name</cell>
+                <cell>Type</cell>
+                <cell>Example</cell>
+                <cell>Description</cell>
+            </headings>
+            <rows>
+                <row>
+                    <cell><code>subscriptionId</code></cell>
+                    <cell><code>String</code></cell>
+                    <cell><code>00010002-0003-0004-0005-000600070008</code></cell>
+                    <cell>The subscription request id</cell>
+                </row>
+            </rows>
+        </table>
+    </section>
+    <section id="authorisation">
+        <title>Authorisation</title>
+        <authorisation>
+            <type>USER</type>
+            <scope>read:subscriptions</scope>
+        </authorisation>
+    </section>
+    <section id="content-types">
+        <title>Accepted Media Types</title>
+        <list>
+            <item>
+                <code>application/vnd.hmrc.1.0+json</code>
+            </item>
+        </list>
+    </section>
+    <section id="sample-response">
+        <title>Response</title>
+        <httpStatus>200 (Ok)</httpStatus>
+    </section>
+    <section id="error-responses">
+        <title>Error Scenarios</title>
+        <table>
+            <headings>
+                <cell>Error Scenario</cell>
+                <cell>HTTP Status</cell>
+                <cell>Code</cell>
+            </headings>
+            <rows>
+                <row>
+                    <cell>Not logged in</cell>
+                    <cell><code>401 (Unauthorised)</code></cell>
+                    <cell><code>The agency must be logged-in to use this resource</code></cell>
+                </row>
+                <row>
+                    <cell>Permission Denied</cell>
+                    <cell><code>403 (Forbidden)</code></cell>
+                    <cell><code>The agency is not permitted to see this invitations</code></cell>
+                </row>
+            </rows>
+        </table>
+    </section>
+</endpoint>

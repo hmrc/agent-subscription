@@ -1,0 +1,37 @@
+{
+  "scopes": [{
+    "key": "read:subscriptions",
+    "name": "Read subscription requests",
+    "description": "Reads submitted subscription requests"
+  }, {
+    "key": "write:subscriptions",
+    "name": "Create subscription requests",
+    "description": "Create subscription requests"
+  }],
+
+  "api": {
+    "name": "Agent Subscription",
+    "description": "Allows an Agency to subscribe for HMRC services",
+    "context": "agent-subscription",
+    "versions": [{
+      "version": "0.0",
+      "status": "PROTOTYPED",
+      "endpoints": [{
+        "uriPattern": "/agencies/subscriptions",
+        "endpointName": "Submit Subscription Request",
+        "method": "POST",
+        "authType": "USER",
+        "throttlingTier": "UNLIMITED",
+        "scope": "write:subscriptions"
+      }, {
+        "uriPattern": "/agencies/subscriptions/{id}",
+        "endpointName": "Get Subscription Request",
+        "method": "GET",
+        "authType": "USER",
+        "throttlingTier": "UNLIMITED",
+        "scope": "read:subscriptions"
+      }]
+    }]
+  }
+}
+
