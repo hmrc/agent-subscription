@@ -18,9 +18,12 @@ package uk.gov.hmrc.agentsubscription
 
 import com.typesafe.config.Config
 import play.api.{Application, Configuration, Play}
+import uk.gov.hmrc.api.config._
+import uk.gov.hmrc.api.connector.ServiceLocatorConnector
 import uk.gov.hmrc.play.audit.filters.AuditFilter
 import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
 import uk.gov.hmrc.play.config.{AppName, ControllerConfig, RunMode}
+import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 import uk.gov.hmrc.play.microservice.bootstrap.DefaultMicroserviceGlobal
 import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
@@ -53,12 +56,18 @@ object MicroserviceAuthFilter extends AuthorisationFilter with MicroserviceFilte
   override def controllerNeedsAuth(controllerName: String): Boolean = ControllerConfiguration.paramsForController(controllerName).needsAuth
 }
 
-object MicroserviceGlobal extends DefaultMicroserviceGlobal with RunMode with MicroserviceFilterSupport {
+object MicroserviceGlobal extends DefaultMicroserviceGlobal
+    with RunMode
+    with MicroserviceFilterSupport
+    with ServiceLocatorRegistration
+    with ServiceLocatorConfig {
   override val auditConnector = MicroserviceAuditConnector
 
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
 
   override val loggingFilter = MicroserviceLoggingFilter
+  override lazy val slConnector = ServiceLocatorConnector(WSHttp)
+  override implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override val microserviceAuditFilter = MicroserviceAuditFilter
 
