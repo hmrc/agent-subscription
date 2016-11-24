@@ -25,6 +25,46 @@ import scala.language.postfixOps
 
 class ApiPlatformISpec extends UnitSpec with OneServerPerSuite {
 
+  "/public/api/definition" should {
+    "return the definition JSON" in {
+      val response: HttpResponse = new Resource(s"/api/definition", port).get()
+      response.status shouldBe 200
+
+      val definition = response.json
+
+      (definition \ "api" \ "name").as[String] shouldBe "Agent Subscription"
+    }
+  }
+
+
+  "provide XML documentation for all endpoints in the definitions file" in new ApiTestSupport {
+
+    lazy override val runningPort: Int = port
+
+    forAllApiVersions(endpointsByVersion) { case (version, endpoints) =>
+
+      info(s"Checking API XML documentation for version[$version] of the API")
+
+      endpoints foreach { endpoint =>
+
+        val endpointName: String = endpoint.endPointName
+
+        info(s"$version - $endpointName")
+
+        val (status, contents) = xmlDocumentationFor(endpoint)
+
+        withClue(s"definitions specifies endpoint '$endpointName', is there a ${endpointName.replaceAll(" ", "-")}.xml file?") {
+          status shouldBe 200
+        }
+
+        withClue(s"documentation for '$endpointName' should be well formed XML with a corresponding 'name' element") {
+          contents.isSuccess shouldBe true
+          (contents.get \ "name").head.text shouldBe endpointName
+        }
+      }
+    }
+  }
+
   "provide RAML documentation exists for all API versions" in new ApiTestSupport {
 
     lazy override val runningPort: Int = port
