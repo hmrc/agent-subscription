@@ -1,0 +1,56 @@
+#%RAML 1.0 Library
+usage: |
+  Basic Types used in the Agent Subscription API
+uses:
+  atoms: atoms.raml
+types:
+
+  LinkSection: atoms.LinkSection
+  HmrcService: atoms.HmrcService
+  Status:      atoms.Status
+  Timestamp:   atoms.Timestamp
+  Address:
+    displayName: Address
+    description: Represents a postal address
+    properties:
+      lines: 
+        type: String[]
+        description: The address lines
+        minItems: 1
+      town: 
+        type: String
+        description: The postal town
+      postcode:
+        type: String
+        description: The postcode of the address.
+
+  SubscriptionRequest:
+    displayName: Subscription Request
+    description: |
+      Represents a request to be subscribed to a Service
+    type: object
+    properties:
+      _links: LinkSection
+      created: Timestamp
+      lastUpdated: Timestamp
+      arn:
+        description: The Agent Registration Number
+        type: string
+        required: false
+      service:
+        description: The service to subscribe to.
+        type: HmrcService
+      agentCode:
+        description: The agent code
+        type: string
+      telephone:
+        description: The agency's telephone
+        type: String
+      email:
+        description: The agency's e-mail
+        type: String
+      utr:
+        description:  The agency's UTR
+        type: String
+      status:
+        type: Status
