@@ -1,3 +1,10 @@
-# microservice specific routes
+# Subscription routes
 
-GET        /hello-world             uk.gov.hmrc.agentsubscription.controllers.MicroserviceHelloWorld.hello
+GET	/agencies/subscriptions/:subscriptionId			@uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.getSubscription(subscriptionId: String)
+POST	/agencies/subscriptions					@uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createSubscription()
+
+# Sandbox routes
+
+GET	/sandbox/agencies/subscriptions/:subscriptionId			@uk.gov.hmrc.agentsubscription.controllers.SandboxSubscriptionController.getSubscription(subscriptionId: String)
+POST	/sandbox/agencies/subscriptions					@uk.gov.hmrc.agentsubscription.controllers.SandboxSubscriptionController.createSubscription()
+

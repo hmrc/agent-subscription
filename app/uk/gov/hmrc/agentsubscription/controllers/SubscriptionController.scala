@@ -16,16 +16,21 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
+import javax.inject._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import play.api.mvc._
 import scala.concurrent.Future
 
-object MicroserviceHelloWorld extends MicroserviceHelloWorld
+@Singleton
+class SubscriptionController @Inject()() extends BaseController {
 
-trait MicroserviceHelloWorld extends BaseController {
+  def createSubscription() = Action {
+    NotImplemented
+  }
 
-	def hello() = Action.async { implicit request =>
-		Future.successful(Ok("Hello world"))
-	}
+  def getSubscription(subscriptionId: String) = Action {
+    NotImplemented
+  }
 }
+
