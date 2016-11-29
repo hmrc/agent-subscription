@@ -8,3 +8,5 @@ POST	/agencies/subscriptions					@uk.gov.hmrc.agentsubscription.controllers.Subs
 GET	/sandbox/agencies/subscriptions/:subscriptionId			@uk.gov.hmrc.agentsubscription.controllers.SandboxSubscriptionController.getSubscription(subscriptionId: String)
 POST	/sandbox/agencies/subscriptions					@uk.gov.hmrc.agentsubscription.controllers.SandboxSubscriptionController.createSubscription()
 
+# Whitelist
+GET      /forbidden                                     @uk.gov.hmrc.agentsubscription.controllers.WhitelistController.forbidden
