@@ -25,7 +25,6 @@ private object AppDependencies {
   private val scalaTestVersion = "2.2.6"
   private val pegdownVersion = "1.6.0"
   private val playHmrcApiVersion = "1.2.0"
-  private val playWhitelistVersion = "2.0.0"
 
 
   val compile = Seq(
@@ -38,8 +37,7 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "play-config" % playConfigVersion,
     "uk.gov.hmrc" %% "logback-json-logger" % logbackJsonLoggerVersion,
     "uk.gov.hmrc" %% "domain" % domainVersion,
-    "uk.gov.hmrc" %% "play-hmrc-api" % playHmrcApiVersion,
-    "uk.gov.hmrc" %% "play-whitelist-filter" % playWhitelistVersion
+    "uk.gov.hmrc" %% "play-hmrc-api" % playHmrcApiVersion
   )
 
   trait TestDependencies {
