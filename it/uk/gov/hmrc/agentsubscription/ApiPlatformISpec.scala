@@ -66,6 +66,7 @@ class ApiPlatformISpec extends UnitSpec with OneServerPerSuite {
   }
 
   "provide RAML documentation exists for all API versions" in new ApiTestSupport {
+    pending
 
     lazy override val runningPort: Int = port
 
