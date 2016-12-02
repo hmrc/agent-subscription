@@ -27,8 +27,11 @@ import uk.gov.hmrc.play.microservice.controller.BaseController
 @Singleton
 class SandboxSubscriptionController @Inject()() extends BaseController {
 
+  lazy val url: String = routes.SandboxSubscriptionController.getSubscription("someId").url
+
+
+  
   def createSubscription() = Action {
-    val url: String = routes.SandboxSubscriptionController.getSubscription("someId").url
     Accepted.withHeaders(LOCATION -> url)
   }
 
