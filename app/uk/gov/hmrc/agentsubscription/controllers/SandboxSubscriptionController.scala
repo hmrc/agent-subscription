@@ -17,19 +17,18 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import javax.inject._
+
+import play.api.libs.json.Json
+import play.api.mvc._
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
-import play.api.mvc._
-import scala.concurrent.Future
-import play.api.libs.json.Json
 
 @Singleton
 class SandboxSubscriptionController @Inject()() extends BaseController {
 
   def createSubscription() = Action {
-    Accepted.withHeaders(LOCATION -> routes.SandboxSubscriptionController.getSubscription("00010002-0003-0004-0005-000600070008").url)
+    Accepted.withHeaders(LOCATION -> routes.SandboxSubscriptionController.getSubscription("someId").url)
   }
 
   def getSubscription(subscriptionId: String) = Action {
