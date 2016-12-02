@@ -28,7 +28,9 @@ import uk.gov.hmrc.play.microservice.controller.BaseController
 class SandboxSubscriptionController @Inject()() extends BaseController {
 
   def createSubscription() = Action {
-    Accepted.withHeaders(LOCATION -> routes.SandboxSubscriptionController.getSubscription("someId").url)
+//    val url: String = routes.SandboxSubscriptionController.getSubscription("someId").url
+    val url: String = "/sandbox/agencies/subscriptions/"
+    Accepted.withHeaders(LOCATION -> url)
   }
 
   def getSubscription(subscriptionId: String) = Action {
