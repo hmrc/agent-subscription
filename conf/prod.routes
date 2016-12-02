@@ -1,5 +1,6 @@
 # Add all the application routes to the app.routes file
-->         /agent-subscription        app.Routes
+->         /                          app.Routes
+->         /sandbox                   sandbox.Routes
 ->         /                          health.Routes
 ->         /                          definition.Routes
 

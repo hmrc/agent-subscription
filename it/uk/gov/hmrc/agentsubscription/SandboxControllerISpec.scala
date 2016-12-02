@@ -49,15 +49,15 @@ class SandboxControllerISpec extends UnitSpec with OneServerPerSuite {
       val response: HttpResponse = await(createASubscription)
 
       response.status shouldBe 202
-      response.header("location").get should startWith("/agent-subscription/sandbox/agencies/subscriptions/")
+      response.header("location").get should startWith("/sandbox/agencies/subscriptions/")
     }
   }
 
   private def createASubscription = {
-    new Resource("/agent-subscription/sandbox/agencies/subscriptions", port).postEmpty
+    new Resource("/sandbox/agencies/subscriptions", port).postEmpty
   }
 
   private def getSubscription = {
-    new Resource("/agent-subscription/sandbox/agencies/subscriptions/00010002-0003-0004-0005-000600070008", port).get
+    new Resource("/sandbox/agencies/subscriptions/00010002-0003-0004-0005-000600070008", port).get
   }
 }
