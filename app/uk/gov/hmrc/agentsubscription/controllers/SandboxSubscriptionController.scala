@@ -24,15 +24,17 @@ import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
+
+object SandboxSubscriptionController {
+  lazy val url: String = routes.SandboxSubscriptionController.getSubscription("someId").url
+}
+
 @Singleton
 class SandboxSubscriptionController @Inject()() extends BaseController {
 
-  lazy val url: String = routes.SandboxSubscriptionController.getSubscription("someId").url
 
-
-  
   def createSubscription() = Action {
-    Accepted.withHeaders(LOCATION -> url)
+    Accepted.withHeaders(LOCATION -> SandboxSubscriptionController.url)
   }
 
   def getSubscription(subscriptionId: String) = Action {
