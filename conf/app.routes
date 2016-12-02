@@ -1,5 +1,5 @@
 # Subscription routes
 
-GET	/agencies/subscriptions/:subscriptionId			@uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.getSubscription(subscriptionId: String)
-POST	/agencies/subscriptions					@uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createSubscription()
+GET     /subscriptions/:subscriptionId    @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.getSubscription(subscriptionId: String)
+POST    /subscriptions                    @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createSubscription()
 
