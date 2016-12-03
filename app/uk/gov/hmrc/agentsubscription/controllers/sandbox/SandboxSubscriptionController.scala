@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.controllers
+package uk.gov.hmrc.agentsubscription.controllers.sandbox
 
 import javax.inject._
 
