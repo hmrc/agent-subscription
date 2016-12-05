@@ -20,11 +20,16 @@ import play.api.GlobalSettings
 import play.api.http._
 import play.api.mvc.RequestHeader
 
-class NameManglingFilter @Inject() (provider: Provider[GlobalSettings])
+/**
+ * Normalise the request path. The API platform strips the context 
+ * '/agent-subscription' from the URL before forwarding the request. 
+ * Re-add it here if necessary.
+ */
+class ApiPlatformRequestHandler @Inject() (provider: Provider[GlobalSettings])
       extends GlobalSettingsHttpRequestHandler(provider) {
 
   override def handlerForRequest(request: RequestHeader) = {
-    if (request.uri.startsWith("/agencies") || request.uri.startsWith("/sandbox")) {
+    if (request.path.startsWith("/agencies") || request.path.startsWith("/sandbox")) {
       super.handlerForRequest(request.copy(path = "/agent-subscription" + request.path ))
     } else {
       super.handlerForRequest(request)
