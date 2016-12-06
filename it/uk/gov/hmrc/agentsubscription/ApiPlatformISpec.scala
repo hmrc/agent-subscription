@@ -33,6 +33,10 @@ class ApiPlatformISpec extends UnitSpec with OneServerPerSuite {
       val definition = response.json
 
       (definition \ "api" \ "name").as[String] shouldBe "Agent Subscription"
+
+      val accessConfig = (definition \ "api" \ "versions" \\ "access")
+      (accessConfig.head \ "type").as[String] shouldBe "PRIVATE"
+      (accessConfig.head \ "whitelistedApplicationIds").head.as[String] shouldBe "00010002-0003-0004-0005-000600070008"
     }
   }
 

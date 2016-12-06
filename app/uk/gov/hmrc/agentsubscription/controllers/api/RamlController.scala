@@ -18,12 +18,33 @@ package uk.gov.hmrc.agentsubscription.controllers.api
 
 import javax.inject.{Inject, Singleton}
 
+import uk.gov.hmrc.agentsubscription.views.txt
 import controllers.AssetsBuilder
 import play.api.http.HttpErrorHandler
+import play.api.Configuration
+import play.api.mvc.Action
+import play.api.mvc.AnyContent
+import play.api.libs.json.Json
 
+case class ApiAccess(`type`: String, whitelistedApplicationIds: Seq[String])
+
+object ApiAccess {
+  implicit lazy val formats = Json.format[ApiAccess]
+ }
 
 @Singleton
-class RamlController @Inject() (errorHandler: HttpErrorHandler) extends AssetsBuilder(errorHandler) {
+class RamlController @Inject() (errorHandler: HttpErrorHandler, configuration: Configuration) extends AssetsBuilder(errorHandler) {
+
+  private lazy val apiAccess = {
+    val accessConfig = configuration.getConfig("api.access")
+    val accessType = accessConfig.get.getString("type").getOrElse("PRIVATE")
+    val whiteList = accessConfig.get.getStringSeq("white-list.applicationIds").getOrElse(Seq())
+    ApiAccess(accessType, whiteList)
+  }
+
+  def definition(): Action[AnyContent] = Action {
+    Ok(txt.definition(apiAccess)).withHeaders("Content-Type" -> "application/json")
+  }
 
   def raml(version: String, file: String) = {
     super.at(s"/public/api/conf/$version", file)
