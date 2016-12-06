@@ -33,7 +33,7 @@ object ApiAccess {
  }
 
 @Singleton
-class RamlController @Inject() (errorHandler: HttpErrorHandler, configuration: Configuration) extends AssetsBuilder(errorHandler) {
+class DocumentationController @Inject() (errorHandler: HttpErrorHandler, configuration: Configuration) extends AssetsBuilder(errorHandler) {
 
   private lazy val apiAccess = {
     val accessConfig = configuration.getConfig("api.access")
