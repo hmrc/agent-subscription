@@ -21,20 +21,17 @@ import javax.inject._
 import play.api.libs.json.Json
 import play.api.mvc._
 import uk.gov.hmrc.agentsubscription.model._
+import uk.gov.hmrc.agentsubscription.controllers.{routes => prodroutes}
 import uk.gov.hmrc.domain.AgentCode
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
-
-object SandboxSubscriptionController {
-  lazy val url: String = routes.SandboxSubscriptionController.getSubscription("someId").url
-}
 
 @Singleton
 class SandboxSubscriptionController @Inject()() extends BaseController {
 
 
   def createSubscription() = Action {
-    Accepted.withHeaders(LOCATION -> SandboxSubscriptionController.url)
+    Accepted.withHeaders(LOCATION -> prodroutes.SubscriptionController.getSubscription("someId").url)
   }
 
   def getSubscription(subscriptionId: String) = Action {
