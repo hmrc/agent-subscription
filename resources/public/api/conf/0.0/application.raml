@@ -11,7 +11,8 @@ uses:
   post:
     description: Create a service subscription
     body:
-      type: agencies.SubscriptionRequest
+      type: subscriptions.SubscriptionRequest
+      example: !include modules/subscription_request_example.json
     responses:
       202:
         description: Subscription request has been received. The location header provides a URL where the request status can be checked.
@@ -29,6 +30,8 @@ uses:
         description: Returns a previously submitted subscription request.
         body:
           type: subscriptions.SubscriptionRequest
+          example: !include modules/subscription_response_example.json
+    responses:
       401:
         description: The agent must be authenticated and authorised (logged-in) to use this resource
       403:
