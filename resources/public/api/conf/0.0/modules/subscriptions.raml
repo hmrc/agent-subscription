@@ -13,15 +13,15 @@ types:
     displayName: Address
     description: Represents a postal address
     properties:
-      lines: 
-        type: String[]
+      lines:
+        type: string[]
         description: The address lines
         minItems: 1
-      town: 
-        type: String
+      town:
+        type: string
         description: The postal town
       postcode:
-        type: String
+        type: string
         description: The postcode of the address.
 
   SubscriptionRequest:
@@ -45,15 +45,15 @@ types:
         type: string
       telephone:
         description: The agency's telephone
-        type: String
+        type: string
       email:
         description: The agency's e-mail
-        type: String
+        type: string
       address:
         description: The agency's address
         type: Address
       utr:
         description:  The agency's UTR
-        type: String
+        type: string
       status:
         type: Status
