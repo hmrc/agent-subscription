@@ -50,6 +50,7 @@ class SandboxControllerISpec extends UnitSpec with OneServerPerSuite {
 
       response.status shouldBe 202
       response.header("location").get should startWith("/agent-subscription/agencies/subscriptions/")
+      response.body shouldBe "{}"
     }
   }
 
