@@ -30,7 +30,7 @@ uses:
       200:
         description: Returns a previously submitted subscription request.
         body:
-          type: subscriptions.SubscriptionRequest
+          type: subscriptions.SubscriptionInfo
           example: !include modules/subscription_response_example.json
       401:
         description: The agent must be authenticated and authorised (logged-in) to use this resource

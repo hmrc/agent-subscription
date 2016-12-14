@@ -30,6 +30,31 @@ types:
       Represents a request to be subscribed to a Service
     type: object
     properties:
+      service:
+        description: The service to subscribe to.
+        type: HmrcService
+      agentCode:
+        description: The agent code
+        type: string
+      telephone:
+        description: The agency's telephone
+        type: string
+      email:
+        description: The agency's e-mail
+        type: string
+      address:
+        description: The agency's address
+        type: Address
+      utr:
+        description:  The agency's UTR
+        type: string
+
+  SubscriptionInfo:
+    displayName: Subscription Request
+    description: |
+      Represents a request to be subscribed to a Service
+    type: object
+    properties:
       _links: LinkSection
       created: Timestamp
       lastUpdated: Timestamp
