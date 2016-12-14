@@ -19,7 +19,6 @@ package uk.gov.hmrc.agentsubscription.controllers.sandbox
 import javax.inject._
 
 import play.api.libs.json.Json
-import play.api.libs.json.JsObject
 import play.api.mvc._
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.controllers.{routes => prodroutes}
@@ -32,7 +31,7 @@ class SandboxSubscriptionController @Inject()() extends BaseController {
 
 
   def createSubscription() = Action {
-    Accepted(new JsObject(Map())).withHeaders(LOCATION -> prodroutes.SubscriptionController.getSubscription("someId").url)
+    Accepted.withHeaders(LOCATION -> prodroutes.SubscriptionController.getSubscription("someId").url)
   }
 
   def getSubscription(subscriptionId: String) = Action {
