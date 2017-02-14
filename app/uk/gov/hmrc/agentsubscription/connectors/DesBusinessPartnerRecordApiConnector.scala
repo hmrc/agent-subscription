@@ -23,6 +23,7 @@ import com.google.inject.Singleton
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.parse
 import uk.gov.hmrc.agentsubscription.model.{BusinessPartnerRecordFound, BusinessPartnerRecordNotFound, DesBusinessPartnerRecordApiResponse}
+import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 import uk.gov.hmrc.play.http._
 import uk.gov.hmrc.play.http.logging.Authorization
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
@@ -59,7 +60,7 @@ class HttpDesBusinessPartnerRecordApiConnector @Inject()(@Named("des-baseUrl") d
   }
 
   private def bprUrlFor(utr: String): String =
-    new URL(desBaseUrl, s"/registration/personal-details/${utr}").toString
+    new URL(desBaseUrl, s"/registration/personal-details/${encodePathSegment(utr)}").toString
 
   private def getWithDesHeaders(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val desHeaderCarrier = hc.copy(
