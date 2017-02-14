@@ -31,9 +31,13 @@ HTTP status 404 with no body will be returned if no business partner found for g
 If a business partner was found for given known facts then a 200 OK response will be returned with a JSON body structured as follows:
 
     {
-      "isSubscribedToAgentServices": true,
-      "name": "<Registered taxpayer name>"
+      "isSubscribedToAgentServices": true
     }
+    
+Notes: 
+1. The Agents team have implemented this through necessity however we believe this should be part of the Business Registration service.    
+2. This endpoint is currently not secured by auth. If the end point is rehomed then this should be reconsidered.
+3. It is anticipated that additional information will be added to the json response.
 
 
 ### Subscribe Registered Taxpayer to Agent Services

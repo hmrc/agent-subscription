@@ -14,21 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.controllers
+package uk.gov.hmrc.agentsubscription.model
 
-import javax.inject._
+import play.api.libs.json.Json.format
 
-import play.api.mvc._
-import uk.gov.hmrc.play.microservice.controller.BaseController
+case class RegistrationDetails(isSubscribedToAgentServices: Boolean)
 
-@Singleton
-class SubscriptionController @Inject()() extends BaseController {
-
-  def createSubscription() = Action {
-    NotImplemented
-  }
-
-  def getSubscription(subscriptionId: String) = Action {
-    NotImplemented
-  }
+object RegistrationDetails{
+  implicit val registrationDetailsObjectFormat = format[RegistrationDetails]
 }

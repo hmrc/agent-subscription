@@ -14,21 +14,8 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.controllers
+package uk.gov.hmrc.agentsubscription.model
 
-import javax.inject._
-
-import play.api.mvc._
-import uk.gov.hmrc.play.microservice.controller.BaseController
-
-@Singleton
-class SubscriptionController @Inject()() extends BaseController {
-
-  def createSubscription() = Action {
-    NotImplemented
-  }
-
-  def getSubscription(subscriptionId: String) = Action {
-    NotImplemented
-  }
-}
+sealed trait DesBusinessPartnerRecordApiResponse
+case class BusinessPartnerRecordFound(postalCode : String, isSubscribedToAgentServices: Boolean) extends DesBusinessPartnerRecordApiResponse
+object BusinessPartnerRecordNotFound extends DesBusinessPartnerRecordApiResponse
