@@ -41,8 +41,8 @@ class HttpDesBusinessPartnerRecordApiConnector @Inject()(@Named("des-baseUrl") d
                                                          httpGet: HttpGet) extends DesBusinessPartnerRecordApiConnector {
   def getBusinessPartnerRecord(utr: String)(implicit hc: HeaderCarrier): Future[DesBusinessPartnerRecordApiResponse] = {
     val url: String = bprUrlFor(utr)
-    val headers: Future[HttpResponse] = getWithDesHeaders(url)
-    headers map { r =>
+    val response: Future[HttpResponse] = getWithDesHeaders(url)
+    response map { r =>
       r.status match {
         case 200 => {
           val businessPartnerRecord: JsValue = parse(r.body)
@@ -55,7 +55,6 @@ class HttpDesBusinessPartnerRecordApiConnector @Inject()(@Named("des-baseUrl") d
     } recover {
       case notFound: NotFoundException => BusinessPartnerRecordNotFound
       case invalidUtr: BadRequestException => BusinessPartnerRecordNotFound
-      case error: Exception => throw new RuntimeException("Unexpected response status from DES.")
     }
   }
 

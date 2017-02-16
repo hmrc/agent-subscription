@@ -20,22 +20,37 @@ import javax.inject._
 
 import play.api.libs.json.Json.toJson
 import play.api.mvc._
-import uk.gov.hmrc.agentsubscription.connectors.DesBusinessPartnerRecordApiConnector
+import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesBusinessPartnerRecordApiConnector}
 import uk.gov.hmrc.agentsubscription.model.{BusinessPartnerRecordFound, DesBusinessPartnerRecordApiResponse, RegistrationDetails}
+import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
+import scala.concurrent.Future
+
 @Singleton
-class RegistrationController @Inject()(val desConnector: DesBusinessPartnerRecordApiConnector) extends BaseController {
+class RegistrationController @Inject()(val desConnector: DesBusinessPartnerRecordApiConnector, val authConnector: AuthConnector )
+  extends BaseController {
   def getRegistration(utr: String, postcode:String) = Action.async { implicit request =>
-    desConnector.getBusinessPartnerRecord(utr)  map { desResponse: DesBusinessPartnerRecordApiResponse =>
-      desResponse match {
-        case businessPartnerRecord: BusinessPartnerRecordFound => businessPartnerRecord.postalCode == postcode match {
-          case true => Ok( toJson( RegistrationDetails( businessPartnerRecord.isSubscribedToAgentServices ) ) )
-          case false => NotFound
+    ensureAuthenticated {
+      desConnector.getBusinessPartnerRecord(utr) map { desResponse: DesBusinessPartnerRecordApiResponse =>
+        desResponse match {
+          case businessPartnerRecord: BusinessPartnerRecordFound => businessPartnerRecord.postalCode == postcode match {
+            case true => Ok(toJson(RegistrationDetails(businessPartnerRecord.isSubscribedToAgentServices)))
+            case false => NotFound
+          }
+          case _ => NotFound
         }
-        case _ => NotFound
       }
     }
   }
+
+  private def ensureAuthenticated(action: => Future[Result])(implicit hc: HeaderCarrier): Future[Result] =
+    authConnector.isAuthenticated().flatMap { authorised : Boolean =>
+      if (authorised) {
+        action
+      } else {
+        Future successful Unauthorized
+      }
+    }
 }

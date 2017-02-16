@@ -20,6 +20,7 @@ import org.scalatestplus.play.OneServerPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentsubscription.controllers.RegistrationController
+import uk.gov.hmrc.agentsubscription.stubs.AuthStub.{requestIsAuthenticated, requestIsNotAuthenticated}
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs.{findMatchForUtrForASAgent, findMatchForUtrForNonASAgent, noMatchForUtr, utrIsInvalid}
 import uk.gov.hmrc.agentsubscription.support.{Resource, WireMockSupport}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -39,25 +40,35 @@ class RegistrationControllerISpec  extends UnitSpec with OneServerPerSuite with 
   private lazy val controller: RegistrationController = app.injector.instanceOf[RegistrationController]
 
   "GET of /registration/:utr/postcode/:postcode" should {
+    "return a 401 when the user is not authenticated" in {
+      requestIsNotAuthenticated()
+      val response = await(new Resource("/agencies/registration/0123456789/postcode/BN12 4SE", port).get)
+      response.status shouldBe 401
+    }
+
     "return 404 when no match is found in des" in {
+      requestIsAuthenticated()
       noMatchForUtr()
-      val response = await(new Resource("/agencies/registration/9876543210/postcode/BN12 4SE", port).get)
+      val response = await(new Resource("/agencies/registration/0000000000/postcode/BN12 4SE", port).get)
       response.status shouldBe 404
     }
 
     "return 404 when des reports an invalid utr" in {
+      requestIsAuthenticated()
       utrIsInvalid()
       val response = await(new Resource("/agencies/registration/xyz/postcode/BN12 4SE", port).get)
       response.status shouldBe 404
     }
 
     "return 404 when des returns a match for the utr but the post codes do not match" in {
+      requestIsAuthenticated()
       findMatchForUtrForASAgent()
       val response = await(new Resource("/agencies/registration/0123456789/postcode/NOMATCH", port).get)
       response.status shouldBe 404
     }
 
     "return 200 when des returns an AS Agent for the utr and the postcodes match" in {
+      requestIsAuthenticated()
       findMatchForUtrForASAgent()
       val response = await(new Resource("/agencies/registration/0123456789/postcode/BN12 4SE", port).get)
       response.status shouldBe 200
@@ -65,6 +76,7 @@ class RegistrationControllerISpec  extends UnitSpec with OneServerPerSuite with 
     }
 
     "return 200 when des returns a non-AS Agent for the utr and the postcodes match" in {
+      requestIsAuthenticated()
       findMatchForUtrForNonASAgent()
       val response = await(new Resource("/agencies/registration/0123456789/postcode/BN12 4SE", port).get)
       response.status shouldBe 200
