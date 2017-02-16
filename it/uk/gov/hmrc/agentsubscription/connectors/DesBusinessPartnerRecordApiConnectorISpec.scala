@@ -17,17 +17,17 @@ class DesBusinessPartnerRecordApiConnectorISpec extends UnitSpec with OneAppPerS
     new HttpDesBusinessPartnerRecordApiConnector(new URL(s"http://localhost:${wireMockPort}"), "auth-token", "des-env", WSHttp)
 
   "DES Subscription Connector" should {
-    "return subscription details for an agent matching UTR" in {
-      findMatchForUtrForASAgent()
-      val result: DesBusinessPartnerRecordApiResponse = await(connector.getBusinessPartnerRecord("0123456789"))
-      result shouldBe BusinessPartnerRecordFound("BN12 4SE", true)
-    }
+      "return subscription details for an agent matching UTR" in {
+        findMatchForUtrForASAgent()
+        val result: DesBusinessPartnerRecordApiResponse = await(connector.getBusinessPartnerRecord("0123456789"))
+        result shouldBe BusinessPartnerRecordFound("BN12 4SE", true)
+      }
 
-    "return not found status for a not found UTR" in {
-      noMatchForUtr()
-      val result: DesBusinessPartnerRecordApiResponse = await(connector.getBusinessPartnerRecord("0000000000"))
-      result shouldBe BusinessPartnerRecordNotFound
-    }
+      "return not found status for a not found UTR" in {
+        noMatchForUtr()
+        val result: DesBusinessPartnerRecordApiResponse = await(connector.getBusinessPartnerRecord("0000000000"))
+        result shouldBe BusinessPartnerRecordNotFound
+      }
 
     "return not found status for an invalid UTR" in {
       utrIsInvalid()
