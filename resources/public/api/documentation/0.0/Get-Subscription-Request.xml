@@ -3,7 +3,7 @@
     <description>Get a submitted subscription request</description>
     <section id="resource">
         <title>Resource</title>
-        <resource>Get /agencies/subscriptions/{subscriptionId}</resource>
+        <resource>Get /subscription/{subscriptionId}</resource>
     </section>
     <section id="path-parameters">
         <title>Path Parameters</title>
