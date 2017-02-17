@@ -22,14 +22,14 @@
       "status": "PROTOTYPED",
       "access": @Json.toJson(access),
       "endpoints": [{
-        "uriPattern": "/agencies/subscriptions",
+        "uriPattern": "/subscription",
         "endpointName": "Submit Subscription Request",
         "method": "POST",
         "authType": "USER",
         "throttlingTier": "UNLIMITED",
         "scope": "write:subscriptions"
       }, {
-        "uriPattern": "/agencies/subscriptions/{id}",
+        "uriPattern": "/subscription/{id}",
         "endpointName": "Get Subscription Request",
         "method": "GET",
         "authType": "USER",

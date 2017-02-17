@@ -29,7 +29,7 @@ class ApiPlatformRequestHandler @Inject() (provider: Provider[GlobalSettings])
       extends GlobalSettingsHttpRequestHandler(provider) {
 
   override def handlerForRequest(request: RequestHeader) = {
-    if (request.path.startsWith("/agencies") || request.path.startsWith("/sandbox")) {
+    if ( request.path.startsWith("/sandbox")) {
       super.handlerForRequest(request.copy(path = "/agent-subscription" + request.path ))
     } else {
       super.handlerForRequest(request)

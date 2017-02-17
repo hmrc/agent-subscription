@@ -24,7 +24,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.language.postfixOps
 
 class SandboxControllerISpec extends UnitSpec with OneServerPerSuite {
-  "GET of /agencies/subscriptions/:subscriptionId" should {
+  "GET of /agent-subscription/subscription/:subscriptionId" should {
     "return a subscription request" in {
       val response = await(getSubscription)
 
@@ -44,20 +44,20 @@ class SandboxControllerISpec extends UnitSpec with OneServerPerSuite {
     }
   }
 
-  "POST to /agencies/subscriptions" should {
+  "POST to /agent-subscription/subscription" should {
     "include a Location header in the response" in {
       val response: HttpResponse = await(createASubscription)
 
       response.status shouldBe 202
-      response.header("location").get should startWith("/agent-subscription/agencies/subscriptions/")
+      response.header("location").get should startWith("/agent-subscription/subscription/")
     }
   }
 
   private def createASubscription = {
-    new Resource("/sandbox/agencies/subscriptions", port).postEmpty
+    new Resource("/sandbox/subscription", port).postEmpty
   }
 
   private def getSubscription = {
-    new Resource("/sandbox/agencies/subscriptions/00010002-0003-0004-0005-000600070008", port).get
+    new Resource("/sandbox/subscription/00010002-0003-0004-0005-000600070008", port).get
   }
 }

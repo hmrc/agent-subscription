@@ -3,7 +3,7 @@
     <description>Subscribe an agency to an HMRC service</description>
     <section id="resource">
         <title>Resource</title>
-        <resource>POST /agencies/subscriptions</resource>
+        <resource>POST /subscription</resource>
     </section>
     <section id="authorisation">
         <title>Authorisation</title>
