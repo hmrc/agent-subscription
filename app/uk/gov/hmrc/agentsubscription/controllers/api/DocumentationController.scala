@@ -33,7 +33,7 @@ object ApiAccess {
  }
 
 @Singleton
-class DocumentationController @Inject() (errorHandler: HttpErrorHandler, configuration: Configuration) extends AssetsBuilder(errorHandler) {
+class DocumentationController @Inject() (errorHandler: HttpErrorHandler, configuration: Configuration) extends uk.gov.hmrc.api.controllers.DocumentationController(errorHandler) {
 
   private lazy val apiAccess = {
     val accessConfig = configuration.getConfig("api.access")
@@ -42,7 +42,7 @@ class DocumentationController @Inject() (errorHandler: HttpErrorHandler, configu
     ApiAccess(accessType, whiteList)
   }
 
-  def definition(): Action[AnyContent] = Action {
+  override def definition(): Action[AnyContent] = Action {
     Ok(txt.definition(apiAccess)).withHeaders("Content-Type" -> "application/json")
   }
 

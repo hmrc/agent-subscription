@@ -21,15 +21,12 @@ import javax.inject.Provider
 
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names.named
-import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesBusinessPartnerRecordApiConnector, HttpAuthConnector, HttpDesBusinessPartnerRecordApiConnector}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.HttpGet
 
-class GuiceModule extends AbstractModule with ServicesConfig{
+class GuiceModule extends AbstractModule with ServicesConfig {
   override def configure(): Unit = {
     bind(classOf[HttpGet]).toInstance(WSHttp)
-    bind(classOf[DesBusinessPartnerRecordApiConnector]).to(classOf[HttpDesBusinessPartnerRecordApiConnector])
-    bind(classOf[AuthConnector]).to(classOf[HttpAuthConnector])
     bindBaseUrl("des")
     bindBaseUrl("auth")
     bindConfigProperty("des.authorization-token")

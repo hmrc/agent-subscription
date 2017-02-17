@@ -2,4 +2,4 @@ GET        /api/conf/:version/*file                              @uk.gov.hmrc.ag
 
 GET        /api/definition                                       @uk.gov.hmrc.agentsubscription.controllers.api.DocumentationController.definition
 
-GET        /api/documentation/:version/:endpointName             uk.gov.hmrc.api.controllers.DocumentationController.documentation(version,endpointName)
+GET        /api/documentation/:version/:endpointName             @uk.gov.hmrc.agentsubscription.controllers.api.DocumentationController.documentation(version, endpointName)
