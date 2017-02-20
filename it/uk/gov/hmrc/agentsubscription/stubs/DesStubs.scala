@@ -40,7 +40,7 @@ object DesStubs {
     """
 
   def findMatchForUtrForASAgent(): Unit = {
-    stubFor(get(urlEqualTo("/registration/personal-details/0123456789"))
+    stubFor(get(urlEqualTo("/registration/personal-details/utr/0123456789"))
       .willReturn(
         aResponse()
           .withStatus(200)
@@ -50,7 +50,7 @@ object DesStubs {
   }
 
   def findMatchForUtrForNonASAgent(): Unit = {
-    stubFor(get(urlEqualTo("/registration/personal-details/0123456789"))
+    stubFor(get(urlEqualTo("/registration/personal-details/utr/0123456789"))
       .willReturn(
         aResponse()
           .withStatus(200)
@@ -60,7 +60,7 @@ object DesStubs {
   }
 
   def noMatchForUtr(): Unit = {
-    stubFor(get(urlEqualTo("/registration/personal-details/0000000000"))
+    stubFor(get(urlEqualTo("/registration/personal-details/utr/0000000000"))
       .willReturn(
         aResponse()
           .withStatus(404)
@@ -70,7 +70,7 @@ object DesStubs {
   }
 
   def utrIsInvalid(): Unit = {
-    stubFor(get(urlEqualTo("/registration/personal-details/xyz"))
+    stubFor(get(urlEqualTo("/registration/personal-details/utr/xyz"))
       .willReturn(
         aResponse()
           .withStatus(400)
