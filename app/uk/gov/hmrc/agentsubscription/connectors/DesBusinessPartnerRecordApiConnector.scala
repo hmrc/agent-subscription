@@ -30,15 +30,12 @@ import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent.Future
 
-trait DesBusinessPartnerRecordApiConnector {
-  def getBusinessPartnerRecord(utr: String)(implicit hc: HeaderCarrier): Future[DesBusinessPartnerRecordApiResponse]
-}
-
 @Singleton
-class HttpDesBusinessPartnerRecordApiConnector @Inject()(@Named("des-baseUrl") desBaseUrl: URL,
-                                                         @Named("des.authorization-token") authorizationToken: String,
-                                                         @Named("des.environment") environment: String,
-                                                         httpGet: HttpGet) extends DesBusinessPartnerRecordApiConnector {
+class DesBusinessPartnerRecordApiConnector @Inject()(
+  @Named("des-baseUrl") desBaseUrl: URL,
+  @Named("des.authorization-token") authorizationToken: String,
+  @Named("des.environment") environment: String,
+  httpGet: HttpGet) {
   def getBusinessPartnerRecord(utr: String)(implicit hc: HeaderCarrier): Future[DesBusinessPartnerRecordApiResponse] = {
     val url: String = bprUrlFor(utr)
     val response: Future[HttpResponse] = getWithDesHeaders(url)

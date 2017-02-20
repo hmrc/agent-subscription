@@ -25,12 +25,8 @@ import uk.gov.hmrc.play.http._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-trait AuthConnector {
-  def isAuthenticated()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean]
-}
-
 @Singleton
-class HttpAuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet) extends AuthConnector{
+class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet) {
   def isAuthenticated()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     val response: Future[HttpResponse] = get("/auth/authority")
     response map { r =>
