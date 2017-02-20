@@ -14,7 +14,7 @@ class DesBusinessPartnerRecordApiConnectorISpec extends UnitSpec with OneAppPerS
   private implicit val hc = HeaderCarrier()
 
   private lazy val connector: DesBusinessPartnerRecordApiConnector =
-    new HttpDesBusinessPartnerRecordApiConnector(new URL(s"http://localhost:${wireMockPort}"), "auth-token", "des-env", WSHttp)
+    new DesBusinessPartnerRecordApiConnector(new URL(s"http://localhost:${wireMockPort}"), "auth-token", "des-env", WSHttp)
 
   "DES Subscription Connector" should {
       "return subscription details for an agent matching UTR" in {

@@ -13,7 +13,7 @@ import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 class AuthConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport {
   private implicit val hc = HeaderCarrier()
 
-  private lazy val connector: AuthConnector = new HttpAuthConnector(new URL(s"http://localhost:${wireMockPort}"), WSHttp)
+  private lazy val connector: AuthConnector = new AuthConnector(new URL(s"http://localhost:${wireMockPort}"), WSHttp)
 
   "AuthConnector isAuthenticated" should {
     "return true when an authority detail is available" in {
