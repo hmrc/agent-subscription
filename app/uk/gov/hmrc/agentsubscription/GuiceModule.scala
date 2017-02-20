@@ -21,12 +21,22 @@ import javax.inject.Provider
 
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names.named
+import play.api.Mode.Mode
+import play.api.{Configuration, Environment}
+import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesBusinessPartnerRecordApiConnector}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.HttpGet
 
-class GuiceModule extends AbstractModule with ServicesConfig {
+class GuiceModule(environment: Environment, configuration: Configuration) extends AbstractModule with ServicesConfig {
+
+  override protected lazy val mode: Mode = environment.mode
+  override protected lazy val runModeConfiguration: Configuration = configuration
+
   override def configure(): Unit = {
     bind(classOf[HttpGet]).toInstance(WSHttp)
+    bind(classOf[HttpGet]).toInstance(WSHttp)
+    bind(classOf[DesBusinessPartnerRecordApiConnector])
+    bind(classOf[AuthConnector])
     bindBaseUrl("des")
     bindBaseUrl("auth")
     bindConfigProperty("des.authorization-token")

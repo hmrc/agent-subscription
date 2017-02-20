@@ -16,7 +16,7 @@ private object AppDependencies {
   private val playHealthVersion = "2.0.0"
   private val logbackJsonLoggerVersion = "3.1.0"
   private val playUrlBindersVersion = "2.0.0"
-  private val playConfigVersion = "3.0.0"
+  private val playConfigVersion = "3.1.0"
   private val domainVersion = "4.0.0"
   private val hmrcTestVersion = "2.2.0"
   private val scalaTestVersion = "2.2.6"
