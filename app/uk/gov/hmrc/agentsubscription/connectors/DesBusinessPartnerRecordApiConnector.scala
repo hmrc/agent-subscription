@@ -56,7 +56,7 @@ class DesBusinessPartnerRecordApiConnector @Inject()(
   }
 
   private def bprUrlFor(utr: String): String =
-    new URL(desBaseUrl, s"/registration/personal-details/${encodePathSegment(utr)}").toString
+    new URL(desBaseUrl, s"/registration/personal-details/utr/${encodePathSegment(utr)}").toString
 
   private def getWithDesHeaders(url: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
     val desHeaderCarrier = hc.copy(
