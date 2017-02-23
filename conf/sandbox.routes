@@ -1,6 +1,0 @@
-# Sandbox routes
-
-GET	  /subscription/:subscriptionId	@uk.gov.hmrc.agentsubscription.controllers.sandbox.SandboxSubscriptionController.getSubscription(subscriptionId: String)
-POST  /subscription					@uk.gov.hmrc.agentsubscription.controllers.sandbox.SandboxSubscriptionController.createSubscription()
-
-
