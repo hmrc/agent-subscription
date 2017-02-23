@@ -50,7 +50,8 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
   }
 
-  def request = DesSubscriptionRequest(agencyName = "My Agency",
+  def request = DesSubscriptionRequest(safeId = "safeId",
+                                       agencyName = "My Agency",
                                        agencyAddress =Address(addressLine1 = "1 Some Street", addressLine2 = "MyTown", postalCode = "AA1 1AA", countryCode = "GB"),
                                        agencyEmail = "agency@example.com",
                                        telephoneNumber = "0123 456 7890")
