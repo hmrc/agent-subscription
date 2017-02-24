@@ -65,9 +65,35 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     }
 
     "not return a SAFE id for an unknown user" in {
-      agentWithNoSafeId(utr)
+      agentWithNoRegistration(utr)
 
       val result = await(connector.fetchSafeId(utr))
+
+      result shouldBe None
+    }
+  }
+
+    "getPostcode" should {
+    "return a postcode for an agent user" in {
+      agentWithPostcode(utr)
+
+      val result = await(connector.fetchPostcode(utr))
+
+      result shouldBe Some("AA11AA")
+    }
+
+    "return a postcode for a non-agent user" in {
+      nonAgentWithPostcode(utr)
+
+      val result = await(connector.fetchPostcode(utr))
+
+      result shouldBe Some("AA11AA")
+    }
+
+    "not return a postcode for an unknown user" in {
+      agentWithNoRegistration(utr)
+
+      val result = await(connector.fetchPostcode(utr))
 
       result shouldBe None
     }

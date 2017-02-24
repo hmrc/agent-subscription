@@ -61,17 +61,34 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
   }
 
   def fetchSafeId(utr: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
-    registrationRequest(utr, isAnAgent = true) flatMap {
+    fetchSafeId(utr, isAnAgent = false) flatMap {
       case safeId: Some[_] => Future successful safeId
-      case None => registrationRequest(utr, isAnAgent = false)
+      case None => fetchSafeId(utr, isAnAgent = true)
     }
   }
 
-  private def registrationRequest(utr: String, isAnAgent: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
-    println(s"Utr: $utr isAgent: $isAnAgent")
+  def fetchPostcode(utr: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
+    fetchPostcode(utr, isAnAgent = false) flatMap {
+      case postcode: Some[_] => Future successful postcode
+      case None => fetchPostcode(utr, isAnAgent = true)
+    }
+  }
+
+  private def fetchRegistrationJson(utr: String, isAnAgent: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] = {
     (httpPost.POST[DesRegistrationRequest, Option[JsValue]](desRegistrationUrl(utr).toString, DesRegistrationRequest(isAnAgent = isAnAgent))
-      (implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], desHeaders)) map {
+      (implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], desHeaders))
+  }
+
+  private def fetchSafeId(utr: String, isAnAgent: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
+    fetchRegistrationJson(utr, isAnAgent) map {
       case Some(r) => (r \ "safeId").asOpt[String]
+      case _ => None
+    }
+  }
+
+  private def fetchPostcode(utr: String, isAnAgent: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
+    fetchRegistrationJson(utr, isAnAgent) map {
+      case Some(r) => (r \ "address" \ "postalCode").asOpt[String]
       case _ => None
     }
   }
