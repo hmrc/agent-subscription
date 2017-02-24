@@ -17,20 +17,15 @@
 package uk.gov.hmrc.agentsubscription
 
 import com.typesafe.config.Config
+import net.ceedubs.ficus.Ficus._
 import play.api.{Application, Configuration, Play}
-import uk.gov.hmrc.api.config._
-import uk.gov.hmrc.api.connector.ServiceLocatorConnector
 import uk.gov.hmrc.play.audit.filters.AuditFilter
 import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
+import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
 import uk.gov.hmrc.play.config.{AppName, ControllerConfig, RunMode}
-import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.play.filters.MicroserviceFilterSupport
 import uk.gov.hmrc.play.http.logging.filters.LoggingFilter
 import uk.gov.hmrc.play.microservice.bootstrap.DefaultMicroserviceGlobal
-import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
-import net.ceedubs.ficus.Ficus._
-import uk.gov.hmrc.play.filters.MicroserviceFilterSupport
-import play.api.i18n.Messages.Implicits._
-import play.api.Play.current
 
 
 object ControllerConfiguration extends ControllerConfig {
@@ -58,16 +53,12 @@ object MicroserviceAuthFilter extends AuthorisationFilter with MicroserviceFilte
 
 object MicroserviceGlobal extends DefaultMicroserviceGlobal
     with RunMode
-    with MicroserviceFilterSupport
-    with ServiceLocatorRegistration
-    with ServiceLocatorConfig {
+    with MicroserviceFilterSupport {
   override val auditConnector = MicroserviceAuditConnector
 
   override def microserviceMetricsConfig(implicit app: Application): Option[Configuration] = app.configuration.getConfig(s"microservice.metrics")
 
   override val loggingFilter = MicroserviceLoggingFilter
-  override lazy val slConnector = ServiceLocatorConnector(WSHttp)
-  override implicit val hc: HeaderCarrier = HeaderCarrier()
 
   override val microserviceAuditFilter = MicroserviceAuditFilter
 

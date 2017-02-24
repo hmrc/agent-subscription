@@ -1,5 +1,0 @@
-GET        /api/conf/:version/*file                              @uk.gov.hmrc.agentsubscription.controllers.api.DocumentationController.raml(version, file)
-
-GET        /api/definition                                       @uk.gov.hmrc.agentsubscription.controllers.api.DocumentationController.definition
-
-GET        /api/documentation/:version/:endpointName             @uk.gov.hmrc.agentsubscription.controllers.api.DocumentationController.documentation(version, endpointName)

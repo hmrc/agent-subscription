@@ -21,7 +21,6 @@ import javax.inject.{Inject, Named}
 
 import com.google.inject.Singleton
 import play.api.libs.json.JsValue
-import play.api.libs.json.Json.parse
 import uk.gov.hmrc.agentsubscription.model.{BusinessPartnerRecordFound, BusinessPartnerRecordNotFound, DesBusinessPartnerRecordApiResponse}
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 import uk.gov.hmrc.play.http._
@@ -42,7 +41,7 @@ class DesBusinessPartnerRecordApiConnector @Inject()(
     response map { r =>
       r.status match {
         case 200 => {
-          val businessPartnerRecord: JsValue = parse(r.body)
+          val businessPartnerRecord: JsValue = r.json
           BusinessPartnerRecordFound(
             (businessPartnerRecord \ "addressDetails" \ "postalCode").as[String],
             (businessPartnerRecord \ "isAnASAgent" ).as[Boolean] )
