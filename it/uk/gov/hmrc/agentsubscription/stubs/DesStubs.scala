@@ -74,7 +74,6 @@ object DesStubs {
              s"""
                 |{
                 |  "regime": "ITSA",
-                |  "safeId": "${request.safeId}",
                 |  "agencyName": "${request.agencyName}",
                 |  "agencyAddress": {
                 |    "addressLine1": "${request.agencyAddress.addressLine1}",

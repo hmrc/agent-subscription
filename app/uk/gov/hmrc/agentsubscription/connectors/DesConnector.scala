@@ -24,7 +24,7 @@ import play.api.libs.json.{Format, JsValue, Json, Writes}
 import uk.gov.hmrc.agentsubscription.model.Arn
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 import uk.gov.hmrc.play.http.logging.Authorization
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost, HttpReads, HttpResponse}
+import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost, HttpReads}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,7 +34,7 @@ case class Address(addressLine1: String,
                    addressLine4: Option[String] = None,
                    postalCode: String,
                    countryCode: String)
-case class DesSubscriptionRequest(safeId: String, agencyName: String, agencyAddress: Address, agencyEmail: String, telephoneNumber: String, regime: String = "ITSA")
+case class DesSubscriptionRequest(agencyName: String, agencyAddress: Address, agencyEmail: String, telephoneNumber: String, regime: String = "ITSA")
 
 case class DesRegistrationRequest(requiresNameMatch: Boolean = false, regime: String = "ITSA", isAnAgent: Boolean)
 
@@ -49,8 +49,8 @@ object DesRegistrationRequest {
 
 @Singleton
 class DesConnector @Inject() (@Named("des.environment") environment: String,
-                              @Named("des.authorizationToken") authorizationToken: String,
-                              @Named("des.baseUrl") baseUrl: URL,
+                              @Named("des.authorization-token") authorizationToken: String,
+                              @Named("des-baseUrl") baseUrl: URL,
                               httpPost: HttpPost) extends Status {
 
   def subscribeToAgentServices(utr: String, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {

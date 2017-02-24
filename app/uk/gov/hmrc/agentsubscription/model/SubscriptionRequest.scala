@@ -34,14 +34,16 @@ object SubscriptionRequest {
 
 case class Arn(arn: String)
 
-case class Address(lines: Seq[String], town: String, postcode: String)
+case class Address(addressLine1: String, addressLine2: String, addressLine3: Option[String], addressLine4: Option[String], postcode: String, countryCode: String)
 
-case class SubscriptionRequest(id: String,
-                         arn: Option[Arn],
-                         name: String,
+case class SubscriptionRequest(name: String,
                          address: Address,
                          telephone: String,
                          email: String,
-                         service: String,
-                         utr: String,
-                         agentCode: AgentCode)
+                         utr: String
+                         )
+
+case class SubscriptionResponse(arn: Arn)
+object SubscriptionResponse {
+  implicit val format = Json.format[SubscriptionResponse]
+}
