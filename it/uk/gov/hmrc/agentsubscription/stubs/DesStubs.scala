@@ -84,7 +84,7 @@ object DesStubs {
    */
 
   def subscriptionSucceeds(utr: String, request: DesSubscriptionRequest): Unit = {
-    stubFor(post(urlEqualTo(s"/income-tax-self-assessment/agents/utr/$utr"))
+    stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
            .withRequestBody(equalToJson(
              s"""
                 |{
@@ -112,7 +112,7 @@ object DesStubs {
   }
 
   def subscriptionAlreadyExists(utr: String): Unit = {
-    stubFor(post(urlEqualTo(s"/income-tax-self-assessment/agents/utr/$utr"))
+    stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
       .willReturn(aResponse()
         .withStatus(409)
         .withBody(
@@ -125,7 +125,7 @@ object DesStubs {
   }
 
   def agencyNotRegistered(utr: String): Unit = {
-    stubFor(post(urlEqualTo(s"/income-tax-self-assessment/agents/utr/$utr"))
+    stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(

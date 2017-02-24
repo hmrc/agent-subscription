@@ -55,7 +55,7 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
   }
 
   private def desUrl(utr: String): URL =
-    new URL(baseUrl, s"/income-tax-self-assessment/agents/utr/${encodePathSegment(utr)}")
+    new URL(baseUrl, s"/registration/agents/utr/${encodePathSegment(utr)}")
 
   private def desHeaders(implicit hc: HeaderCarrier): HeaderCarrier = {
     hc.copy(
