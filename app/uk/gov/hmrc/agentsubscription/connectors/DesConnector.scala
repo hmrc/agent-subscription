@@ -20,7 +20,7 @@ import java.net.URL
 import javax.inject.{Inject, Named, Singleton}
 
 import play.api.http.Status
-import play.api.libs.json.{Format, Json, Writes}
+import play.api.libs.json.{Format, JsValue, Json, Writes}
 import uk.gov.hmrc.agentsubscription.model.Arn
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 import uk.gov.hmrc.play.http.logging.Authorization
@@ -36,9 +36,15 @@ case class Address(addressLine1: String,
                    countryCode: String)
 case class DesSubscriptionRequest(safeId: String, agencyName: String, agencyAddress: Address, agencyEmail: String, telephoneNumber: String, regime: String = "ITSA")
 
+case class DesRegistrationRequest(requiresNameMatch: Boolean = false, regime: String = "ITSA", isAnAgent: Boolean)
+
 object DesSubscriptionRequest {
   implicit val addressFormats: Format[Address] = Json.format[Address]
   implicit val formats: Format[DesSubscriptionRequest] = Json.format[DesSubscriptionRequest]
+}
+
+object DesRegistrationRequest {
+  implicit val formats: Format[DesRegistrationRequest] = Json.format[DesRegistrationRequest]
 }
 
 @Singleton
@@ -48,14 +54,33 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
                               httpPost: HttpPost) extends Status {
 
   def subscribeToAgentServices(utr: String, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
-    (httpPost.POST[DesSubscriptionRequest, HttpResponse](desUrl(utr).toString, request)
-        (implicitly[Writes[DesSubscriptionRequest]], implicitly[HttpReads[HttpResponse]], desHeaders)) map {
-          r => Arn((r.json \ "agentReferenceNumber").as[String])
+    (httpPost.POST[DesSubscriptionRequest, JsValue](desSubscribeUrl(utr).toString, request)
+        (implicitly[Writes[DesSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders)) map {
+          r => Arn((r \ "agentReferenceNumber").as[String])
         }
   }
 
-  private def desUrl(utr: String): URL =
+  def fetchSafeId(utr: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
+    registrationRequest(utr, isAnAgent = true) flatMap {
+      case safeId: Some[_] => Future successful safeId
+      case None => registrationRequest(utr, isAnAgent = false)
+    }
+  }
+
+  private def registrationRequest(utr: String, isAnAgent: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
+    println(s"Utr: $utr isAgent: $isAnAgent")
+    (httpPost.POST[DesRegistrationRequest, Option[JsValue]](desRegistrationUrl(utr).toString, DesRegistrationRequest(isAnAgent = isAnAgent))
+      (implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], desHeaders)) map {
+      case Some(r) => (r \ "safeId").asOpt[String]
+      case _ => None
+    }
+  }
+
+  private def desSubscribeUrl(utr: String): URL =
     new URL(baseUrl, s"/registration/agents/utr/${encodePathSegment(utr)}")
+
+  private def desRegistrationUrl(utr: String): URL =
+    new URL(baseUrl, s"/registration/individual/utr/${encodePathSegment(utr)}")
 
   private def desHeaders(implicit hc: HeaderCarrier): HeaderCarrier = {
     hc.copy(

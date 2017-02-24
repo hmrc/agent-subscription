@@ -79,9 +79,6 @@ object DesStubs {
       )
     )
   }
-  /*
-
-   */
 
   def subscriptionSucceeds(utr: String, request: DesSubscriptionRequest): Unit = {
     stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
@@ -126,6 +123,70 @@ object DesStubs {
 
   def agencyNotRegistered(utr: String): Unit = {
     stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
+      .willReturn(aResponse()
+        .withStatus(404)
+        .withBody(
+          s"""
+             |{
+             |  "code": "NOT_FOUND",
+             |  "reason": "The remote endpoint has indicated that no data can be found"
+             |}
+               """.stripMargin)))
+  }
+
+  def registrationRequest(utr: String, isAnAgent: Boolean) =
+    post(urlEqualTo(s"/registration/individual/utr/$utr"))
+      .withRequestBody(equalToJson(
+        s"""
+           |{
+           |  "requiresNameMatch": false,
+           |  "regime": "ITSA",
+           |  "isAnAgent": $isAnAgent
+           |}
+              """.stripMargin))
+
+  def agentWithSafeId(utr: String): Unit = {
+    stubFor(registrationRequest(utr, isAnAgent = true).willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "safeId": "SAFE00001"
+             |}
+               """.stripMargin)))
+  }
+
+  def nonAgentWithSafeId(utr: String): Unit = {
+    stubFor(registrationRequest(utr, isAnAgent = true)
+      .willReturn(aResponse()
+        .withStatus(404)
+        .withBody(
+          s"""
+             |{
+             |  "code": "NOT_FOUND",
+             |  "reason": "The remote endpoint has indicated that no data can be found"
+             |}
+               """.stripMargin)))
+    stubFor(registrationRequest(utr, isAnAgent = false)
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "safeId": "SAFE00002"
+             |}
+               """.stripMargin)))
+  }
+
+  def agentWithNoSafeId(utr: String): Unit = {
+    stubFor(post(urlEqualTo(s"/registration/individual/utr/$utr"))
+      .withRequestBody(equalToJson(
+        s"""
+           |{
+           |  "regime": "ITSA",
+           |  "requiresNameMatch": "false"
+           |}
+              """.stripMargin, true, true))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(
