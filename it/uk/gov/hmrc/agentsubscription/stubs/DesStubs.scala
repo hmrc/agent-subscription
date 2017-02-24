@@ -24,21 +24,9 @@ object DesStubs {
       }
     """
 
-  val notFoundResponse =
-    """
-      {
-        "code" : "NOT_FOUND"
-        "reasons" : "The remote endpoint has indicated that no data can be found."
-      }
-    """
+  private val notFoundResponse = errorResponse("NOT_FOUND", "The remote endpoint has indicated that no data can be found.")
 
-  val invalidUtrResponse =
-    """
-       {
-        "code": "INVALID_UTR",
-         "reason" : "Submission has not passed validation. Invalid parameter UTR."
-       }
-    """
+  private val invalidUtrResponse = errorResponse("INVALID_UTR", "Submission has not passed validation. Invalid parameter UTR.")
 
   def findMatchForUtrForASAgent(): Unit = {
     stubFor(get(urlEqualTo("/registration/personal-details/utr/0123456789"))
@@ -112,13 +100,7 @@ object DesStubs {
     stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
       .willReturn(aResponse()
         .withStatus(409)
-        .withBody(
-          s"""
-             |{
-             |  "code": "CONFLICT",
-             |  "reason": "Duplicate submission"
-             |}
-               """.stripMargin)))
+        .withBody(errorResponse("CONFLICT", "Duplicate submission"))))
   }
 
   def agencyNotRegistered(utr: String): Unit = {
@@ -126,15 +108,19 @@ object DesStubs {
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(
-          s"""
-             |{
-             |  "code": "NOT_FOUND",
-             |  "reason": "The remote endpoint has indicated that no data can be found"
-             |}
-               """.stripMargin)))
+          errorResponse("NOT_FOUND", "The remote endpoint has indicated that no data can be found"))))
   }
 
-  def registrationRequest(utr: String, isAnAgent: Boolean) =
+  private def errorResponse(code: String, reason: String) =
+    s"""
+       |{
+       |  "code": "$code",
+       |  "reason": "$reason"
+       |}
+     """.stripMargin
+
+
+  private def registrationRequest(utr: String, isAnAgent: Boolean) =
     post(urlEqualTo(s"/registration/individual/utr/$utr"))
       .withRequestBody(equalToJson(
         s"""
@@ -160,13 +146,7 @@ object DesStubs {
     stubFor(registrationRequest(utr, isAnAgent = true)
       .willReturn(aResponse()
         .withStatus(404)
-        .withBody(
-          s"""
-             |{
-             |  "code": "NOT_FOUND",
-             |  "reason": "The remote endpoint has indicated that no data can be found"
-             |}
-               """.stripMargin)))
+        .withBody(notFoundResponse)))
     stubFor(registrationRequest(utr, isAnAgent = false)
       .willReturn(aResponse()
         .withStatus(200)
@@ -189,12 +169,6 @@ object DesStubs {
               """.stripMargin, true, true))
       .willReturn(aResponse()
         .withStatus(404)
-        .withBody(
-          s"""
-             |{
-             |  "code": "NOT_FOUND",
-             |  "reason": "The remote endpoint has indicated that no data can be found"
-             |}
-               """.stripMargin)))
+        .withBody(notFoundResponse)))
   }
 }
