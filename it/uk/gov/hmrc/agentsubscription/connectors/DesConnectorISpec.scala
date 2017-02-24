@@ -5,19 +5,25 @@ import java.net.URL
 import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.model.Arn
-import uk.gov.hmrc.agentsubscription.stubs.DesStubs._
+import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.WireMockSupport
 import uk.gov.hmrc.play.http.{HeaderCarrier, NotFoundException, Upstream4xxResponse}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport {
+class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with DesStubs {
   private implicit val hc = HeaderCarrier()
   val utr = "1234567890"
 
+  private val bearerToken = "auth-token"
+  private val environment = "des-env"
+
+  override protected def expectedBearerToken = Some(bearerToken)
+  override protected def expectedEnvironment = Some(environment)
+
   private lazy val connector: DesConnector =
-    new DesConnector("auth-token", "des-env", new URL(s"http://localhost:$wireMockPort"), WSHttp)
+    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), WSHttp)
 
   "subscribeToAgentServices" should {
     "return an ARN when subscription is successful" in {

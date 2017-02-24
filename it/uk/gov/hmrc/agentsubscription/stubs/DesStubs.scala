@@ -1,9 +1,14 @@
 package uk.gov.hmrc.agentsubscription.stubs
 
+import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
 import uk.gov.hmrc.agentsubscription.connectors.DesSubscriptionRequest
 
-object DesStubs {
+trait DesStubs {
+
+  protected def expectedEnvironment: Option[String] = None
+  protected def expectedBearerToken: Option[String] = None
+
   val matchingUtrForASAgentResponse =
     """
       {
@@ -29,7 +34,7 @@ object DesStubs {
   private val invalidUtrResponse = errorResponse("INVALID_UTR", "Submission has not passed validation. Invalid parameter UTR.")
 
   def findMatchForUtrForASAgent(): Unit = {
-    stubFor(get(urlEqualTo("/registration/personal-details/utr/0123456789"))
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo("/registration/personal-details/utr/0123456789")))
       .willReturn(
         aResponse()
           .withStatus(200)
@@ -39,7 +44,7 @@ object DesStubs {
   }
 
   def findMatchForUtrForNonASAgent(): Unit = {
-    stubFor(get(urlEqualTo("/registration/personal-details/utr/0123456789"))
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo("/registration/personal-details/utr/0123456789")))
       .willReturn(
         aResponse()
           .withStatus(200)
@@ -49,7 +54,7 @@ object DesStubs {
   }
 
   def noMatchForUtr(): Unit = {
-    stubFor(get(urlEqualTo("/registration/personal-details/utr/0000000000"))
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo("/registration/personal-details/utr/0000000000")))
       .willReturn(
         aResponse()
           .withStatus(404)
@@ -59,7 +64,7 @@ object DesStubs {
   }
 
   def utrIsInvalid(): Unit = {
-    stubFor(get(urlEqualTo("/registration/personal-details/utr/xyz"))
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo("/registration/personal-details/utr/xyz")))
       .willReturn(
         aResponse()
           .withStatus(400)
@@ -69,42 +74,42 @@ object DesStubs {
   }
 
   def subscriptionSucceeds(utr: String, request: DesSubscriptionRequest): Unit = {
-    stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
-           .withRequestBody(equalToJson(
-             s"""
-                |{
-                |  "regime": "ITSA",
-                |  "safeId": "${request.safeId}",
-                |  "agencyName": "${request.agencyName}",
-                |  "agencyAddress": {
-                |    "addressLine1": "${request.agencyAddress.addressLine1}",
-                |    "addressLine2": "${request.agencyAddress.addressLine2}",
-                |    "postalCode": "${request.agencyAddress.postalCode}",
-                |    "countryCode": "${request.agencyAddress.countryCode}"
-                |  },
-                |  "telephoneNumber": "${request.telephoneNumber}",
-                |  "agencyEmail": "${request.agencyEmail}"
-                |}
-              """.stripMargin))
-        .willReturn(aResponse()
-          .withStatus(200)
-            .withBody(
-              s"""
-                 |{
-                 |  "agentReferenceNumber": "ARN0001"
-                 |}
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/$utr")))
+      .withRequestBody(equalToJson(
+        s"""
+           |{
+           |  "regime": "ITSA",
+           |  "safeId": "${request.safeId}",
+           |  "agencyName": "${request.agencyName}",
+           |  "agencyAddress": {
+           |    "addressLine1": "${request.agencyAddress.addressLine1}",
+           |    "addressLine2": "${request.agencyAddress.addressLine2}",
+           |    "postalCode": "${request.agencyAddress.postalCode}",
+           |    "countryCode": "${request.agencyAddress.countryCode}"
+           |  },
+           |  "telephoneNumber": "${request.telephoneNumber}",
+           |  "agencyEmail": "${request.agencyEmail}"
+           |}
+          """.stripMargin))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "agentReferenceNumber": "ARN0001"
+             |}
                """.stripMargin)))
   }
 
   def subscriptionAlreadyExists(utr: String): Unit = {
-    stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/$utr")))
       .willReturn(aResponse()
         .withStatus(409)
         .withBody(errorResponse("CONFLICT", "Duplicate submission"))))
   }
 
   def agencyNotRegistered(utr: String): Unit = {
-    stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/$utr")))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(
@@ -132,7 +137,8 @@ object DesStubs {
               """.stripMargin))
 
   def agentWithSafeId(utr: String): Unit = {
-    stubFor(registrationRequest(utr, isAnAgent = true).willReturn(aResponse()
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = true))
+      .willReturn(aResponse()
         .withStatus(200)
         .withBody(
           s"""
@@ -143,21 +149,22 @@ object DesStubs {
   }
 
   def agentWithPostcode(utr: String): Unit = {
-    stubFor(registrationRequest(utr, isAnAgent = true).willReturn(aResponse()
-      .withStatus(200)
-      .withBody(
-        s"""
-           |{
-           |  "address":
-           |  {
-           |    "postalCode": "AA11AA"
-           |  }
-           |}
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = true))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "address":
+             |  {
+             |    "postalCode": "AA11AA"
+             |  }
+             |}
                """.stripMargin)))
   }
 
   def nonAgentWithSafeId(utr: String): Unit = {
-    stubFor(registrationRequest(utr, isAnAgent = true)
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = true))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(notFoundResponse)))
@@ -173,7 +180,7 @@ object DesStubs {
   }
 
   def nonAgentWithPostcode(utr: String): Unit = {
-    stubFor(registrationRequest(utr, isAnAgent = true)
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = true))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(notFoundResponse)))
@@ -192,7 +199,7 @@ object DesStubs {
   }
 
   def agentWithNoRegistration(utr: String): Unit = {
-    stubFor(post(urlEqualTo(s"/registration/individual/utr/$utr"))
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/individual/utr/$utr")))
       .withRequestBody(equalToJson(
         s"""
            |{
@@ -204,4 +211,19 @@ object DesStubs {
         .withStatus(404)
         .withBody(notFoundResponse)))
   }
+
+  private def maybeWithDesHeaderCheck(mappingBuilder: MappingBuilder): MappingBuilder =
+    maybeWithOptionalAuthorizationHeaderCheck(maybeWithEnvironmentHeaderCheck(mappingBuilder))
+
+  private def maybeWithOptionalAuthorizationHeaderCheck(mappingBuilder: MappingBuilder): MappingBuilder =
+    expectedBearerToken match {
+      case Some(token) => mappingBuilder.withHeader("Authorization", equalTo(s"Bearer $token"))
+      case None => mappingBuilder
+    }
+
+  private def maybeWithEnvironmentHeaderCheck(mappingBuilder: MappingBuilder): MappingBuilder =
+    expectedEnvironment match {
+      case Some(environment) => mappingBuilder.withHeader("Environment", equalTo(environment))
+      case None => mappingBuilder
+    }
 }

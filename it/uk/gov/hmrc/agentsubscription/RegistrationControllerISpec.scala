@@ -21,13 +21,13 @@ import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentsubscription.controllers.RegistrationController
 import uk.gov.hmrc.agentsubscription.stubs.AuthStub.{requestIsAuthenticated, requestIsNotAuthenticated}
-import uk.gov.hmrc.agentsubscription.stubs.DesStubs.{findMatchForUtrForASAgent, findMatchForUtrForNonASAgent, noMatchForUtr, utrIsInvalid}
+import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.{Resource, WireMockSupport}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.language.postfixOps
 
-class RegistrationControllerISpec  extends UnitSpec with OneServerPerSuite with WireMockSupport {
+class RegistrationControllerISpec extends UnitSpec with OneServerPerSuite with WireMockSupport with DesStubs {
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .configure(
       "microservice.services.auth.port" -> wireMockPort,
