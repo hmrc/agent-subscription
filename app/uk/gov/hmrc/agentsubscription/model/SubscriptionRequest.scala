@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.Json
-import uk.gov.hmrc.domain.{AgentCode, SimpleObjectReads, SimpleObjectWrites}
+import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites}
 
 object Arn {
   implicit val arnReads = new SimpleObjectReads[Arn]("arn", Arn.apply)
@@ -39,8 +39,7 @@ case class Address(addressLine1: String, addressLine2: String, addressLine3: Opt
 case class SubscriptionRequest(name: String,
                          address: Address,
                          telephone: String,
-                         email: String,
-                         utr: String
+                         email: String
                          )
 
 case class SubscriptionResponse(arn: Arn)

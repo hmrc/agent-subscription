@@ -42,7 +42,7 @@ class SubscriptionService @Inject() (desConnector: DesConnector) {
   }
 
 
-  def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
-    desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
+  def subscribeAgentToMtd(utr: String, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
+    desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
   }
 }

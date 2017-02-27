@@ -16,28 +16,13 @@
 
 package uk.gov.hmrc.agentsubscription
 
-import org.scalatestplus.play.OneServerPerSuite
-import play.api.Application
-import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.agentsubscription.controllers.RegistrationController
 import uk.gov.hmrc.agentsubscription.stubs.AuthStub.{requestIsAuthenticated, requestIsNotAuthenticated}
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
-import uk.gov.hmrc.agentsubscription.support.{Resource, WireMockSupport}
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
 import scala.language.postfixOps
 
-class RegistrationControllerISpec extends UnitSpec with OneServerPerSuite with WireMockSupport with DesStubs {
-  override implicit lazy val app: Application = new GuiceApplicationBuilder()
-    .configure(
-      "microservice.services.auth.port" -> wireMockPort,
-      "microservice.services.des.port" -> wireMockPort
-    )
-    .build()
-
-  private implicit val materializer = app.materializer
-
-  private lazy val controller: RegistrationController = app.injector.instanceOf[RegistrationController]
+class RegistrationControllerISpec extends BaseISpec with DesStubs {
 
   "GET of /registration/:utr/postcode/:postcode" should {
     "return a 401 when the user is not authenticated" in {
