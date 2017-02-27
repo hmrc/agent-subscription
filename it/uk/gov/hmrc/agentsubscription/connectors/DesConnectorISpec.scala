@@ -53,27 +53,19 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     }
   }
 
-  "getPostcode" should {
-    "return a postcode for an agent user" in {
-      agentWithPostcode(utr)
+  "getRegistrationPostcode" should {
+    "return a postcode for a UTR that is known by DES" in {
+      registrationExists(utr)
 
-      val result = await(connector.fetchPostcode(utr))
-
-      result shouldBe Some("AA11AA")
-    }
-
-    "return a postcode for a non-agent user" in {
-      nonAgentWithPostcode(utr)
-
-      val result = await(connector.fetchPostcode(utr))
+      val result = await(connector.getRegistrationPostcode(utr))
 
       result shouldBe Some("AA11AA")
     }
 
-    "not return a postcode for an unknown user" in {
-      agentWithNoRegistration(utr)
+    "not return a postcode for a UTR that is unknown to DES" in {
+      registrationDoesNotExist(utr)
 
-      val result = await(connector.fetchPostcode(utr))
+      val result = await(connector.getRegistrationPostcode(utr))
 
       result shouldBe None
     }

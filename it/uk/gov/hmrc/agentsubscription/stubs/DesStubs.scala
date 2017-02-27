@@ -135,8 +135,8 @@ trait DesStubs {
            |}
               """.stripMargin))
 
-  def agentWithPostcode(utr: String): Unit = {
-    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = true))
+  def registrationExists(utr: String): Unit = {
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
         .withBody(
@@ -150,26 +150,7 @@ trait DesStubs {
                """.stripMargin)))
   }
 
-  def nonAgentWithPostcode(utr: String): Unit = {
-    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = true))
-      .willReturn(aResponse()
-        .withStatus(404)
-        .withBody(notFoundResponse)))
-    stubFor(registrationRequest(utr, isAnAgent = false)
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withBody(
-          s"""
-             |{
-             |  "address":
-             |  {
-             |    "postalCode": "AA11AA"
-             |  }
-             |}
-             |""".stripMargin)))
-  }
-
-  def agentWithNoRegistration(utr: String): Unit = {
+  def registrationDoesNotExist(utr: String): Unit = {
     stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/individual/utr/$utr")))
       .withRequestBody(equalToJson(
         s"""
