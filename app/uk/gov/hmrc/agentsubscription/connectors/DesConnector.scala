@@ -60,13 +60,6 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
         }
   }
 
-  def fetchSafeId(utr: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
-    fetchSafeId(utr, isAnAgent = false) flatMap {
-      case safeId: Some[_] => Future successful safeId
-      case None => fetchSafeId(utr, isAnAgent = true)
-    }
-  }
-
   def fetchPostcode(utr: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
     fetchPostcode(utr, isAnAgent = false) flatMap {
       case postcode: Some[_] => Future successful postcode
@@ -77,13 +70,6 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
   private def fetchRegistrationJson(utr: String, isAnAgent: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] = {
     (httpPost.POST[DesRegistrationRequest, Option[JsValue]](desRegistrationUrl(utr).toString, DesRegistrationRequest(isAnAgent = isAnAgent))
       (implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], desHeaders))
-  }
-
-  private def fetchSafeId(utr: String, isAnAgent: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
-    fetchRegistrationJson(utr, isAnAgent) map {
-      case Some(r) => (r \ "safeId").asOpt[String]
-      case _ => None
-    }
   }
 
   private def fetchPostcode(utr: String, isAnAgent: Boolean)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {

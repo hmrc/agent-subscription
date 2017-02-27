@@ -135,18 +135,6 @@ trait DesStubs {
            |}
               """.stripMargin))
 
-  def agentWithSafeId(utr: String): Unit = {
-    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = true))
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withBody(
-          s"""
-             |{
-             |  "safeId": "SAFE00001"
-             |}
-               """.stripMargin)))
-  }
-
   def agentWithPostcode(utr: String): Unit = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = true))
       .willReturn(aResponse()
@@ -158,22 +146,6 @@ trait DesStubs {
              |  {
              |    "postalCode": "AA11AA"
              |  }
-             |}
-               """.stripMargin)))
-  }
-
-  def nonAgentWithSafeId(utr: String): Unit = {
-    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = true))
-      .willReturn(aResponse()
-        .withStatus(404)
-        .withBody(notFoundResponse)))
-    stubFor(registrationRequest(utr, isAnAgent = false)
-      .willReturn(aResponse()
-        .withStatus(200)
-        .withBody(
-          s"""
-             |{
-             |  "safeId": "SAFE00002"
              |}
                """.stripMargin)))
   }
