@@ -36,6 +36,7 @@ class RegistrationController @Inject()(val desConnector: DesConnector, val authC
     ensureAuthenticated {
       desConnector.getRegistration(utr) map {
         case Some(desRegistrationResponse) if postcodesMatch(desRegistrationResponse.postalCode, postcode) => Ok(toJson(RegistrationDetails(desRegistrationResponse.isAnASAgent)))
+        case Some(desRegistrationResponse) if !postcodesMatch(desRegistrationResponse.postalCode, postcode) => NotFound
         case None => NotFound
       } recover {
         // TODO return a 400 instead? (we can do so by allowing this exception to propagate)
