@@ -34,38 +34,8 @@ trait DesStubs {
 
   private val invalidUtrResponse = errorResponse("INVALID_UTR", "Submission has not passed validation. Invalid parameter UTR.")
 
-  def findMatchForUtrForASAgent(): Unit = {
-    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo("/registration/personal-details/utr/0123456789")))
-      .willReturn(
-        aResponse()
-          .withStatus(200)
-          .withBody(matchingUtrForASAgentResponse)
-      )
-    )
-  }
-
-  def findMatchForUtrForNonASAgent(): Unit = {
-    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo("/registration/personal-details/utr/0123456789")))
-      .willReturn(
-        aResponse()
-          .withStatus(200)
-          .withBody(matchingUtrForNonASAgentResponse)
-      )
-    )
-  }
-
-  def noMatchForUtr(): Unit = {
-    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo("/registration/personal-details/utr/0000000000")))
-      .willReturn(
-        aResponse()
-          .withStatus(404)
-          .withBody(notFoundResponse)
-      )
-    )
-  }
-
   def utrIsInvalid(): Unit = {
-    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo("/registration/personal-details/utr/xyz")))
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo("/registration/individual/utr/xyz")))
       .willReturn(
         aResponse()
           .withStatus(400)
@@ -165,7 +135,7 @@ trait DesStubs {
            |}
               """.stripMargin))
 
-  def registrationExists(utr: String): Unit = {
+  def registrationExists(utr: String, isAnASAgent: Boolean = true): Unit = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -174,8 +144,24 @@ trait DesStubs {
              |{
              |  "address":
              |  {
-             |    "postalCode": "AA11AA"
-             |  }
+             |    "postalCode": "AA1 1AA"
+             |  },
+             |  "isAnASAgent": $isAnASAgent
+             |}
+               """.stripMargin)))
+  }
+
+  def registrationExistsWithNoPostcode(utr: String): Unit = {
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "address":
+             |  {
+             |  },
+             |  "isAnASAgent": true
              |}
                """.stripMargin)))
   }

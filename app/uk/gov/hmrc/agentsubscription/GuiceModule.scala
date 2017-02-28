@@ -23,7 +23,7 @@ import com.google.inject.AbstractModule
 import com.google.inject.name.Names.named
 import play.api.Mode.Mode
 import play.api.{Configuration, Environment}
-import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesBusinessPartnerRecordApiConnector}
+import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesConnector}
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.{HttpGet, HttpPost}
 
@@ -36,7 +36,7 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[HttpGet]).toInstance(WSHttp)
     bind(classOf[HttpPost]).toInstance(WSHttp)
     bind(classOf[HttpGet]).toInstance(WSHttp)
-    bind(classOf[DesBusinessPartnerRecordApiConnector])
+    bind(classOf[DesConnector])
     bind(classOf[AuthConnector])
     bindBaseUrl("des")
     bindBaseUrl("auth")

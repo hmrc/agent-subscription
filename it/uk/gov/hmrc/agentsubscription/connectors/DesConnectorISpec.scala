@@ -53,21 +53,30 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     }
   }
 
-  "getRegistrationPostcode" should {
-    "return a postcode for a UTR that is known by DES" in {
+  "getRegistration" should {
+    "return registration details for a UTR that is known by DES" in {
       registrationExists(utr)
 
-      val result = await(connector.getRegistrationPostcode(utr))
+      val registration = await(connector.getRegistration(utr))
 
-      result shouldBe Some("AA11AA")
+      registration shouldBe Some(DesRegistrationResponse(Some("AA1 1AA"), isAnASAgent = true))
     }
 
-    "not return a postcode for a UTR that is unknown to DES" in {
+    "return registration details without postcode for a UTR that is known by DES" in {
+      registrationExistsWithNoPostcode(utr)
+
+      val registration = await(connector.getRegistration(utr))
+
+      registration shouldBe Some(DesRegistrationResponse(None, isAnASAgent = true))
+    }
+
+
+    "not return a registration for a UTR that is unknown to DES" in {
       registrationDoesNotExist(utr)
 
-      val result = await(connector.getRegistrationPostcode(utr))
+      val registration = await(connector.getRegistration(utr))
 
-      result shouldBe None
+      registration shouldBe None
     }
   }
 

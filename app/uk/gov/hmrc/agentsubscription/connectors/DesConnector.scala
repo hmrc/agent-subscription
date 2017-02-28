@@ -20,7 +20,7 @@ import java.net.URL
 import javax.inject.{Inject, Named, Singleton}
 
 import play.api.http.Status
-import play.api.libs.json.{Format, JsValue, Json, Writes}
+import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.Arn
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 import uk.gov.hmrc.play.http.logging.Authorization
@@ -37,6 +37,8 @@ case class Address(addressLine1: String,
 case class DesSubscriptionRequest(agencyName: String, agencyAddress: Address, agencyEmail: String, telephoneNumber: String, regime: String = "ITSA")
 
 case class DesRegistrationRequest(requiresNameMatch: Boolean = false, regime: String = "ITSA", isAnAgent: Boolean)
+
+case class DesRegistrationResponse(postalCode: Option[String], isAnASAgent: Boolean)
 
 object DesSubscriptionRequest {
   implicit val addressFormats: Format[Address] = Json.format[Address]
@@ -60,9 +62,9 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
         }
   }
 
-  def getRegistrationPostcode(utr: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] =
+  def getRegistration(utr: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DesRegistrationResponse]] =
     getRegistrationJson(utr) map {
-      case Some(r) => (r \ "address" \ "postalCode").asOpt[String]
+      case Some(r) => Some(DesRegistrationResponse((r \ "address" \ "postalCode").asOpt[String], (r \ "isAnASAgent").as[Boolean]))
       case _ => None
     }
 
