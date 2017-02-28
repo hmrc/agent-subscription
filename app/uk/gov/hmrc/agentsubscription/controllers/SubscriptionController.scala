@@ -32,8 +32,10 @@ class SubscriptionController @Inject()(subscriptionService: SubscriptionService)
   private val parseToSubscriptionRequest = parse.json[SubscriptionRequest]
 
   def createSubscription = Action.async(parseToSubscriptionRequest) { implicit request =>
-    subscriptionService.subscribeAgentToMtd(request.body).map(a => Created(toJson(SubscriptionResponse(a))))
-      .recover {
+    subscriptionService.subscribeAgentToMtd(request.body).map {
+        case Some(a) => Created(toJson(SubscriptionResponse(a)))
+        case None => Forbidden
+    }.recover {
         case e: Upstream4xxResponse if e.upstreamResponseCode == CONFLICT => Conflict
         case e => throw e
       }

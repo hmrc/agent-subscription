@@ -42,7 +42,13 @@ class SubscriptionService @Inject() (desConnector: DesConnector) {
   }
 
 
-  def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
-    desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
+  def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Arn]] = {
+    desConnector.getRegistrationPostcode(subscriptionRequest.utr) flatMap {
+        case Some(postcode) if postcodesMatch(postcode, subscriptionRequest) => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest)).map (Some.apply)
+        case _ => Future successful None
+    }
   }
+
+  private def postcodesMatch(postcode: String, subscriptionRequest: SubscriptionRequest) =
+    postcode == subscriptionRequest.knownFacts.postcode
 }

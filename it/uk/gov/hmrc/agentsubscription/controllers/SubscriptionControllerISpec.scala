@@ -1,7 +1,8 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
+import play.api.libs.json.Json.{stringify, toJson}
 import play.api.libs.json._
-import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
+import uk.gov.hmrc.agentsubscription.model.{KnownFacts, SubscriptionRequest}
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
@@ -11,6 +12,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
   "creating a subscription" should {
     "return a response containing the ARN" when {
       "all fields are populated" in {
+        registrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
 
         val result = await(doSubscriptionRequest())
@@ -21,6 +23,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
 
       "addressLine3 and addressLine4 are missing" in {
         val fields = Seq(__ \ "agency" \ "address" \ "addressLine3", __ \ "agency" \ "address" \ "addressLine4")
+        registrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
 
         val result = await(doSubscriptionRequest(removeFields(fields)))
@@ -31,12 +34,31 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
     }
 
     "return Conflict if subscription exists" in {
+      registrationExists(utr)
       subscriptionAlreadyExists(utr)
-
 
       val result = await(doSubscriptionRequest())
 
       result.status shouldBe 409
+    }
+
+    "return forbidden" when {
+      "no registration exists" in {
+        registrationDoesNotExist(utr)
+
+        val result = await(doSubscriptionRequest())
+
+        result.status shouldBe 403
+      }
+
+      "postcodes don't match" in {
+        registrationExists(utr)
+        val request = Json.parse(subscriptionRequest).as[SubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
+
+        val result = await(doSubscriptionRequest(stringify(toJson(request))))
+
+        result.status shouldBe 403
+      }
     }
 
     "return Bad Request " when {
@@ -93,7 +115,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
     val request = Json.parse(subscriptionRequest).as[JsObject]
     val filtered: JsObject = removeFields(request, fields)
 
-    Json.stringify(filtered)
+    stringify(filtered)
   }
 
   private def removeFields(jsObject: JsObject, fields: Seq[JsPath]): JsObject = {
@@ -106,7 +128,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
        |{
        |  "utr": "$utr",
        |  "knownFacts": {
-       |    "postcode": "AA1 2AA"
+       |    "postcode": "AA11AA"
        |  },
        |  "agency": {
        |    "name": "My Agency",
@@ -115,7 +137,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
        |      "addressLine2": "1 Some Street",
        |      "addressLine3": "Anytown",
        |      "addressLine4": "County",
-       |      "postcode": "AA1 1AA",
+       |      "postcode": "AA1 2AA",
        |      "countryCode": "GB"
        |    },
        |    "email": "agency@example.com",
