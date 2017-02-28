@@ -31,8 +31,8 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class SubscriptionController @Inject()(subscriptionService: SubscriptionService) extends BaseController {
   private val parseToSubscriptionRequest = parse.json[SubscriptionRequest]
 
-  def createSubscription(utr: String) = Action.async(parseToSubscriptionRequest) { implicit request =>
-    subscriptionService.subscribeAgentToMtd(utr, request.body).map(a => Created(toJson(SubscriptionResponse(a))))
+  def createSubscription = Action.async(parseToSubscriptionRequest) { implicit request =>
+    subscriptionService.subscribeAgentToMtd(request.body).map(a => Created(toJson(SubscriptionResponse(a))))
       .recover {
         case e: Upstream4xxResponse if e.upstreamResponseCode == CONFLICT => Conflict
         case e => throw e

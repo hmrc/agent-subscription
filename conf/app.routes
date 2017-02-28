@@ -2,5 +2,5 @@
 
 GET     /registration/:utr/postcode/:postcode  @uk.gov.hmrc.agentsubscription.controllers.RegistrationController.getRegistration(utr:String,postcode:String)
 
-POST    /subscription/:utr                     @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createSubscription(utr: String)
+POST    /subscription                          @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createSubscription()
 

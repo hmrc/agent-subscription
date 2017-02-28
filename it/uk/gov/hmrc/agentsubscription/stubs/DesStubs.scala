@@ -80,17 +80,17 @@ trait DesStubs {
         s"""
            |{
            |  "regime": "ITSA",
-           |  "agencyName": "${request.name}",
+           |  "agencyName": "${request.agency.name}",
            |  "agencyAddress": {
-           |    "addressLine1": "${request.address.addressLine1}",
-           |    "addressLine2": "${request.address.addressLine2}",
-           |    ${request.address.addressLine3.map (l => s""""addressLine3":"$l",""") getOrElse ""}
-           |    ${request.address.addressLine4.map (l => s""""addressLine4":"$l",""") getOrElse ""}
-           |    "postalCode": "${request.address.postcode}",
-           |    "countryCode": "${request.address.countryCode}"
+           |    "addressLine1": "${request.agency.address.addressLine1}",
+           |    "addressLine2": "${request.agency.address.addressLine2}",
+           |    ${request.agency.address.addressLine3.map (l => s""""addressLine3":"$l",""") getOrElse ""}
+           |    ${request.agency.address.addressLine4.map (l => s""""addressLine4":"$l",""") getOrElse ""}
+           |    "postalCode": "${request.agency.address.postcode}",
+           |    "countryCode": "${request.agency.address.countryCode}"
            |  },
-           |  "telephoneNumber": "${request.telephone}",
-           |  "agencyEmail": "${request.email}"
+           |  "telephoneNumber": "${request.agency.telephone}",
+           |  "agencyEmail": "${request.agency.email}"
            |}
               """.stripMargin))
       .willReturn(aResponse()

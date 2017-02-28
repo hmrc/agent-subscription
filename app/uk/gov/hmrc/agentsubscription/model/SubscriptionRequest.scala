@@ -28,19 +28,40 @@ object Address {
   implicit val format = Json.format[Address]
 }
 
+object Agency {
+  implicit val format = Json.format[Agency]
+}
+
+object KnownFacts {
+  implicit val format = Json.format[KnownFacts]
+}
+
 object SubscriptionRequest {
   implicit val format = Json.format[SubscriptionRequest]
 }
 
 case class Arn(arn: String)
 
-case class Address(addressLine1: String, addressLine2: String, addressLine3: Option[String], addressLine4: Option[String], postcode: String, countryCode: String)
+case class Address(addressLine1: String,
+                   addressLine2: String,
+                   addressLine3: Option[String],
+                   addressLine4: Option[String],
+                   postcode: String,
+                   countryCode: String
+                  )
 
-case class SubscriptionRequest(name: String,
-                         address: Address,
-                         telephone: String,
-                         email: String
-                         )
+case class Agency(name: String,
+                  address: Address,
+                  telephone: String,
+                  email: String
+                 )
+
+case class KnownFacts(postcode: String)
+
+case class SubscriptionRequest(utr: String,
+                               knownFacts: KnownFacts,
+                               agency: Agency
+                               )
 
 case class SubscriptionResponse(arn: Arn)
 object SubscriptionResponse {

@@ -28,11 +28,11 @@ import scala.concurrent.{ExecutionContext, Future}
 class SubscriptionService @Inject() (desConnector: DesConnector) {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
-      val address = subscriptionRequest.address
+      val address = subscriptionRequest.agency.address
       DesSubscriptionRequest(
-        agencyName = subscriptionRequest.name,
-        agencyEmail = subscriptionRequest.email,
-        telephoneNumber = subscriptionRequest.telephone,
+        agencyName = subscriptionRequest.agency.name,
+        agencyEmail = subscriptionRequest.agency.email,
+        telephoneNumber = subscriptionRequest.agency.telephone,
         agencyAddress = Address(address.addressLine1,
                                 address.addressLine2,
                                 address.addressLine3,
@@ -42,7 +42,7 @@ class SubscriptionService @Inject() (desConnector: DesConnector) {
   }
 
 
-  def subscribeAgentToMtd(utr: String, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
-    desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
+  def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
+    desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
   }
 }
