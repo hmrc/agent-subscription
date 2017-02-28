@@ -128,7 +128,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
        |{
        |  "utr": "$utr",
        |  "knownFacts": {
-       |    "postcode": "AA11AA"
+       |    "postcode": "AA1 1AA"
        |  },
        |  "agency": {
        |    "name": "My Agency",

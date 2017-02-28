@@ -21,6 +21,7 @@ import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.agentsubscription.connectors.{Address, DesConnector, DesSubscriptionRequest}
 import uk.gov.hmrc.agentsubscription.model.{Arn, SubscriptionRequest}
 import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.agentsubscription._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -43,12 +44,10 @@ class SubscriptionService @Inject() (desConnector: DesConnector) {
 
 
   def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Arn]] = {
-    desConnector.getRegistrationPostcode(subscriptionRequest.utr) flatMap {
-        case Some(postcode) if postcodesMatch(postcode, subscriptionRequest) => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest)).map (Some.apply)
+    desConnector.getRegistration(subscriptionRequest.utr) flatMap {
+        case Some(desRegistrationResponse) if postcodesMatch(desRegistrationResponse.postalCode, subscriptionRequest.knownFacts.postcode) => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest)).map (Some.apply)
         case _ => Future successful None
     }
   }
 
-  private def postcodesMatch(postcode: String, subscriptionRequest: SubscriptionRequest) =
-    postcode == subscriptionRequest.knownFacts.postcode
 }

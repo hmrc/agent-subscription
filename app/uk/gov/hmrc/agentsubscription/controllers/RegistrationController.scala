@@ -25,6 +25,7 @@ import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.agentsubscription._
 
 import scala.concurrent.Future
 
@@ -34,12 +35,8 @@ class RegistrationController @Inject()(val desConnector: DesConnector, val authC
   def getRegistration(utr: String, postcode: String) = Action.async { implicit request =>
     ensureAuthenticated {
       desConnector.getRegistration(utr) map {
-        //TODO whitespace / case insensitive postcode matching?
-        case Some(desRegistrationResponse) => desRegistrationResponse.postalCode.contains(postcode) match {
-          case true => Ok(toJson(RegistrationDetails(desRegistrationResponse.isAnASAgent)))
-          case false => NotFound
-        }
-        case _ => NotFound
+        case Some(desRegistrationResponse) if postcodesMatch(desRegistrationResponse.postalCode, postcode) => Ok(toJson(RegistrationDetails(desRegistrationResponse.isAnASAgent)))
+        case None => NotFound
       } recover {
         // TODO return a 400 instead? (we can do so by allowing this exception to propagate)
         case invalidUtr: BadRequestException => NotFound

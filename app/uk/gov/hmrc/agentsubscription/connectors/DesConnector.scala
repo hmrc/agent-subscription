@@ -40,6 +40,16 @@ case class DesRegistrationRequest(requiresNameMatch: Boolean = false, regime: St
 
 case class DesRegistrationResponse(postalCode: Option[String], isAnASAgent: Boolean)
 
+object DesRegistrationResponse{
+
+  def postalCodeIsDefined(desRegistrationResponse: DesRegistrationResponse): Boolean =
+    desRegistrationResponse.postalCode match {
+      case Some(_) => true
+      case None => false
+    }
+
+}
+
 object DesSubscriptionRequest {
   implicit val addressFormats: Format[Address] = Json.format[Address]
   implicit val formats: Format[DesSubscriptionRequest] = Json.format[DesSubscriptionRequest]
@@ -55,7 +65,7 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
                               @Named("des-baseUrl") baseUrl: URL,
                               httpPost: HttpPost) extends Status {
 
-  def subscribeToAgentServices(utr: String, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
+ def subscribeToAgentServices(utr: String, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     (httpPost.POST[DesSubscriptionRequest, JsValue](desSubscribeUrl(utr).toString, request)
         (implicitly[Writes[DesSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders)) map {
           r => (r \ "agentReferenceNumber").as[Arn]
