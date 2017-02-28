@@ -3,6 +3,7 @@ package uk.gov.hmrc.agentsubscription.stubs
 import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
 import uk.gov.hmrc.agentsubscription.connectors.DesSubscriptionRequest
+import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 
 trait DesStubs {
 
@@ -71,6 +72,35 @@ trait DesStubs {
           .withBody(invalidUtrResponse)
       )
     )
+  }
+
+  def subscriptionSucceeds(utr: String, request: SubscriptionRequest): Unit = {
+    stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
+      .withRequestBody(equalToJson(
+        s"""
+           |{
+           |  "regime": "ITSA",
+           |  "agencyName": "${request.agency.name}",
+           |  "agencyAddress": {
+           |    "addressLine1": "${request.agency.address.addressLine1}",
+           |    "addressLine2": "${request.agency.address.addressLine2}",
+           |    ${request.agency.address.addressLine3.map (l => s""""addressLine3":"$l",""") getOrElse ""}
+           |    ${request.agency.address.addressLine4.map (l => s""""addressLine4":"$l",""") getOrElse ""}
+           |    "postalCode": "${request.agency.address.postcode}",
+           |    "countryCode": "${request.agency.address.countryCode}"
+           |  },
+           |  "telephoneNumber": "${request.agency.telephone}",
+           |  "agencyEmail": "${request.agency.email}"
+           |}
+              """.stripMargin))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "agentReferenceNumber": "ARN0001"
+             |}
+               """.stripMargin)))
   }
 
   def subscriptionSucceeds(utr: String, request: DesSubscriptionRequest): Unit = {
