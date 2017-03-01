@@ -40,6 +40,7 @@ case class DesRegistrationRequest(requiresNameMatch: Boolean = false, regime: St
 
 case class DesRegistrationResponse(postalCode: Option[String], isAnASAgent: Boolean)
 
+
 object DesSubscriptionRequest {
   implicit val addressFormats: Format[Address] = Json.format[Address]
   implicit val formats: Format[DesSubscriptionRequest] = Json.format[DesSubscriptionRequest]
