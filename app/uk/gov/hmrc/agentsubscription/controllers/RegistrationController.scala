@@ -20,7 +20,7 @@ import javax.inject._
 
 import play.api.libs.json.Json.toJson
 import play.api.mvc._
-import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesConnector}
+import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesConnector, DesRegistrationResponse}
 import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
@@ -35,7 +35,8 @@ class RegistrationController @Inject()(val desConnector: DesConnector, val authC
   def getRegistration(utr: String, postcode: String) = Action.async { implicit request =>
     ensureAuthenticated {
       desConnector.getRegistration(utr) map {
-        case Some(desRegistrationResponse) if postcodesMatch(desRegistrationResponse.postalCode, postcode) => Ok(toJson(RegistrationDetails(desRegistrationResponse.isAnASAgent)))
+        case Some(desRegistrationResponse @ DesRegistrationResponse(Some(desPostcode), _)) if postcodesMatch(desPostcode, postcode) =>
+          Ok(toJson(RegistrationDetails(desRegistrationResponse.isAnASAgent)))
         case _ => NotFound
       } recover {
         // TODO return a 400 instead? (we can do so by allowing this exception to propagate)

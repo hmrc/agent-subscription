@@ -18,11 +18,9 @@ package uk.gov.hmrc
 
 package object agentsubscription {
 
-  def postcodesMatch(postcode: Option[String], requestPostcode: String) = postcode match {
-    case Some(desPostcode) => normalisePostcode(desPostcode) == normalisePostcode(requestPostcode)
-    case None => false
-  }
+  def postcodesMatch(desPostcode: String, requestPostcode: String) =
+    normalisePostcode(desPostcode) == normalisePostcode(requestPostcode)
 
-  def normalisePostcode(postcode : String) : String = postcode.toLowerCase.replaceAll("\\s", "")
+  def normalisePostcode(postcode: String) : String = postcode.toLowerCase.replaceAll("\\s", "")
 
 }
