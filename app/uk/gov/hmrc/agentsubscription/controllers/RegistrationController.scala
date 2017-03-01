@@ -18,30 +18,36 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import javax.inject._
 
+import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
 import play.api.mvc._
+import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesConnector, DesRegistrationResponse}
-import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
-import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier}
+import uk.gov.hmrc.agentsubscription.model.{RegistrationDetails, Utr}
+import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.agentsubscription._
 
 import scala.concurrent.Future
 
 @Singleton
 class RegistrationController @Inject()(val desConnector: DesConnector, val authConnector: AuthConnector )
   extends BaseController {
+
   def getRegistration(utr: String, postcode: String) = Action.async { implicit request =>
     ensureAuthenticated {
-      desConnector.getRegistration(utr) map {
-        case Some(desRegistrationResponse @ DesRegistrationResponse(Some(desPostcode), _)) if postcodesMatch(desPostcode, postcode) =>
-          Ok(toJson(RegistrationDetails(desRegistrationResponse.isAnASAgent)))
-        case _ => NotFound
-      } recover {
-        // TODO return a 400 instead? (we can do so by allowing this exception to propagate)
-        case invalidUtr: BadRequestException => NotFound
-      }
+      if (Utr.isValid(utr))
+        getRegistrationFromDes(utr, postcode)
+      else
+        Future successful BadRequest(Json.obj("code" -> "INVALID_UTR"))
+    }
+  }
+
+  private def getRegistrationFromDes(utr: String, postcode: String)(implicit hc: HeaderCarrier): Future[Result] = {
+    desConnector.getRegistration(utr) map {
+      case Some(desRegistrationResponse@DesRegistrationResponse(Some(desPostcode), _)) if postcodesMatch(desPostcode, postcode) =>
+        Ok(toJson(RegistrationDetails(desRegistrationResponse.isAnASAgent)))
+      case _ => NotFound
     }
   }
 

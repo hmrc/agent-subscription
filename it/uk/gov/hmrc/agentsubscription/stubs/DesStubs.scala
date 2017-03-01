@@ -34,8 +34,10 @@ trait DesStubs {
 
   private val invalidUtrResponse = errorResponse("INVALID_UTR", "Submission has not passed validation. Invalid parameter UTR.")
 
-  def utrIsInvalid(): Unit = {
-    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo("/registration/individual/utr/xyz")))
+  def utrIsUnexpectedlyInvalid(utr: String = "xyz"): Unit = utrIsInvalid("0123456789")
+
+  def utrIsInvalid(utr: String = "xyz"): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/individual/utr/$utr")))
       .willReturn(
         aResponse()
           .withStatus(400)

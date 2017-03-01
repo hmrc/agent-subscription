@@ -38,11 +38,19 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs {
       response.status shouldBe 404
     }
 
-    "return 404 when des reports an invalid utr" in {
+    "return 400 when the UTR is invalid" in {
       requestIsAuthenticated()
       utrIsInvalid()
       val response = await(new Resource("/agent-subscription/registration/xyz/postcode/AA1%201AA", port).get)
-      response.status shouldBe 404
+      response.status shouldBe 400
+      (response.json \ "code").as[String] shouldBe "INVALID_UTR"
+    }
+
+    "return 500 when agent-subscription considers a UTR valid but DES unexpectedly reports it as invalid" in {
+      requestIsAuthenticated()
+      utrIsUnexpectedlyInvalid()
+      val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/AA1%201AA", port).get)
+      response.status shouldBe 500
     }
 
     "return 404 when des returns a match for the utr but the post codes do not match" in {

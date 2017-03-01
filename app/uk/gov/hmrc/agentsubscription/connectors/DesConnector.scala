@@ -24,7 +24,7 @@ import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.Arn
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 import uk.gov.hmrc.play.http.logging.Authorization
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost, HttpReads}
+import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier, HttpPost, HttpReads}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -72,6 +72,9 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
   private def getRegistrationJson(utr: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] = {
     (httpPost.POST[DesRegistrationRequest, Option[JsValue]](desRegistrationUrl(utr).toString, DesRegistrationRequest(isAnAgent = false))
       (implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], desHeaders))
+  } recover {
+    case badRequest: BadRequestException =>
+    throw new RuntimeException(s"400 Bad Request response from DES for utr $utr", badRequest)
   }
 
   private def desSubscribeUrl(utr: String): URL =
