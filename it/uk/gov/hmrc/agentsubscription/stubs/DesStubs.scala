@@ -148,6 +148,26 @@ trait DesStubs {
              |  {
              |    "postalCode": "AA1 1AA"
              |  },
+             |  "isAnASAgent": $isAnASAgent,
+             |  "organisation":
+             |  {
+             |    "organisationName": "My Agency"
+             |  }
+             |}
+               """.stripMargin)))
+  }
+
+  def registrationExistsWithNoOrganisationName(utr: String, isAnASAgent: Boolean = true): Unit = {
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "address":
+             |  {
+             |    "postalCode": "AA1 1AA"
+             |  },
              |  "isAnASAgent": $isAnASAgent
              |}
                """.stripMargin)))

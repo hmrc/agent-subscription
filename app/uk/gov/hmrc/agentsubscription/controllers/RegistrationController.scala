@@ -45,8 +45,8 @@ class RegistrationController @Inject()(val desConnector: DesConnector, val authC
 
   private def getRegistrationFromDes(utr: String, postcode: String)(implicit hc: HeaderCarrier): Future[Result] = {
     desConnector.getRegistration(utr) map {
-      case Some(desRegistrationResponse@DesRegistrationResponse(Some(desPostcode), _)) if postcodesMatch(desPostcode, postcode) =>
-        Ok(toJson(RegistrationDetails(desRegistrationResponse.isAnASAgent)))
+      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName)) if postcodesMatch(desPostcode, postcode) =>
+        Ok(toJson(RegistrationDetails(isAnASAgent, organisationName)))
       case _ => NotFound
     }
   }

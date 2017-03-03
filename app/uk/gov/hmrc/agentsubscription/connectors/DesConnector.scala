@@ -38,7 +38,7 @@ case class DesSubscriptionRequest(agencyName: String, agencyAddress: Address, ag
 
 case class DesRegistrationRequest(requiresNameMatch: Boolean = false, regime: String = "ITSA", isAnAgent: Boolean)
 
-case class DesRegistrationResponse(postalCode: Option[String], isAnASAgent: Boolean)
+case class DesRegistrationResponse(postalCode: Option[String], isAnASAgent: Boolean, organisationName: Option[String])
 
 
 object DesSubscriptionRequest {
@@ -65,7 +65,9 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
 
   def getRegistration(utr: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DesRegistrationResponse]] =
     getRegistrationJson(utr) map {
-      case Some(r) => Some(DesRegistrationResponse((r \ "address" \ "postalCode").asOpt[String], (r \ "isAnASAgent").as[Boolean]))
+      case Some(r) => Some(DesRegistrationResponse((r \ "address" \ "postalCode").asOpt[String],
+                                                   (r \ "isAnASAgent").as[Boolean],
+                                                   (r \ "organisation" \ "organisationName").asOpt[String]))
       case _ => None
     }
 

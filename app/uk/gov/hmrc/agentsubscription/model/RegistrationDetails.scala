@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.Json.format
 
-case class RegistrationDetails(isSubscribedToAgentServices: Boolean)
+case class RegistrationDetails(isSubscribedToAgentServices: Boolean, organisationName: Option[String])
 
 object RegistrationDetails{
   implicit val registrationDetailsObjectFormat = format[RegistrationDetails]
