@@ -28,19 +28,26 @@ trait AuthActions {
 
   val authConnector: AuthConnector
 
-  protected val authorisedWithSubscribingAgent = new ActionBuilder[RequestWithEnrolments] with ActionRefiner[Request, RequestWithEnrolments] {
-    protected def refine[A](request: Request[A]): Future[Either[Result, RequestWithEnrolments[A]]] = {
+  protected val withAgentAffinityGroup = new ActionBuilder[RequestWithAuthority] with ActionRefiner[Request, RequestWithAuthority] {
+    protected def refine[A](request: Request[A]): Future[Either[Result, RequestWithAuthority[A]]] = {
       implicit val hc = HeaderCarrier.fromHeadersAndSession(request.headers, None)
-      authConnector.currentAuthority() flatMap {
-        case Some(Authority("Agent", enrolmentsUrl)) =>
-          authConnector.enrolments(enrolmentsUrl) map { e =>
-            Right(RequestWithEnrolments(e, request))
-          }
-        case _ => Future successful Left(Unauthorized)
+      authConnector.currentAuthority() map {
+        case authority@Some(Authority("Agent", _)) => Right(RequestWithAuthority(authority.get, request))
+        case _ => Left(Unauthorized)
       }
     }
   }
 
+  protected val withAgentAffinityGroupAndEnrolments = withAgentAffinityGroup andThen new ActionRefiner[RequestWithAuthority, RequestWithEnrolments] {
+    override protected def refine[A](request: RequestWithAuthority[A]): Future[Either[Result, RequestWithEnrolments[A]]] = {
+      implicit val hc = HeaderCarrier.fromHeadersAndSession(request.headers, None)
+      authConnector.enrolments(request.authority.enrolmentsUrl) map { e =>
+        Right(RequestWithEnrolments(e, request))
+      }
+    }
+  }
+
+  case class RequestWithAuthority[A](authority: Authority, request: Request[A]) extends WrappedRequest[A](request)
   case class RequestWithEnrolments[A](enrolments: List[Enrolment], request: Request[A]) extends WrappedRequest[A](request)
 
 }

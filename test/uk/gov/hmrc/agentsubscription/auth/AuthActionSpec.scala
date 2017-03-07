@@ -32,13 +32,35 @@ import scala.concurrent.{ExecutionContext, Future}
 class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Results with BeforeAndAfterEach {
   override val authConnector = mock[AuthConnector]
 
-  "agentWithEnrolments" should {
+  "authorisedWithSubscribingAgent" should {
     "return Unauthorized" when {
       "user is not an agent" in {
         when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
           .thenReturn(Future successful Some(Authority("Individual", "/enrolments")))
 
-        status(response(authorisedWithSubscribingAgent)) shouldBe 401
+        status(response(withAgentAffinityGroup)) shouldBe 401
+
+      }
+    }
+
+    "allow access" when {
+      "user is an agent" in {
+        when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
+          .thenReturn(Future successful Some(Authority("Agent", "/enrolments")))
+
+        status(response(withAgentAffinityGroup)) shouldBe 200
+      }
+    }
+
+  }
+
+  "authorisedAgentWithEnrolments" should {
+    "return Unauthorized" when {
+      "user is not an agent" in {
+        when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
+          .thenReturn(Future successful Some(Authority("Individual", "/enrolments")))
+
+        status(responseWithEnrolments(withAgentAffinityGroupAndEnrolments)) shouldBe 401
 
       }
     }
@@ -50,12 +72,17 @@ class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Re
         when(authConnector.enrolments(any[String])(any[HeaderCarrier], any[ExecutionContext]))
           .thenReturn(List(Enrolment("MY-ENROLMENT")))
 
-        status(response(authorisedWithSubscribingAgent)) shouldBe 200
+        status(responseWithEnrolments(withAgentAffinityGroupAndEnrolments)) shouldBe 200
       }
     }
   }
 
-  private def response(actionBuilder: ActionBuilder[RequestWithEnrolments]): Result = {
+  private def response(actionBuilder: ActionBuilder[RequestWithAuthority]): Result = {
+    val action = actionBuilder { Ok }
+    await(action(FakeRequest()))
+  }
+
+  private def responseWithEnrolments(actionBuilder: ActionBuilder[RequestWithEnrolments]): Result = {
     val action = actionBuilder { r => r.enrolments match {
       case Enrolment(key) :: Nil if key == "MY-ENROLMENT" => Ok
     }}

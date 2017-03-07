@@ -35,7 +35,7 @@ class SubscriptionController @Inject()(subscriptionService: SubscriptionService,
                                        override val authConnector: AuthConnector) extends BaseController with AuthActions {
   private val parseToSubscriptionRequest = parse.json[SubscriptionRequest]
 
-  def createSubscription: Action[SubscriptionRequest] = authorisedWithSubscribingAgent.async(parseToSubscriptionRequest) { implicit request =>
+  def createSubscription: Action[SubscriptionRequest] = withAgentAffinityGroupAndEnrolments.async(parseToSubscriptionRequest) { implicit request =>
     if (request.enrolments.isEmpty) {
       subscriptionService.subscribeAgentToMtd(request.body).map {
         case Some(a) => Created(toJson(SubscriptionResponse(a)))
