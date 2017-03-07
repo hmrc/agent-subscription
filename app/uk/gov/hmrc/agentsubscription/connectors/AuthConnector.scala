@@ -29,9 +29,6 @@ import scala.language.postfixOps
 
 @Singleton
 class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet) {
-  def isAuthenticated()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
-    currentAuthority() map { _.isDefined }
-  }
 
   def currentAuthority()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Authority]] = {
     val response: Future[JsValue] = get("/auth/authority")

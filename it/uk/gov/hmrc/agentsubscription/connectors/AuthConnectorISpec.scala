@@ -4,6 +4,7 @@ import java.net.URL
 
 import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentsubscription.WSHttp
+import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.stubs.AuthStub
 import uk.gov.hmrc.agentsubscription.support.WireMockSupport
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -15,15 +16,15 @@ class AuthConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppo
 
   private lazy val connector: AuthConnector = new AuthConnector(new URL(s"http://localhost:$wireMockPort"), WSHttp)
 
-  "AuthConnector isAuthenticated" should {
-    "return true when an authority detail is available" in {
+  "AuthConnector currentAuthority" should {
+    "return Authority when an authority detail is available" in {
       requestIsAuthenticated().andIsAnAgent()
-      await(connector.isAuthenticated()) shouldBe true
+      await(connector.currentAuthority()) shouldBe Some(Authority("Agent", "/auth/oid/556737e15500005500eaf68f/enrolments"))
     }
 
-    "return false when an authority detail is unavailable" in {
+    "return none when an authority detail is unavailable" in {
       requestIsNotAuthenticated()
-      await(connector.isAuthenticated()) shouldBe false
+      await(connector.currentAuthority()) shouldBe None
     }
   }
 }
