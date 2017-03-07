@@ -59,6 +59,14 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
 
         result.status shouldBe 403
       }
+
+      "the user already has enrolments" in {
+        pending
+        val result = await(doSubscriptionRequest())
+
+        result.status shouldBe 403
+        (result.json \ "code") shouldBe "EXISTING_ENROLMENTS"
+      }
     }
 
     "return Bad Request " when {
