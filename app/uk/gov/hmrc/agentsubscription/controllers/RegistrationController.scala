@@ -35,7 +35,7 @@ import scala.concurrent.Future
 class RegistrationController @Inject()(val desConnector: DesConnector, override val authConnector: AuthConnector )
   extends BaseController with AuthActions {
 
-  def getRegistration(utr: String, postcode: String) = agentWithEnrolments.async { implicit request =>
+  def getRegistration(utr: String, postcode: String) = authorisedWithSubscribingAgent.async { implicit request =>
       if (Utr.isValid(utr))
         getRegistrationFromDes(utr, postcode)
       else

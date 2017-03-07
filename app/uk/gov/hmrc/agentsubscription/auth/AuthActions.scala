@@ -28,7 +28,7 @@ trait AuthActions {
 
   val authConnector: AuthConnector
 
-  protected val agentWithEnrolments = new ActionBuilder[RequestWithEnrolments] with ActionRefiner[Request, RequestWithEnrolments] {
+  protected val authorisedWithSubscribingAgent = new ActionBuilder[RequestWithEnrolments] with ActionRefiner[Request, RequestWithEnrolments] {
     protected def refine[A](request: Request[A]): Future[Either[Result, RequestWithEnrolments[A]]] = {
       implicit val hc = HeaderCarrier.fromHeadersAndSession(request.headers, None)
       authConnector.currentAuthority() flatMap {

@@ -38,7 +38,7 @@ class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Re
         when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
           .thenReturn(Future successful Some(Authority("Individual", "/enrolments")))
 
-        status(response(agentWithEnrolments)) shouldBe 401
+        status(response(authorisedWithSubscribingAgent)) shouldBe 401
 
       }
     }
@@ -50,7 +50,7 @@ class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Re
         when(authConnector.enrolments(any[String])(any[HeaderCarrier], any[ExecutionContext]))
           .thenReturn(List(Enrolment("MY-ENROLMENT")))
 
-        status(response(agentWithEnrolments)) shouldBe 200
+        status(response(authorisedWithSubscribingAgent)) shouldBe 200
       }
     }
   }
