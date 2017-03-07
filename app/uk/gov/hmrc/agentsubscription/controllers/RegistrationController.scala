@@ -22,6 +22,7 @@ import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
 import play.api.mvc._
 import uk.gov.hmrc.agentsubscription._
+import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesConnector, DesRegistrationResponse}
 import uk.gov.hmrc.agentsubscription.model.{RegistrationDetails, Utr}
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -31,16 +32,14 @@ import uk.gov.hmrc.play.microservice.controller.BaseController
 import scala.concurrent.Future
 
 @Singleton
-class RegistrationController @Inject()(val desConnector: DesConnector, val authConnector: AuthConnector )
-  extends BaseController {
+class RegistrationController @Inject()(val desConnector: DesConnector, override val authConnector: AuthConnector )
+  extends BaseController with AuthActions {
 
-  def getRegistration(utr: String, postcode: String) = Action.async { implicit request =>
-    ensureAuthenticated {
+  def getRegistration(utr: String, postcode: String) = withAgentAffinityGroup.async { implicit request =>
       if (Utr.isValid(utr))
         getRegistrationFromDes(utr, postcode)
       else
         Future successful BadRequest(Json.obj("code" -> "INVALID_UTR"))
-    }
   }
 
   private def getRegistrationFromDes(utr: String, postcode: String)(implicit hc: HeaderCarrier): Future[Result] = {
@@ -51,12 +50,5 @@ class RegistrationController @Inject()(val desConnector: DesConnector, val authC
     }
   }
 
-  private def ensureAuthenticated(action: => Future[Result])(implicit hc: HeaderCarrier): Future[Result] =
-    authConnector.isAuthenticated().flatMap { authorised : Boolean =>
-      if (authorised) {
-        action
-      } else {
-        Future successful Unauthorized
-      }
-    }
+
 }

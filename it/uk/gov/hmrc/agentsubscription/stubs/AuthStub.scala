@@ -2,13 +2,85 @@ package uk.gov.hmrc.agentsubscription.stubs
 
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import uk.gov.hmrc.agentsubscription.support.WireMockSupport
 
-object AuthStub {
-  def requestIsNotAuthenticated(): Unit = {
+trait AuthStub {
+  me: WireMockSupport =>
+
+  val oid: String = "556737e15500005500eaf68f"
+
+  def requestIsNotAuthenticated(): AuthStub = {
     stubFor(get(urlEqualTo("/auth/authority")).willReturn(aResponse().withStatus(401)))
+    this
   }
 
-  def requestIsAuthenticated(): Unit = {
-    stubFor(get(urlEqualTo("/auth/authority")).willReturn(aResponse().withStatus(200)))
+  def requestIsAuthenticated(): AuthStub = {
+    stubFor(get(urlEqualTo("/auth/authority"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(s"""
+                       |{
+                       |  "new-session":"/auth/oid/$oid/session",
+                       |  "enrolments":"/auth/oid/$oid/enrolments",
+                       |  "uri":"/auth/oid/$oid",
+                       |  "loggedInAt":"2016-06-20T10:44:29.634Z",
+                       |  "credentials":{
+                       |    "gatewayId":"0000001234567890"
+                       |  },
+                       |  "accounts":{
+                       |  },
+                       |  "lastUpdated":"2016-06-20T10:44:29.634Z",
+                       |  "credentialStrength":"strong",
+                       |  "confidenceLevel":50,
+                       |  "userDetailsLink":"$wireMockBaseUrl/user-details/id/$oid",
+                       |  "levelOfAssurance":"1",
+                       |  "previouslyLoggedInAt":"2016-06-20T09:48:37.112Z"
+                       |}
+       """.stripMargin)))
+      this
+  }
+
+  def andIsAnAgent(): AuthStub = {
+    stubFor(get(urlPathEqualTo(s"/user-details/id/$oid"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(s"""
+                     |{
+                     |  "affinityGroup": "Agent"
+                     |}
+         """.stripMargin)))
+    this
+  }
+
+  def andIsAnNotAgent(): AuthStub = {
+    stubFor(get(urlPathEqualTo(s"/user-details/id/$oid"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(s"""
+                     |{
+                     |  "affinityGroup": "Organisation"
+                     |}
+         """.stripMargin)))
+    this
+  }
+
+  def andHasNoEnrolments(): AuthStub = {
+    stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(s"""
+                   |[]
+        """.stripMargin)))
+    this
+  }
+
+  def andHasEnrolments(): AuthStub = {
+    stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody( s"""
+                     |[{"key": "IR-SA-AGENT"}]
+        """.stripMargin)))
+    this
   }
 }

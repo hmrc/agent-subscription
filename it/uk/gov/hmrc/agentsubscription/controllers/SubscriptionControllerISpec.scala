@@ -3,15 +3,16 @@ package uk.gov.hmrc.agentsubscription.controllers
 import play.api.libs.json.Json.{stringify, toJson}
 import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.{KnownFacts, SubscriptionRequest}
-import uk.gov.hmrc.agentsubscription.stubs.DesStubs
+import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
-class SubscriptionControllerISpec extends BaseISpec with DesStubs {
+class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub {
   private val utr = "0123456789"
 
   "creating a subscription" should {
     "return a response containing the ARN" when {
       "all fields are populated" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         registrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
 
@@ -22,6 +23,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
       }
 
       "addressLine3 and addressLine4 are missing" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         val fields = Seq(__ \ "agency" \ "address" \ "addressLine3", __ \ "agency" \ "address" \ "addressLine4")
         registrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
@@ -34,6 +36,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
     }
 
     "return Conflict if subscription exists" in {
+      requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
       registrationExists(utr)
       subscriptionAlreadyExists(utr)
 
@@ -44,6 +47,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
 
     "return forbidden" when {
       "no registration exists" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         registrationDoesNotExist(utr)
 
         val result = await(doSubscriptionRequest())
@@ -52,10 +56,18 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs {
       }
 
       "postcodes don't match" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         registrationExists(utr)
         val request = Json.parse(subscriptionRequest).as[SubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
 
         val result = await(doSubscriptionRequest(stringify(toJson(request))))
+
+        result.status shouldBe 403
+      }
+
+      "the user already has enrolments" in {
+        requestIsAuthenticated().andIsAnAgent().andHasEnrolments()
+        val result = await(doSubscriptionRequest())
 
         result.status shouldBe 403
       }

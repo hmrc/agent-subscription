@@ -20,6 +20,8 @@ import java.net.URL
 import javax.inject._
 
 import com.google.inject.Singleton
+import play.api.libs.json.JsValue
+import uk.gov.hmrc.agentsubscription.auth.{Authority, Enrolment, UserDetails}
 import uk.gov.hmrc.play.http._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,21 +29,30 @@ import scala.language.postfixOps
 
 @Singleton
 class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet) {
-  def isAuthenticated()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
-    val response: Future[HttpResponse] = get("/auth/authority")
-    response map { r =>
-      r.status match {
-        case 200 =>  true
-        case _ => throw new RuntimeException(s"Unexpected response status from Auth: ${r.status}")
-      }
+
+  def currentAuthority()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Authority]] = {
+    val response: Future[JsValue] = get("/auth/authority")
+    response flatMap { r =>
+      for {
+        userDetails <- userDetails((r \ "userDetailsLink").as[String])
+        enrolmentsUrl <- Future successful (r \ "enrolments").as[String]
+      } yield Some(Authority(userDetails.affinityGroup, enrolmentsUrl))
     } recover {
-      case error: Upstream4xxResponse if (error.upstreamResponseCode == 401) => false
+      case error: Upstream4xxResponse if error.upstreamResponseCode == 401 => None
+      case e => throw e
     }
   }
 
+  private def userDetails(url: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[UserDetails] =
+    get(url) map(_.as[UserDetails])
+
+  def enrolments(url: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[List[Enrolment]] =
+    get(url) map(_.as[List[Enrolment]])
+
+
   private def url(relativeUrl: String): URL = new URL(baseUrl, relativeUrl)
 
-  private def get(relativeUrl: String)(implicit hc: HeaderCarrier): Future[HttpResponse] = {
-    httpGet.GET[HttpResponse](url(relativeUrl).toString)(implicitly[HttpReads[HttpResponse]], hc)
+  private def get(relativeUrl: String)(implicit hc: HeaderCarrier): Future[JsValue] = {
+    httpGet.GET[JsValue](url(relativeUrl).toString)(implicitly[HttpReads[JsValue]], hc)
   }
 }
