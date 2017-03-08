@@ -35,7 +35,7 @@ object Agency {
   implicit val reads: Reads[Agency] = (
       (__ \ "name").read[String](nonEmptyStringWithMaxLength(40)) and
       (__ \ "address").read[Address] and
-      (__ \ "telephone").read[String] and
+      (__ \ "telephone").read[String](telephoneNumber) and
       (__ \ "email").read[String](email)
   )(Agency.apply _)
 }

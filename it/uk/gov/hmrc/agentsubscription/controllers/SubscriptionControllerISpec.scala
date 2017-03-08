@@ -121,6 +121,11 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         result.status shouldBe 400
       }
+      "telephone is invalid" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "012345")))))
+
+        result.status shouldBe 400
+      }
 
       "addressLine1 is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(address \ "addressLine1"))))

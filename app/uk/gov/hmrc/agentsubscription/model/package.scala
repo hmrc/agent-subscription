@@ -25,4 +25,8 @@ package object model {
   private[model] def nonEmptyStringWithMaxLength(maxLength: Int) = {
     Reads.maxLength[String](maxLength) andKeep filterNot[String](ValidationError("error.whitespace"))(_.replaceAll("\\s", "").isEmpty)
   }
+
+  private[model] def telephoneNumber = {
+    Reads.pattern("[A-Z0-9 )/(\\-*+#]{10,32}".r, error = "error.telephone.invalid")
+  }
 }
