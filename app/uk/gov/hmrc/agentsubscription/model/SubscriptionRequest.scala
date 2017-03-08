@@ -16,7 +16,10 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.Json
+import play.api.data.validation.ValidationError
+import play.api.libs.json._
+import play.api.libs.json.Reads._
+import play.api.libs.functional.syntax._
 import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites}
 
 object Arn {
@@ -29,7 +32,17 @@ object Address {
 }
 
 object Agency {
-  implicit val format = Json.format[Agency]
+  implicit val writes: Writes[Agency] = Json.writes[Agency]
+  implicit val reads: Reads[Agency] = (
+      (__ \ "name").read[String](nonEmptyStringWithMaxLength(40)) and
+      (__ \ "address").read[Address] and
+      (__ \ "telephone").read[String] and
+      (__ \ "email").read[String]
+  )(Agency.apply _)
+
+  private def nonEmptyStringWithMaxLength(maxLength: Int) = {
+    Reads.maxLength[String](maxLength) andKeep filterNot[String](ValidationError("error.whitespace"))(_.replaceAll("\\s", "").isEmpty)
+  }
 }
 
 object KnownFacts {

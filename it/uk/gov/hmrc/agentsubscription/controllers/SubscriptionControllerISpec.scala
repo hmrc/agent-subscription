@@ -10,6 +10,8 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
   private val utr = "0123456789"
 
   "creating a subscription" should {
+    val agency = __ \ "agency"
+    val address = agency \ "address"
     "return a response containing the ARN" when {
       "all fields are populated" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
@@ -24,7 +26,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
       "addressLine3 and addressLine4 are missing" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-        val fields = Seq(__ \ "agency" \ "address" \ "addressLine3", __ \ "agency" \ "address" \ "addressLine4")
+        val fields = Seq(address \ "addressLine3", address \ "addressLine4")
         registrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
 
@@ -75,46 +77,56 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return Bad Request " when {
       "name is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "agency" \ "name"))))
+        val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "name"))))
+
+        result.status shouldBe 400
+      }
+      "name is whitespace only" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "    ")))))
+
+        result.status shouldBe 400
+      }
+      "name is longer than 40 characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "11111111111111111111111111111111111111111")))))
 
         result.status shouldBe 400
       }
       "address is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "agency" \ "address"))))
+        val result = await(doSubscriptionRequest(removeFields(Seq(address))))
 
         result.status shouldBe 400
       }
       "email is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "agency" \ "email"))))
+        val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "email"))))
 
         result.status shouldBe 400
       }
       "telephone is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "agency" \ "telephone"))))
+        val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "telephone"))))
 
         result.status shouldBe 400
       }
 
       "addressLine1 is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "agency" \ "address" \ "addressLine1"))))
+        val result = await(doSubscriptionRequest(removeFields(Seq(address \ "addressLine1"))))
 
         result.status shouldBe 400
       }
 
       "addressLine2 is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "agency" \ "address" \ "addressLine2"))))
+        val result = await(doSubscriptionRequest(removeFields(Seq(address \ "addressLine2"))))
 
         result.status shouldBe 400
       }
 
       "postcode is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "agency" \ "address" \ "postcode"))))
+        val result = await(doSubscriptionRequest(removeFields(Seq(address \ "postcode"))))
 
         result.status shouldBe 400
       }
 
       "countryCode is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "agency" \ "address" \ "countryCode"))))
+        val result = await(doSubscriptionRequest(removeFields(Seq(address \ "countryCode"))))
 
         result.status shouldBe 400
       }
@@ -133,6 +145,25 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
   private def removeFields(jsObject: JsObject, fields: Seq[JsPath]): JsObject = {
     val transformer = fields.map(field => field.json.prune).reduce((a, b) => a andThen b)
     jsObject.transform(transformer).get
+  }
+
+  private def replaceFields(fields: Seq[(JsPath, String, String)]): String  = {
+    val request = Json.parse(subscriptionRequest).as[JsObject]
+    val filtered: JsObject = replaceFields(request, fields)
+
+    println (stringify(filtered))
+    stringify(filtered)
+  }
+
+  private def replaceFields(jsObject: JsObject, fields: Seq[(JsPath, String, String)]): JsObject = {
+    val transformer = fields.map(field => field._1.json.update(
+      __.read[JsObject].map(o => o ++ Json.obj(field._2 -> field._3))
+    )).reduce((a, b) => a andThen b)
+    jsObject.transform(transformer) match {
+      case s: JsSuccess[JsObject] => s.get
+      case e: JsError => println (e)
+        throw new RuntimeException(s"Unable to transform JSON: $e")
+    }
   }
 
   private val subscriptionRequest: String =
