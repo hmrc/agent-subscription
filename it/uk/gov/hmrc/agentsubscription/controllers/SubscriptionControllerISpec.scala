@@ -101,6 +101,21 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         result.status shouldBe 400
       }
+      "email has no local part" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "@domain")))))
+
+        result.status shouldBe 400
+      }
+      "email has no domain part" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "local@")))))
+
+        result.status shouldBe 400
+      }
+      "email has no @" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "local")))))
+
+        result.status shouldBe 400
+      }
       "telephone is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "telephone"))))
 
