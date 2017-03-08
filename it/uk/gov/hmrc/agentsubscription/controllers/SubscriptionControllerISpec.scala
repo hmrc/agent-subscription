@@ -133,6 +133,18 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         result.status shouldBe 400
       }
 
+      "addressLine1 contains only whitespace" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", "   ")))))
+
+        result.status shouldBe 400
+      }
+
+      "addressLine1 is longer than 35 characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
+
+        result.status shouldBe 400
+      }
+
       "addressLine2 is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(address \ "addressLine2"))))
 

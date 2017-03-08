@@ -27,7 +27,15 @@ object Arn {
 }
 
 object Address {
-  implicit val format = Json.format[Address]
+  implicit val writes: Writes[Address] = Json.writes[Address]
+  implicit val reads: Reads[Address] = (
+      (__ \ "addressLine1").read[String](nonEmptyStringWithMaxLength(35)) and
+      (__ \ "addressLine2").read[String] and
+      (__ \ "addressLine3").readNullable[String] and
+      (__ \ "addressLine4").readNullable[String] and
+      (__ \ "postcode").read[String] and
+      (__ \ "countryCode").read[String]
+  )(Address.apply _)
 }
 
 object Agency {
