@@ -24,7 +24,9 @@ class ValidatorSpec extends UnitSpec {
 
   "telephone validator" should {
     "accept input when" when {
-      "there are more than 10 digits in the input" is pending
+      "there are at least 10 digits in the input" in {
+        validatePhoneNumber("1234567 ext 123") shouldBe JsSuccess("1234567 ext 123")
+      }
 
       "there are valid symbols in the input" in {
         validatePhoneNumber("+441234567890") shouldBe JsSuccess("+441234567890")
@@ -51,16 +53,14 @@ class ValidatorSpec extends UnitSpec {
         validatePhoneNumber("   ") shouldBe validationError
       }
 
-      "input contains fewer than 10 digits" is pending
-
-      "input contains more than 32 characters" in {
-        validatePhoneNumber("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa") shouldBe validationError
+      "input contains fewer than 10 digits" in {
+        validatePhoneNumber("123456      ") shouldBe validationError
       }
 
-      "input contains invalid characters" in {
-        validatePhoneNumber("0123456789$") shouldBe validationError
-        validatePhoneNumber("0123456789%") shouldBe validationError
+      "input contains more than 24 characters" in {
+        validatePhoneNumber("111111111111111111111111aaaaaaaaa") shouldBe JsError(ValidationError("error.maxLength", 24))
       }
+
     }
   }
 

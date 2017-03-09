@@ -27,6 +27,6 @@ package object model {
   }
 
   private[model] def telephoneNumber = {
-    Reads.pattern("[A-Z0-9 )/(\\-*+#]{10,32}".r, error = "error.telephone.invalid")
+    Reads.maxLength[String](24) andKeep filterNot[String](ValidationError("error.telephone.invalid"))(_.replaceAll("[^0-9]", "").length < 10)
   }
 }
