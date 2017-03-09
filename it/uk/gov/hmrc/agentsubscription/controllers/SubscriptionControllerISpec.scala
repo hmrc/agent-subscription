@@ -24,9 +24,9 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         (result.json \ "arn").as[String] shouldBe "ARN0001"
       }
 
-      "addressLine3 and addressLine4 are missing" in {
+      "addressLine2, addressLine3 and addressLine4 are missing" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-        val fields = Seq(address \ "addressLine3", address \ "addressLine4")
+        val fields = Seq(address \ "addressLine2", address \ "addressLine3", address \ "addressLine4")
         registrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
 
@@ -145,8 +145,18 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         result.status shouldBe 400
       }
 
-      "addressLine2 is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(address \ "addressLine2"))))
+      "addressLine2 is longer than 35 characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine2", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
+
+        result.status shouldBe 400
+      }
+      "addressLine3 is longer than 35 characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine3", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
+
+        result.status shouldBe 400
+      }
+      "addressLine4 is longer than 35 characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine4", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
 
         result.status shouldBe 400
       }

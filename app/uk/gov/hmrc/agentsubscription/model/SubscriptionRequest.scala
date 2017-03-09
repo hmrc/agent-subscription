@@ -30,9 +30,9 @@ object Address {
   implicit val writes: Writes[Address] = Json.writes[Address]
   implicit val reads: Reads[Address] = (
       (__ \ "addressLine1").read[String](nonEmptyStringWithMaxLength(35)) and
-      (__ \ "addressLine2").read[String] and
-      (__ \ "addressLine3").readNullable[String] and
-      (__ \ "addressLine4").readNullable[String] and
+      (__ \ "addressLine2").readNullable[String](nonEmptyStringWithMaxLength(35)) and
+      (__ \ "addressLine3").readNullable[String](nonEmptyStringWithMaxLength(35)) and
+      (__ \ "addressLine4").readNullable[String](nonEmptyStringWithMaxLength(35)) and
       (__ \ "postcode").read[String] and
       (__ \ "countryCode").read[String]
   )(Address.apply _)
@@ -59,7 +59,7 @@ object SubscriptionRequest {
 case class Arn(arn: String)
 
 case class Address(addressLine1: String,
-                   addressLine2: String,
+                   addressLine2: Option[String],
                    addressLine3: Option[String],
                    addressLine4: Option[String],
                    postcode: String,

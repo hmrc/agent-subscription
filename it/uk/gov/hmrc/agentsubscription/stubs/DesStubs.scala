@@ -55,7 +55,7 @@ trait DesStubs {
            |  "agencyName": "${request.agency.name}",
            |  "agencyAddress": {
            |    "addressLine1": "${request.agency.address.addressLine1}",
-           |    "addressLine2": "${request.agency.address.addressLine2}",
+           |    ${request.agency.address.addressLine2.map (l => s""""addressLine2":"$l",""") getOrElse ""}
            |    ${request.agency.address.addressLine3.map (l => s""""addressLine3":"$l",""") getOrElse ""}
            |    ${request.agency.address.addressLine4.map (l => s""""addressLine4":"$l",""") getOrElse ""}
            |    "postalCode": "${request.agency.address.postcode}",
@@ -84,7 +84,7 @@ trait DesStubs {
            |  "agencyName": "${request.agencyName}",
            |  "agencyAddress": {
            |    "addressLine1": "${request.agencyAddress.addressLine1}",
-           |    "addressLine2": "${request.agencyAddress.addressLine2}",
+           |    "addressLine2": "${request.agencyAddress.addressLine2.get}",
            |    "postalCode": "${request.agencyAddress.postalCode}",
            |    "countryCode": "${request.agencyAddress.countryCode}"
            |  },
