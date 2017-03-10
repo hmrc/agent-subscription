@@ -56,7 +56,7 @@ object KnownFacts {
 object SubscriptionRequest {
   implicit val writes: Writes[SubscriptionRequest] = Json.format[SubscriptionRequest]
   implicit val reads: Reads[SubscriptionRequest] = (
-    (__ \ "utr").read[String](pattern("[0-9]{10}".r, "error.invalid.utr")) and
+    (__ \ "utr").read[String](utr) and
     (__ \ "knownFacts").read[KnownFacts] and
     (__ \ "agency").read[Agency]
   )(SubscriptionRequest.apply _)

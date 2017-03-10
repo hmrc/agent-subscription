@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.model
 
 object Utr {
-  private val utrPattern = "^[0-9]{10}$".r
+  private[model] val utrPattern = "^[0-9]{10}$".r
 
   def isValid(utr: String): Boolean = utr match {
     case Utr.utrPattern(_*) => true
