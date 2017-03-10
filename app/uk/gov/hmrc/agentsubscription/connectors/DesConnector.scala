@@ -29,7 +29,7 @@ import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier, HttpPost, Http
 import scala.concurrent.{ExecutionContext, Future}
 
 case class Address(addressLine1: String,
-                   addressLine2: String,
+                   addressLine2: Option[String],
                    addressLine3: Option[String] = None,
                    addressLine4: Option[String] = None,
                    postalCode: String,

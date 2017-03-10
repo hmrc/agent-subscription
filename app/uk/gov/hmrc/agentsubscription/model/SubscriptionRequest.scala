@@ -16,7 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.Json
+import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
+import play.api.libs.json._
 import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites}
 
 object Arn {
@@ -25,25 +27,45 @@ object Arn {
 }
 
 object Address {
-  implicit val format = Json.format[Address]
+  implicit val writes: Writes[Address] = Json.writes[Address]
+  implicit val reads: Reads[Address] = (
+      (__ \ "addressLine1").read[String](nonEmptyStringWithMaxLength(35)) and
+      (__ \ "addressLine2").readNullable[String](nonEmptyStringWithMaxLength(35)) and
+      (__ \ "addressLine3").readNullable[String](nonEmptyStringWithMaxLength(35)) and
+      (__ \ "addressLine4").readNullable[String](nonEmptyStringWithMaxLength(35)) and
+      (__ \ "postcode").read[String](postcode) and
+      (__ \ "countryCode").read[String]
+  )(Address.apply _)
 }
 
 object Agency {
-  implicit val format = Json.format[Agency]
+  implicit val writes: Writes[Agency] = Json.writes[Agency]
+  implicit val reads: Reads[Agency] = (
+      (__ \ "name").read[String](nonEmptyStringWithMaxLength(40)) and
+      (__ \ "address").read[Address] and
+      (__ \ "telephone").read[String](telephoneNumber) and
+      (__ \ "email").read[String](email)
+  )(Agency.apply _)
 }
 
 object KnownFacts {
-  implicit val format = Json.format[KnownFacts]
+  implicit val writes = Json.writes[KnownFacts]
+  implicit val reads: Reads[KnownFacts] = (__ \ "postcode").read(postcode).map(KnownFacts.apply)
 }
 
 object SubscriptionRequest {
-  implicit val format = Json.format[SubscriptionRequest]
+  implicit val writes: Writes[SubscriptionRequest] = Json.format[SubscriptionRequest]
+  implicit val reads: Reads[SubscriptionRequest] = (
+    (__ \ "utr").read[String](pattern("[0-9]{10}".r, "error.invalid.utr")) and
+    (__ \ "knownFacts").read[KnownFacts] and
+    (__ \ "agency").read[Agency]
+  )(SubscriptionRequest.apply _)
 }
 
 case class Arn(arn: String)
 
 case class Address(addressLine1: String,
-                   addressLine2: String,
+                   addressLine2: Option[String],
                    addressLine3: Option[String],
                    addressLine4: Option[String],
                    postcode: String,

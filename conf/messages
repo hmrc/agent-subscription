@@ -1,0 +1,4 @@
+error.whitespace = Must contain some non-whitespace characters.
+error.telephone.invalid = Telephone number is not valid.
+error.utr.invalid = UTR is not valid.
+error.postcode.invalid = Postcode is not valid.
