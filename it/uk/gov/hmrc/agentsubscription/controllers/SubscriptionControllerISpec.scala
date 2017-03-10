@@ -15,7 +15,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     "return a response containing the ARN" when {
       "all fields are populated" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-        registrationExists(utr)
+        organisationRegistrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
 
         val result = await(doSubscriptionRequest())
@@ -27,7 +27,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       "addressLine2, addressLine3 and addressLine4 are missing" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         val fields = Seq(address \ "addressLine2", address \ "addressLine3", address \ "addressLine4")
-        registrationExists(utr)
+        organisationRegistrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
 
         val result = await(doSubscriptionRequest(removeFields(fields)))
@@ -39,7 +39,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return Conflict if subscription exists" in {
       requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-      registrationExists(utr)
+      organisationRegistrationExists(utr)
       subscriptionAlreadyExists(utr)
 
       val result = await(doSubscriptionRequest())
@@ -59,7 +59,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
       "postcodes don't match" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-        registrationExists(utr)
+        organisationRegistrationExists(utr)
         val request = Json.parse(subscriptionRequest).as[SubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
 
         val result = await(doSubscriptionRequest(stringify(toJson(request))))

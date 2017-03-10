@@ -38,7 +38,12 @@ case class DesSubscriptionRequest(agencyName: String, agencyAddress: Address, ag
 
 case class DesRegistrationRequest(requiresNameMatch: Boolean = false, regime: String = "ITSA", isAnAgent: Boolean)
 
-case class DesRegistrationResponse(postalCode: Option[String], isAnASAgent: Boolean, organisationName: Option[String])
+case class DesIndividual(firstName: String, lastName: String)
+case class DesRegistrationResponse(postalCode: Option[String], isAnASAgent: Boolean, organisationName: Option[String], individual: Option[DesIndividual])
+
+object DesIndividual {
+  implicit val formats: Format[DesIndividual] = Json.format[DesIndividual]
+}
 
 
 object DesSubscriptionRequest {
@@ -67,7 +72,8 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
     getRegistrationJson(utr) map {
       case Some(r) => Some(DesRegistrationResponse((r \ "address" \ "postalCode").asOpt[String],
                                                    (r \ "isAnASAgent").as[Boolean],
-                                                   (r \ "organisation" \ "organisationName").asOpt[String]))
+                                                   (r \ "organisation" \ "organisationName").asOpt[String],
+                                                   (r \ "individual").asOpt[DesIndividual]))
       case _ => None
     }
 

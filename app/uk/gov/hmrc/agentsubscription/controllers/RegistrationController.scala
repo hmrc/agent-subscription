@@ -23,7 +23,7 @@ import play.api.libs.json.Json.toJson
 import play.api.mvc._
 import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
-import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesConnector, DesRegistrationResponse}
+import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesConnector, DesIndividual, DesRegistrationResponse}
 import uk.gov.hmrc.agentsubscription.model.{RegistrationDetails, Utr}
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
@@ -44,8 +44,10 @@ class RegistrationController @Inject()(val desConnector: DesConnector, override 
 
   private def getRegistrationFromDes(utr: String, postcode: String)(implicit hc: HeaderCarrier): Future[Result] = {
     desConnector.getRegistration(utr) map {
-      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName)) if postcodesMatch(desPostcode, postcode) =>
+      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName, None)) if postcodesMatch(desPostcode, postcode) =>
         Ok(toJson(RegistrationDetails(isAnASAgent, organisationName)))
+      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, _, Some(DesIndividual(first, last)))) if postcodesMatch(desPostcode, postcode) =>
+        Ok(toJson(RegistrationDetails(isAnASAgent, Some(s"$first $last"))))
       case _ => NotFound
     }
   }
