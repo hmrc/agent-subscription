@@ -76,6 +76,31 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
 
     "return Bad Request " when {
+
+      "utr is missing" in {
+        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "utr"))))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains non-numeric characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345")))))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains fewer than 10 digits" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345")))))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains more than 10 digits" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901")))))
+
+        result.status shouldBe 400
+      }
+
       "name is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "name"))))
 
