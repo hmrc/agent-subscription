@@ -46,15 +46,15 @@ class ValidatorSpec extends UnitSpec {
 
     "reject input" when {
       "input is empty" in {
-        validatePhoneNumber("") shouldBe validationError
+        validatePhoneNumber("") shouldBe telephoneValidationError
       }
 
       "input is whitespace only" in {
-        validatePhoneNumber("   ") shouldBe validationError
+        validatePhoneNumber("   ") shouldBe telephoneValidationError
       }
 
       "input contains fewer than 10 digits" in {
-        validatePhoneNumber("123456      ") shouldBe validationError
+        validatePhoneNumber("123456      ") shouldBe telephoneValidationError
       }
 
       "input contains more than 24 characters" in {
@@ -64,11 +64,77 @@ class ValidatorSpec extends UnitSpec {
     }
   }
 
+  "postcode validator" should {
+    "accept valid postcodes" in {
+      validatePostcode("AA1 1AA") shouldBe JsSuccess("AA1 1AA")
+      validatePostcode("AA1M 1AA") shouldBe JsSuccess("AA1M 1AA")
+    }
+
+    "give \"error.required\" error when it is empty" in {
+      validatePostcode("") shouldBe postcodeValidationError
+    }
+
+    "give \"error.required\" error when it only contains a space" in {
+      validatePostcode("  ") shouldBe postcodeValidationError
+    }
+
+    "reject postcodes containing invalid characters" in {
+      validatePostcode("_A1 1AA") shouldBe postcodeValidationError
+      validatePostcode("A.1 1AA") shouldBe postcodeValidationError
+      validatePostcode("AA/ 1AA") shouldBe postcodeValidationError
+      validatePostcode("AA1#1AA") shouldBe postcodeValidationError
+      validatePostcode("AA1 ~AA") shouldBe postcodeValidationError
+      validatePostcode("AA1 1$A") shouldBe postcodeValidationError
+      validatePostcode("AA1 1A%") shouldBe postcodeValidationError
+    }
+
+    "accept lower case postcodes" in {
+      validatePostcode("aa1 1aa") shouldBe JsSuccess("aa1 1aa")
+    }
+
+    "accept postcodes with 2 characters in the outbound part" in {
+      validatePostcode("A1 1AA") shouldBe JsSuccess("A1 1AA")
+    }
+
+    "accept postcodes with 4 characters in the outbound part" in {
+      validatePostcode("AA1A 1AA") shouldBe JsSuccess("AA1A 1AA")
+    }
+
+    "reject postcodes where the 1st character of the outbound part is a number" in {
+      validatePostcode("1A1 1AA") shouldBe postcodeValidationError
+    }
+
+    "reject postcodes where the length of the inbound part is not 3" in {
+      validatePostcode("AA1 1A") shouldBe postcodeValidationError
+      validatePostcode("AA1 1AAA") shouldBe postcodeValidationError
+    }
+
+    "reject postcodes where the 1st character of the inbound part is a letter" in {
+      validatePostcode("AA1 AAA") shouldBe postcodeValidationError
+    }
+
+    "accept postcodes without spaces" in {
+      validatePostcode("AA11AA") shouldBe JsSuccess("AA11AA")
+    }
+
+    "accept postcodes with extra spaces" in {
+      validatePostcode(" A A 1 1 A A ") shouldBe JsSuccess(" A A 1 1 A A ")
+    }
+  }
+
+  private def validatePostcode(input: String) = {
+    postcode.reads(JsString(input))
+  }
+
   private def validatePhoneNumber(number: String) = {
     telephoneNumber.reads(JsString(number))
   }
 
-  private def validationError = {
+  private def postcodeValidationError = {
+    JsError(ValidationError("error.postcode.invalid"))
+  }
+
+  private def telephoneValidationError = {
     JsError(ValidationError("error.telephone.invalid"))
   }
 }

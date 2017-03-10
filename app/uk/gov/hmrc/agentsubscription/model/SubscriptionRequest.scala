@@ -33,7 +33,7 @@ object Address {
       (__ \ "addressLine2").readNullable[String](nonEmptyStringWithMaxLength(35)) and
       (__ \ "addressLine3").readNullable[String](nonEmptyStringWithMaxLength(35)) and
       (__ \ "addressLine4").readNullable[String](nonEmptyStringWithMaxLength(35)) and
-      (__ \ "postcode").read[String] and
+      (__ \ "postcode").read[String](postcode) and
       (__ \ "countryCode").read[String]
   )(Address.apply _)
 }
@@ -49,7 +49,8 @@ object Agency {
 }
 
 object KnownFacts {
-  implicit val format = Json.format[KnownFacts]
+  implicit val writes = Json.writes[KnownFacts]
+  implicit val reads: Reads[KnownFacts] = (__ \ "postcode").read(postcode).map(KnownFacts.apply)
 }
 
 object SubscriptionRequest {

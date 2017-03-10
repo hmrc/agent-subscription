@@ -192,6 +192,24 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         result.status shouldBe 400
       }
 
+      "postcode is not valid" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "postcode", "1234567")))))
+
+        result.status shouldBe 400
+      }
+
+      "known facts postcode is missing" in {
+        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "knownFacts" \ "postcode"))))
+
+        result.status shouldBe 400
+      }
+
+      "known facts postcode is not valid" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567")))))
+
+        result.status shouldBe 400
+      }
+
       "countryCode is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(address \ "countryCode"))))
 
