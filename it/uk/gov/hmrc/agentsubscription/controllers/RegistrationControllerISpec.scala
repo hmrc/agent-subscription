@@ -73,7 +73,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
       val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices" ).as[Boolean] shouldBe true
-      (response.json \ "organisationName" ).as[String] shouldBe "My Agency"
+      (response.json \ "taxpayerName" ).as[String] shouldBe "My Agency"
     }
 
     "return 200 when des returns a non-AS Agent for the utr and the postcodes match" in {
@@ -82,7 +82,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
       val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices" ).as[Boolean] shouldBe false
-      (response.json \ "organisationName" ).as[String] shouldBe "My Agency"
+      (response.json \ "taxpayerName" ).as[String] shouldBe "My Agency"
     }
 
     "return 200 when des returns no organisation name" in {
