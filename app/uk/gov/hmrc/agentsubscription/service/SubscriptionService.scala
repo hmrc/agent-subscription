@@ -45,7 +45,7 @@ class SubscriptionService @Inject() (desConnector: DesConnector) {
 
   def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Arn]] = {
     desConnector.getRegistration(subscriptionRequest.utr) flatMap {
-        case Some(DesRegistrationResponse(Some(desPostcode), _, _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest)).map (Some.apply)
+        case Some(DesRegistrationResponse(Some(desPostcode), _, _, _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest)).map (Some.apply)
         case _ => Future successful None
     }
   }

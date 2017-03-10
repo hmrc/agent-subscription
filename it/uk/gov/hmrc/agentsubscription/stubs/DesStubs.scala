@@ -137,7 +137,7 @@ trait DesStubs {
            |}
               """.stripMargin))
 
-  def registrationExists(utr: String, isAnASAgent: Boolean = true): Unit = {
+  def organisationRegistrationExists(utr: String, isAnASAgent: Boolean = true): Unit = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -152,6 +152,27 @@ trait DesStubs {
              |  "organisation":
              |  {
              |    "organisationName": "My Agency"
+             |  }
+             |}
+               """.stripMargin)))
+  }
+
+  def individualRegistrationExists(utr: String, isAnASAgent: Boolean = true): Unit = {
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "address":
+             |  {
+             |    "postalCode": "AA1 1AA"
+             |  },
+             |  "isAnASAgent": $isAnASAgent,
+             |  "individual":
+             |  {
+             |    "firstName": "First",
+             |    "lastName": "Last"
              |  }
              |}
                """.stripMargin)))
