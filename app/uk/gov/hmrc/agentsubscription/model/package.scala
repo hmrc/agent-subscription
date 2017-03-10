@@ -23,13 +23,16 @@ import play.api.libs.functional.syntax._
 
 package object model {
   private val postcodeWithoutSpacesRegex = "^[A-Za-z]{1,2}[0-9]{1,2}[A-Za-z]?[0-9][A-Za-z]{2}$"
+  private val telephoneNumberMaxLength = 24
+  private val minimumTelephoneDigits = 10
 
   private[model] def nonEmptyStringWithMaxLength(maxLength: Int) = {
     Reads.maxLength[String](maxLength) andKeep filterNot[String](ValidationError("error.whitespace"))(_.replaceAll("\\s", "").isEmpty)
   }
 
   private[model] def telephoneNumber = {
-    Reads.maxLength[String](24) andKeep filterNot[String](ValidationError("error.telephone.invalid"))(_.replaceAll("[^0-9]", "").length < 10)
+    Reads.maxLength[String](telephoneNumberMaxLength) andKeep
+      filterNot[String](ValidationError("error.telephone.invalid"))(_.replaceAll("[^0-9]", "").length < minimumTelephoneDigits)
   }
 
   private [model] def postcode = {
