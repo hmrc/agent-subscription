@@ -18,11 +18,11 @@ package uk.gov.hmrc.agentsubscription
 
 import play.api.data.validation.ValidationError
 import play.api.libs.json.Reads
-import play.api.libs.json.Reads.filterNot
+import play.api.libs.json.Reads._
 import play.api.libs.functional.syntax._
 
 package object model {
-  private val postcodeWithoutSpacesRegex = "^[A-Za-z]{1,2}[0-9]{1,2}[A-Za-z]?[0-9][A-Za-z]{2}$"
+  val postcodeWithoutSpacesRegex = "^[A-Za-z]{1,2}[0-9]{1,2}[A-Za-z]?[0-9][A-Za-z]{2}$"
   private val telephoneNumberMaxLength = 24
   private val minimumTelephoneDigits = 10
 
@@ -30,12 +30,17 @@ package object model {
     Reads.maxLength[String](maxLength) andKeep filterNot[String](ValidationError("error.whitespace"))(_.replaceAll("\\s", "").isEmpty)
   }
 
-  private[model] def telephoneNumber = {
-    Reads.maxLength[String](telephoneNumberMaxLength) andKeep
+  private[model] val telephoneNumber = {
+    maxLength[String](telephoneNumberMaxLength) andKeep
       filterNot[String](ValidationError("error.telephone.invalid"))(_.replaceAll("[^0-9]", "").length < minimumTelephoneDigits)
   }
 
-  private [model] def postcode = {
-    Reads.filter[String](ValidationError("error.postcode.invalid"))(_.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex))
+  private[model] val postcode = {
+    filter[String](ValidationError("error.postcode.invalid"))(_.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex))
   }
+
+  private[model] val utr = {
+    pattern(Utr.utrPattern, "error.invalid.utr")
+  }
+
 }

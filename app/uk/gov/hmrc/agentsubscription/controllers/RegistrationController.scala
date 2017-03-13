@@ -24,7 +24,7 @@ import play.api.mvc._
 import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesConnector, DesIndividual, DesRegistrationResponse}
-import uk.gov.hmrc.agentsubscription.model.{RegistrationDetails, Utr}
+import uk.gov.hmrc.agentsubscription.model.{RegistrationDetails, Utr, postcodeWithoutSpacesRegex}
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -36,7 +36,7 @@ class RegistrationController @Inject()(val desConnector: DesConnector, override 
   extends BaseController with AuthActions {
 
   def getRegistration(utr: String, postcode: String) = withAgentAffinityGroup.async { implicit request =>
-      if (Utr.isValid(utr))
+      if (Utr.isValid(utr) && validPostcode(postcode))
         getRegistrationFromDes(utr, postcode)
       else
         Future successful BadRequest(Json.obj("code" -> "INVALID_UTR"))
@@ -52,5 +52,7 @@ class RegistrationController @Inject()(val desConnector: DesConnector, override 
     }
   }
 
-
+  private def validPostcode(postcode: String): Boolean = {
+    postcode.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)
+  }
 }

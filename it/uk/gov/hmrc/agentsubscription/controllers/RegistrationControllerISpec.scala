@@ -56,7 +56,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
     "return 404 when des returns a match for the utr but the post codes do not match" in {
       requestIsAuthenticated().andIsAnAgent()
       organisationRegistrationExists("0123456789")
-      val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/NOMATCH", port).get)
+      val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/BB11BB", port).get)
       response.status shouldBe 404
     }
 
@@ -65,6 +65,12 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
       registrationExistsWithNoPostcode("0123456789")
       val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/AA1%201AA", port).get)
       response.status shouldBe 404
+    }
+
+    "return 400 when the post code is invalid" in {
+      requestIsAuthenticated().andIsAnAgent()
+      val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/1A1%201AA", port).get)
+      response.status shouldBe 400
     }
 
     "return 200 when des returns an AS Agent for the utr and the postcodes match" in {
