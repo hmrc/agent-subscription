@@ -70,7 +70,7 @@ trait DesStubs {
         .withBody(
           s"""
              |{
-             |  "agentReferenceNumber": "ARN0001"
+             |  "agentRegistrationNumber": "ARN0001"
              |}
                """.stripMargin)))
   }
