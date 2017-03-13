@@ -64,7 +64,7 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
   def subscribeToAgentServices(utr: String, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     (httpPost.POST[DesSubscriptionRequest, JsValue](desSubscribeUrl(utr).toString, request)
         (implicitly[Writes[DesSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders)) map {
-          r => (r \ "agentReferenceNumber").as[Arn]
+          r => (r \ "agentRegistrationNumber").as[Arn]
         }
   }
 
