@@ -22,7 +22,7 @@ import play.api.libs.json.Reads._
 import play.api.libs.functional.syntax._
 
 package object model {
-  private val postcodeWithoutSpacesRegex = "^[A-Za-z]{1,2}[0-9]{1,2}[A-Za-z]?[0-9][A-Za-z]{2}$"
+  val postcodeWithoutSpacesRegex = "^[A-Za-z]{1,2}[0-9]{1,2}[A-Za-z]?[0-9][A-Za-z]{2}$"
   private val telephoneNumberMaxLength = 24
   private val minimumTelephoneDigits = 10
 
@@ -35,11 +35,11 @@ package object model {
       filterNot[String](ValidationError("error.telephone.invalid"))(_.replaceAll("[^0-9]", "").length < minimumTelephoneDigits)
   }
 
-  val postcode = {
+  private[model] val postcode = {
     filter[String](ValidationError("error.postcode.invalid"))(_.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex))
   }
 
-  val utr = {
+  private[model] val utr = {
     pattern(Utr.utrPattern, "error.invalid.utr")
   }
 
