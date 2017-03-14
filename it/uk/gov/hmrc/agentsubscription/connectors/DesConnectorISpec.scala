@@ -2,14 +2,23 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
 
+import org.mockito.ArgumentMatchers.any
+import org.mockito.{ArgumentCaptor, ArgumentMatchers, Matchers}
+import org.mockito.Mockito.verify
+import org.scalatest.concurrent.Eventually
+import org.scalatest.mock.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
+import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.model.Arn
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.WireMockSupport
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.http.{HeaderCarrier, NotFoundException, Upstream4xxResponse}
 import uk.gov.hmrc.play.test.UnitSpec
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with DesStubs {
@@ -51,6 +60,31 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
         await(connector.subscribeToAgentServices(utr, request))
       }
     }
+
+    "audit the request and response" in new MockAuditingContext {
+      val connector: DesConnector =
+        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp)
+      subscriptionSucceeds(utr, request)
+
+      await(connector.subscribeToAgentServices(utr, request))
+
+      val auditEvent: MergedDataEvent = capturedEvent()
+      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/agents/utr/$utr"
+      auditEvent.auditType shouldBe "OutboundCall"
+      val requestJson: JsValue = Json.parse(auditEvent.request.detail("requestBody"))
+      (requestJson \ "regime").as[String] shouldBe "ITSA"
+      (requestJson \ "agencyName").as[String] shouldBe "My Agency"
+      (requestJson \ "telephoneNumber").as[String] shouldBe "0123 456 7890"
+      (requestJson \ "agencyEmail").as[String] shouldBe "agency@example.com"
+      (requestJson \ "agencyAddress" \ "addressLine1").as[String] shouldBe "1 Some Street"
+      (requestJson \ "agencyAddress" \ "addressLine2").as[String] shouldBe "MyTown"
+      (requestJson \ "agencyAddress" \ "postalCode").as[String] shouldBe "AA1 1AA"
+      (requestJson \ "agencyAddress" \ "countryCode").as[String] shouldBe "GB"
+
+      val responseJson: JsValue = Json.parse(auditEvent.response.detail("responseMessage"))
+      (responseJson \ "agentRegistrationNumber").as[String] shouldBe "ARN0001"
+    }
+
   }
 
   "getRegistration" should {
@@ -94,12 +128,44 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       registration shouldBe None
     }
+
+    "audit the request and response" in new MockAuditingContext {
+      val connector: DesConnector =
+        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp)
+      organisationRegistrationExists(utr)
+
+      await(connector.getRegistration(utr))
+
+      val auditEvent = capturedEvent()
+      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/individual/utr/$utr"
+      auditEvent.auditType shouldBe "OutboundCall"
+
+      val responseJson = Json.parse(auditEvent.response.detail("responseMessage"))
+      (responseJson \ "address" \ "postalCode").as[String] shouldBe "AA1 1AA"
+      (responseJson \ "isAnASAgent").as[Boolean] shouldBe true
+      (responseJson \ "organisation" \ "organisationName").as[String] shouldBe "My Agency"
+    }
   }
 
-  def request = DesSubscriptionRequest( agencyName = "My Agency",
+  def request = DesSubscriptionRequest(agencyName = "My Agency",
                                        agencyAddress =Address(addressLine1 = "1 Some Street", addressLine2 = Some("MyTown"), postalCode = "AA1 1AA", countryCode = "GB"),
                                        agencyEmail = "agency@example.com",
                                        telephoneNumber = "0123 456 7890")
 
 
+}
+
+trait MockAuditingContext extends MockitoSugar with Eventually {
+  private val mockAuditConnector = mock[AuditConnector]
+  val wsHttp = new WSHttp {
+    override def auditConnector = mockAuditConnector
+  }
+
+  def capturedEvent(): MergedDataEvent = {
+    eventually[MergedDataEvent]({
+      val captor = ArgumentCaptor.forClass(classOf[MergedDataEvent])
+      verify(mockAuditConnector).sendMergedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
+      captor.getValue
+    })
+  }
 }
