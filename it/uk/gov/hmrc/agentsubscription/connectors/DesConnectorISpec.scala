@@ -8,7 +8,7 @@ import org.mockito.Mockito.verify
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
-import play.api.libs.json.Json
+import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.model.Arn
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
@@ -61,8 +61,28 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       }
     }
 
-    "audit the request and response" in {
-      pending
+    "audit the request and response" in new MockAuditingContext {
+      val connector: DesConnector =
+        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp)
+      subscriptionSucceeds(utr, request)
+
+      await(connector.subscribeToAgentServices(utr, request))
+
+      val auditEvent: MergedDataEvent = capturedEvent()
+      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/agents/utr/$utr"
+      auditEvent.auditType shouldBe "OutboundCall"
+      val requestJson: JsValue = Json.parse(auditEvent.request.detail("requestBody"))
+      (requestJson \ "regime").as[String] shouldBe "ITSA"
+      (requestJson \ "agencyName").as[String] shouldBe "My Agency"
+      (requestJson \ "telephoneNumber").as[String] shouldBe "0123 456 7890"
+      (requestJson \ "agencyEmail").as[String] shouldBe "agency@example.com"
+      (requestJson \ "agencyAddress" \ "addressLine1").as[String] shouldBe "1 Some Street"
+      (requestJson \ "agencyAddress" \ "addressLine2").as[String] shouldBe "MyTown"
+      (requestJson \ "agencyAddress" \ "postalCode").as[String] shouldBe "AA1 1AA"
+      (requestJson \ "agencyAddress" \ "countryCode").as[String] shouldBe "GB"
+
+      val responseJson: JsValue = Json.parse(auditEvent.response.detail("responseMessage"))
+      (responseJson \ "agentRegistrationNumber").as[String] shouldBe "ARN0001"
     }
 
   }
