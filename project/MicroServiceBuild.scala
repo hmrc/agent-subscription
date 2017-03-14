@@ -66,6 +66,7 @@ private object AppDependencies {
         "org.scalatestplus.play" %% "scalatestplus-play" % scalaTestPlusVersion % scope,
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
+        "org.mockito" % "mockito-core" % mockitoVersion % scope,
         "com.github.tomakehurst" % "wiremock" % wiremockVersion % scope
       )
     }.test
