@@ -68,6 +68,9 @@ class ValidatorSpec extends UnitSpec {
     "accept valid postcodes" in {
       validatePostcode("AA1 1AA") shouldBe JsSuccess("AA1 1AA")
       validatePostcode("AA1M 1AA") shouldBe JsSuccess("AA1M 1AA")
+      validatePostcode("A1M 1AA") shouldBe JsSuccess("A1M 1AA")
+      validatePostcode("A11 1AA") shouldBe JsSuccess("A11 1AA")
+      validatePostcode("AA11 1AA") shouldBe JsSuccess("AA11 1AA")
     }
 
     "give \"error.required\" error when it is empty" in {
