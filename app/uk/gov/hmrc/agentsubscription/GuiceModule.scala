@@ -40,6 +40,8 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[AuthConnector])
     bindBaseUrl("des")
     bindBaseUrl("auth")
+    bindBaseUrl("gg")
+    bindBaseUrl("gg-admin")
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
   }

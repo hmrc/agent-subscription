@@ -9,7 +9,9 @@ abstract class BaseISpec extends UnitSpec with OneServerPerSuite with WireMockSu
   override implicit lazy val app: Application = new GuiceApplicationBuilder()
     .configure(
       "microservice.services.auth.port" -> wireMockPort,
-      "microservice.services.des.port" -> wireMockPort
+      "microservice.services.des.port" -> wireMockPort,
+      "microservice.services.gg.port" -> wireMockPort,
+      "microservice.services.gg-admin.port" -> wireMockPort
     )
     .build()
 }
