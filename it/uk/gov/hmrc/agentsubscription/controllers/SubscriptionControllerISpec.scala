@@ -3,10 +3,10 @@ package uk.gov.hmrc.agentsubscription.controllers
 import play.api.libs.json.Json.{stringify, toJson}
 import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.{KnownFacts, SubscriptionRequest}
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs}
+import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, GGAdminStubs, GGStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
-class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub {
+class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with GGStubs with GGAdminStubs{
   private val utr = "0123456789"
 
   "creating a subscription" should {
@@ -17,6 +17,8 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         organisationRegistrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        createKnownFactsSucceeds()
+        enrolmentSucceeds()
 
         val result = await(doSubscriptionRequest())
 
@@ -29,6 +31,8 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         val fields = Seq(address \ "addressLine2", address \ "addressLine3", address \ "addressLine4")
         organisationRegistrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
+        createKnownFactsSucceeds()
+        enrolmentSucceeds()
 
         val result = await(doSubscriptionRequest(removeFields(fields)))
 
@@ -214,6 +218,31 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         val result = await(doSubscriptionRequest(removeFields(Seq(address \ "countryCode"))))
 
         result.status shouldBe 400
+      }
+    }
+
+    "throw a 500 error if " when {
+      "create known facts fails in GG " in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        organisationRegistrationExists(utr)
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        createKnownFactsFails()
+
+        val result = await(doSubscriptionRequest())
+
+        result.status shouldBe 500
+      }
+
+      "create enrolment fails in GG " in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        organisationRegistrationExists(utr)
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        createKnownFactsSucceeds()
+        enrolmentFails()
+
+        val result = await(doSubscriptionRequest())
+
+        result.status shouldBe 500
       }
     }
   }

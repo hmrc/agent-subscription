@@ -18,15 +18,18 @@ package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{Inject, Singleton}
 
-import uk.gov.hmrc.agentsubscription.connectors.{Address, DesConnector, DesRegistrationResponse, DesSubscriptionRequest}
+import uk.gov.hmrc.agentsubscription._
+import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.{Arn, SubscriptionRequest}
 import uk.gov.hmrc.play.http.HeaderCarrier
-import uk.gov.hmrc.agentsubscription._
 
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class SubscriptionService @Inject() (desConnector: DesConnector) {
+class SubscriptionService @Inject() (
+  desConnector: DesConnector,
+  governmentGatewayAdminConnector: GovernmentGatewayAdminConnector,
+  governmentGatewayConnector: GovernmentGatewayConnector) {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
       val address = subscriptionRequest.agency.address
@@ -42,12 +45,27 @@ class SubscriptionService @Inject() (desConnector: DesConnector) {
                                 address.countryCode))
   }
 
-
   def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Arn]] = {
     desConnector.getRegistration(subscriptionRequest.utr) flatMap {
-        case Some(DesRegistrationResponse(Some(desPostcode), _, _, _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest)).map (Some.apply)
+        case Some(DesRegistrationResponse(Some(desPostcode), _, _, _))
+          if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => subscribe(subscriptionRequest)
         case _ => Future successful None
     }
   }
 
+  def subscribe(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Arn]] = {
+    val futureArn: Future[Arn] = desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
+
+    futureArn flatMap { arn =>
+      governmentGatewayAdminConnector.createKnownFacts(arn.arn, subscriptionRequest.knownFacts.postcode) flatMap { _ =>
+        governmentGatewayConnector.enrol("friendlyName", arn.arn, subscriptionRequest.knownFacts.postcode) flatMap { _ =>
+          Future successful Some(arn)
+        } recover {
+          case e => throw new IllegalStateException(s"Failed to create enrolment in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.arn}", e)
+        }
+      } recover {
+        case e => throw new IllegalStateException(s"Failed to create known facts in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.arn}", e)
+      }
+    }
+  }
 }
