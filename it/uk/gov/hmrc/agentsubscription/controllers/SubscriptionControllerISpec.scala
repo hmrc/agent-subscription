@@ -221,7 +221,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
     }
 
-    "propogate the underlying error code if " when {
+    "throw a 500 error if " when {
       "create known facts fails in GG " in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         organisationRegistrationExists(utr)
@@ -230,7 +230,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         val result = await(doSubscriptionRequest())
 
-        result.status shouldBe 502
+        result.status shouldBe 500
       }
 
       "create enrolment fails in GG " in {
@@ -242,7 +242,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         val result = await(doSubscriptionRequest())
 
-        result.status shouldBe 502
+        result.status shouldBe 500
       }
     }
   }

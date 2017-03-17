@@ -60,7 +60,11 @@ class SubscriptionService @Inject() (
       governmentGatewayAdminConnector.createKnownFacts(arn.arn, subscriptionRequest.knownFacts.postcode) flatMap { _ =>
         governmentGatewayConnector.enrol("friendlyName", arn.arn, subscriptionRequest.knownFacts.postcode) flatMap { _ =>
           Future successful Some(arn)
+        } recover {
+          case e => throw new IllegalStateException(s"Failed to create enrolment in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.arn}", e)
         }
+      } recover {
+        case e => throw new IllegalStateException(s"Failed to create known facts in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.arn}", e)
       }
     }
   }
