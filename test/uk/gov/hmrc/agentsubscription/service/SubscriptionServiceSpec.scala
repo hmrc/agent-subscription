@@ -75,16 +75,8 @@ class SubscriptionServiceSpec extends UnitSpec with MockitoSugar {
 
       await(service.subscribeAgentToMtd(subscriptionRequest))
 
-      // TODO add these fields to expectedExtraDetail
-//       {
-//              safeId: "XH0000100032510",
-//              agentRegistrationNumber: "GARN0000247",
-//              agencyEmail: "ab@xy.com",
-//              telephoneNumber: "07000000000",
-//              utr: "1403050305"
-//      }
       val expectedExtraDetail = Json.parse(
-        """
+        s"""
           |{
           |  "agencyName": "Test Agency",
           |  "agencyAddress": {
@@ -94,9 +86,13 @@ class SubscriptionServiceSpec extends UnitSpec with MockitoSugar {
           |     "addressLine4": "address line 4",
           |     "postcode": "BB1 1BB",
           |     "countryCode": "GB"
-          |  }
+          |  },
+          |  "agentRegistrationNumber": "ARN0001",
+          |  "agencyEmail": "testagency@example.com",
+          |  "agencyTelephoneNumber": "01234 567890",
+          |  "utr": "$utr"
           |}
-        """.stripMargin).asInstanceOf[JsObject]
+          |""".stripMargin).asInstanceOf[JsObject]
       verify(auditService)
         .auditEvent(AgentSubscription, "Agent services subscription", expectedExtraDetail)(hc, fakeRequest)
 

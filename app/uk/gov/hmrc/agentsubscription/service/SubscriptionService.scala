@@ -23,7 +23,7 @@ import play.api.mvc.Request
 import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.model.{Arn, SubscriptionRequest}
+import uk.gov.hmrc.agentsubscription.model.{Agency, Arn, SubscriptionRequest}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -32,7 +32,14 @@ private object SubscriptionAuditDetail {
   implicit val writes = Json.writes[SubscriptionAuditDetail]
 }
 
-private case class SubscriptionAuditDetail(agencyName: String, agencyAddress: model.Address)
+private case class SubscriptionAuditDetail(
+  agentRegistrationNumber: Arn,
+  utr: String,
+  agencyName: String,
+  agencyAddress: model.Address,
+  agencyEmail: String,
+  agencyTelephoneNumber: String
+)
 
 @Singleton
 class SubscriptionService @Inject() (
@@ -68,10 +75,22 @@ class SubscriptionService @Inject() (
       arn <- desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
       _ <- createKnownFacts(arn, subscriptionRequest)
       _ <- enrol(arn, subscriptionRequest)
-      _ <- auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", toJsObject(SubscriptionAuditDetail(subscriptionRequest.agency.name, subscriptionRequest.agency.address)))
+      _ <- auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
     } yield {
       Some(arn)
     }
+
+  private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest) =
+    toJsObject(
+      SubscriptionAuditDetail(
+        arn,
+        subscriptionRequest.utr,
+        subscriptionRequest.agency.name,
+        subscriptionRequest.agency.address,
+        subscriptionRequest.agency.email,
+        subscriptionRequest.agency.telephone
+      )
+    )
 
   private def createKnownFacts(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
     governmentGatewayAdminConnector.createKnownFacts(arn.arn, subscriptionRequest.knownFacts.postcode) recover {
