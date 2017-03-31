@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.audit
 
+import javax.inject.{Inject, Singleton}
+
 import play.api.libs.json.{JsObject, JsString}
 import play.api.mvc.Request
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
@@ -26,7 +28,8 @@ import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetai
 
 import scala.concurrent.Future
 
-class AuditService(auditConnector: AuditConnector) {
+@Singleton
+class AuditService @Inject() (auditConnector: AuditConnector) {
 
   import AgentSubscriptionEvent.AgentSubscriptionEvent
 

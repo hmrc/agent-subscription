@@ -86,27 +86,6 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         sentEvent.tags("clientIP") shouldBe "1.1.1.1"
         sentEvent.tags("clientPort") shouldBe "12345"
       }
-
-//      {
-//          eventId: "581112c5-18bb-428c-84f2-aacb6a32437b",
-//          detail:    {
-//              agencyName: "Stallone",
-//              agencyAddress:{
-//                  addressLine1: "21",
-//                  addressLine2: "Worthing",
-//                  postalCode: "aa1 1aa",
-//                  countryCode: "GB"
-//              },
-//              safeId: "XH0000100032510",
-//              agentRegistrationNumber: "GARN0000247",
-//              agencyEmail: "ab@xy.com",
-//              telephoneNumber: "07000000000",
-//              utr: "1403050305"
-//          }
-//          generatedAt: "2017-03-20T15:49:12.752Z",
-//          tags: {
-//          }
-//      }
     }
 
     // According to Graeme Blackwood the deviceID should be in the tags not the detail,
