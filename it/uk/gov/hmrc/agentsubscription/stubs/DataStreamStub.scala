@@ -5,14 +5,14 @@ object DataStreamStub {
   import play.api.libs.json.JsObject
   import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscriptionEvent
 
-  def auditingRequest(): Unit = {
+  def writeAuditSucceeds(): Unit = {
     stubFor(post(urlEqualTo(auditUrl))
       .willReturn(aResponse()
         .withStatus(200)
       ))
   }
 
-  def auditingMergedRequest(): Unit = {
+  def writeAuditMergedSucceeds(): Unit = {
     stubFor(post(urlEqualTo(auditUrl + "/merged"))
       .willReturn(aResponse()
         .withStatus(200)

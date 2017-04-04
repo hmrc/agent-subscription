@@ -3,39 +3,36 @@ package uk.gov.hmrc.agentsubscription.controllers
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
 import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, GGAdminStubs, GGStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
 
-class SubscriptionControllerAuditSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with GGStubs with GGAdminStubs{
+class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with GGStubs with GGAdminStubs{
   private val utr = "0123456789"
 
-  "auditing" should {
+  "creating a subscription" should {
     import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
     import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
 
-    val agency = __ \ "agency"
-    val address = agency \ "address"
-    "report a response containing the ARN" when {
-      "all fields are populated" in {
-        DataStreamStub.auditingMergedRequest()
-        DataStreamStub.auditingRequest()
+    "audit an AgentSubscription event" in {
+      writeAuditMergedSucceeds()
+      writeAuditSucceeds()
 
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-        organisationRegistrationExists(utr)
-        subscriptionSucceeds(utr, Json.parse(subscriptionRequest(utr)).as[SubscriptionRequest])
-        createKnownFactsSucceeds()
-        enrolmentSucceeds()
+      requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+      organisationRegistrationExists(utr)
+      subscriptionSucceeds(utr, Json.parse(subscriptionRequest(utr)).as[SubscriptionRequest])
+      createKnownFactsSucceeds()
+      enrolmentSucceeds()
 
-        val result = await(doSubscriptionRequest(subscriptionRequest(utr)))
+      val result = await(doSubscriptionRequest(subscriptionRequest(utr)))
 
-        result.status shouldBe 201
+      result.status shouldBe 201
 
-        eventually {
-          DataStreamStub.verifyAuditRequestSent(
-            AgentSubscriptionEvent.AgentSubscription,
-            expectedTags,
-            expectedDetails(utr))
-        }
+      eventually {
+        DataStreamStub.verifyAuditRequestSent(
+          AgentSubscriptionEvent.AgentSubscription,
+          expectedTags,
+          expectedDetails(utr))
       }
     }
   }
@@ -90,13 +87,8 @@ class SubscriptionControllerAuditSpec extends BaseAuditSpec with Eventually with
     Json.parse(
       s"""
          |{
-         |    "clientIP" : "-",
-         |    "path" : "/agent-subscription/subscription",
-         |    "X-Session-ID" : "-",
-         |    "Akamai-Reputation" : "-",
-         |    "X-Request-ID" : "-",
-         |    "clientPort" : "-",
-         |    "transactionName" : "Agent services subscription"
+         |  "path": "/agent-subscription/subscription",
+         |  "transactionName": "Agent services subscription"
          |}
          |""".stripMargin)
       .asInstanceOf[JsObject]
