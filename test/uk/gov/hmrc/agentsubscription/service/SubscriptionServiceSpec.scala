@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import org.mockito.ArgumentMatchers.{any, anyString, eq => eqs}
-import org.mockito.Mockito.{never, verify, when}
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
@@ -109,10 +109,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       await(service.subscribeAgentToMtd(subscriptionRequest))
 
       verify(ggAdminConnector).createKnownFacts(eqs(arn), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
-      verify(ggAdminConnector, never()).createKnownFacts(eqs(arn), eqs(businessPostcode))(eqs(hc), any[ExecutionContext])
-
       verify(ggConnector).enrol(anyString, eqs(arn), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
-      verify(ggConnector, never()).enrol(anyString, eqs(arn), eqs(businessPostcode))(eqs(hc), any[ExecutionContext])
     }
   }
 
