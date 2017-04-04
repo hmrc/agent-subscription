@@ -19,51 +19,43 @@ package uk.gov.hmrc.agentsubscription.service
 import org.mockito.ArgumentMatchers.{any, anyString, eq => eqs}
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
-import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.connectors.{Address => _, KnownFacts => _, _}
 import uk.gov.hmrc.agentsubscription.model._
+import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class SubscriptionServiceSpec extends UnitSpec with MockitoSugar with Eventually {
+class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
-  implicit val hc = HeaderCarrier()
-  implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
+  private val desConnector = resettingMock[DesConnector]
+  private val ggAdminConnector = resettingMock[GovernmentGatewayAdminConnector]
+  private val ggConnector = resettingMock[GovernmentGatewayConnector]
+  private val auditService = resettingMock[AuditService]
+
+  private val service = new SubscriptionService(desConnector, ggAdminConnector, ggConnector, auditService)
+
+  private implicit val hc = HeaderCarrier()
+  private implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
 
   "subscribeAgentToMtd" should {
     "audit appropriate values" in {
-      val utr = "4000000009"
+      val businessUtr = "4000000009"
+      val businessPostcode = "AA1 1AA"
 
-      val desConnector = mock[DesConnector]
-      val ggAdminConnector = mock[GovernmentGatewayAdminConnector]
-      val ggConnector = mock[GovernmentGatewayConnector]
-      val auditService = mock[AuditService]
+      val arn = "ARN0001"
 
-      when(desConnector.getRegistration(eqs(utr))(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          postalCode = Some("AA1 1AA"), isAnASAgent = false, organisationName = Some("Test Business"), None)))
-
-      when(desConnector.subscribeToAgentServices(anyString, any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Arn("ARN0001"))
-
-      when(ggAdminConnector.createKnownFacts(eqs("ARN0001"), anyString)(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful new Integer(200))
-
-      when(ggConnector.enrol(anyString, anyString, anyString)(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful new Integer(200))
-
-      val service = new SubscriptionService(desConnector, ggAdminConnector, ggConnector, auditService)
+      subscriptionWillBeCreated(businessUtr, businessPostcode, arn)
 
       val subscriptionRequest = SubscriptionRequest(
-        utr,
-        KnownFacts("AA1 1AA"),
+        businessUtr,
+        KnownFacts(businessPostcode),
         Agency(
           "Test Agency",
           Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = "BB1 1BB", countryCode = "GB"),
@@ -84,10 +76,10 @@ class SubscriptionServiceSpec extends UnitSpec with MockitoSugar with Eventually
           |     "postcode": "BB1 1BB",
           |     "countryCode": "GB"
           |  },
-          |  "agentRegistrationNumber": "ARN0001",
+          |  "agentRegistrationNumber": "$arn",
           |  "agencyEmail": "testagency@example.com",
           |  "agencyTelephoneNumber": "01234 567890",
-          |  "utr": "$utr"
+          |  "utr": "$businessUtr"
           |}
           |""".stripMargin).asInstanceOf[JsObject]
       eventually {
@@ -95,5 +87,44 @@ class SubscriptionServiceSpec extends UnitSpec with MockitoSugar with Eventually
           .auditEvent(AgentSubscription, "Agent services subscription", expectedExtraDetail)(hc, fakeRequest)
       }
     }
+
+    "add the agency postcode, not the business postcode, to the HMRC-AS-AGENT enrolment known facts" in {
+      val utr = "4000000009"
+      val arn = "ARN0001"
+
+      val businessPostcode = "BU1 1BB"
+      val agencyPostcode = "AG1 1CY"
+
+      subscriptionWillBeCreated(utr, businessPostcode, arn)
+
+      val subscriptionRequest = SubscriptionRequest(
+        utr,
+        KnownFacts(businessPostcode),
+        Agency(
+          "Test Agency",
+          Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = agencyPostcode, countryCode = "GB"),
+          "01234 567890",
+          "testagency@example.com"))
+
+      await(service.subscribeAgentToMtd(subscriptionRequest))
+
+      verify(ggAdminConnector).createKnownFacts(eqs(arn), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
+      verify(ggConnector).enrol(anyString, eqs(arn), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
+    }
+  }
+
+  private def subscriptionWillBeCreated(businessUtr: String, businessPostcode: String, arn: String) = {
+    when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Some(DesRegistrationResponse(
+        postalCode = Some(businessPostcode), isAnASAgent = false, organisationName = Some("Test Business"), None)))
+
+    when(desConnector.subscribeToAgentServices(anyString, any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Arn(arn))
+
+    when(ggAdminConnector.createKnownFacts(eqs(arn), anyString)(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful new Integer(200))
+
+    when(ggConnector.enrol(anyString, anyString, anyString)(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful new Integer(200))
   }
 }

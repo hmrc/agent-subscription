@@ -93,12 +93,12 @@ class SubscriptionService @Inject() (
     )
 
   private def createKnownFacts(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
-    governmentGatewayAdminConnector.createKnownFacts(arn.arn, subscriptionRequest.knownFacts.postcode) recover {
+    governmentGatewayAdminConnector.createKnownFacts(arn.arn, subscriptionRequest.agency.address.postcode) recover {
       case e => throw new IllegalStateException(s"Failed to create known facts in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.arn}", e)
     }
 
   private def enrol(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
-    governmentGatewayConnector.enrol(subscriptionRequest.agency.name, arn.arn, subscriptionRequest.knownFacts.postcode) recover {
+    governmentGatewayConnector.enrol(subscriptionRequest.agency.name, arn.arn, subscriptionRequest.agency.address.postcode) recover {
       case e => throw new IllegalStateException(s"Failed to create enrolment in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.arn}", e)
     }
 
