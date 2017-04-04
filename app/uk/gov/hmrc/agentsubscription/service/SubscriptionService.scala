@@ -21,9 +21,9 @@ import javax.inject.{Inject, Singleton}
 import play.api.libs.json._
 import play.api.mvc.Request
 import uk.gov.hmrc.agentsubscription._
-import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
+import uk.gov.hmrc.agentsubscription.audit.{AuditService}
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.model.{Agency, Arn, SubscriptionRequest}
+import uk.gov.hmrc.agentsubscription.model.{Arn, SubscriptionRequest}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -76,7 +76,7 @@ class SubscriptionService @Inject() (
       _ <- createKnownFacts(arn, subscriptionRequest)
       _ <- enrol(arn, subscriptionRequest)
     } yield {
-      auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
+      auditService.auditSubscriptionEvent("Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
       Some(arn)
     }
 

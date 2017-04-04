@@ -11,7 +11,6 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
   private val utr = "0123456789"
 
   "creating a subscription" should {
-    import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
     import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
 
     "audit an AgentSubscription event" in {
@@ -30,7 +29,6 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
 
       eventually {
         DataStreamStub.verifyAuditRequestSent(
-          AgentSubscriptionEvent.AgentSubscription,
           expectedTags,
           expectedDetails(utr))
       }

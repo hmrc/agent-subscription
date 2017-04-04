@@ -23,7 +23,6 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.{AuditEvent, ExtendedDataEvent}
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -54,8 +53,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
           "addressLine2" -> "Test village"
         )
       )
-      service.auditEvent(
-        AgentSubscription,
+      service.auditSubscriptionEvent(
         "transaction name",
         detail
       )(
@@ -100,8 +98,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         deviceID = Some("device ID")
       )
 
-      service.auditEvent(
-        AgentSubscription,
+      service.auditSubscriptionEvent(
         "transaction name",
         Json.obj()
       )(

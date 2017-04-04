@@ -31,24 +31,36 @@ import scala.concurrent.Future
 @Singleton
 class AuditService @Inject() (auditConnector: AuditConnector) {
 
-  import AgentSubscriptionEvent.AgentSubscriptionEvent
-
-  def auditEvent(
-    event: AgentSubscriptionEvent,
+  def auditSubscriptionEvent(
     transactionName: String,
     extraDetail: JsObject)
     (implicit hc: HeaderCarrier, request: Request[Any]): Unit =
-    send(createEvent(event, transactionName, extraDetail))
+    send(createSubscriptionEvent(transactionName, extraDetail))
 
-  private def createEvent(
-    event: AgentSubscriptionEvent,
+  def auditAgencyStatusEvent(
+    transactionName: String,
+    extraDetail: JsObject)
+    (implicit hc: HeaderCarrier): Unit =
+    send(createAgencyStatusEvent(transactionName, extraDetail))
+
+  private def createSubscriptionEvent(
     transactionName: String,
     extraDetail: JsObject)
     (implicit hc: HeaderCarrier, request: Request[Any]) =
     ExtendedDataEvent(
       auditSource = "agent-subscription",
-      auditType = event.toString,
+      auditType = "AgentSubscription",
       tags = hc.toAuditTags(transactionName, request.path),
+      detail = toJsObject(hc.toAuditDetails()) ++ extraDetail)
+
+  private def createAgencyStatusEvent(
+    transactionName: String,
+    extraDetail: JsObject)
+    (implicit hc: HeaderCarrier) =
+    ExtendedDataEvent(
+      auditSource = "agent-subscription",
+      auditType = "CheckAgencyStatus",
+      tags = hc.toAuditTags(transactionName, "****** PATH IS MISSING ******"),
       detail = toJsObject(hc.toAuditDetails()) ++ extraDetail)
 
   private[audit] def toJsObject(fields: Map[String, String]) =
@@ -57,10 +69,4 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
   private def send(event: ExtendedDataEvent)(implicit hc: HeaderCarrier): Unit =
     auditConnector.sendEvent(event).map(_ => ())
 
-}
-
-object AgentSubscriptionEvent extends Enumeration {
-  val AgentSubscription = Value
-
-  type AgentSubscriptionEvent = AgentSubscriptionEvent.Value
 }
