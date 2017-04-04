@@ -11,9 +11,9 @@ following the ROSM (Register Once Subscribe Many) pattern.
 
 ## Running the app locally
 
+    sm --start AGENT_MTD -f
     sm --stop AGENT_SUBSCRIPTION
     ./run-local
-    sm --start AGENT_MTD -f
 
 ## Proposed API
 
