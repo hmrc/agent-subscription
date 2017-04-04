@@ -75,8 +75,8 @@ class SubscriptionService @Inject() (
       arn <- desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
       _ <- createKnownFacts(arn, subscriptionRequest)
       _ <- enrol(arn, subscriptionRequest)
-      _ <- auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
     } yield {
+      auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
       Some(arn)
     }
 

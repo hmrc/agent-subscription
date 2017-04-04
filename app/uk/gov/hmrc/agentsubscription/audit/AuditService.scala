@@ -37,7 +37,7 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
     event: AgentSubscriptionEvent,
     transactionName: String,
     extraDetail: JsObject)
-    (implicit hc: HeaderCarrier, request: Request[Any]): Future[Unit] =
+    (implicit hc: HeaderCarrier, request: Request[Any]): Unit =
     send(createEvent(event, transactionName, extraDetail))
 
   private def createEvent(
@@ -54,8 +54,7 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
   private[audit] def toJsObject(fields: Map[String, String]) =
     JsObject(fields.map { case (name, value) => (name, JsString(value)) })
 
-  //TODO do we need exception handling like agent-access-control has?
-  private def send(event: ExtendedDataEvent)(implicit hc: HeaderCarrier): Future[Unit] =
+  private def send(event: ExtendedDataEvent)(implicit hc: HeaderCarrier): Unit =
     auditConnector.sendEvent(event).map(_ => ())
 
 }

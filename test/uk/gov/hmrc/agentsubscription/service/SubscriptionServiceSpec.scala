@@ -18,11 +18,11 @@ package uk.gov.hmrc.agentsubscription.service
 
 import org.mockito.ArgumentMatchers.{any, anyString, eq => eqs}
 import org.mockito.Mockito.{verify, when}
+import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.{JsObject, Json}
-import play.api.mvc.Request
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.{AgentSubscription, AgentSubscriptionEvent}
+import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.connectors.{Address => _, KnownFacts => _, _}
 import uk.gov.hmrc.agentsubscription.model._
@@ -32,7 +32,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class SubscriptionServiceSpec extends UnitSpec with MockitoSugar {
+class SubscriptionServiceSpec extends UnitSpec with MockitoSugar with Eventually {
 
   implicit val hc = HeaderCarrier()
   implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
@@ -58,9 +58,6 @@ class SubscriptionServiceSpec extends UnitSpec with MockitoSugar {
 
       when(ggConnector.enrol(anyString, anyString, anyString)(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful new Integer(200))
-
-      when(auditService.auditEvent(any[AgentSubscriptionEvent], anyString, any[JsObject])(eqs(hc), any[Request[Any]]))
-        .thenReturn(Future.successful(()))
 
       val service = new SubscriptionService(desConnector, ggAdminConnector, ggConnector, auditService)
 
@@ -93,9 +90,10 @@ class SubscriptionServiceSpec extends UnitSpec with MockitoSugar {
           |  "utr": "$utr"
           |}
           |""".stripMargin).asInstanceOf[JsObject]
-      verify(auditService)
-        .auditEvent(AgentSubscription, "Agent services subscription", expectedExtraDetail)(hc, fakeRequest)
-
+      eventually {
+        verify(auditService)
+          .auditEvent(AgentSubscription, "Agent services subscription", expectedExtraDetail)(hc, fakeRequest)
+      }
     }
   }
 }
