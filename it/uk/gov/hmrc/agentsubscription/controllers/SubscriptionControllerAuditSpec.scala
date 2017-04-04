@@ -1,11 +1,12 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
+import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, GGAdminStubs, GGStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
 
-class SubscriptionControllerAuditSpec extends BaseAuditSpec with DesStubs with AuthStub with GGStubs with GGAdminStubs{
+class SubscriptionControllerAuditSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with GGStubs with GGAdminStubs{
   private val utr = "0123456789"
 
   "auditing" should {
@@ -29,10 +30,12 @@ class SubscriptionControllerAuditSpec extends BaseAuditSpec with DesStubs with A
 
         result.status shouldBe 201
 
-        DataStreamStub.verifyAuditRequestSent(
-          AgentSubscriptionEvent.AgentSubscription,
-          expectedTags,
-          expectedDetails(utr))
+        eventually {
+          DataStreamStub.verifyAuditRequestSent(
+            AgentSubscriptionEvent.AgentSubscription,
+            expectedTags,
+            expectedDetails(utr))
+        }
       }
     }
   }
