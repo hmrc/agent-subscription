@@ -5,6 +5,16 @@
 This is a backend microservice whose domain is Subscriptions to Agent Services 
 following the ROSM (Register Once Subscribe Many) pattern.
 
+## Running the tests
+
+    sbt test it:test
+
+## Running the app locally
+
+    sm --start AGENT_MTD -f
+    sm --stop AGENT_SUBSCRIPTION
+    ./run-local
+
 ## Proposed API
 
 We're still building this service so some/all of the API described here might not be implemented yet!

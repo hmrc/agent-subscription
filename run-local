@@ -1,0 +1,2 @@
+#!/bin/sh
+exec sbt "run 9436" "$@"
