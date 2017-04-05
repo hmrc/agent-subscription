@@ -29,6 +29,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
 
       eventually {
         DataStreamStub.verifyAuditRequestSent(
+          "AgentSubscription",
           expectedTags,
           expectedDetails(utr))
       }

@@ -18,12 +18,12 @@ object DataStreamStub {
       ))
   }
 
-  def verifyAuditRequestSent(tags: JsObject, detail: JsObject) = {
+  def verifyAuditRequestSent(auditType: String, tags: JsObject, detail: JsObject) = {
     verify(1, postRequestedFor(urlPathEqualTo(auditUrl))
       .withRequestBody(similarToJson(
         s"""{
            |  "auditSource": "agent-subscription",
-           |  "auditType": "AgentSubscription",
+           |  "auditType": ${auditType},
            |  "tags": ${tags},
            |  "detail": ${detail}
            |}"""

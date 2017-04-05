@@ -141,6 +141,10 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
 
       val utr = "2000000000"
       val postcode = "AA1 1AA"
+      val postcodeEncoded = java.net.URLEncoder.encode(postcode, "UTF-8")
+
+      postcodeEncoded shouldBe "AA1+1AA"
+
       val detail = Json.obj(
         "Authorization" -> "some sort of authorization",
         "utr" -> utr,
@@ -150,7 +154,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
       )
       service.auditAgencyStatusEvent(
         "transaction name",
-        s"/agent-subscription/registration/utr/${utr}/postcode/${postcode}",
+        s"/agent-subscription/registration/utr/${utr}/postcode/${postcodeEncoded}",
         detail
       )(hc)
 
@@ -171,7 +175,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         (sentEvent.detail \ "isSubscribedToAgentServices").as[Boolean] shouldBe true
 
         sentEvent.tags("transactionName") shouldBe "transaction name"
-        sentEvent.tags("path") shouldBe "/agent-subscription/registration/utr/2000000000/postcode/AA1 1AA"
+        sentEvent.tags("path") shouldBe "/agent-subscription/registration/utr/2000000000/postcode/AA1+1AA"
         sentEvent.tags("X-Session-ID") shouldBe "dummy session id"
         sentEvent.tags("X-Request-ID") shouldBe "dummy request id"
 
