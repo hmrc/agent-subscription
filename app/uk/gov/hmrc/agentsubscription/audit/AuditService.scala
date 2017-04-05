@@ -39,9 +39,10 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
 
   def auditAgencyStatusEvent(
     transactionName: String,
+    path: String,
     extraDetail: JsObject)
     (implicit hc: HeaderCarrier): Unit =
-    send(createAgencyStatusEvent(transactionName, extraDetail))
+    send(createAgencyStatusEvent(transactionName, path, extraDetail))
 
   private def createSubscriptionEvent(
     transactionName: String,
@@ -55,12 +56,13 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
 
   private def createAgencyStatusEvent(
     transactionName: String,
+    path: String,
     extraDetail: JsObject)
     (implicit hc: HeaderCarrier) =
     ExtendedDataEvent(
       auditSource = "agent-subscription",
       auditType = "CheckAgencyStatus",
-      tags = hc.toAuditTags(transactionName, "****** PATH IS MISSING ******"),
+      tags = hc.toAuditTags(transactionName, path),
       detail = toJsObject(hc.toAuditDetails()) ++ extraDetail)
 
   private[audit] def toJsObject(fields: Map[String, String]) =

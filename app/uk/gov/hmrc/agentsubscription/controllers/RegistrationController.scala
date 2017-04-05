@@ -50,9 +50,11 @@ class RegistrationController @Inject()(val desConnector: DesConnector, override 
         auditKnownFacts(utr, postcode, true, isAnASAgent)
         Ok(toJson(RegistrationDetails(isAnASAgent, organisationName)))
       case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, _, Some(DesIndividual(first, last)))) if postcodesMatch(desPostcode, postcode) =>
-        auditKnownFacts(utr, postcode, false, isAnASAgent)
+        auditKnownFacts(utr, postcode, true, isAnASAgent) //FIXME: Does it make sense? Can an individual be an agent ?
         Ok(toJson(RegistrationDetails(isAnASAgent, Some(s"$first $last"))))
-      case _ => NotFound
+      case _ =>
+        auditKnownFacts(utr, postcode, false, false)
+        NotFound
     }
   }
 
@@ -62,11 +64,13 @@ class RegistrationController @Inject()(val desConnector: DesConnector, override 
 
   def auditKnownFacts(utr: String, postcode: String, knownFactsMatches: Boolean, isAnAgent: Boolean)(implicit hc: HeaderCarrier): Unit = {
     import play.api.libs.json._
-    val authorization = hc.authorization.fold("NOT AUTHORIZED") { auth: Authorization => auth.value }
+    val authorization = hc.authorization.fold("NOT AUTHORIZED") { auth: Authorization => auth.value } //FIXME: Does it make sense?
+    val path = s"/agent-subscription/registration/utr/${utr}/postcode/${postcode}" //FIXME: This looks like a hack :-(
     if (knownFactsMatches) {
       implicitly { KnownFactsSuccessAuditDetail.writes }
       auditService.auditAgencyStatusEvent(
         "Agent services registration",
+        path,
         Json.toJson(
           KnownFactsSuccessAuditDetail(authorization, utr, postcode, true, isAnAgent)
         ).as[JsObject])
@@ -74,6 +78,7 @@ class RegistrationController @Inject()(val desConnector: DesConnector, override 
       implicitly { KnownFactsFailureAuditDetail.writes }
       auditService.auditAgencyStatusEvent(
         "Agent services registration",
+        path,
         Json.toJson(
           KnownFactsFailureAuditDetail(authorization, utr, postcode, false)
         ).as[JsObject])
