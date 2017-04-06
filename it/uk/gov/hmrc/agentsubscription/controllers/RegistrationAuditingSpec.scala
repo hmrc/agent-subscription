@@ -39,7 +39,6 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
       requestIsAuthenticated().andIsAnAgent()
       organisationRegistrationExists(utr, true)
 
-      val postcodeEncoded = encodePathSegments(postcode)
       val path = encodePathSegments("agent-subscription", "registration", utr, "postcode", postcode)
 
       val response = await(new Resource(path, port).get)
