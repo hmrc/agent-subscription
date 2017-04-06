@@ -26,8 +26,6 @@ import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
 
-import scala.concurrent.Future
-
 @Singleton
 class AuditService @Inject() (auditConnector: AuditConnector) {
 
@@ -60,7 +58,7 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
 }
 
 object AgentSubscriptionEvent extends Enumeration {
-  val AgentSubscription = Value
+  val AgentSubscription, CheckAgencyStatus = Value
 
   type AgentSubscriptionEvent = AgentSubscriptionEvent.Value
 }

@@ -32,9 +32,7 @@ object DataStreamStub {
     )
   }
 
-  private def similarToJson(value: String) = equalToJson(value.stripMargin, ignoreArrayOrder, ignoreExtraElements)
+  private def similarToJson(value: String) = equalToJson(value.stripMargin, true, true)
 
   private def auditUrl = "/write/audit"
-  private def ignoreArrayOrder = true
-  private def ignoreExtraElements = true //FIXME
 }
