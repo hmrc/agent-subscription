@@ -22,7 +22,7 @@ import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
 import play.api.mvc._
 import uk.gov.hmrc.agentsubscription._
-import uk.gov.hmrc.agentsubscription.audit.{AuditService}
+import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesConnector, DesIndividual, DesRegistrationResponse}
 import uk.gov.hmrc.agentsubscription.model.{RegistrationDetails, Utr, postcodeWithoutSpacesRegex}
@@ -44,7 +44,7 @@ class RegistrationController @Inject()(val desConnector: DesConnector, override 
       Future successful BadRequest(Json.obj("code" -> "INVALID_UTR"))
   }
 
-  private def getRegistrationFromDes(utr: String, postcode: String)(implicit hc: HeaderCarrier): Future[Result] = {
+  private def getRegistrationFromDes(utr: String, postcode: String)(implicit hc: HeaderCarrier, request: Request[Any]): Future[Result] = {
     desConnector.getRegistration(utr) map {
       case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName, None)) if postcodesMatch(desPostcode, postcode) =>
         auditKnownFacts(utr, postcode, true, isAnASAgent)
@@ -62,23 +62,23 @@ class RegistrationController @Inject()(val desConnector: DesConnector, override 
     postcode.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)
   }
 
-  def auditKnownFacts(utr: String, postcode: String, knownFactsMatches: Boolean, isAnAgent: Boolean)(implicit hc: HeaderCarrier): Unit = {
+  def auditKnownFacts(utr: String, postcode: String, knownFactsMatches: Boolean, isAnAgent: Boolean)(implicit hc: HeaderCarrier, request: Request[Any]): Unit = {
     import play.api.libs.json._
     val authorization = hc.authorization.fold("NOT AUTHORIZED") { auth: Authorization => auth.value } //FIXME: Does it make sense?
     val path = s"/agent-subscription/registration/utr/${utr}/postcode/${postcode}" //FIXME: This looks like a hack :-(
     if (knownFactsMatches) {
       implicitly { KnownFactsSuccessAuditDetail.writes }
-      auditService.auditAgencyStatusEvent(
-        "Agent services registration",
-        path,
+      auditService.auditEvent(
+        AgentSubscriptionEvent.CheckAgencyStatus,
+        "Agent services registration", //TODO change
         Json.toJson(
           KnownFactsSuccessAuditDetail(authorization, utr, postcode, true, isAnAgent)
         ).as[JsObject])
     } else {
       implicitly { KnownFactsFailureAuditDetail.writes }
-      auditService.auditAgencyStatusEvent(
-        "Agent services registration",
-        path,
+      auditService.auditEvent(
+        AgentSubscriptionEvent.CheckAgencyStatus,
+        "Agent services registration", //TODO change
         Json.toJson(
           KnownFactsFailureAuditDetail(authorization, utr, postcode, false)
         ).as[JsObject])

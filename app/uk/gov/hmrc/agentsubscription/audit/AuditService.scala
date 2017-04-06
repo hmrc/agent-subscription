@@ -26,43 +26,27 @@ import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
 
-import scala.concurrent.Future
-
 @Singleton
 class AuditService @Inject() (auditConnector: AuditConnector) {
 
-  def auditSubscriptionEvent(
+  import AgentSubscriptionEvent.AgentSubscriptionEvent
+
+  def auditEvent(
+    event: AgentSubscriptionEvent,
     transactionName: String,
     extraDetail: JsObject)
     (implicit hc: HeaderCarrier, request: Request[Any]): Unit =
-    send(createSubscriptionEvent(transactionName, extraDetail))
+    send(createEvent(event, transactionName, extraDetail))
 
-  def auditAgencyStatusEvent(
-    transactionName: String,
-    path: String,
-    extraDetail: JsObject)
-    (implicit hc: HeaderCarrier): Unit =
-    send(createAgencyStatusEvent(transactionName, path, extraDetail))
-
-  private def createSubscriptionEvent(
+  private def createEvent(
+    event: AgentSubscriptionEvent,
     transactionName: String,
     extraDetail: JsObject)
     (implicit hc: HeaderCarrier, request: Request[Any]) =
     ExtendedDataEvent(
       auditSource = "agent-subscription",
-      auditType = "AgentSubscription",
+      auditType = event.toString,
       tags = hc.toAuditTags(transactionName, request.path),
-      detail = toJsObject(hc.toAuditDetails()) ++ extraDetail)
-
-  private def createAgencyStatusEvent(
-    transactionName: String,
-    path: String,
-    extraDetail: JsObject)
-    (implicit hc: HeaderCarrier) =
-    ExtendedDataEvent(
-      auditSource = "agent-subscription",
-      auditType = "CheckAgencyStatus",
-      tags = hc.toAuditTags(transactionName, path),
       detail = toJsObject(hc.toAuditDetails()) ++ extraDetail)
 
   private[audit] def toJsObject(fields: Map[String, String]) =
@@ -71,4 +55,10 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
   private def send(event: ExtendedDataEvent)(implicit hc: HeaderCarrier): Unit =
     auditConnector.sendEvent(event).map(_ => ())
 
+}
+
+object AgentSubscriptionEvent extends Enumeration {
+  val AgentSubscription, CheckAgencyStatus = Value
+
+  type AgentSubscriptionEvent = AgentSubscriptionEvent.Value
 }

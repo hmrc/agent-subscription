@@ -21,6 +21,7 @@ import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
+import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.connectors.{Address => _, KnownFacts => _, _}
 import uk.gov.hmrc.agentsubscription.model._
@@ -83,7 +84,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |""".stripMargin).asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditSubscriptionEvent("Agent services subscription", expectedExtraDetail)(hc, fakeRequest)
+          .auditEvent(AgentSubscription, "Agent services subscription", expectedExtraDetail)(hc, fakeRequest)
       }
     }
 

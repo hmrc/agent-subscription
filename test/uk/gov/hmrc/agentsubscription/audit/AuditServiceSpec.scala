@@ -23,6 +23,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
+import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.{AuditEvent, ExtendedDataEvent}
 import uk.gov.hmrc.play.http.HeaderCarrier
@@ -32,14 +33,10 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.concurrent.{ExecutionContext, Future}
 
 class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
-  "auditSubscriptionEvent" should {
+  "auditEvent" should {
     "send an event with the correct fields" in {
-
-      // mock AuditConnector in order to capture calls to it
       val mockConnector = mock[AuditConnector]
       when(mockConnector.sendEvent(any[AuditEvent])(any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful AuditResult.Success)
-
-      // this is our AuditService which exposes a bit different interface in comparison to AuditConnector
       val service = new AuditService(mockConnector)
 
       val hc = HeaderCarrier(
@@ -57,7 +54,8 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
           "addressLine2" -> "Test village"
         )
       )
-      service.auditSubscriptionEvent(
+      service.auditEvent(
+        AgentSubscription,
         "transaction name",
         detail
       )(
@@ -102,7 +100,8 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         deviceID = Some("device ID")
       )
 
-      service.auditSubscriptionEvent(
+      service.auditEvent(
+        AgentSubscription,
         "transaction name",
         Json.obj()
       )(
@@ -117,70 +116,6 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         val sentEvent = captor.getValue.asInstanceOf[ExtendedDataEvent]
 
         sentEvent.tags("deviceID") shouldBe "device ID"
-      }
-    }
-  }
-
-  "auditAgencyStatusEvent" should {
-    "send an event with the correct fields" in {
-
-      // mock AuditConnector in order to capture calls to it
-      val mockConnector = mock[AuditConnector]
-      when(mockConnector.sendEvent(any[AuditEvent])(any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful AuditResult.Success)
-
-      // this is our AuditService which exposes a bit different interface in comparison to AuditConnector
-      val service = new AuditService(mockConnector)
-
-      val hc = HeaderCarrier(
-        authorization = Some(Authorization("dummy bearer token")),
-        sessionId = Some(SessionId("dummy session id")),
-        requestId = Some(RequestId("dummy request id")),
-        trueClientIp = Some("1.1.1.1"),
-        trueClientPort = Some("12345")
-      )
-
-      val utr = "2000000000"
-      val postcode = "AA1 1AA"
-      val postcodeEncoded = java.net.URLEncoder.encode(postcode, "UTF-8")
-
-      postcodeEncoded shouldBe "AA1+1AA"
-
-      val detail = Json.obj(
-        "Authorization" -> "some sort of authorization",
-        "utr" -> utr,
-        "postcode" -> postcode,
-        "knownFactsMatched" -> true,
-        "isSubscribedToAgentServices" -> true
-      )
-      service.auditAgencyStatusEvent(
-        "transaction name",
-        s"/agent-subscription/registration/utr/${utr}/postcode/${postcodeEncoded}",
-        detail
-      )(hc)
-
-      eventually {
-        val captor = ArgumentCaptor.forClass(classOf[AuditEvent])
-        verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
-        captor.getValue shouldBe an[ExtendedDataEvent]
-        val sentEvent = captor.getValue.asInstanceOf[ExtendedDataEvent]
-
-        sentEvent.auditSource shouldBe "agent-subscription"
-        sentEvent.auditType shouldBe "CheckAgencyStatus"
-
-        (sentEvent.detail \ "Authorization").as[String] shouldBe "some sort of authorization"
-
-        (sentEvent.detail \ "utr").as[String] shouldBe "2000000000"
-        (sentEvent.detail \ "postcode").as[String] shouldBe "AA1 1AA"
-        (sentEvent.detail \ "knownFactsMatched").as[Boolean] shouldBe true
-        (sentEvent.detail \ "isSubscribedToAgentServices").as[Boolean] shouldBe true
-
-        sentEvent.tags("transactionName") shouldBe "transaction name"
-        sentEvent.tags("path") shouldBe "/agent-subscription/registration/utr/2000000000/postcode/AA1+1AA"
-        sentEvent.tags("X-Session-ID") shouldBe "dummy session id"
-        sentEvent.tags("X-Request-ID") shouldBe "dummy request id"
-
-        sentEvent.tags("clientIP") shouldBe "1.1.1.1"
-        sentEvent.tags("clientPort") shouldBe "12345"
       }
     }
   }
