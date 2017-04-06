@@ -22,24 +22,25 @@ import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencySta
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
 import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DataStreamStub, DesStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
+import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegments
 
 import scala.language.postfixOps
 
-class RegistrationControllerAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub {
+class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub {
 
   private val utr = "2000000000"
   private val postcode = "AA1 1AA"
 
   "GET of /registration/:utr/postcode/:postcode" should {
-    "audit an AgencyStatusCheck event when des returns an AS Agent for the utr and the postcodes match" in {
+    "audit a CheckAgencyStatus event" in {
       writeAuditMergedSucceeds()
       writeAuditSucceeds()
 
       requestIsAuthenticated().andIsAnAgent()
       organisationRegistrationExists(utr, true)
 
-      val postcodeEncoded = java.net.URLEncoder.encode(postcode, "UTF-8") //FIXME
-      val path = s"/agent-subscription/registration/${utr}/postcode/${postcodeEncoded}"
+      val postcodeEncoded = encodePathSegments(postcode)
+      val path = encodePathSegments("agent-subscription", "registration", utr, "postcode", postcode)
 
       val response = await(new Resource(path, port).get)
       response.status shouldBe 200
@@ -60,9 +61,8 @@ class RegistrationControllerAuditingSpec extends BaseAuditSpec with DesStubs wit
     Json.parse(
       s"""
          |{
-         |  "Authorization": "My Agency",
-         |  "utr": ${utr},
-         |  "postcode": ${postcode},
+         |  "utr": "$utr",
+         |  "postcode": "$postcode",
          |  "knownFactsMatched": true,
          |  "isSubscribedToAgentServices": true
          |}
@@ -73,8 +73,8 @@ class RegistrationControllerAuditingSpec extends BaseAuditSpec with DesStubs wit
     Json.parse(
       s"""
          |{
-         |  "path": ${path},
-         |  "transactionName": "Agent services subscription"
+         |  "path": "$path",
+         |  "transactionName": "Check agency status"
          |}
          |""".stripMargin)
       .asInstanceOf[JsObject]
