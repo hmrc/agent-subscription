@@ -33,7 +33,7 @@ private object SubscriptionAuditDetail {
 }
 
 private case class SubscriptionAuditDetail (
-  agentRegistrationNumber: Arn,
+  agentReferenceNumber: Arn,
   utr: String,
   agencyName: String,
   agencyAddress: model.Address,

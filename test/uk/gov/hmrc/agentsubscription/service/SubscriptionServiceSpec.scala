@@ -76,7 +76,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |     "postcode": "BB1 1BB",
           |     "countryCode": "GB"
           |  },
-          |  "agentRegistrationNumber": "$arn",
+          |  "agentReferenceNumber": "$arn",
           |  "agencyEmail": "testagency@example.com",
           |  "agencyTelephoneNumber": "01234 567890",
           |  "utr": "$businessUtr"
