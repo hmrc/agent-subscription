@@ -152,7 +152,8 @@ trait DesStubs {
              |  "organisation":
              |  {
              |    "organisationName": "My Agency"
-             |  }
+             |  },
+             |  "agentReferenceNumber": "TARN0000001"
              |}
                """.stripMargin)))
   }
@@ -173,7 +174,8 @@ trait DesStubs {
              |  {
              |    "firstName": "First",
              |    "lastName": "Last"
-             |  }
+             |  },
+             |  "agentReferenceNumber": "AARN0000002"
              |}
                """.stripMargin)))
   }

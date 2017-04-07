@@ -63,7 +63,8 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
          |  "utr": "$utr",
          |  "postcode": "$postcode",
          |  "knownFactsMatched": true,
-         |  "isSubscribedToAgentServices": true
+         |  "isSubscribedToAgentServices": true,
+         |  "agentReferenceNumber": "TARN0000001"
          |}
          |""".stripMargin)
       .asInstanceOf[JsObject]

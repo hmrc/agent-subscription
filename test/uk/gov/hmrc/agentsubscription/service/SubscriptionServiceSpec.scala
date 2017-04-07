@@ -116,7 +116,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private def subscriptionWillBeCreated(businessUtr: String, businessPostcode: String, arn: String) = {
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
-        postalCode = Some(businessPostcode), isAnASAgent = false, organisationName = Some("Test Business"), None)))
+        postalCode = Some(businessPostcode), isAnASAgent = false, organisationName = Some("Test Business"), None, None)))
 
     when(desConnector.subscribeToAgentServices(anyString, any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
