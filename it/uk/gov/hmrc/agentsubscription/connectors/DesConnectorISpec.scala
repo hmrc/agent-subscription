@@ -2,8 +2,8 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
 
+import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.{ArgumentCaptor, ArgumentMatchers, Matchers}
 import org.mockito.Mockito.verify
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
@@ -93,7 +93,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(Some("AA1 1AA"), isAnASAgent = true, Some("My Agency"), None))
+      registration shouldBe Some(DesRegistrationResponse(Some("AA1 1AA"), isAnASAgent = true, Some("My Agency"), None, Some(Arn("TARN0000001"))))
     }
 
     "return registration details for an individual UTR that is known by DES" in {
@@ -101,7 +101,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(Some("AA1 1AA"), isAnASAgent = true, None, Some(DesIndividual("First", "Last"))))
+      registration shouldBe Some(DesRegistrationResponse(Some("AA1 1AA"), isAnASAgent = true, None, Some(DesIndividual("First", "Last")), Some(Arn("AARN0000002"))))
     }
 
     "return registration details without organisationName for a UTR that is known by DES" in {
@@ -109,7 +109,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(Some("AA1 1AA"), isAnASAgent = true, None, None))
+      registration shouldBe Some(DesRegistrationResponse(Some("AA1 1AA"), isAnASAgent = true, None, None, None))
     }
 
     "return registration details without postcode for a UTR that is known by DES" in {
@@ -117,7 +117,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(None, isAnASAgent = true, None, None))
+      registration shouldBe Some(DesRegistrationResponse(None, isAnASAgent = true, None, None, None))
     }
 
 

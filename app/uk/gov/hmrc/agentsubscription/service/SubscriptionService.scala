@@ -32,7 +32,7 @@ private object SubscriptionAuditDetail {
   implicit val writes = Json.writes[SubscriptionAuditDetail]
 }
 
-private case class SubscriptionAuditDetail(
+private case class SubscriptionAuditDetail (
   agentRegistrationNumber: Arn,
   utr: String,
   agencyName: String,
@@ -64,7 +64,7 @@ class SubscriptionService @Inject() (
 
   def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     desConnector.getRegistration(subscriptionRequest.utr) flatMap {
-        case Some(DesRegistrationResponse(Some(desPostcode), _, _, _))
+        case Some(DesRegistrationResponse(Some(desPostcode), _, _, _, _))
           if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => subscribe(subscriptionRequest)
         case _ => Future successful None
     }

@@ -24,6 +24,7 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse}
+import uk.gov.hmrc.agentsubscription.model.Arn
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
@@ -48,9 +49,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       when(desConnector.getRegistration(anyString)(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
           Some(postcode),
-          isAnASAgent = false,
+          isAnASAgent = true,
           Some("Organisation name"),
-          None)))
+          None,
+          Some(Arn("TARN0000001")))))
 
       await(service.getRegistration(utr, postcode))
 
@@ -60,7 +62,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "utr": "$utr",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
-          |  "isSubscribedToAgentServices": false
+          |  "isSubscribedToAgentServices": true,
+          |  "agentReferenceNumber": "TARN0000001"
           |}
           |""".stripMargin).asInstanceOf[JsObject]
       eventually {
@@ -76,9 +79,40 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       when(desConnector.getRegistration(anyString)(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
           Some(postcode),
+          isAnASAgent = true,
+          None,
+          Some(DesIndividual("First", "Last")),
+          Some(Arn("AARN0000002")))))
+
+      await(service.getRegistration(utr, postcode))
+
+      val expectedExtraDetail = Json.parse(
+        s"""
+          |{
+          |  "utr": "$utr",
+          |  "postcode": "$postcode",
+          |  "knownFactsMatched": true,
+          |  "isSubscribedToAgentServices": true,
+          |  "agentReferenceNumber": "AARN0000002"
+          |}
+          |""".stripMargin).asInstanceOf[JsObject]
+      eventually {
+        verify(auditService)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, fakeRequest)
+      }
+    }
+
+    "tolerate agentReferenceNumber being absent from the DES response" in {
+      val utr = "4000000009"
+      val postcode = "AA1 1AA"
+
+      when(desConnector.getRegistration(anyString)(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful Some(DesRegistrationResponse(
+          Some(postcode),
           isAnASAgent = false,
           None,
-          Some(DesIndividual("First", "Last")))))
+          Some(DesIndividual("First", "Last")),
+          None)))
 
       await(service.getRegistration(utr, postcode))
 
@@ -107,7 +141,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some(nonMatchingPostcode),
           isAnASAgent = false,
           None,
-          Some(DesIndividual("First", "Last")))))
+          Some(DesIndividual("First", "Last")),
+          None)))
 
       await(service.getRegistration(utr, postcode))
 

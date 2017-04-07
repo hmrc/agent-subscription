@@ -22,7 +22,7 @@ import play.api.libs.json.{Json, _}
 import play.api.mvc.Request
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse}
-import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
+import uk.gov.hmrc.agentsubscription.model.{Arn, RegistrationDetails}
 import uk.gov.hmrc.agentsubscription.postcodesMatch
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
@@ -38,7 +38,8 @@ private case class CheckAgencyStatusAuditDetail(
   utr: String,
   postcode: String,
   knownFactsMatched: Boolean,
-  isSubscribedToAgentServices: Option[Boolean]
+  isSubscribedToAgentServices: Option[Boolean],
+  agentReferenceNumber: Option[Arn]
 )
 
 
@@ -46,26 +47,29 @@ private case class CheckAgencyStatusAuditDetail(
 class RegistrationService @Inject() (desConnector: DesConnector, auditService: AuditService) {
 
   def getRegistration(utr: String, postcode: String)(implicit hc: HeaderCarrier, request: Request[Any]): Future[Option[RegistrationDetails]] =
-    getRegistrationFromDes(utr, postcode) map { maybeRegistration =>
-      auditCheckAgencyStatus(utr, postcode, knownFactsMatched = maybeRegistration.isDefined, maybeRegistration.map(_.isSubscribedToAgentServices))
-      maybeRegistration
-    }
-
-  private def getRegistrationFromDes(utr: String, postcode: String)(implicit hc: HeaderCarrier, request: Request[Any]): Future[Option[RegistrationDetails]] =
     desConnector.getRegistration(utr) map {
-      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName, None)) if postcodesMatch(desPostcode, postcode) =>
+      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName, None, agentReferenceNumber)) if postcodesMatch(desPostcode, postcode) =>
+        auditCheckAgencyStatus(utr, postcode, knownFactsMatched = true, isSubscribedToAgentServices = Some(isAnASAgent), agentReferenceNumber)
         Some(RegistrationDetails(isAnASAgent, organisationName))
-      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, _, Some(DesIndividual(first, last)))) if postcodesMatch(desPostcode, postcode) =>
+      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, _, Some(DesIndividual(first, last)), agentReferenceNumber)) if postcodesMatch(desPostcode, postcode) =>
+        auditCheckAgencyStatus(utr, postcode, knownFactsMatched = true, isSubscribedToAgentServices = Some(isAnASAgent), agentReferenceNumber)
         Some(RegistrationDetails(isAnASAgent, Some(s"$first $last")))
       case _ =>
+        auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, None)
         None
     }
 
-  private def auditCheckAgencyStatus(utr: String, postcode: String, knownFactsMatched: Boolean, isSubscribedToAgentServices: Option[Boolean])(implicit hc: HeaderCarrier, request: Request[Any]): Unit =
+  private def auditCheckAgencyStatus(utr: String, postcode: String, knownFactsMatched: Boolean, isSubscribedToAgentServices: Option[Boolean], agentReferenceNumber: Option[Arn])
+    (implicit hc: HeaderCarrier, request: Request[Any]): Unit =
     auditService.auditEvent(
       AgentSubscriptionEvent.CheckAgencyStatus,
       "Check agency status",
-      toJsObject(CheckAgencyStatusAuditDetail(utr, postcode, knownFactsMatched, isSubscribedToAgentServices)))
+      toJsObject(CheckAgencyStatusAuditDetail(
+        utr,
+        postcode,
+        knownFactsMatched,
+        isSubscribedToAgentServices,
+        agentReferenceNumber)))
 
   private def toJsObject(detail: CheckAgencyStatusAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
