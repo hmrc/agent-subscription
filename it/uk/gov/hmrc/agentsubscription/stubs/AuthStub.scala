@@ -46,6 +46,21 @@ trait AuthStub {
         .withStatus(200)
         .withBody(s"""
                      |{
+                     |  "authProviderId": "12345-credId",
+                     |  "authProviderType": "GovernmentGateway",
+                     |  "affinityGroup": "Agent"
+                     |}
+         """.stripMargin)))
+    this
+  }
+
+  // authProviderId and authProviderType are Options in the UserDetails class in the user-details service, so presumably we shouldn't assume they will always be present
+  def andIsAnAgentWithoutAuthProvider(): AuthStub = {
+    stubFor(get(urlPathEqualTo(s"/user-details/id/$oid"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(s"""
+                     |{
                      |  "affinityGroup": "Agent"
                      |}
          """.stripMargin)))
@@ -58,6 +73,8 @@ trait AuthStub {
         .withStatus(200)
         .withBody(s"""
                      |{
+                     |  "authProviderId": "12345-credId",
+                     |  "authProviderType": "GovernmentGateway",
                      |  "affinityGroup": "Organisation"
                      |}
          """.stripMargin)))

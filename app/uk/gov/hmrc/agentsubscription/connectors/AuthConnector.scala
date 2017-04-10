@@ -36,7 +36,7 @@ class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: Htt
       for {
         userDetails <- userDetails((r \ "userDetailsLink").as[String])
         enrolmentsUrl <- Future successful (r \ "enrolments").as[String]
-      } yield Some(Authority(userDetails.affinityGroup, enrolmentsUrl))
+      } yield Some(Authority(userDetails.authProviderId, userDetails.authProviderType, userDetails.affinityGroup, enrolmentsUrl))
     } recover {
       case error: Upstream4xxResponse if error.upstreamResponseCode == 401 => None
       case e => throw e

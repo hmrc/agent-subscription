@@ -19,8 +19,8 @@ package uk.gov.hmrc.agentsubscription.service
 import javax.inject.{Inject, Singleton}
 
 import play.api.libs.json.{Json, _}
-import play.api.mvc.Request
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
+import uk.gov.hmrc.agentsubscription.auth.RequestWithAuthority
 import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse}
 import uk.gov.hmrc.agentsubscription.model.{Arn, RegistrationDetails}
 import uk.gov.hmrc.agentsubscription.postcodesMatch
@@ -35,6 +35,8 @@ private object CheckAgencyStatusAuditDetail {
 }
 
 private case class CheckAgencyStatusAuditDetail(
+  authProviderId: Option[String],
+  authProviderType: Option[String],
   utr: String,
   postcode: String,
   knownFactsMatched: Boolean,
@@ -46,7 +48,7 @@ private case class CheckAgencyStatusAuditDetail(
 @Singleton
 class RegistrationService @Inject() (desConnector: DesConnector, auditService: AuditService) {
 
-  def getRegistration(utr: String, postcode: String)(implicit hc: HeaderCarrier, request: Request[Any]): Future[Option[RegistrationDetails]] =
+  def getRegistration(utr: String, postcode: String)(implicit hc: HeaderCarrier, request: RequestWithAuthority[Any]): Future[Option[RegistrationDetails]] =
     desConnector.getRegistration(utr) map {
       case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName, None, agentReferenceNumber)) if postcodesMatch(desPostcode, postcode) =>
         auditCheckAgencyStatus(utr, postcode, knownFactsMatched = true, isSubscribedToAgentServices = Some(isAnASAgent), agentReferenceNumber)
@@ -60,11 +62,13 @@ class RegistrationService @Inject() (desConnector: DesConnector, auditService: A
     }
 
   private def auditCheckAgencyStatus(utr: String, postcode: String, knownFactsMatched: Boolean, isSubscribedToAgentServices: Option[Boolean], agentReferenceNumber: Option[Arn])
-    (implicit hc: HeaderCarrier, request: Request[Any]): Unit =
+    (implicit hc: HeaderCarrier, request: RequestWithAuthority[Any]): Unit =
     auditService.auditEvent(
       AgentSubscriptionEvent.CheckAgencyStatus,
       "Check agency status",
       toJsObject(CheckAgencyStatusAuditDetail(
+        request.authority.authProviderId,
+        request.authority.authProviderType,
         utr,
         postcode,
         knownFactsMatched,

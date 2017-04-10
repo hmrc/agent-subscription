@@ -60,6 +60,8 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
     Json.parse(
       s"""
          |{
+         |  "authProviderId": "12345-credId",
+         |  "authProviderType": "GovernmentGateway",
          |  "utr": "$utr",
          |  "postcode": "$postcode",
          |  "knownFactsMatched": true,
