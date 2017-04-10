@@ -28,6 +28,6 @@ object UserDetails {
   implicit val format: Format[UserDetails] = Json.format[UserDetails]
 }
 
-case class Authority(affinityGroup: String, enrolmentsUrl: String)
+case class Authority(authProviderId: Option[String], authProviderType: Option[String], affinityGroup: String, enrolmentsUrl: String)
 
-case class UserDetails(affinityGroup: String)
+case class UserDetails(authProviderId: Option[String], authProviderType: Option[String], affinityGroup: String)

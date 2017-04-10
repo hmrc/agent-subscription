@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.test.FakeRequest
+import uk.gov.hmrc.agentsubscription.auth.RequestWithAuthority
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.agentsubscription.support.{AkkaMaterializerSpec, ResettingMockitoSugar}
@@ -37,13 +38,13 @@ class RegistrationControllerSpec extends UnitSpec with AkkaMaterializerSpec with
 
   "getRegistrationBlock" should {
     "return 400 INVALID_UTR if the UTR is invalid " in {
-      val result = await(controller.getRegistrationBlock(invalidUtr, validPostcode)(FakeRequest()))
+      val result = await(controller.getRegistrationBlock(invalidUtr, validPostcode)(RequestWithAuthority(null, FakeRequest())))
       status(result) shouldBe 400
       (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_UTR"
     }
 
     "return 400 INVALID_POSTCODE if the postcode is invalid " in {
-      val result = await(controller.getRegistrationBlock(validUtr, invalidPostcode)(FakeRequest()))
+      val result = await(controller.getRegistrationBlock(validUtr, invalidPostcode)(RequestWithAuthority(null, FakeRequest())))
       status(result) shouldBe 400
       (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_POSTCODE"
     }

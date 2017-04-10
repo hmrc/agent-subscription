@@ -20,8 +20,8 @@ import javax.inject._
 
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{Action, AnyContent, Request, Result}
-import uk.gov.hmrc.agentsubscription.auth.AuthActions
+import play.api.mvc.{Action, AnyContent, Result}
+import uk.gov.hmrc.agentsubscription.auth.{AuthActions, RequestWithAuthority}
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
 import uk.gov.hmrc.agentsubscription.model.{Utr, postcodeWithoutSpacesRegex}
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
@@ -34,7 +34,7 @@ import scala.concurrent.Future
 class RegistrationController @Inject()(service: RegistrationService, override val authConnector: AuthConnector)
   extends BaseController with AuthActions {
 
-  private[controllers] def getRegistrationBlock(utr: String, postcode: String): Request[AnyContent] => Future[Result] = { implicit request =>
+  private[controllers] def getRegistrationBlock(utr: String, postcode: String): RequestWithAuthority[AnyContent] => Future[Result] = { implicit request =>
     if (!Utr.isValid(utr))
       badRequest("INVALID_UTR")
     else if (!validPostcode(postcode))

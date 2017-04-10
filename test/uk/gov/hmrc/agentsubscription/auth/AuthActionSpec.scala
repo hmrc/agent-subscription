@@ -16,37 +16,38 @@
 
 package uk.gov.hmrc.agentsubscription.auth
 
-import org.scalatest.mock.MockitoSugar
-import play.api.mvc.{ActionBuilder, Request, Result, Results}
-import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
-import uk.gov.hmrc.play.test.UnitSpec
-import org.mockito.Mockito._
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
+import org.mockito.Mockito._
 import org.scalatest.BeforeAndAfterEach
+import org.scalatest.mock.MockitoSugar
+import play.api.mvc.{ActionBuilder, Result, Results}
 import play.api.test.FakeRequest
+import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
+import uk.gov.hmrc.agentsubscription.support.AkkaMaterializerSpec
 import uk.gov.hmrc.play.http.HeaderCarrier
+import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Results with BeforeAndAfterEach {
+class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Results with BeforeAndAfterEach with AkkaMaterializerSpec {
   override val authConnector = mock[AuthConnector]
 
   "authorisedWithSubscribingAgent" should {
     "return Unauthorized" when {
       "user is not an agent" in {
         when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
-          .thenReturn(Future successful Some(Authority("Individual", "/enrolments")))
+          .thenReturn(Future successful Some(Authority(Some("12345-credId"), Some("GovernmentGateway"), "Individual", "/enrolments")))
 
         status(response(withAgentAffinityGroup)) shouldBe 401
 
       }
     }
 
-    "allow access" when {
+    "allow access and decorate the request with Authority" when {
       "user is an agent" in {
         when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
-          .thenReturn(Future successful Some(Authority("Agent", "/enrolments")))
+          .thenReturn(Future successful Some(Authority(Some("12345-credId"), Some("GovernmentGateway"), "Agent", "/enrolments")))
 
         status(response(withAgentAffinityGroup)) shouldBe 200
       }
@@ -58,34 +59,46 @@ class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Re
     "return Unauthorized" when {
       "user is not an agent" in {
         when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
-          .thenReturn(Future successful Some(Authority("Individual", "/enrolments")))
+          .thenReturn(Future successful Some(Authority(Some("12345-credId"), Some("GovernmentGateway"), "Individual", "/enrolments")))
 
         status(responseWithEnrolments(withAgentAffinityGroupAndEnrolments)) shouldBe 401
-
       }
     }
 
-    "decorate the request with enrolments" when {
+    "decorate the request with Authority and enrolments" when {
       "user has enrolments" in {
         when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
-          .thenReturn(Future successful Some(Authority("Agent", "/enrolments")))
+          .thenReturn(Future successful Some(Authority(Some("12345-credId"), Some("GovernmentGateway"), "Agent", "/enrolments")))
         when(authConnector.enrolments(any[String])(any[HeaderCarrier], any[ExecutionContext]))
           .thenReturn(List(Enrolment("MY-ENROLMENT")))
 
-        status(responseWithEnrolments(withAgentAffinityGroupAndEnrolments)) shouldBe 200
+        val result = responseWithEnrolments(withAgentAffinityGroupAndEnrolments)
+        status(result) shouldBe 200
       }
     }
   }
 
   private def response(actionBuilder: ActionBuilder[RequestWithAuthority]): Result = {
-    val action = actionBuilder { Ok }
+    val action = actionBuilder { request =>
+      request.authority shouldBe Authority(
+        authProviderId = Some("12345-credId"),
+        authProviderType = Some("GovernmentGateway"),
+        affinityGroup = "Agent",
+        enrolmentsUrl = "/enrolments")
+
+      Ok
+    }
     await(action(FakeRequest()))
   }
 
   private def responseWithEnrolments(actionBuilder: ActionBuilder[RequestWithEnrolments]): Result = {
-    val action = actionBuilder { r => r.enrolments match {
-      case Enrolment(key) :: Nil if key == "MY-ENROLMENT" => Ok
-    }}
+    val action = actionBuilder { request =>
+      request.enrolments should matchPattern {
+        case Enrolment(enrolmentKey) :: Nil if enrolmentKey == "MY-ENROLMENT" =>
+      }
+
+      Ok
+    }
     await(action(FakeRequest()))
   }
 

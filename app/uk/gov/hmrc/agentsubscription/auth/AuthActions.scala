@@ -32,7 +32,7 @@ trait AuthActions {
     protected def refine[A](request: Request[A]): Future[Either[Result, RequestWithAuthority[A]]] = {
       implicit val hc = HeaderCarrier.fromHeadersAndSession(request.headers, None)
       authConnector.currentAuthority() map {
-        case authority@Some(Authority("Agent", _)) => Right(RequestWithAuthority(authority.get, request))
+        case authority@Some(Authority(_, _, "Agent", _)) => Right(RequestWithAuthority(authority.get, request))
         case _ => Left(Unauthorized)
       }
     }
@@ -47,7 +47,7 @@ trait AuthActions {
     }
   }
 
-  case class RequestWithAuthority[A](authority: Authority, request: Request[A]) extends WrappedRequest[A](request)
-  case class RequestWithEnrolments[A](enrolments: List[Enrolment], request: Request[A]) extends WrappedRequest[A](request)
-
 }
+
+case class RequestWithAuthority[+A](authority: Authority, request: Request[A]) extends WrappedRequest[A](request)
+case class RequestWithEnrolments[+A](enrolments: List[Enrolment], request: Request[A]) extends WrappedRequest[A](request)

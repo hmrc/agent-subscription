@@ -19,7 +19,20 @@ class AuthConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppo
   "AuthConnector currentAuthority" should {
     "return Authority when an authority detail is available" in {
       requestIsAuthenticated().andIsAnAgent()
-      await(connector.currentAuthority()) shouldBe Some(Authority("Agent", "/auth/oid/556737e15500005500eaf68f/enrolments"))
+      await(connector.currentAuthority()) shouldBe Some(Authority(
+        authProviderId = Some("12345-credId"),
+        authProviderType = Some("GovernmentGateway"),
+        affinityGroup = "Agent",
+        enrolmentsUrl = "/auth/oid/556737e15500005500eaf68f/enrolments"))
+    }
+
+    "return Authority when user-details does not include an auth provider" in {
+      requestIsAuthenticated().andIsAnAgentWithoutAuthProvider()
+      await(connector.currentAuthority()) shouldBe Some(Authority(
+        authProviderId = None,
+        authProviderType = None,
+        affinityGroup = "Agent",
+        enrolmentsUrl = "/auth/oid/556737e15500005500eaf68f/enrolments"))
     }
 
     "return none when an authority detail is unavailable" in {
