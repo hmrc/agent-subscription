@@ -75,7 +75,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
          |     "postcode": "AA1 2AA",
          |     "countryCode": "GB"
          |  },
-         |  "agentRegistrationNumber": "ARN0001",
+         |  "agentReferenceNumber": "ARN0001",
          |  "agencyEmail": "agency@example.com",
          |  "agencyTelephoneNumber": "0123 456 7890",
          |  "utr": "$utr"
