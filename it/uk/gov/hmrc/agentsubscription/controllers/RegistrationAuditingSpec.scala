@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import org.scalatest.concurrent.Eventually._
 import play.api.libs.json._
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
 import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DataStreamStub, DesStubs}
@@ -28,7 +29,7 @@ import scala.language.postfixOps
 
 class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub {
 
-  private val utr = "2000000000"
+  private val utr = Utr("2000000000")
   private val postcode = "AA1 1AA"
 
   "GET of /registration/:utr/postcode/:postcode" should {
@@ -39,7 +40,7 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
       requestIsAuthenticated().andIsAnAgent()
       organisationRegistrationExists(utr, true)
 
-      val path = encodePathSegments("agent-subscription", "registration", utr, "postcode", postcode)
+      val path = encodePathSegments("agent-subscription", "registration", utr.value, "postcode", postcode)
 
       val response = await(new Resource(path, port).get)
       response.status shouldBe 200
@@ -56,13 +57,13 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
     }
   }
 
-  private def expectedDetails(utr: String, postcode: String): JsObject =
+  private def expectedDetails(utr: Utr, postcode: String): JsObject =
     Json.parse(
       s"""
          |{
          |  "authProviderId": "12345-credId",
          |  "authProviderType": "GovernmentGateway",
-         |  "utr": "$utr",
+         |  "utr": "${utr.value}",
          |  "postcode": "$postcode",
          |  "knownFactsMatched": true,
          |  "isSubscribedToAgentServices": true,

@@ -19,12 +19,7 @@ package uk.gov.hmrc.agentsubscription.model
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
-import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites}
-
-object Arn {
-  implicit val arnReads = new SimpleObjectReads[Arn]("arn", Arn.apply)
-  implicit val arnWrites = new SimpleObjectWrites[Arn](_.arn)
-}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Utr, Arn}
 
 object Address {
   implicit val writes: Writes[Address] = Json.writes[Address]
@@ -56,13 +51,11 @@ object KnownFacts {
 object SubscriptionRequest {
   implicit val writes: Writes[SubscriptionRequest] = Json.format[SubscriptionRequest]
   implicit val reads: Reads[SubscriptionRequest] = (
-    (__ \ "utr").read[String](utr) and
+    (__ \ "utr").read[Utr] and
     (__ \ "knownFacts").read[KnownFacts] and
     (__ \ "agency").read[Agency]
   )(SubscriptionRequest.apply _)
 }
-
-case class Arn(arn: String)
 
 case class Address(addressLine1: String,
                    addressLine2: Option[String],
@@ -80,7 +73,7 @@ case class Agency(name: String,
 
 case class KnownFacts(postcode: String)
 
-case class SubscriptionRequest(utr: String,
+case class SubscriptionRequest(utr: Utr,
                                knownFacts: KnownFacts,
                                agency: Agency
                                )

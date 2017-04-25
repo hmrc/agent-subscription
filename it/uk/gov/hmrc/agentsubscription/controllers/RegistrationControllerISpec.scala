@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
@@ -33,7 +34,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
     "return 404 when no match is found in des" in {
       requestIsAuthenticated().andIsAnAgent()
 
-      registrationDoesNotExist("0000000000")
+      registrationDoesNotExist(Utr("0000000000"))
       val response = await(new Resource("/agent-subscription/registration/0000000000/postcode/AA1%201AA", port).get)
       response.status shouldBe 404
     }
@@ -55,14 +56,14 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return 404 when des returns a match for the utr but the post codes do not match" in {
       requestIsAuthenticated().andIsAnAgent()
-      organisationRegistrationExists("0123456789")
+      organisationRegistrationExists(Utr("0123456789"))
       val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/BB11BB", port).get)
       response.status shouldBe 404
     }
 
     "return 404 when des returns a response with no postcode" in {
       requestIsAuthenticated().andIsAnAgent()
-      registrationExistsWithNoPostcode("0123456789")
+      registrationExistsWithNoPostcode(Utr("0123456789"))
       val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/AA1%201AA", port).get)
       response.status shouldBe 404
     }
@@ -75,7 +76,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return 200 when des returns an AS Agent for the utr and the postcodes match" in {
       requestIsAuthenticated().andIsAnAgent()
-      organisationRegistrationExists("0123456789", true)
+      organisationRegistrationExists(Utr("0123456789"), true)
       val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices" ).as[Boolean] shouldBe true
@@ -84,7 +85,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return 200 when des returns a non-AS Agent for the utr and the postcodes match" in {
       requestIsAuthenticated().andIsAnAgent()
-      organisationRegistrationExists("0123456789", false)
+      organisationRegistrationExists(Utr("0123456789"), false)
       val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices" ).as[Boolean] shouldBe false
@@ -93,7 +94,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return 200 when des returns an individual for the utr and the postcodes match" in {
       requestIsAuthenticated().andIsAnAgent()
-      individualRegistrationExists("0123456789", false)
+      individualRegistrationExists(Utr("0123456789"), false)
       val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices" ).as[Boolean] shouldBe false
@@ -102,7 +103,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return 200 when des returns no organisation name" in {
       requestIsAuthenticated().andIsAnAgent()
-      registrationExistsWithNoOrganisationName("0123456789", false)
+      registrationExistsWithNoOrganisationName(Utr("0123456789"), false)
       val response = await(new Resource("/agent-subscription/registration/0123456789/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices" ).as[Boolean] shouldBe false

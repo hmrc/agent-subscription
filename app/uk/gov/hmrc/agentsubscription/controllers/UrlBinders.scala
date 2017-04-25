@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model
+package uk.gov.hmrc.agentsubscription.controllers
 
-import org.scalatest.{ShouldMatchers, WordSpec}
+import play.api.mvc.PathBindable
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 
-class UtrSpec extends WordSpec with ShouldMatchers {
-
-  "isValid" should {
-    "be true for valid UTRs" in {
-      Utr.isValid("1234567890") shouldBe true
+object UrlBinders {
+  implicit val utrBinder = new PathBindable[Utr] {
+    override def bind(key: String, utrValue: String): Either[String, Utr] = Utr.isValid(utrValue) match {
+      case true => Right(Utr(utrValue))
+      case _ => Left(raw""""$utrValue" is not a valid UTR""")
     }
 
-    "be false for invalid UTRs" in {
-      Utr.isValid("A234567890") shouldBe false
-      Utr.isValid("12345678901") shouldBe false
-    }
+    override def unbind(key: String, utr: Utr): String = utr.value
   }
 }

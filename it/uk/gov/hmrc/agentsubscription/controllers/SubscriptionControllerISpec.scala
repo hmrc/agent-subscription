@@ -2,12 +2,13 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.libs.json.Json.{stringify, toJson}
 import play.api.libs.json._
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.{KnownFacts, SubscriptionRequest}
 import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, GGAdminStubs, GGStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
 class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with GGStubs with GGAdminStubs{
-  private val utr = "0123456789"
+  private val utr = Utr("0123456789")
 
   "creating a subscription" should {
     val agency = __ \ "agency"
@@ -283,7 +284,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
   private val subscriptionRequest: String =
     s"""
        |{
-       |  "utr": "$utr",
+       |  "utr": "${utr.value}",
        |  "knownFacts": {
        |    "postcode": "AA1 1AA"
        |  },

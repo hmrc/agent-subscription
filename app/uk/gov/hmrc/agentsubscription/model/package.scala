@@ -39,8 +39,4 @@ package object model {
     filter[String](ValidationError("error.postcode.invalid"))(_.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex))
   }
 
-  private[model] val utr = {
-    pattern(Utr.utrPattern, "error.invalid.utr")
-  }
-
 }

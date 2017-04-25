@@ -2,13 +2,14 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
 import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, GGAdminStubs, GGStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
 
 class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with GGStubs with GGAdminStubs{
-  private val utr = "0123456789"
+  private val utr = Utr("0123456789")
 
   "creating a subscription" should {
     import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
@@ -39,10 +40,10 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
 
   private def doSubscriptionRequest(request:String) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
 
-  private def subscriptionRequest(utr: String): String =
+  private def subscriptionRequest(utr: Utr): String =
     s"""
        |{
-       |  "utr": "$utr",
+       |  "utr": "${utr.value}",
        |  "knownFacts": {
        |    "postcode": "AA1 1AA"
        |  },
@@ -62,7 +63,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
        |}
      """.stripMargin
 
-  private def expectedDetails(utr: String): JsObject =
+  private def expectedDetails(utr: Utr): JsObject =
     Json.parse(
       s"""
          |{
@@ -78,7 +79,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
          |  "agentReferenceNumber": "ARN0001",
          |  "agencyEmail": "agency@example.com",
          |  "agencyTelephoneNumber": "0123 456 7890",
-         |  "utr": "$utr"
+         |  "utr": "${utr.value}"
          |}
          |""".stripMargin)
       .asInstanceOf[JsObject]

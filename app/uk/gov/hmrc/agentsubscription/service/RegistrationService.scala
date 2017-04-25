@@ -19,10 +19,11 @@ package uk.gov.hmrc.agentsubscription.service
 import javax.inject.{Inject, Singleton}
 
 import play.api.libs.json.{Json, _}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.auth.RequestWithAuthority
 import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse}
-import uk.gov.hmrc.agentsubscription.model.{Arn, RegistrationDetails}
+import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.agentsubscription.postcodesMatch
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
@@ -37,7 +38,7 @@ private object CheckAgencyStatusAuditDetail {
 private case class CheckAgencyStatusAuditDetail(
   authProviderId: Option[String],
   authProviderType: Option[String],
-  utr: String,
+  utr: Utr,
   postcode: String,
   knownFactsMatched: Boolean,
   isSubscribedToAgentServices: Option[Boolean],
@@ -48,7 +49,7 @@ private case class CheckAgencyStatusAuditDetail(
 @Singleton
 class RegistrationService @Inject() (desConnector: DesConnector, auditService: AuditService) {
 
-  def getRegistration(utr: String, postcode: String)(implicit hc: HeaderCarrier, request: RequestWithAuthority[Any]): Future[Option[RegistrationDetails]] =
+  def getRegistration(utr: Utr, postcode: String)(implicit hc: HeaderCarrier, request: RequestWithAuthority[Any]): Future[Option[RegistrationDetails]] =
     desConnector.getRegistration(utr) map {
       case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName, None, agentReferenceNumber)) if postcodesMatch(desPostcode, postcode) =>
         auditCheckAgencyStatus(utr, postcode, knownFactsMatched = true, isSubscribedToAgentServices = Some(isAnASAgent), agentReferenceNumber)
@@ -61,7 +62,7 @@ class RegistrationService @Inject() (desConnector: DesConnector, auditService: A
         None
     }
 
-  private def auditCheckAgencyStatus(utr: String, postcode: String, knownFactsMatched: Boolean, isSubscribedToAgentServices: Option[Boolean], agentReferenceNumber: Option[Arn])
+  private def auditCheckAgencyStatus(utr: Utr, postcode: String, knownFactsMatched: Boolean, isSubscribedToAgentServices: Option[Boolean], agentReferenceNumber: Option[Arn])
     (implicit hc: HeaderCarrier, request: RequestWithAuthority[Any]): Unit =
     auditService.auditEvent(
       AgentSubscriptionEvent.CheckAgencyStatus,

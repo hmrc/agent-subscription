@@ -21,6 +21,7 @@ import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.connectors.{Address => _, KnownFacts => _, _}
@@ -46,7 +47,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
   "subscribeAgentToMtd" should {
     "audit appropriate values" in {
-      val businessUtr = "4000000009"
+      val businessUtr = Utr("4000000009")
       val businessPostcode = "AA1 1AA"
 
       val arn = "ARN0001"
@@ -79,7 +80,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "agentReferenceNumber": "$arn",
           |  "agencyEmail": "testagency@example.com",
           |  "agencyTelephoneNumber": "01234 567890",
-          |  "utr": "$businessUtr"
+          |  "utr": "${businessUtr.value}"
           |}
           |""".stripMargin).asInstanceOf[JsObject]
       eventually {
@@ -89,7 +90,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     }
 
     "add the agency postcode, not the business postcode, to the HMRC-AS-AGENT enrolment known facts" in {
-      val utr = "4000000009"
+      val utr = Utr("4000000009")
       val arn = "ARN0001"
 
       val businessPostcode = "BU1 1BB"
@@ -113,12 +114,12 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     }
   }
 
-  private def subscriptionWillBeCreated(businessUtr: String, businessPostcode: String, arn: String) = {
+  private def subscriptionWillBeCreated(businessUtr: Utr, businessPostcode: String, arn: String) = {
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         postalCode = Some(businessPostcode), isAnASAgent = false, organisationName = Some("Test Business"), None, None)))
 
-    when(desConnector.subscribeToAgentServices(anyString, any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
+    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
     when(ggAdminConnector.createKnownFacts(eqs(arn), anyString)(eqs(hc), any[ExecutionContext]))
