@@ -9,7 +9,7 @@ import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, GGAdminStubs, GG
 import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
 
 class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with GGStubs with GGAdminStubs{
-  private val utr = Utr("0123456789")
+  private val utr = Utr("7000000002")
 
   "creating a subscription" should {
     import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
