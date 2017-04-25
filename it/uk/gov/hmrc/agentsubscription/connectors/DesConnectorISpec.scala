@@ -9,8 +9,8 @@ import org.scalatest.concurrent.Eventually
 import org.scalatest.mock.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
 import play.api.libs.json.{JsValue, Json}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.WSHttp
-import uk.gov.hmrc.agentsubscription.model.Arn
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.WireMockSupport
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -23,7 +23,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with DesStubs {
   private implicit val hc = HeaderCarrier()
-  val utr = "1234567890"
+  val utr = Utr("1234567890")
 
   private val bearerToken = "auth-token"
   private val environment = "des-env"
@@ -69,7 +69,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       await(connector.subscribeToAgentServices(utr, request))
 
       val auditEvent: MergedDataEvent = capturedEvent()
-      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/agents/utr/$utr"
+      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/agents/utr/${utr.value}"
       auditEvent.auditType shouldBe "OutboundCall"
       val requestJson: JsValue = Json.parse(auditEvent.request.detail("requestBody"))
       (requestJson \ "regime").as[String] shouldBe "ITSA"
@@ -137,7 +137,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       await(connector.getRegistration(utr))
 
       val auditEvent = capturedEvent()
-      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/individual/utr/$utr"
+      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/individual/utr/${utr.value}"
       auditEvent.auditType shouldBe "OutboundCall"
 
       val responseJson = Json.parse(auditEvent.response.detail("responseMessage"))

@@ -2,6 +2,7 @@ package uk.gov.hmrc.agentsubscription.stubs
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesSubscriptionRequest
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 
@@ -34,10 +35,10 @@ trait DesStubs {
 
   private val invalidUtrResponse = errorResponse("INVALID_UTR", "Submission has not passed validation. Invalid parameter UTR.")
 
-  def utrIsUnexpectedlyInvalid(utr: String = "xyz"): Unit = utrIsInvalid("0123456789")
+  def utrIsUnexpectedlyInvalid(utr: Utr): Unit = utrIsInvalid(utr)
 
-  def utrIsInvalid(utr: String = "xyz"): Unit = {
-    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/individual/utr/$utr")))
+  def utrIsInvalid(utr: Utr = Utr("xyz")): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/individual/utr/${utr.value}")))
       .willReturn(
         aResponse()
           .withStatus(400)
@@ -46,8 +47,8 @@ trait DesStubs {
     )
   }
 
-  def subscriptionSucceeds(utr: String, request: SubscriptionRequest): Unit = {
-    stubFor(post(urlEqualTo(s"/registration/agents/utr/$utr"))
+  def subscriptionSucceeds(utr: Utr, request: SubscriptionRequest): Unit = {
+    stubFor(post(urlEqualTo(s"/registration/agents/utr/${utr.value}"))
       .withRequestBody(equalToJson(
         s"""
            |{
@@ -75,8 +76,8 @@ trait DesStubs {
                """.stripMargin)))
   }
 
-  def subscriptionSucceeds(utr: String, request: DesSubscriptionRequest): Unit = {
-    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/$utr")))
+  def subscriptionSucceeds(utr: Utr, request: DesSubscriptionRequest): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
       .withRequestBody(equalToJson(
         s"""
            |{
@@ -102,15 +103,15 @@ trait DesStubs {
                """.stripMargin)))
   }
 
-  def subscriptionAlreadyExists(utr: String): Unit = {
-    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/$utr")))
+  def subscriptionAlreadyExists(utr: Utr): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
       .willReturn(aResponse()
         .withStatus(409)
         .withBody(errorResponse("CONFLICT", "Duplicate submission"))))
   }
 
-  def agencyNotRegistered(utr: String): Unit = {
-    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/$utr")))
+  def agencyNotRegistered(utr: Utr): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(
@@ -126,8 +127,8 @@ trait DesStubs {
      """.stripMargin
 
 
-  private def registrationRequest(utr: String, isAnAgent: Boolean) =
-    post(urlEqualTo(s"/registration/individual/utr/$utr"))
+  private def registrationRequest(utr: Utr, isAnAgent: Boolean) =
+    post(urlEqualTo(s"/registration/individual/utr/${utr.value}"))
       .withRequestBody(equalToJson(
         s"""
            |{
@@ -137,7 +138,7 @@ trait DesStubs {
            |}
               """.stripMargin))
 
-  def organisationRegistrationExists(utr: String, isAnASAgent: Boolean = true): Unit = {
+  def organisationRegistrationExists(utr: Utr, isAnASAgent: Boolean = true): Unit = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -158,7 +159,7 @@ trait DesStubs {
                """.stripMargin)))
   }
 
-  def individualRegistrationExists(utr: String, isAnASAgent: Boolean = true): Unit = {
+  def individualRegistrationExists(utr: Utr, isAnASAgent: Boolean = true): Unit = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -180,7 +181,7 @@ trait DesStubs {
                """.stripMargin)))
   }
 
-  def registrationExistsWithNoOrganisationName(utr: String, isAnASAgent: Boolean = true): Unit = {
+  def registrationExistsWithNoOrganisationName(utr: Utr, isAnASAgent: Boolean = true): Unit = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -196,7 +197,7 @@ trait DesStubs {
                """.stripMargin)))
   }
 
-  def registrationExistsWithNoPostcode(utr: String): Unit = {
+  def registrationExistsWithNoPostcode(utr: Utr): Unit = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -211,8 +212,8 @@ trait DesStubs {
                """.stripMargin)))
   }
 
-  def registrationDoesNotExist(utr: String): Unit = {
-    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/individual/utr/$utr")))
+  def registrationDoesNotExist(utr: Utr): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/individual/utr/${utr.value}")))
       .withRequestBody(equalToJson(
         s"""
            |{

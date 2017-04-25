@@ -11,7 +11,7 @@ trait MicroService {
   import uk.gov.hmrc.{SbtBuildInfo, ShellPrompt, SbtAutoBuildPlugin}
   import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin
   import uk.gov.hmrc.versioning.SbtGitVersioning
-  import play.sbt.routes.RoutesKeys.routesGenerator
+  import play.sbt.routes.RoutesKeys.{routesGenerator, routesImport}
 
 
   import TestPhases._
@@ -29,6 +29,7 @@ trait MicroService {
     .settings(scalaSettings: _*)
     .settings(publishingSettings: _*)
     .settings(defaultSettings(): _*)
+    .settings(routesImport ++= Seq("uk.gov.hmrc.agentsubscription.controllers.UrlBinders._"))
     .settings(
       libraryDependencies ++= appDependencies,
       retrieveManaged := true,

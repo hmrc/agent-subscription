@@ -24,6 +24,7 @@ private object AppDependencies {
   private val wiremockVersion = "2.3.1"
   private val scalaTestPlusVersion = "1.5.1"
   private val mockitoVersion = "2.7.11"
+  private val mtdIdentifiersVersion = "0.4.0"
 
 
   val compile = Seq(
@@ -35,7 +36,8 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "play-url-binders" % playUrlBindersVersion,
     "uk.gov.hmrc" %% "play-config" % playConfigVersion,
     "uk.gov.hmrc" %% "logback-json-logger" % logbackJsonLoggerVersion,
-    "uk.gov.hmrc" %% "domain" % domainVersion
+    "uk.gov.hmrc" %% "domain" % domainVersion,
+    "uk.gov.hmrc" %% "agent-mtd-identifiers" % mtdIdentifiersVersion
   )
 
   trait TestDependencies {

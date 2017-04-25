@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.test.FakeRequest
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.auth.RequestWithAuthority
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
@@ -30,10 +31,10 @@ class RegistrationControllerSpec extends UnitSpec with AkkaMaterializerSpec with
 
   private val controller = new RegistrationController(registrationService, authConnector)
 
-  private val validUtr = "2000000000"
+  private val validUtr = Utr("2000000000")
   private val validPostcode = "AA1 1AA"
 
-  private val invalidUtr = "not a UTR"
+  private val invalidUtr = Utr("not a UTR")
   private val invalidPostcode = "not a postcode"
 
   "getRegistrationBlock" should {

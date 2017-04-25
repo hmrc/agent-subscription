@@ -20,10 +20,11 @@ import javax.inject.{Inject, Singleton}
 
 import play.api.libs.json._
 import play.api.mvc.Request
+import uk.gov.hmrc.agentmtdidentifiers.model.{Utr,Arn}
 import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.model.{Arn, SubscriptionRequest}
+import uk.gov.hmrc.agentsubscription.model.{SubscriptionRequest}
 import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -34,7 +35,7 @@ private object SubscriptionAuditDetail {
 
 private case class SubscriptionAuditDetail (
   agentReferenceNumber: Arn,
-  utr: String,
+  utr: Utr,
   agencyName: String,
   agencyAddress: model.Address,
   agencyEmail: String,
@@ -93,13 +94,13 @@ class SubscriptionService @Inject() (
     )
 
   private def createKnownFacts(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
-    governmentGatewayAdminConnector.createKnownFacts(arn.arn, subscriptionRequest.agency.address.postcode) recover {
-      case e => throw new IllegalStateException(s"Failed to create known facts in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.arn}", e)
+    governmentGatewayAdminConnector.createKnownFacts(arn.value, subscriptionRequest.agency.address.postcode) recover {
+      case e => throw new IllegalStateException(s"Failed to create known facts in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
     }
 
   private def enrol(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
-    governmentGatewayConnector.enrol(subscriptionRequest.agency.name, arn.arn, subscriptionRequest.agency.address.postcode) recover {
-      case e => throw new IllegalStateException(s"Failed to create enrolment in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.arn}", e)
+    governmentGatewayConnector.enrol(subscriptionRequest.agency.name, arn.value, subscriptionRequest.agency.address.postcode) recover {
+      case e => throw new IllegalStateException(s"Failed to create enrolment in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
     }
 
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]

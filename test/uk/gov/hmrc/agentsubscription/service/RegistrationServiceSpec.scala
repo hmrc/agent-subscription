@@ -21,11 +21,11 @@ import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.auth.{Authority, RequestWithAuthority}
 import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse}
-import uk.gov.hmrc.agentsubscription.model.Arn
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
@@ -45,10 +45,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
   "getRegistration" should {
     "audit appropriate values when a matching organisation registration is found" in {
-      val utr = "4000000009"
+      val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
 
-      when(desConnector.getRegistration(anyString)(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
           Some(postcode),
           isAnASAgent = true,
@@ -63,7 +63,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |{
           |  "authProviderId": "54321-credId",
           |  "authProviderType": "GovernmentGateway",
-          |  "utr": "$utr",
+          |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
           |  "isSubscribedToAgentServices": true,
@@ -77,10 +77,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     }
 
     "audit appropriate values when a matching individual registration is found" in {
-      val utr = "4000000009"
+      val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
 
-      when(desConnector.getRegistration(anyString)(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
           Some(postcode),
           isAnASAgent = true,
@@ -95,7 +95,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |{
           |  "authProviderId": "54321-credId",
           |  "authProviderType": "GovernmentGateway",
-          |  "utr": "$utr",
+          |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
           |  "isSubscribedToAgentServices": true,
@@ -109,10 +109,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     }
 
     "tolerate optional fields being absent (agentReferenceNumber, authProviderId, authProviderType)" in {
-      val utr = "4000000009"
+      val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
 
-      when(desConnector.getRegistration(anyString)(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
           Some(postcode),
           isAnASAgent = false,
@@ -125,7 +125,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val expectedExtraDetail = Json.parse(
         s"""
           |{
-          |  "utr": "$utr",
+          |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
           |  "isSubscribedToAgentServices": false
@@ -138,11 +138,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     }
 
     "audit appropriate values when no matching registration is found" in {
-      val utr = "4000000009"
+      val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
       val nonMatchingPostcode = "BB2 2BB"
 
-      when(desConnector.getRegistration(anyString)(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
           Some(nonMatchingPostcode),
           isAnASAgent = false,
@@ -157,7 +157,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |{
           |  "authProviderId": "54321-credId",
           |  "authProviderType": "GovernmentGateway",
-          |  "utr": "$utr",
+          |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": false
           |}

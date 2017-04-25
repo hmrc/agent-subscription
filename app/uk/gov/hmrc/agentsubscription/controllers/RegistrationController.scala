@@ -23,7 +23,8 @@ import play.api.libs.json.Json.toJson
 import play.api.mvc.{Action, AnyContent, Result}
 import uk.gov.hmrc.agentsubscription.auth.{AuthActions, RequestWithAuthority}
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
-import uk.gov.hmrc.agentsubscription.model.{Utr, postcodeWithoutSpacesRegex}
+import uk.gov.hmrc.agentsubscription.model.{postcodeWithoutSpacesRegex}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Utr}
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -34,8 +35,8 @@ import scala.concurrent.Future
 class RegistrationController @Inject()(service: RegistrationService, override val authConnector: AuthConnector)
   extends BaseController with AuthActions {
 
-  private[controllers] def getRegistrationBlock(utr: String, postcode: String): RequestWithAuthority[AnyContent] => Future[Result] = { implicit request =>
-    if (!Utr.isValid(utr))
+  private[controllers] def getRegistrationBlock(utr: Utr, postcode: String): RequestWithAuthority[AnyContent] => Future[Result] = { implicit request =>
+    if (!Utr.isValid(utr.value))
       badRequest("INVALID_UTR")
     else if (!validPostcode(postcode))
       badRequest("INVALID_POSTCODE")
@@ -49,7 +50,7 @@ class RegistrationController @Inject()(service: RegistrationService, override va
     Future successful BadRequest(Json.obj("code" -> code))
   }
 
-  def getRegistration(utr: String, postcode: String): Action[AnyContent] =
+  def getRegistration(utr: Utr, postcode: String): Action[AnyContent] =
     withAgentAffinityGroup.async(getRegistrationBlock(utr, postcode))
 
   private def validPostcode(postcode: String): Boolean = {

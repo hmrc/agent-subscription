@@ -14,20 +14,11 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model
+package uk.gov.hmrc.agentsubscription.controllers
 
-import org.scalatest.{ShouldMatchers, WordSpec}
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.play.binders.SimpleObjectBinder
 
-class UtrSpec extends WordSpec with ShouldMatchers {
-
-  "isValid" should {
-    "be true for valid UTRs" in {
-      Utr.isValid("1234567890") shouldBe true
-    }
-
-    "be false for invalid UTRs" in {
-      Utr.isValid("A234567890") shouldBe false
-      Utr.isValid("12345678901") shouldBe false
-    }
-  }
+object UrlBinders {
+  implicit val utrBinder = new SimpleObjectBinder[Utr](Utr.apply, _.value)
 }
