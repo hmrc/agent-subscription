@@ -16,16 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import play.api.mvc.PathBindable
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.play.binders.SimpleObjectBinder
 
 object UrlBinders {
-  implicit val utrBinder = new PathBindable[Utr] {
-    override def bind(key: String, utrValue: String): Either[String, Utr] = Utr.isValid(utrValue) match {
-      case true => Right(Utr(utrValue))
-      case _ => Left(raw""""$utrValue" is not a valid UTR""")
-    }
-
-    override def unbind(key: String, utr: Utr): String = utr.value
-  }
+  implicit val utrBinder = new SimpleObjectBinder[Utr](Utr.apply, _.value)
 }
