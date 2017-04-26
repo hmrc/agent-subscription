@@ -13,6 +13,8 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
   "creating a subscription" should {
     val agency = __ \ "agency"
     val address = agency \ "address"
+    val invalidAddress = "Invalid road %@"
+
     "return a response containing the ARN" when {
       "all fields are populated" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
@@ -121,11 +123,40 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         result.status shouldBe 400
       }
+
+      "name contains invalid characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "InvalidAgencyName!@")))))
+
+        result.status shouldBe 400
+      }
+
       "address is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(address))))
 
         result.status shouldBe 400
       }
+
+      "address line 1 contains invalid characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", invalidAddress)))))
+
+        result.status shouldBe 400
+      }
+
+      "address line 2 contains invalid characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine2", invalidAddress)))))
+        result.status shouldBe 400
+      }
+
+      "address line 3 contains invalid characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine3", invalidAddress)))))
+        result.status shouldBe 400
+      }
+
+      "address line 4 contains invalid characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine4", invalidAddress)))))
+        result.status shouldBe 400
+      }
+
       "email is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "email"))))
 
@@ -304,4 +335,26 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
        |}
      """.stripMargin
 
+  private val validSubscriptionRequest: String =
+    s"""
+       |{
+       |  "utr": "${utr.value}",
+       |  "knownFacts": {
+       |    "postcode": "AA1 1AA"
+       |  },
+       |  "agency": {
+       |    "name": "Agency & Co",
+       |    "address": {
+       |      "addressLine1": "Flat 1,",
+       |      "addressLine2": "1 Some Street,",
+       |      "addressLine3": "Anytown,",
+       |      "addressLine4": "County",
+       |      "postcode": "AA1 2AA",
+       |      "countryCode": "GB"
+       |    },
+       |    "email": "agency@example.com",
+       |    "telephone": "(+44) 123 456 7890"
+       |  }
+       |}
+     """.stripMargin
 }
