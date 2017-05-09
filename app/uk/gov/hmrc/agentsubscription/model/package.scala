@@ -17,26 +17,33 @@
 package uk.gov.hmrc.agentsubscription
 
 import play.api.data.validation.ValidationError
-import play.api.libs.json.Reads
 import play.api.libs.json.Reads._
 import play.api.libs.functional.syntax._
 
 package object model {
-  val postcodeWithoutSpacesRegex = "^[A-Za-z]{1,2}[0-9]{1,2}[A-Za-z]?[0-9][A-Za-z]{2}$"
-  private val telephoneNumberMaxLength = 24
-  private val minimumTelephoneDigits = 10
+  val postcodeWithoutSpacesRegex = "^[A-Z]{1,2}[0-9][0-9A-Z]?\\s?[0-9][A-Z]{2}$|BFPO\\s?[0-9]{1,5}$"
+  val telephoneRegex = "^[0-9- +()#x ]{0,24}$"
 
-  private[model] def nonEmptyStringWithMaxLength(maxLength: Int) = {
-    Reads.maxLength[String](maxLength) andKeep filterNot[String](ValidationError("error.whitespace"))(_.replaceAll("\\s", "").isEmpty)
+  def nameAndAddressRegex(max : Int) = s"^[A-Za-z0-9 \\-,.&'\\/]{0,$max}$$"
+
+  private[model] val telephoneNumberValidation = {
+    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](ValidationError("error.telephone.invalid"))(_.matches(telephoneRegex))
   }
 
-  private[model] val telephoneNumber = {
-    maxLength[String](telephoneNumberMaxLength) andKeep
-      filterNot[String](ValidationError("error.telephone.invalid"))(_.replaceAll("[^0-9]", "").length < minimumTelephoneDigits)
-  }
-
-  private[model] val postcode = {
+  private[model] val postcodeValidation = {
     filter[String](ValidationError("error.postcode.invalid"))(_.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex))
   }
 
+  private[model] def addressValidation() = {
+    val max = 35
+    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](ValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(max)))
+  }
+
+  private[model] def nameValidation() = {
+    val max = 40
+    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](ValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(max)))
+  }
 }

@@ -108,21 +108,6 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         result.status shouldBe 400
       }
 
-      "name is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "name"))))
-
-        result.status shouldBe 400
-      }
-      "name is whitespace only" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "    ")))))
-
-        result.status shouldBe 400
-      }
-      "name is longer than 40 characters" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "11111111111111111111111111111111111111111")))))
-
-        result.status shouldBe 400
-      }
 
       "name contains invalid characters" in {
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "InvalidAgencyName!@")))))
@@ -177,65 +162,15 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         result.status shouldBe 400
       }
-      "telephone is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "telephone"))))
 
-        result.status shouldBe 400
-      }
-      "telephone is invalid" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "012345")))))
-
-        result.status shouldBe 400
-      }
-
-      "addressLine1 is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(address \ "addressLine1"))))
-
-        result.status shouldBe 400
-      }
-
-      "addressLine1 contains only whitespace" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", "   ")))))
-
-        result.status shouldBe 400
-      }
-
-      "addressLine1 is longer than 35 characters" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
-
-        result.status shouldBe 400
-      }
-
-      "addressLine2 is longer than 35 characters" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine2", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
-
-        result.status shouldBe 400
-      }
-      "addressLine3 is longer than 35 characters" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine3", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
-
-        result.status shouldBe 400
-      }
-      "addressLine4 is longer than 35 characters" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine4", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
+      "telephone number contains words" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "0123 456 78aa")))))
 
         result.status shouldBe 400
       }
 
       "postcode is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(address \ "postcode"))))
-
-        result.status shouldBe 400
-      }
-
-      "postcode is not valid" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "postcode", "1234567")))))
-
-        result.status shouldBe 400
-      }
-
-      "known facts postcode is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "knownFacts" \ "postcode"))))
 
         result.status shouldBe 400
       }
@@ -331,29 +266,6 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
        |    },
        |    "email": "agency@example.com",
        |    "telephone": "0123 456 7890"
-       |  }
-       |}
-     """.stripMargin
-
-  private val validSubscriptionRequest: String =
-    s"""
-       |{
-       |  "utr": "${utr.value}",
-       |  "knownFacts": {
-       |    "postcode": "AA1 1AA"
-       |  },
-       |  "agency": {
-       |    "name": "Agency & Co",
-       |    "address": {
-       |      "addressLine1": "Flat 1,",
-       |      "addressLine2": "1 Some Street,",
-       |      "addressLine3": "Anytown,",
-       |      "addressLine4": "County",
-       |      "postcode": "AA1 2AA",
-       |      "countryCode": "GB"
-       |    },
-       |    "email": "agency@example.com",
-       |    "telephone": "(+44) 123 456 7890"
        |  }
        |}
      """.stripMargin

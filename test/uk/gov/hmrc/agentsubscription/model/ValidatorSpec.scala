@@ -22,21 +22,20 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 class ValidatorSpec extends UnitSpec {
 
-  "telephone validator" should {
+  "telephoneNumberValidation Reader" should {
     "accept input when" when {
       "there are at least 10 digits in the input" in {
-        validatePhoneNumber("1234567 ext 123") shouldBe JsSuccess("1234567 ext 123")
+        validatePhoneNumber("12345678911") shouldBe JsSuccess("12345678911")
       }
 
       "there are valid symbols in the input" in {
         validatePhoneNumber("+441234567890") shouldBe JsSuccess("+441234567890")
         validatePhoneNumber("#441234567890") shouldBe JsSuccess("#441234567890")
         validatePhoneNumber("(44)1234567890") shouldBe JsSuccess("(44)1234567890")
-        validatePhoneNumber("/-*441234567890") shouldBe JsSuccess("/-*441234567890")
+        validatePhoneNumber("441234567xxx") shouldBe JsSuccess("441234567xxx")
       }
-
-      "there is text in the field" in {
-        validatePhoneNumber("01234567890 EXT 123") shouldBe JsSuccess("01234567890 EXT 123")
+      "input contains fewer than 10 digits" in {
+        validatePhoneNumber("123456      ") shouldBe JsSuccess("123456      ")
       }
 
       "there is whitespace in the field" in {
@@ -45,26 +44,25 @@ class ValidatorSpec extends UnitSpec {
     }
 
     "reject input" when {
+      "there is text in the field" in {
+        validatePhoneNumber("01234567890 EXT 123") shouldBe telephoneValidationError
+      }
+
       "input is empty" in {
-        validatePhoneNumber("") shouldBe telephoneValidationError
+        validatePhoneNumber("") shouldBe whitespaceValidationError
       }
 
       "input is whitespace only" in {
-        validatePhoneNumber("   ") shouldBe telephoneValidationError
-      }
-
-      "input contains fewer than 10 digits" in {
-        validatePhoneNumber("123456      ") shouldBe telephoneValidationError
+        validatePhoneNumber("   ") shouldBe whitespaceValidationError
       }
 
       "input contains more than 24 characters" in {
-        validatePhoneNumber("111111111111111111111111aaaaaaaaa") shouldBe JsError(ValidationError("error.maxLength", 24))
+        validatePhoneNumber("111111111111111111111111aaaaaaaaa") shouldBe telephoneValidationError
       }
-
     }
   }
 
-  "postcode validator" should {
+  "postcodeValidation" should {
     "accept valid postcodes" in {
       validatePostcode("AA1 1AA") shouldBe JsSuccess("AA1 1AA")
       validatePostcode("AA1M 1AA") shouldBe JsSuccess("AA1M 1AA")
@@ -91,9 +89,6 @@ class ValidatorSpec extends UnitSpec {
       validatePostcode("AA1 1A%") shouldBe postcodeValidationError
     }
 
-    "accept lower case postcodes" in {
-      validatePostcode("aa1 1aa") shouldBe JsSuccess("aa1 1aa")
-    }
 
     "accept postcodes with 2 characters in the outbound part" in {
       validatePostcode("A1 1AA") shouldBe JsSuccess("A1 1AA")
@@ -116,6 +111,10 @@ class ValidatorSpec extends UnitSpec {
       validatePostcode("AA1 AAA") shouldBe postcodeValidationError
     }
 
+    "reject postcodes where there is whitespace" in {
+      validatePostcode("   ") shouldBe postcodeValidationError
+    }
+
     "accept postcodes without spaces" in {
       validatePostcode("AA11AA") shouldBe JsSuccess("AA11AA")
     }
@@ -125,19 +124,112 @@ class ValidatorSpec extends UnitSpec {
     }
   }
 
+  "addressValidation" should {
+
+    "accept address" when {
+
+      "a valid address is provided" in {
+        validateAddress("Building and Street") shouldBe JsSuccess("Building and Street")
+      }
+
+      "address with numbers is provided" in {
+        validateAddress("32 Agency Lane") shouldBe JsSuccess("32 Agency Lane")
+      }
+
+      "there are valid characters" in {
+        validateAddress("Agency's Building/Castle")
+      }
+
+
+    }
+    "reject address" when {
+      "there is whitespace" in {
+        validateAddress("   ") shouldBe whitespaceValidationError
+      }
+
+      "string is empty but field is present" in {
+        validateAddress("") shouldBe whitespaceValidationError
+      }
+
+      "invalid characters are present" in {
+        validateAddress("Agency;#Co") shouldBe addressValidationError
+      }
+
+      "there are more than 35 characters" in {
+        validateAddress("1234567891123456789212345678931234567") shouldBe addressValidationError
+      }
+    }
+  }
+
+  "nameValidation" should {
+    "accept name" when {
+      "a valid name is provided" in {
+        validateName("Agency") shouldBe JsSuccess("Agency")
+      }
+      "an ampersand is provided" in {
+        validateName("Agency & Co") shouldBe JsSuccess("Agency & Co")
+      }
+
+      "valid symbols are provided" in {
+        validateName("Agency/firm") shouldBe JsSuccess("Agency/firm")
+        validateName("Agency-Co") shouldBe JsSuccess ("Agency-Co")
+        validateName("Agency,firm,limited") shouldBe JsSuccess ("Agency,firm,limited")
+      }
+    }
+
+    "reject name" when {
+      "invalid symbols are provided" in {
+        validateName("Agency;Co") shouldBe nameValidationError
+        validateName("#1 Agency Worldwide") shouldBe nameValidationError
+        validateName("|Agency|") shouldBe nameValidationError
+      }
+
+      "name is too long" in {
+        validateName("asdfghjklqwertyuiopzxcvbnmqwertyuiopasdfg") shouldBe nameValidationError
+      }
+
+      "there is whitespce" in {
+        validateAddress("     ") shouldBe whitespaceValidationError
+      }
+
+      "string is empty but field is present" in {
+        validateAddress("") shouldBe whitespaceValidationError
+      }
+    }
+  }
+
   private def validatePostcode(input: String) = {
-    postcode.reads(JsString(input))
+    postcodeValidation.reads(JsString(input))
   }
 
   private def validatePhoneNumber(number: String) = {
-    telephoneNumber.reads(JsString(number))
+    telephoneNumberValidation.reads(JsString(number))
   }
 
+  private def validateAddress(address: String) = {
+    addressValidation().reads(JsString(address))
+  }
+
+  private def validateName(name: String) = {
+    nameValidation().reads(JsString(name))
+  }
+
+  private def whitespaceValidationError = {
+    JsError(ValidationError("error.whitespace.or.empty"))
+  }
   private def postcodeValidationError = {
     JsError(ValidationError("error.postcode.invalid"))
   }
 
   private def telephoneValidationError = {
     JsError(ValidationError("error.telephone.invalid"))
+  }
+
+  private def addressValidationError = {
+    JsError(ValidationError("error.address.invalid"))
+  }
+
+  private def nameValidationError = {
+    JsError(ValidationError("error.address.invalid"))
   }
 }
