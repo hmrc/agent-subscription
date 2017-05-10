@@ -24,7 +24,8 @@ package object model {
   val postcodeWithoutSpacesRegex = "^[A-Z]{1,2}[0-9][0-9A-Z]?\\s?[0-9][A-Z]{2}$|BFPO\\s?[0-9]{1,5}$"
   val telephoneRegex = "^[0-9- +()#x ]{0,24}$"
   val noAmpersand = "[^&]*"
-
+  val addressMax = 35
+  val nameMax = 40
   def nameAndAddressRegex(max : Int) = s"^[A-Za-z0-9 \\-,.&'\\/]{0,$max}$$"
 
   private[model] val telephoneNumberValidation = {
@@ -36,16 +37,14 @@ package object model {
     filter[String](ValidationError("error.postcode.invalid"))(_.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex))
   }
 
-  private[model] def addressValidation() = {
-    val max = 35
+  private[model] val addressValidation = {
     filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
-      filter[String](ValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(max)))
+      filter[String](ValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(addressMax)))
   }
 
-  private[model] def nameValidation() = {
-    val max = 40
+  private[model] val nameValidation = {
     filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
     filter[String](ValidationError("error.Ampersand"))(_.matches(noAmpersand)) andKeep
-      filter[String](ValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(max)))
+      filter[String](ValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(nameMax)))
   }
 }

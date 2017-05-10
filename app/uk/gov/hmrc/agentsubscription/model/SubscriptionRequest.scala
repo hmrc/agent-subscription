@@ -24,10 +24,10 @@ import uk.gov.hmrc.agentmtdidentifiers.model.{Utr, Arn}
 object Address {
   implicit val writes: Writes[Address] = Json.writes[Address]
   implicit val reads: Reads[Address] = (
-      (__ \ "addressLine1").read[String](addressValidation()) and
-      (__ \ "addressLine2").readNullable[String](addressValidation()) and
-      (__ \ "addressLine3").readNullable[String](addressValidation()) and
-      (__ \ "addressLine4").readNullable[String](addressValidation()) and
+      (__ \ "addressLine1").read[String](addressValidation) and
+      (__ \ "addressLine2").readNullable[String](addressValidation) and
+      (__ \ "addressLine3").readNullable[String](addressValidation) and
+      (__ \ "addressLine4").readNullable[String](addressValidation) and
       (__ \ "postcode").read[String](postcodeValidation) and
       (__ \ "countryCode").read[String]
   )(Address.apply _)
@@ -36,7 +36,7 @@ object Address {
 object Agency {
   implicit val writes: Writes[Agency] = Json.writes[Agency]
   implicit val reads: Reads[Agency] = (
-      (__ \ "name").read[String](nameValidation()) and
+      (__ \ "name").read[String](nameValidation) and
       (__ \ "address").read[Address] and
       (__ \ "telephone").read[String](telephoneNumberValidation) and
       (__ \ "email").read[String](email)

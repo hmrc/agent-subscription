@@ -208,11 +208,11 @@ class ValidatorSpec extends UnitSpec {
   }
 
   private def validateAddress(address: String) = {
-    addressValidation().reads(JsString(address))
+    addressValidation.reads(JsString(address))
   }
 
   private def validateName(name: String) = {
-    nameValidation().reads(JsString(name))
+    nameValidation.reads(JsString(name))
   }
 
   private def whitespaceValidationError = {
