@@ -162,12 +162,10 @@ class ValidatorSpec extends UnitSpec {
   }
 
   "nameValidation" should {
+
     "accept name" when {
       "a valid name is provided" in {
         validateName("Agency") shouldBe JsSuccess("Agency")
-      }
-      "an ampersand is provided" in {
-        validateName("Agency & Co") shouldBe JsSuccess("Agency & Co")
       }
 
       "valid symbols are provided" in {
@@ -183,12 +181,15 @@ class ValidatorSpec extends UnitSpec {
         validateName("#1 Agency Worldwide") shouldBe nameValidationError
         validateName("|Agency|") shouldBe nameValidationError
       }
+        "an ampersand is provided" in {
+        validateName("Agency & Co") shouldBe JsError(ValidationError("error.Ampersand"))
+      }
 
       "name is too long" in {
         validateName("asdfghjklqwertyuiopzxcvbnmqwertyuiopasdfg") shouldBe nameValidationError
       }
 
-      "there is whitespce" in {
+      "there is whitespace" in {
         validateAddress("     ") shouldBe whitespaceValidationError
       }
 
