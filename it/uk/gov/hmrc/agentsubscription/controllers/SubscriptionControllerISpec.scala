@@ -13,6 +13,8 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
   "creating a subscription" should {
     val agency = __ \ "agency"
     val address = agency \ "address"
+    val invalidAddress = "Invalid road %@"
+
     "return a response containing the ARN" when {
       "all fields are populated" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
@@ -106,26 +108,40 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         result.status shouldBe 400
       }
 
-      "name is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "name"))))
+
+      "name contains invalid characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "InvalidAgencyName!@")))))
 
         result.status shouldBe 400
       }
-      "name is whitespace only" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "    ")))))
 
-        result.status shouldBe 400
-      }
-      "name is longer than 40 characters" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "11111111111111111111111111111111111111111")))))
-
-        result.status shouldBe 400
-      }
       "address is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(address))))
 
         result.status shouldBe 400
       }
+
+      "address line 1 contains invalid characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", invalidAddress)))))
+
+        result.status shouldBe 400
+      }
+
+      "address line 2 contains invalid characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine2", invalidAddress)))))
+        result.status shouldBe 400
+      }
+
+      "address line 3 contains invalid characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine3", invalidAddress)))))
+        result.status shouldBe 400
+      }
+
+      "address line 4 contains invalid characters" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine4", invalidAddress)))))
+        result.status shouldBe 400
+      }
+
       "email is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "email"))))
 
@@ -146,65 +162,15 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         result.status shouldBe 400
       }
-      "telephone is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "telephone"))))
 
-        result.status shouldBe 400
-      }
-      "telephone is invalid" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "012345")))))
-
-        result.status shouldBe 400
-      }
-
-      "addressLine1 is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(address \ "addressLine1"))))
-
-        result.status shouldBe 400
-      }
-
-      "addressLine1 contains only whitespace" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", "   ")))))
-
-        result.status shouldBe 400
-      }
-
-      "addressLine1 is longer than 35 characters" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
-
-        result.status shouldBe 400
-      }
-
-      "addressLine2 is longer than 35 characters" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine2", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
-
-        result.status shouldBe 400
-      }
-      "addressLine3 is longer than 35 characters" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine3", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
-
-        result.status shouldBe 400
-      }
-      "addressLine4 is longer than 35 characters" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine4", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")))))
+      "telephone number contains words" in {
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "0123 456 78aa")))))
 
         result.status shouldBe 400
       }
 
       "postcode is missing" in {
         val result = await(doSubscriptionRequest(removeFields(Seq(address \ "postcode"))))
-
-        result.status shouldBe 400
-      }
-
-      "postcode is not valid" in {
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "postcode", "1234567")))))
-
-        result.status shouldBe 400
-      }
-
-      "known facts postcode is missing" in {
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "knownFacts" \ "postcode"))))
 
         result.status shouldBe 400
       }
@@ -303,5 +269,4 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
        |  }
        |}
      """.stripMargin
-
 }
