@@ -27,7 +27,7 @@ import uk.gov.hmrc.agentsubscription.service.SubscriptionService
 import uk.gov.hmrc.play.http.Upstream4xxResponse
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
 import scala.concurrent.Future
 
 @Singleton
