@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.auth
 
-import play.api.libs.concurrent.Execution.Implicits.defaultContext
+import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
 import play.api.mvc._
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
 import uk.gov.hmrc.play.http.HeaderCarrier
