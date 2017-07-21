@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.auth
 
+import java.net.URL
+
 import play.api.libs.json.{Format, Json}
 
 case class Enrolment(key: String)
@@ -28,6 +30,8 @@ object UserDetails {
   implicit val format: Format[UserDetails] = Json.format[UserDetails]
 }
 
-case class Authority(authProviderId: Option[String], authProviderType: Option[String], affinityGroup: String, enrolmentsUrl: String)
+case class Authority(fetchedFrom: URL, authProviderId: Option[String], authProviderType: Option[String], affinityGroup: String, enrolmentsUrl: String) {
+  val absoluteEnrolmentsUrl = new URL(fetchedFrom, enrolmentsUrl).toString
+}
 
 case class UserDetails(authProviderId: Option[String], authProviderType: Option[String], affinityGroup: String)

@@ -29,30 +29,26 @@ import scala.language.postfixOps
 
 @Singleton
 class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet) {
-
+  val authorityUrl = new URL(baseUrl, "/auth/authority")
   def currentAuthority()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Authority]] = {
-    val response: Future[JsValue] = get("/auth/authority")
+    val response: Future[JsValue] = httpGet.GET[JsValue](authorityUrl.toString)
     response flatMap { r =>
       for {
-        userDetails <- userDetails((r \ "userDetailsLink").as[String])
+        userDetails <- userDetails(authorityUrl, (r \ "userDetailsLink").as[String])
         enrolmentsUrl <- Future successful (r \ "enrolments").as[String]
-      } yield Some(Authority(userDetails.authProviderId, userDetails.authProviderType, userDetails.affinityGroup, enrolmentsUrl))
+      } yield Some(Authority(authorityUrl, userDetails.authProviderId, userDetails.authProviderType, userDetails.affinityGroup, enrolmentsUrl))
     } recover {
       case error: Upstream4xxResponse if error.upstreamResponseCode == 401 => None
       case e => throw e
     }
   }
 
-  private def userDetails(url: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[UserDetails] =
-    get(url) map(_.as[UserDetails])
+  private def userDetails(authorityUrl: URL, userDetailsLink: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[UserDetails] = {
+    val absoluteUserDetailsUrl = new URL(authorityUrl, userDetailsLink).toString
+    httpGet.GET[UserDetails](absoluteUserDetailsUrl)
+  }
 
-  def enrolments(url: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[List[Enrolment]] =
-    get(url) map(_.as[List[Enrolment]])
-
-
-  private def url(relativeUrl: String): URL = new URL(baseUrl, relativeUrl)
-
-  private def get(relativeUrl: String)(implicit hc: HeaderCarrier): Future[JsValue] = {
-    httpGet.GET[JsValue](url(relativeUrl).toString)(implicitly[HttpReads[JsValue]], hc)
+  def enrolments(authority: Authority)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[List[Enrolment]] = {
+    httpGet.GET[List[Enrolment]](authority.absoluteEnrolmentsUrl)
   }
 }

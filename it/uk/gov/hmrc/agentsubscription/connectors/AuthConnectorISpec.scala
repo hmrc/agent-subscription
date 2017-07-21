@@ -14,12 +14,15 @@ import uk.gov.hmrc.play.test.UnitSpec
 class AuthConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with AuthStub {
   private implicit val hc = HeaderCarrier()
 
-  private lazy val connector: AuthConnector = new AuthConnector(new URL(s"http://localhost:$wireMockPort"), WSHttp)
+  private val authBaseUrl = new URL(s"http://localhost:$wireMockPort")
+  private lazy val connector: AuthConnector = new AuthConnector(authBaseUrl, WSHttp)
+  private val authorityUrl = new URL(authBaseUrl, "/auth/authority")
 
   "AuthConnector currentAuthority" should {
     "return Authority when an authority detail is available" in {
       requestIsAuthenticated().andIsAnAgent()
       await(connector.currentAuthority()) shouldBe Some(Authority(
+        fetchedFrom = authorityUrl,
         authProviderId = Some("12345-credId"),
         authProviderType = Some("GovernmentGateway"),
         affinityGroup = "Agent",
@@ -29,6 +32,7 @@ class AuthConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppo
     "return Authority when user-details does not include an auth provider" in {
       requestIsAuthenticated().andIsAnAgentWithoutAuthProvider()
       await(connector.currentAuthority()) shouldBe Some(Authority(
+        fetchedFrom = authorityUrl,
         authProviderId = None,
         authProviderType = None,
         affinityGroup = "Agent",
