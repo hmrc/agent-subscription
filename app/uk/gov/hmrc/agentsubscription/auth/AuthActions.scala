@@ -32,7 +32,7 @@ trait AuthActions {
     protected def refine[A](request: Request[A]): Future[Either[Result, RequestWithAuthority[A]]] = {
       implicit val hc = HeaderCarrier.fromHeadersAndSession(request.headers, None)
       authConnector.currentAuthority() map {
-        case authority@Some(Authority(_, _, "Agent", _)) => Right(RequestWithAuthority(authority.get, request))
+        case authority@Some(Authority(_, _, _, "Agent", _)) => Right(RequestWithAuthority(authority.get, request))
         case _ => Left(Unauthorized)
       }
     }
@@ -41,7 +41,7 @@ trait AuthActions {
   protected val withAgentAffinityGroupAndEnrolments = withAgentAffinityGroup andThen new ActionRefiner[RequestWithAuthority, RequestWithEnrolments] {
     override protected def refine[A](request: RequestWithAuthority[A]): Future[Either[Result, RequestWithEnrolments[A]]] = {
       implicit val hc = HeaderCarrier.fromHeadersAndSession(request.headers, None)
-      authConnector.enrolments(request.authority.enrolmentsUrl) map { e =>
+      authConnector.enrolments(request.authority) map { e =>
         Right(RequestWithEnrolments(e, request))
       }
     }
@@ -50,4 +50,5 @@ trait AuthActions {
 }
 
 case class RequestWithAuthority[+A](authority: Authority, request: Request[A]) extends WrappedRequest[A](request)
+
 case class RequestWithEnrolments[+A](enrolments: List[Enrolment], request: Request[A]) extends WrappedRequest[A](request)

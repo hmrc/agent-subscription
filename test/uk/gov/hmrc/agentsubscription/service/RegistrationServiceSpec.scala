@@ -16,7 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import org.mockito.ArgumentMatchers.{any, anyString, eq => eqs}
+import java.net.URL
+
+import org.mockito.ArgumentMatchers.{any, anyString, eq ⇒ eqs}
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json.{JsObject, Json}
@@ -38,10 +40,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private val auditService = resettingMock[AuditService]
 
   private val service = new RegistrationService(desConnector, auditService)
-
+  private val authorityUrl = new URL("http://localhost/auth/authority")
   private val hc = HeaderCarrier()
-  private val request = RequestWithAuthority(Authority(authProviderId = Some("54321-credId"), authProviderType = Some("GovernmentGateway"), "", ""), FakeRequest())
-  private val requestWithoutAuthProvider = RequestWithAuthority(Authority(authProviderId = None, authProviderType = None, "", ""), FakeRequest())
+  private val request = RequestWithAuthority(Authority(authorityUrl, authProviderId = Some("54321-credId"), authProviderType = Some("GovernmentGateway"), "", ""), FakeRequest())
+  private val requestWithoutAuthProvider = RequestWithAuthority(Authority(authorityUrl, authProviderId = None, authProviderType = None, "", ""), FakeRequest())
 
   "getRegistration" should {
     "audit appropriate values when a matching organisation registration is found" in {
