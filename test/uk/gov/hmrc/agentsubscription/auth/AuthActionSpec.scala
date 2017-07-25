@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.auth
 
+import java.net.URL
+
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito
 import org.mockito.Mockito._
@@ -33,11 +35,13 @@ import scala.concurrent.{ExecutionContext, Future}
 class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Results with BeforeAndAfterEach with AkkaMaterializerSpec {
   override val authConnector = mock[AuthConnector]
 
+  private val authorityUrl = new URL("http://localhost/auth/authority")
+
   "authorisedWithSubscribingAgent" should {
     "return Unauthorized" when {
       "user is not an agent" in {
         when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
-          .thenReturn(Future successful Some(Authority(Some("12345-credId"), Some("GovernmentGateway"), "Individual", "/enrolments")))
+          .thenReturn(Future successful Some(Authority(authorityUrl, Some("12345-credId"), Some("GovernmentGateway"), "Individual", "/enrolments")))
 
         status(response(withAgentAffinityGroup)) shouldBe 401
 
@@ -47,7 +51,7 @@ class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Re
     "allow access and decorate the request with Authority" when {
       "user is an agent" in {
         when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
-          .thenReturn(Future successful Some(Authority(Some("12345-credId"), Some("GovernmentGateway"), "Agent", "/enrolments")))
+          .thenReturn(Future successful Some(Authority(authorityUrl, Some("12345-credId"), Some("GovernmentGateway"), "Agent", "/enrolments")))
 
         status(response(withAgentAffinityGroup)) shouldBe 200
       }
@@ -59,7 +63,7 @@ class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Re
     "return Unauthorized" when {
       "user is not an agent" in {
         when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
-          .thenReturn(Future successful Some(Authority(Some("12345-credId"), Some("GovernmentGateway"), "Individual", "/enrolments")))
+          .thenReturn(Future successful Some(Authority(authorityUrl, Some("12345-credId"), Some("GovernmentGateway"), "Individual", "/enrolments")))
 
         status(responseWithEnrolments(withAgentAffinityGroupAndEnrolments)) shouldBe 401
       }
@@ -68,8 +72,8 @@ class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Re
     "decorate the request with Authority and enrolments" when {
       "user has enrolments" in {
         when(authConnector.currentAuthority()(any[HeaderCarrier], any[ExecutionContext]))
-          .thenReturn(Future successful Some(Authority(Some("12345-credId"), Some("GovernmentGateway"), "Agent", "/enrolments")))
-        when(authConnector.enrolments(any[String])(any[HeaderCarrier], any[ExecutionContext]))
+          .thenReturn(Future successful Some(Authority(authorityUrl, Some("12345-credId"), Some("GovernmentGateway"), "Agent", "/enrolments")))
+        when(authConnector.enrolments(any[Authority])(any[HeaderCarrier], any[ExecutionContext]))
           .thenReturn(List(Enrolment("MY-ENROLMENT")))
 
         val result = responseWithEnrolments(withAgentAffinityGroupAndEnrolments)
@@ -81,6 +85,7 @@ class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Re
   private def response(actionBuilder: ActionBuilder[RequestWithAuthority]): Result = {
     val action = actionBuilder { request =>
       request.authority shouldBe Authority(
+        fetchedFrom = authorityUrl,
         authProviderId = Some("12345-credId"),
         authProviderType = Some("GovernmentGateway"),
         affinityGroup = "Agent",
