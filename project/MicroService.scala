@@ -42,8 +42,9 @@ trait MicroService {
     .settings(scalaSettings: _*)
     .settings(publishingSettings: _*)
     .settings(defaultSettings(): _*)
-    .settings(routesImport ++= Seq("uk.gov.hmrc.agentsubscription.controllers.UrlBinders._"))
+    .settings(routesImport ++= Seq("uk.gov.hmrc.agentsubscription.controllers.binders.UrlBinders._"))
     .settings(
+      scalaVersion := "2.11.11",
       libraryDependencies ++= appDependencies,
       retrieveManaged := true,
       evictionWarningOptions in update := EvictionWarningOptions.default.withWarnScalaVersionEviction(false)

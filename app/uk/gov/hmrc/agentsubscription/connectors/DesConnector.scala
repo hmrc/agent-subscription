@@ -23,10 +23,10 @@ import play.api.http.Status
 import play.api.libs.json._
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
-import uk.gov.hmrc.play.http.logging.Authorization
-import uk.gov.hmrc.play.http.{BadRequestException, HeaderCarrier, HttpPost, HttpReads}
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, HttpPost, HttpReads }
+import uk.gov.hmrc.http.logging.Authorization
 
 case class Address(addressLine1: String,
                    addressLine2: Option[String],
@@ -68,7 +68,7 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
 
   def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     (httpPost.POST[DesSubscriptionRequest, JsValue](desSubscribeUrl(utr).toString, request)
-        (implicitly[Writes[DesSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders)) map {
+        (implicitly[Writes[DesSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)) map {
           r => (r \ "agentRegistrationNumber").as[Arn]
         }
   }
@@ -85,7 +85,7 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
 
   private def getRegistrationJson(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] = {
     (httpPost.POST[DesRegistrationRequest, Option[JsValue]](desRegistrationUrl(utr).toString, DesRegistrationRequest(isAnAgent = false))
-      (implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], desHeaders))
+      (implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], desHeaders, ec))
   } recover {
     case badRequest: BadRequestException =>
     throw new RuntimeException(s"400 Bad Request response from DES for utr ${utr.value}", badRequest)

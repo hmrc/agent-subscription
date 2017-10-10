@@ -24,11 +24,11 @@ import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
 import uk.gov.hmrc.agentsubscription.model.{SubscriptionRequest, SubscriptionResponse}
 import uk.gov.hmrc.agentsubscription.service.SubscriptionService
-import uk.gov.hmrc.play.http.Upstream4xxResponse
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
 import scala.concurrent.Future
+import uk.gov.hmrc.http.Upstream4xxResponse
 
 @Singleton
 class SubscriptionController @Inject()(subscriptionService: SubscriptionService,

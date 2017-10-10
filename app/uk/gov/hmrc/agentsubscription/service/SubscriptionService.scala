@@ -25,9 +25,9 @@ import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.{SubscriptionRequest}
-import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.HeaderCarrier
 
 private object SubscriptionAuditDetail {
   implicit val writes = Json.writes[SubscriptionAuditDetail]

@@ -25,10 +25,10 @@ import uk.gov.hmrc.agentsubscription.auth.RequestWithAuthority
 import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse}
 import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.agentsubscription.postcodesMatch
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent.Future
+import uk.gov.hmrc.http.HeaderCarrier
 
 
 private object CheckAgencyStatusAuditDetail {

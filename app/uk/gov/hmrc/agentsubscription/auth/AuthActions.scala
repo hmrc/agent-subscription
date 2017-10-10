@@ -19,9 +19,9 @@ package uk.gov.hmrc.agentsubscription.auth
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
 import play.api.mvc._
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
-import uk.gov.hmrc.play.http.HeaderCarrier
 
 import scala.concurrent.Future
+import uk.gov.hmrc.play.HeaderCarrierConverter
 
 trait AuthActions {
   me: Results =>
@@ -30,7 +30,7 @@ trait AuthActions {
 
   protected val withAgentAffinityGroup = new ActionBuilder[RequestWithAuthority] with ActionRefiner[Request, RequestWithAuthority] {
     protected def refine[A](request: Request[A]): Future[Either[Result, RequestWithAuthority[A]]] = {
-      implicit val hc = HeaderCarrier.fromHeadersAndSession(request.headers, None)
+      implicit val hc = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
       authConnector.currentAuthority() map {
         case authority@Some(Authority(_, _, _, "Agent", _)) => Right(RequestWithAuthority(authority.get, request))
         case _ => Left(Unauthorized)
@@ -40,7 +40,7 @@ trait AuthActions {
 
   protected val withAgentAffinityGroupAndEnrolments = withAgentAffinityGroup andThen new ActionRefiner[RequestWithAuthority, RequestWithEnrolments] {
     override protected def refine[A](request: RequestWithAuthority[A]): Future[Either[Result, RequestWithEnrolments[A]]] = {
-      implicit val hc = HeaderCarrier.fromHeadersAndSession(request.headers, None)
+      implicit val hc = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
       authConnector.enrolments(request.authority) map { e =>
         Right(RequestWithEnrolments(e, request))
       }

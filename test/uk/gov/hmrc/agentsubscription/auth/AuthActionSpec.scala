@@ -27,10 +27,10 @@ import play.api.mvc.{ActionBuilder, Result, Results}
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
 import uk.gov.hmrc.agentsubscription.support.AkkaMaterializerSpec
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.HeaderCarrier
 
 class AuthActionSpec extends UnitSpec with AuthActions with MockitoSugar with Results with BeforeAndAfterEach with AkkaMaterializerSpec {
   override val authConnector = mock[AuthConnector]

@@ -26,6 +26,7 @@ import uk.gov.hmrc.play.http._
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, Upstream4xxResponse }
 
 @Singleton
 class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet) {

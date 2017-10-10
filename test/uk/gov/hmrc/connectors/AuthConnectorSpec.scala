@@ -18,18 +18,18 @@ package uk.gov.hmrc.connectors
 
 import java.net.URL
 
-import org.mockito.ArgumentMatchers.{any, anyString, eq ⇒ eqs}
+import org.mockito.ArgumentMatchers.{any, anyString, eq => eqs}
 import org.mockito.Mockito.{verify, when}
 import play.api.libs.json.{JsValue, Json}
 import org.mockito.ArgumentMatchers.any
 import uk.gov.hmrc.agentsubscription.auth.{Authority, Enrolment, UserDetails}
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpGet, HttpReads}
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
+import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpReads}
 
 class AuthConnectorSpec extends UnitSpec with ResettingMockitoSugar {
 
@@ -47,22 +47,22 @@ class AuthConnectorSpec extends UnitSpec with ResettingMockitoSugar {
     "resolve the enrolments URL relative to the authority URL" in {
 
       val agentEnrolment = Enrolment("HMRC-AS-AGENT")
-      when(httpGet.GET[List[Enrolment]](eqs(expectedEnrolmentsUrl))(any[HttpReads[List[Enrolment]]], any[HeaderCarrier])).thenReturn(Future successful List(agentEnrolment))
+      when(httpGet.GET[List[Enrolment]](eqs(expectedEnrolmentsUrl))(any[HttpReads[List[Enrolment]]], any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful List(agentEnrolment))
       await(authConnector.enrolments(testAuthority))
-      verify(httpGet).GET[List[Enrolment]](eqs(expectedEnrolmentsUrl))(any[HttpReads[List[Enrolment]]], any[HeaderCarrier])
+      verify(httpGet).GET[List[Enrolment]](eqs(expectedEnrolmentsUrl))(any[HttpReads[List[Enrolment]]], any[HeaderCarrier], any[ExecutionContext])
     }
   }
     "currentAuthority" should {
     " resolve the userDetails URL relative to the authority URL" in {
 
-      when(httpGet.GET[JsValue](eqs(authorityUrl.toString))(any[HttpReads[JsValue]], any[HeaderCarrier]))
+      when(httpGet.GET[JsValue](eqs(authorityUrl.toString))(any[HttpReads[JsValue]], any[HeaderCarrier], any[ExecutionContext]))
         .thenReturn(Future successful authorityJsonWithRelativeUrl)
       val userDetails = UserDetails(Some("1234"), Some("Agent"), "God")
 
-      when(httpGet.GET[UserDetails](eqs(expectedUserDetailsUrl))(any[HttpReads[UserDetails]], any[HeaderCarrier])).thenReturn(Future successful userDetails)
+      when(httpGet.GET[UserDetails](eqs(expectedUserDetailsUrl))(any[HttpReads[UserDetails]], any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful userDetails)
 
       await(authConnector.currentAuthority())
-      verify(httpGet).GET[UserDetails](eqs(expectedUserDetailsUrl))(any[HttpReads[UserDetails]], any[HeaderCarrier])
+      verify(httpGet).GET[UserDetails](eqs(expectedUserDetailsUrl))(any[HttpReads[UserDetails]], any[HeaderCarrier], any[ExecutionContext])
     }
   }
 }

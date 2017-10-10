@@ -23,8 +23,8 @@ import play.api.mvc.Request
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
-import uk.gov.hmrc.play.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
+import uk.gov.hmrc.http.HeaderCarrier
 
 @Singleton
 class AuditService @Inject() (auditConnector: AuditConnector) {
@@ -53,7 +53,7 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
     JsObject(fields.map { case (name, value) => (name, JsString(value)) })
 
   private def send(event: ExtendedDataEvent)(implicit hc: HeaderCarrier): Unit =
-    auditConnector.sendEvent(event).map(_ => ())
+    auditConnector.sendExtendedEvent(event).map(_ => ())
 
 }
 

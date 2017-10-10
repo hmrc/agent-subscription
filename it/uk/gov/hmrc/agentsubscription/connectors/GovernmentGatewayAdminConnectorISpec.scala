@@ -6,7 +6,7 @@ import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.stubs.GGAdminStubs
 import uk.gov.hmrc.agentsubscription.support.WireMockSupport
-import uk.gov.hmrc.play.http.{HeaderCarrier, Upstream5xxResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global

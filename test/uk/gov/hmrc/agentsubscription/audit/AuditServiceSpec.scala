@@ -25,18 +25,18 @@ import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.audit.model.{AuditEvent, ExtendedDataEvent}
-import uk.gov.hmrc.play.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.{Authorization, RequestId, SessionId}
+import uk.gov.hmrc.play.audit.model.{DataEvent, ExtendedDataEvent}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.logging.{Authorization, RequestId, SessionId}
 
 class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
   "auditEvent" should {
     "send an event with the correct fields" in {
       val mockConnector = mock[AuditConnector]
-      when(mockConnector.sendEvent(any[AuditEvent])(any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful AuditResult.Success)
+      when(mockConnector.sendExtendedEvent(any[ExtendedDataEvent])(any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful AuditResult.Success)
       val service = new AuditService(mockConnector)
 
       val hc = HeaderCarrier(
@@ -64,8 +64,8 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
       )
 
       eventually {
-        val captor = ArgumentCaptor.forClass(classOf[AuditEvent])
-        verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
+        val captor = ArgumentCaptor.forClass(classOf[ExtendedDataEvent])
+        verify(mockConnector).sendExtendedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
         captor.getValue shouldBe an[ExtendedDataEvent]
         val sentEvent = captor.getValue.asInstanceOf[ExtendedDataEvent]
 
@@ -93,7 +93,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
     "include the deviceID in the tags not the detail" in {
       pending
       val mockConnector = mock[AuditConnector]
-      when(mockConnector.sendEvent(any[AuditEvent])(any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful AuditResult.Success)
+      when(mockConnector.sendEvent(any[DataEvent])(any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful AuditResult.Success)
       val service = new AuditService(mockConnector)
 
       val hc = HeaderCarrier(
@@ -110,7 +110,7 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
       )
 
       eventually {
-        val captor = ArgumentCaptor.forClass(classOf[AuditEvent])
+        val captor = ArgumentCaptor.forClass(classOf[DataEvent])
         verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
         captor.getValue shouldBe an[ExtendedDataEvent]
         val sentEvent = captor.getValue.asInstanceOf[ExtendedDataEvent]

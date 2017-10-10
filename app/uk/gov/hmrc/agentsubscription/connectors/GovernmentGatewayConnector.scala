@@ -21,9 +21,9 @@ import javax.inject.{Inject, Named, Singleton}
 
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.{format, toJson}
-import uk.gov.hmrc.play.http.{HeaderCarrier, HttpPost, HttpResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpPost, HttpResponse }
 
 case class EnrolmentRequest(
                              portalId: String,

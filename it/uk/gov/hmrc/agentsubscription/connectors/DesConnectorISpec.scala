@@ -13,9 +13,9 @@ import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.WireMockSupport
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, Upstream4xxResponse}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import uk.gov.hmrc.play.http.{HeaderCarrier, NotFoundException, Upstream4xxResponse}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext
@@ -158,7 +158,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 trait MockAuditingContext extends MockitoSugar with Eventually {
   private val mockAuditConnector = mock[AuditConnector]
   val wsHttp = new WSHttp {
-    override def auditConnector = mockAuditConnector
+    override lazy val auditConnector = mockAuditConnector
   }
 
   def capturedEvent(): MergedDataEvent = {
