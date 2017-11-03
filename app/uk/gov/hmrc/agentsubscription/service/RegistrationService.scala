@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{Inject, Singleton}
 
+import play.api.{Logger, LoggerLike}
 import play.api.libs.json.{Json, _}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
@@ -48,16 +49,47 @@ private case class CheckAgencyStatusAuditDetail(
 
 @Singleton
 class RegistrationService @Inject() (desConnector: DesConnector, auditService: AuditService) {
+  protected def getLogger: LoggerLike = Logger
 
   def getRegistration(utr: Utr, postcode: String)(implicit hc: HeaderCarrier, request: RequestWithAuthority[Any]): Future[Option[RegistrationDetails]] =
     desConnector.getRegistration(utr) map {
-      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName, None, agentReferenceNumber)) if postcodesMatch(desPostcode, postcode) =>
-        auditCheckAgencyStatus(utr, postcode, knownFactsMatched = true, isSubscribedToAgentServices = Some(isAnASAgent), agentReferenceNumber)
-        Some(RegistrationDetails(isAnASAgent, organisationName))
-      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, _, Some(DesIndividual(first, last)), agentReferenceNumber)) if postcodesMatch(desPostcode, postcode) =>
-        auditCheckAgencyStatus(utr, postcode, knownFactsMatched = true, isSubscribedToAgentServices = Some(isAnASAgent), agentReferenceNumber)
-        Some(RegistrationDetails(isAnASAgent, Some(s"$first $last")))
-      case _ =>
+      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName, None, agentReferenceNumber)) =>
+        if (isAnASAgent) {
+          getLogger.warn(s"The business partner record of type organisation associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned")
+        }
+
+        if (postcodesMatch(desPostcode, postcode)) {
+          auditCheckAgencyStatus(utr, postcode, knownFactsMatched = true, isSubscribedToAgentServices = Some(isAnASAgent), agentReferenceNumber)
+          Some(RegistrationDetails(isAnASAgent, organisationName))
+        } else {
+          auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, None)
+          None
+        }
+      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, _, Some(DesIndividual(first, last)), agentReferenceNumber)) =>
+        if (isAnASAgent) {
+          getLogger.warn(s"The business partner record of type individual associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned")
+        }
+
+        if (postcodesMatch(desPostcode, postcode)) {
+          auditCheckAgencyStatus(utr, postcode, knownFactsMatched = true, isSubscribedToAgentServices = Some(isAnASAgent), agentReferenceNumber)
+          Some(RegistrationDetails(isAnASAgent, Some(s"$first $last")))
+        } else {
+          auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, None)
+          None
+        }
+      case Some(DesRegistrationResponse(postCode, isAnASAgent, _, _, agentReferenceNumber))  =>
+        if (isAnASAgent){
+          getLogger.warn(s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${postCode.nonEmpty}")
+          auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, Some(true), agentReferenceNumber)
+        }
+        else {
+          getLogger.warn(s"The business partner record associated with $utr is not subscribed with postcode: ${postCode.nonEmpty}")
+          auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, None)
+        }
+
+        None
+      case None =>
+        getLogger.warn(s"No business partner record was associated with $utr")
         auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, None)
         None
     }
