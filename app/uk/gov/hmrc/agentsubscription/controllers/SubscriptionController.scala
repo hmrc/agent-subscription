@@ -41,7 +41,9 @@ class SubscriptionController @Inject()(subscriptionService: SubscriptionService,
         case Some(a) => Created(toJson(SubscriptionResponse(a)))
         case None => Forbidden
       }.recover {
-        case e: Upstream4xxResponse if e.upstreamResponseCode == CONFLICT => Conflict
+        case e: RuntimeException
+          if e.getCause.isInstanceOf[Upstream4xxResponse] &&
+             e.getCause.asInstanceOf[Upstream4xxResponse].upstreamResponseCode == CONFLICT => Conflict
       }
     } else {
       Future successful Forbidden

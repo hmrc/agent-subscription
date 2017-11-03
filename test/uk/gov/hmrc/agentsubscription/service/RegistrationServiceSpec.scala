@@ -18,9 +18,11 @@ package uk.gov.hmrc.agentsubscription.service
 
 import java.net.URL
 
-import org.mockito.ArgumentMatchers.{any, anyString, eq ⇒ eqs}
+import org.mockito.ArgumentMatchers.{any, eq => eqs}
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
+import org.slf4j.Logger
+import play.api.LoggerLike
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
@@ -39,16 +41,26 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private val desConnector = resettingMock[DesConnector]
   private val auditService = resettingMock[AuditService]
 
-  private val service = new RegistrationService(desConnector, auditService)
+  val stubbedLogger = new LoggerLikeStub()
+  val service = new RegistrationService(desConnector, auditService){
+    override def getLogger = stubbedLogger
+  }
+
   private val authorityUrl = new URL("http://localhost/auth/authority")
   private val hc = HeaderCarrier()
   private val request = RequestWithAuthority(Authority(authorityUrl, authProviderId = Some("54321-credId"), authProviderType = Some("GovernmentGateway"), "", ""), FakeRequest())
   private val requestWithoutAuthProvider = RequestWithAuthority(Authority(authorityUrl, authProviderId = None, authProviderType = None, "", ""), FakeRequest())
 
+  override def beforeEach(): Unit = {
+    super.beforeEach()
+    stubbedLogger.clear
+  }
+
   "getRegistration" should {
-    "audit appropriate values when a matching organisation registration is found" in {
+    "audit appropriate values when a matching subscribed organisation registration is found" in {
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
+      val arn = Some(Arn("TARN0000001"))
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
@@ -56,7 +68,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           isAnASAgent = true,
           Some("Organisation name"),
           None,
-          Some(Arn("TARN0000001")))))
+          arn)))
 
       await(service.getRegistration(utr, postcode)(hc, request))
 
@@ -76,11 +88,80 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
       }
+
+      stubbedLogger.logMessages.size shouldBe 1
+      stubbedLogger.logMessages.head shouldBe s"The business partner record of type organisation associated with $utr is already subscribed with arn $arn and a postcode was returned"
     }
 
-    "audit appropriate values when a matching individual registration is found" in {
+    "audit appropriate values when a matching unsubscribed organisation registration is found" in {
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
+
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful Some(DesRegistrationResponse(
+          Some(postcode),
+          isAnASAgent = false,
+          Some("Organisation name"),
+          None,
+          None)))
+
+      await(service.getRegistration(utr, postcode)(hc, request))
+
+      val expectedExtraDetail = Json.parse(
+        s"""
+           |{
+           |  "authProviderId": "54321-credId",
+           |  "authProviderType": "GovernmentGateway",
+           |  "utr": "${utr.value}",
+           |  "postcode": "$postcode",
+           |  "knownFactsMatched": true,
+           |  "isSubscribedToAgentServices": false
+           |}
+           |""".stripMargin).asInstanceOf[JsObject]
+      eventually {
+        verify(auditService)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+      }
+
+      stubbedLogger.logMessages.size shouldBe 0
+    }
+
+    "audit appropriate values when the organisation record associated with the utr does not have a matching postcode" in {
+      val utr = Utr("4000000009")
+      val suppliedPostcode = "AA1 1AA"
+
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful Some(DesRegistrationResponse(
+          Some("XX9 9XX"),
+          isAnASAgent = false,
+          Some("Organisation name"),
+          None,
+          None)))
+
+      await(service.getRegistration(utr, suppliedPostcode)(hc, request))
+
+      val expectedExtraDetail = Json.parse(
+        s"""
+           |{
+           |  "authProviderId": "54321-credId",
+           |  "authProviderType": "GovernmentGateway",
+           |  "utr": "${utr.value}",
+           |  "postcode": "$suppliedPostcode",
+           |  "knownFactsMatched": false
+           |}
+           |""".stripMargin).asInstanceOf[JsObject]
+      eventually {
+        verify(auditService)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+      }
+
+      stubbedLogger.logMessages.size shouldBe 0
+    }
+
+    "audit appropriate values when a matching subscribed individual registration is found" in {
+      val utr = Utr("4000000009")
+      val postcode = "AA1 1AA"
+      val arn = Some(Arn("AARN0000002"))
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
@@ -88,7 +169,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           isAnASAgent = true,
           None,
           Some(DesIndividual("First", "Last")),
-          Some(Arn("AARN0000002")))))
+          arn)))
 
       await(service.getRegistration(utr, postcode)(hc, request))
 
@@ -108,9 +189,12 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
       }
+
+      stubbedLogger.logMessages.size shouldBe 1
+      stubbedLogger.logMessages.head shouldBe s"The business partner record of type individual associated with $utr is already subscribed with arn $arn and a postcode was returned"
     }
 
-    "tolerate optional fields being absent (agentReferenceNumber, authProviderId, authProviderType)" in {
+    "audit appropriate values when a matching unsubscribed individual registration is found" in {
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
 
@@ -122,11 +206,13 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some(DesIndividual("First", "Last")),
           None)))
 
-      await(service.getRegistration(utr, postcode)(hc, requestWithoutAuthProvider))
+      await(service.getRegistration(utr, postcode)(hc, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
           |{
+          |  "authProviderId": "54321-credId",
+          |  "authProviderType": "GovernmentGateway",
           |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
@@ -135,23 +221,112 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |""".stripMargin).asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, requestWithoutAuthProvider)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
       }
+
+      stubbedLogger.logMessages.size shouldBe 0
     }
 
-    "audit appropriate values when no matching registration is found" in {
+    "audit appropriate values when the individual record associated with the utr does not have a matching postcode" in {
       val utr = Utr("4000000009")
-      val postcode = "AA1 1AA"
-      val nonMatchingPostcode = "BB2 2BB"
+      val suppliedPostcode = "AA1 1AA"
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          Some(nonMatchingPostcode),
+          Some("XX9 9XX"),
           isAnASAgent = false,
           None,
           Some(DesIndividual("First", "Last")),
           None)))
 
+      await(service.getRegistration(utr, suppliedPostcode)(hc, request))
+
+      val expectedExtraDetail = Json.parse(
+        s"""
+          |{
+          |  "authProviderId": "54321-credId",
+          |  "authProviderType": "GovernmentGateway",
+          |  "utr": "${utr.value}",
+          |  "postcode": "$suppliedPostcode",
+          |  "knownFactsMatched": false
+          |}
+          |""".stripMargin).asInstanceOf[JsObject]
+      eventually {
+        verify(auditService)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+      }
+
+      stubbedLogger.logMessages.size shouldBe 0
+    }
+
+    "tolerate optional fields being absent (agentReferenceNumber, authProviderId, authProviderType, postcode) where not subscribed" in {
+      val utr = Utr("4000000009")
+      val suppliedPostcode = "AA1 1AA"
+
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful Some(DesRegistrationResponse(
+          None,
+          isAnASAgent = false,
+          None,
+          None,
+          None)))
+
+      await(service.getRegistration(utr, suppliedPostcode)(hc, requestWithoutAuthProvider))
+
+      val expectedExtraDetail = Json.parse(
+        s"""
+          |{
+          |  "utr": "${utr.value}",
+          |  "postcode": "$suppliedPostcode",
+          |  "knownFactsMatched": false
+          |}
+          |""".stripMargin).asInstanceOf[JsObject]
+      eventually {
+        verify(auditService)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, requestWithoutAuthProvider)
+      }
+
+      stubbedLogger.logMessages.size shouldBe 1
+      stubbedLogger.logMessages.head shouldBe s"The business partner record associated with $utr is not subscribed with postcode: false"
+    }
+
+    "tolerate optional fields being absent (agentReferenceNumber, authProviderId, authProviderType, postcode) where subscribed" in {
+      val utr = Utr("4000000009")
+      val suppliedPostcode = "AA1 1AA"
+
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful Some(DesRegistrationResponse(
+          None,
+          isAnASAgent = true,
+          None,
+          None,
+          None)))
+
+      await(service.getRegistration(utr, suppliedPostcode)(hc, requestWithoutAuthProvider))
+
+      val expectedExtraDetail = Json.parse(
+        s"""
+          |{
+          |  "utr": "${utr.value}",
+          |  "postcode": "$suppliedPostcode",
+          |  "knownFactsMatched": false,
+          |  "isSubscribedToAgentServices": true
+          |}
+          |""".stripMargin).asInstanceOf[JsObject]
+      eventually {
+        verify(auditService)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, requestWithoutAuthProvider)
+      }
+
+      stubbedLogger.logMessages.size shouldBe 1
+      stubbedLogger.logMessages.head shouldBe s"The business partner record associated with $utr is already subscribed with arn None with postcode: false"
+    }
+
+    "audit appropriate values when no record is found" in {
+      val utr = Utr("4000000009")
+      val postcode = "AA1 1AA"
+
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext])).thenReturn(Future successful None)
       await(service.getRegistration(utr, postcode)(hc, request))
 
       val expectedExtraDetail = Json.parse(
@@ -168,7 +343,22 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
       }
+
+      stubbedLogger.logMessages.size shouldBe 1
+      stubbedLogger.logMessages.head shouldBe s"No business partner record was associated with $utr"
     }
   }
 
+}
+
+class LoggerLikeStub extends LoggerLike {
+  import scala.collection.mutable.Buffer
+
+  val logMessages: Buffer[String] = Buffer()
+
+  override val logger: Logger = null
+
+  override def warn(msg: => String) = logMessages += msg
+
+  def clear = logMessages.clear()
 }

@@ -13,7 +13,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.WireMockSupport
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException, Upstream4xxResponse}
+import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
 import uk.gov.hmrc.play.test.UnitSpec
@@ -43,22 +43,25 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       result shouldBe Arn("ARN0001")
     }
 
-    "propagate an exception if there is a duplicate submission" in {
+    "propagate an exception containing the utr if there is a duplicate submission" in {
       subscriptionAlreadyExists(utr)
 
-      val exception = intercept[Upstream4xxResponse] {
+      val exception = intercept[RuntimeException] {
         await(connector.subscribeToAgentServices(utr, request))
       }
 
-      exception.upstreamResponseCode shouldBe 409
+      exception.getMessage.contains(utr.value) shouldBe true
+      exception.getCause.asInstanceOf[Upstream4xxResponse].upstreamResponseCode shouldBe 409
     }
 
-    "propagate an exception if the agency is not registered" in {
+    "propagate an exception containing the utr if the agency is not registered" in {
       agencyNotRegistered(utr)
 
-      intercept[NotFoundException] {
+      val exception = intercept[RuntimeException] {
         await(connector.subscribeToAgentServices(utr, request))
       }
+
+      exception.getMessage.contains(utr.value) shouldBe true
     }
 
     "audit the request and response" in new MockAuditingContext {
