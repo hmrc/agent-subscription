@@ -110,4 +110,6 @@ class RegistrationService @Inject() (desConnector: DesConnector, auditService: A
 
   private def toJsObject(detail: CheckAgencyStatusAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
+  def getAgencyName(arn: String)(implicit hc: HeaderCarrier): Future[Option[String]] = desConnector.getAgencyName(arn)
+
 }
