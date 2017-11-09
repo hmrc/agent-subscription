@@ -11,3 +11,6 @@
 
 # Add all the application routes to the prod.routes file
 ->         /                          prod.Routes
+
+
+GET     /agent-subscription/test-only/agency-name/:arn  @uk.gov.hmrc.agentsubscription.controllers.RegistrationController.getAgencyNameTestOnly(arn: String)

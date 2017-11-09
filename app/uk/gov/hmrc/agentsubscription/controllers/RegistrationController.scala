@@ -23,9 +23,10 @@ import play.api.libs.json.Json.toJson
 import play.api.mvc.{Action, AnyContent, Result}
 import uk.gov.hmrc.agentsubscription.auth.{AuthActions, RequestWithAuthority}
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
-import uk.gov.hmrc.agentsubscription.model.{postcodeWithoutSpacesRegex}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Utr}
+import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
+import uk.gov.hmrc.play.HeaderCarrierConverter
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
@@ -55,5 +56,14 @@ class RegistrationController @Inject()(service: RegistrationService, override va
 
   private def validPostcode(postcode: String): Boolean = {
     postcode.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)
+  }
+
+  def getAgencyNameTestOnly(arn: String): Action[AnyContent] = Action.async { request =>
+    implicit val hc = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
+
+    service.getAgencyName(arn).map {
+      case Some(name) => Ok(Json.obj("name" -> name))
+      case None => NoContent
+    }
   }
 }
