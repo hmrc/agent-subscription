@@ -21,12 +21,11 @@ import javax.inject.{Inject, Named, Singleton}
 
 import play.api.http.Status
 import play.api.libs.json._
-import play.utils.UriEncoding
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, HttpPost, HttpReads }
 import uk.gov.hmrc.http.logging.Authorization
 
 case class Address(addressLine1: String,
@@ -61,20 +60,10 @@ object DesRegistrationRequest {
   implicit val formats: Format[DesRegistrationRequest] = Json.format[DesRegistrationRequest]
 }
 
-case class DesAgentRecordDetails(agencyDetails: Option[DesAgencyDetails])
-case class DesAgencyDetails(agencyName: String)
-
-object DesAgentRecordDetails {
-  implicit val agencyDetailsRead: Reads[DesAgencyDetails] = Json.reads[DesAgencyDetails]
-
-  implicit val agentRecordDetailsRead: Reads[DesAgentRecordDetails] = Json.reads[DesAgentRecordDetails]
-}
-
 @Singleton
 class DesConnector @Inject() (@Named("des.environment") environment: String,
                               @Named("des.authorization-token") authorizationToken: String,
                               @Named("des-baseUrl") baseUrl: URL,
-                              httpGet: HttpGet,
                               httpPost: HttpPost) extends Status {
 
   def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
@@ -114,26 +103,5 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
     hc.copy(
       authorization = Some(Authorization(s"Bearer $authorizationToken")),
       extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
-  }
-
-  def getAgencyName(arn: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[String]] = {
-
-    val encodedArn = UriEncoding.encodePathSegment(arn, "UTF-8")
-    val url = new URL(baseUrl, s"/registration/personal-details/arn/$encodedArn")
-
-    (for {
-      agencyRecordDetails <- getWithDesHeaders[DesAgentRecordDetails]("GetAgentRecord", url)
-    } yield agencyRecordDetails.agencyDetails.map(_.agencyName)
-      ).recover {
-      case _ => None
-    }
-  }
-
-  private def getWithDesHeaders[A: HttpReads](apiName: String, url: URL)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[A] = {
-    val desHeaderCarrier = hc.copy(
-      authorization = Some(Authorization(s"Bearer $authorizationToken")),
-      extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
-
-    httpGet.GET[A](url.toString)(implicitly[HttpReads[A]], desHeaderCarrier, ec)
   }
 }
