@@ -32,7 +32,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
   override protected def expectedEnvironment = Some(environment)
 
   private lazy val connector: DesConnector =
-    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), WSHttp, WSHttp)
+    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), WSHttp)
 
   "subscribeToAgentServices" should {
     "return an ARN when subscription is successful" in {
@@ -66,7 +66,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
     "audit the request and response" in new MockAuditingContext {
       val connector: DesConnector =
-        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, wsHttp)
+        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp)
       subscriptionSucceeds(utr, request)
 
       await(connector.subscribeToAgentServices(utr, request))
@@ -134,7 +134,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
     "audit the request and response" in new MockAuditingContext {
       val connector: DesConnector =
-        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, wsHttp)
+        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp)
       organisationRegistrationExists(utr)
 
       await(connector.getRegistration(utr))
