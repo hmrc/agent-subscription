@@ -13,4 +13,4 @@
 ->         /                          prod.Routes
 
 
-GET     /agent-subscription/test-only/getAgencyName/:arn  @uk.gov.hmrc.agentsubscription.controllers.RegistrationController.getAgencyName(arn: String)
+GET     /agent-subscription/test-only/agency-name/:arn  @uk.gov.hmrc.agentsubscription.controllers.RegistrationController.getAgencyNameTestOnly(arn: String)

@@ -58,12 +58,12 @@ class RegistrationController @Inject()(service: RegistrationService, override va
     postcode.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)
   }
 
-  def getAgencyName(arn: String): Action[AnyContent] = Action.async { request =>
+  def getAgencyNameTestOnly(arn: String): Action[AnyContent] = Action.async { request =>
     implicit val hc = HeaderCarrierConverter.fromHeadersAndSession(request.headers, None)
 
     service.getAgencyName(arn).map {
-      case Some(name) => Ok(name)
-      case None => Ok("No name")
+      case Some(name) => Ok(Json.obj("name" -> name))
+      case None => NoContent
     }
   }
 }

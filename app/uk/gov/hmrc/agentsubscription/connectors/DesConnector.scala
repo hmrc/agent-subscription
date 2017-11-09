@@ -61,6 +61,15 @@ object DesRegistrationRequest {
   implicit val formats: Format[DesRegistrationRequest] = Json.format[DesRegistrationRequest]
 }
 
+case class DesAgentRecordDetails(agencyDetails: Option[DesAgencyDetails])
+case class DesAgencyDetails(agencyName: String)
+
+object DesAgentRecordDetails {
+  implicit val agencyDetailsRead: Reads[DesAgencyDetails] = Json.reads[DesAgencyDetails]
+
+  implicit val agentRecordDetailsRead: Reads[DesAgentRecordDetails] = Json.reads[DesAgentRecordDetails]
+}
+
 @Singleton
 class DesConnector @Inject() (@Named("des.environment") environment: String,
                               @Named("des.authorization-token") authorizationToken: String,
@@ -113,7 +122,7 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
     val url = new URL(baseUrl, s"/registration/personal-details/arn/$encodedArn")
 
     (for {
-      agencyRecordDetails <- getWithDesHeaders[AgentRecordDetails]("GetAgentRecord", url)
+      agencyRecordDetails <- getWithDesHeaders[DesAgentRecordDetails]("GetAgentRecord", url)
     } yield agencyRecordDetails.agencyDetails.map(_.agencyName)
       ).recover {
       case _ => None
@@ -127,13 +136,4 @@ class DesConnector @Inject() (@Named("des.environment") environment: String,
 
     httpGet.GET[A](url.toString)(implicitly[HttpReads[A]], desHeaderCarrier, ec)
   }
-}
-
-case class AgentRecordDetails(agencyDetails: Option[AgencyDetails])
-case class AgencyDetails(agencyName: String)
-
-object AgentRecordDetails {
-  implicit val agencyDetailsRead: Reads[AgencyDetails] = Json.reads[AgencyDetails]
-
-  implicit val agentRecordDetailsRead: Reads[AgentRecordDetails] = Json.reads[AgentRecordDetails]
 }
