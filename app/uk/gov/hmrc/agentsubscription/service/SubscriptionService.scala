@@ -100,9 +100,9 @@ class SubscriptionService @Inject() (
     }
 
   private def enrol(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
-    val retrialTimes = 3
+    val tries = 3
 
-    FutureUtils.retry(retrialTimes)(
+    FutureUtils.retry(tries)(
       governmentGatewayConnector.enrol(subscriptionRequest.agency.name, arn.value, subscriptionRequest.agency.address.postcode)
     ).recover {
       case e => throw new IllegalStateException(s"Failed to create enrolment in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)

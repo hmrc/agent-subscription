@@ -35,35 +35,35 @@ class FutureUtilsSpec extends UnitSpec {
     }
 
     "retry 3 times the given the operation fails all the time" in {
-      var trials = 0
+      var tries = 0
 
       an[IllegalStateException] should be thrownBy {
         await(FutureUtils.retry(3) {
           Future {
-            trials = trials + 1
-            throw new IllegalStateException(s"future failed $trials")
+            tries = tries + 1
+            throw new IllegalStateException(s"future failed $tries")
           }
         })
       }
 
-      trials shouldBe 3
+      tries shouldBe 3
     }
 
     "succeed on third trial after retrying twice" in {
-      var trials = 0
+      var tries = 0
 
       val result = await(FutureUtils.retry(3) {
         Future {
-          trials = trials + 1
-          if (trials <= 2)
-            throw new IllegalStateException(s"future failed $trials")
+          tries = tries + 1
+          if (tries <= 2)
+            throw new IllegalStateException(s"future failed $tries")
           else
             100
         }
       })
 
       result shouldBe 100
-      trials shouldBe 3
+      tries shouldBe 3
     }
 
     "return exception after retrying 3 times the given operation in wake of failure" in {
