@@ -16,13 +16,27 @@
 
 package uk.gov.hmrc.agentsubscription.utils
 
+import play.api.Logger
+import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException, Upstream5xxResponse}
+
 import scala.concurrent.{ExecutionContext, Future}
 
-object FutureUtils {
+object Retry {
 
   def retry[A](n: Int)(f: => Future[A])(implicit ec: ExecutionContext): Future[A] = {
     f.recoverWith {
-      case _ if n > 1 => retry(n - 1)(f)
+      case ShouldRetryAfter(e) if n > 1 =>
+        Logger.warn(s"Retrying after failure $e")
+        retry(n - 1)(f)
+    }
+  }
+
+  private object ShouldRetryAfter {
+    def unapply(e: Exception): Option[Exception] = e match {
+      case ex: GatewayTimeoutException => Some(ex)
+      case ex: BadGatewayException => Some(ex)
+      case ex @ Upstream5xxResponse(_, _, _) => Some(ex)
+      case _ => None
     }
   }
 }

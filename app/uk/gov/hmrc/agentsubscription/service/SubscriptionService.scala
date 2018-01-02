@@ -25,7 +25,7 @@ import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
-import uk.gov.hmrc.agentsubscription.utils.FutureUtils
+import uk.gov.hmrc.agentsubscription.utils.Retry
 
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -102,7 +102,7 @@ class SubscriptionService @Inject() (
   private def enrol(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
     val tries = 3
 
-    FutureUtils.retry(tries)(
+    Retry.retry(tries)(
       governmentGatewayConnector.enrol(subscriptionRequest.agency.name, arn.value, subscriptionRequest.agency.address.postcode)
     ).recover {
       case e => throw new IllegalStateException(s"Failed to create enrolment in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)

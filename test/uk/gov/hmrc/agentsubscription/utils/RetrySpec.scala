@@ -16,20 +16,21 @@
 
 package uk.gov.hmrc.agentsubscription.utils
 
+import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class FutureUtilsSpec extends UnitSpec {
+class RetrySpec extends UnitSpec {
 
-  "FutureUtilsSpec" should {
+  "RetrySpec" should {
     "return result when the operation succeeds" in {
       def op = Future {
         100
       }
 
-      val result = await(FutureUtils.retry(3)(op))
+      val result = await(Retry.retry(3)(op))
 
       result shouldBe 100
     }
@@ -37,11 +38,11 @@ class FutureUtilsSpec extends UnitSpec {
     "retry 3 times the given the operation fails all the time" in {
       var tries = 0
 
-      an[IllegalStateException] should be thrownBy {
-        await(FutureUtils.retry(3) {
+      an[GatewayTimeoutException] should be thrownBy {
+        await(Retry.retry(3) {
           Future {
             tries = tries + 1
-            throw new IllegalStateException(s"future failed $tries")
+            throw new GatewayTimeoutException("Some error happened. Please try again later.")
           }
         })
       }
@@ -52,11 +53,11 @@ class FutureUtilsSpec extends UnitSpec {
     "succeed on third trial after retrying twice" in {
       var tries = 0
 
-      val result = await(FutureUtils.retry(3) {
+      val result = await(Retry.retry(3) {
         Future {
           tries = tries + 1
           if (tries <= 2)
-            throw new IllegalStateException(s"future failed $tries")
+            throw new BadGatewayException("Some error happened. Please try again later.")
           else
             100
         }
@@ -66,14 +67,29 @@ class FutureUtilsSpec extends UnitSpec {
       tries shouldBe 3
     }
 
-    "return exception after retrying 3 times the given operation in wake of failure" in {
+    "return exception after retrying 3 times the given operation always returns exception" in {
       def op = Future {
-        throw new IllegalStateException("future failed")
+        throw new BadGatewayException("Some error happened. Please try again later.")
       }
 
-      an[IllegalStateException] should be thrownBy {
-        await(FutureUtils.retry(3)(op))
+      an[BadGatewayException] should be thrownBy {
+        await(Retry.retry(3)(op))
       }
+    }
+
+    "not retry 3 times the given the operation fails with a different exception (eg: IllegalStateException)" in {
+      var tries = 0
+
+      an[IllegalStateException] should be thrownBy {
+        await(Retry.retry(3) {
+          Future {
+            tries = tries + 1
+            throw new IllegalStateException("Some error happened. Please try again later.")
+          }
+        })
+      }
+
+      tries shouldBe 1
     }
 
   }
