@@ -13,7 +13,7 @@ import play.api.libs.json.{JsValue, Json}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
-import uk.gov.hmrc.agentsubscription.support.WireMockSupport
+import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
 import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
@@ -22,7 +22,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with DesStubs {
+class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with DesStubs with MetricsTestSupport {
   private implicit val hc = HeaderCarrier()
   val utr = Utr("1234567890")
 
@@ -68,6 +68,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     }
 
     "audit the request and response" in new MockAuditingContext {
+      givenCleanMetricRegistry()
       val connector: DesConnector =
         new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, metrics)
       subscriptionSucceeds(utr, request)
@@ -89,6 +90,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val responseJson: JsValue = Json.parse(auditEvent.response.detail("responseMessage"))
       (responseJson \ "agentRegistrationNumber").as[String] shouldBe "ARN0001"
+      verifyTimerExistsAndBeenUpdated("DES-SubscribeAgent-POST")
     }
 
   }
@@ -136,6 +138,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     }
 
     "audit the request and response" in new MockAuditingContext {
+      givenCleanMetricRegistry()
       val connector: DesConnector =
         new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, metrics)
       organisationRegistrationExists(utr)
@@ -150,6 +153,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       (responseJson \ "address" \ "postalCode").as[String] shouldBe "AA1 1AA"
       (responseJson \ "isAnASAgent").as[Boolean] shouldBe true
       (responseJson \ "organisation" \ "organisationName").as[String] shouldBe "My Agency"
+      verifyTimerExistsAndBeenUpdated("DES-GetAgentRegistration-POST")
     }
   }
 
