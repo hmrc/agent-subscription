@@ -19,12 +19,13 @@ package uk.gov.hmrc.agentsubscription
 import com.google.inject.AbstractModule
 import com.typesafe.config.Config
 import net.ceedubs.ficus.Ficus._
+import play.api.mvc.EssentialFilter
 import play.api.{Application, Configuration, Play}
 import uk.gov.hmrc.play.auth.controllers.AuthParamsControllerConfig
 import uk.gov.hmrc.play.auth.microservice.filters.AuthorisationFilter
 import uk.gov.hmrc.play.config.{AppName, ControllerConfig, RunMode}
 import uk.gov.hmrc.play.microservice.bootstrap.DefaultMicroserviceGlobal
-import uk.gov.hmrc.play.microservice.filters.{ AuditFilter, LoggingFilter, MicroserviceFilterSupport }
+import uk.gov.hmrc.play.microservice.filters.{AuditFilter, LoggingFilter, MicroserviceFilterSupport}
 
 
 object ControllerConfiguration extends ControllerConfig {
@@ -62,4 +63,8 @@ object MicroserviceGlobal extends DefaultMicroserviceGlobal
   override val microserviceAuditFilter = MicroserviceAuditFilter
 
   override val authFilter = Some(MicroserviceAuthFilter)
+
+  lazy val monitoringFilter: EssentialFilter = Play.current.injector.instanceOf[MicroserviceMonitoringFilter]
+
+  override lazy val microserviceFilters: Seq[EssentialFilter] = defaultMicroserviceFilters ++ Seq(monitoringFilter)
 }
