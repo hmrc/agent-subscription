@@ -19,11 +19,14 @@ package uk.gov.hmrc.agentsubscription.connectors
 import java.net.URL
 import javax.inject.{Inject, Named, Singleton}
 
+import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.{format, toJson}
+import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpPost, HttpResponse }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpPost, HttpResponse}
 
 case class KnownFact(`type`: String, value: String)
 
@@ -38,15 +41,19 @@ object KnownFacts {
 }
 
 @Singleton
-class GovernmentGatewayAdminConnector @Inject() (@Named("gg-admin-baseUrl") baseUrl: URL, httpPost: HttpPost) {
+class GovernmentGatewayAdminConnector @Inject() (@Named("gg-admin-baseUrl") baseUrl: URL, httpPost: HttpPost, metrics:Metrics) extends HttpAPIMonitor {
+  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+
   private val serviceUrl = s"""${baseUrl}/government-gateway-admin/service/HMRC-AS-AGENT/known-facts"""
 
   def createKnownFacts(arn: String, postcode: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
     val facts = KnownFacts(List(KnownFact("AgentReferenceNumber",arn),KnownFact("AgencyPostcode", postcode)))
     val jsonData = toJson(facts)
 
-    httpPost.POST[JsValue, HttpResponse](serviceUrl, jsonData) map {
-      response => response.status
+    monitor("GGW-AddKnownFacts-HMRC-AS-AGENT-POST") {
+      httpPost.POST[JsValue, HttpResponse](serviceUrl, jsonData) map {
+        response => response.status
+      }
     }
   }
 }

@@ -19,11 +19,14 @@ package uk.gov.hmrc.agentsubscription.connectors
 import java.net.URL
 import javax.inject.{Inject, Named, Singleton}
 
+import com.codahale.metrics.MetricRegistry
+import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.{format, toJson}
+import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpPost, HttpResponse }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpPost, HttpResponse}
 
 case class EnrolmentRequest(
                              portalId: String,
@@ -38,16 +41,20 @@ object EnrolmentRequest {
 
 
 @Singleton
-class GovernmentGatewayConnector @Inject()(@Named("gg-baseUrl") baseUrl: URL, httpPost: HttpPost) {
-  private val serviceUrl = s"""${baseUrl}/enrol"""
+class GovernmentGatewayConnector @Inject()(@Named("gg-baseUrl") baseUrl: URL, httpPost: HttpPost, metrics:Metrics) extends HttpAPIMonitor {
+  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+
+  private val serviceUrl = s"""$baseUrl/enrol"""
 
   def enrol(friendlyName: String, arn : String, postcode: String )
            (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
     val enrolmentRequest = EnrolmentRequest("Default", "HMRC-AS-AGENT", friendlyName, Seq(arn,postcode))
     val jsonData = toJson(enrolmentRequest)
 
-    httpPost.POST[JsValue, HttpResponse](serviceUrl, jsonData) map {
-      response => response.status
+    monitor("GGW-Enrol-HMRC-AS-AGENT-POST") {
+      httpPost.POST[JsValue, HttpResponse](serviceUrl, jsonData) map {
+        response => response.status
+      }
     }
   }
 }
