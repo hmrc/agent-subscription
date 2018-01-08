@@ -34,3 +34,5 @@ tmp
 bin
 tags
 ensime.sbt
+
+/git_stats/
