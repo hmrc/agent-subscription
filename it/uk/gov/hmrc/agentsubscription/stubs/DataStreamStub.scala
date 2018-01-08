@@ -8,14 +8,14 @@ object DataStreamStub {
   def writeAuditSucceeds(): Unit = {
     stubFor(post(urlEqualTo(auditUrl))
       .willReturn(aResponse()
-        .withStatus(200)
+        .withStatus(204)
       ))
   }
 
   def writeAuditMergedSucceeds(): Unit = {
     stubFor(post(urlEqualTo(auditUrl + "/merged"))
       .willReturn(aResponse()
-        .withStatus(200)
+        .withStatus(204)
       ))
   }
 
