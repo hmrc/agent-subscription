@@ -2,6 +2,7 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
 
+import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.stubs.GGAdminStubs
@@ -12,7 +13,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class GovernmentGatewayAdminConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with GGAdminStubs{
-  private lazy val connector = new GovernmentGatewayAdminConnector(new URL(s"http://localhost:$wireMockPort"), WSHttp)
+  private lazy val connector = new GovernmentGatewayAdminConnector(new URL(s"http://localhost:$wireMockPort"), WSHttp, app.injector.instanceOf[Metrics])
 
   private implicit val hc = HeaderCarrier()
   private val arn = "AARN1234567"

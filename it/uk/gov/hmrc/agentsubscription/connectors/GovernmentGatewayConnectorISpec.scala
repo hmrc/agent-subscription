@@ -2,6 +2,7 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
 
+import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.stubs.GGStubs
@@ -12,7 +13,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class GovernmentGatewayConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with GGStubs{
-  private lazy val connector = new GovernmentGatewayConnector(new URL(s"http://localhost:$wireMockPort"), WSHttp)
+  private lazy val connector = new GovernmentGatewayConnector(new URL(s"http://localhost:$wireMockPort"), WSHttp,app.injector.instanceOf[Metrics])
 
   private implicit val hc = HeaderCarrier()
   private val friendlyName = "Mr Friendly"
@@ -26,7 +27,7 @@ class GovernmentGatewayConnectorISpec extends UnitSpec with OneAppPerSuite with 
       result shouldBe 200
     }
 
-    "propogate an exception for a failed enrolment" in {
+    "propagate an exception for a failed enrolment" in {
       enrolmentFails()
 
       val exception = intercept[Upstream5xxResponse] {
