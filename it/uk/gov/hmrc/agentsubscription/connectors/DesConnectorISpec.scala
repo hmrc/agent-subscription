@@ -2,6 +2,7 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
 
+import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
@@ -31,8 +32,10 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
   override protected def expectedBearerToken = Some(bearerToken)
   override protected def expectedEnvironment = Some(environment)
 
+  private lazy val metrics = app.injector.instanceOf[Metrics]
+
   private lazy val connector: DesConnector =
-    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), WSHttp)
+    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), WSHttp, metrics)
 
   "subscribeToAgentServices" should {
     "return an ARN when subscription is successful" in {
@@ -66,7 +69,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
     "audit the request and response" in new MockAuditingContext {
       val connector: DesConnector =
-        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp)
+        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, metrics)
       subscriptionSucceeds(utr, request)
 
       await(connector.subscribeToAgentServices(utr, request))
@@ -134,7 +137,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
     "audit the request and response" in new MockAuditingContext {
       val connector: DesConnector =
-        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp)
+        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, metrics)
       organisationRegistrationExists(utr)
 
       await(connector.getRegistration(utr))
