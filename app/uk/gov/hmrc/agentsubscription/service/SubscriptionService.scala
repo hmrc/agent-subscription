@@ -46,7 +46,7 @@ private case class SubscriptionAuditDetail (
 @Singleton
 class SubscriptionService @Inject() (
   desConnector: DesConnector,
-  governmentGatewayAdminConnector: GovernmentGatewayAdminConnector,
+  enrolmentStoreConnector: EnrolmentStoreConnector,
   governmentGatewayConnector: GovernmentGatewayConnector,
   auditService: AuditService) {
 
@@ -98,9 +98,9 @@ class SubscriptionService @Inject() (
     val tries = 3
 
     Retry.retry(tries)(
-      governmentGatewayAdminConnector.createKnownFacts(arn.value, subscriptionRequest.agency.address.postcode)
+      enrolmentStoreConnector.sendKnownFacts(arn.value, subscriptionRequest.agency.address.postcode)
     ).recover {
-      case e => throw new IllegalStateException(s"Failed to create known facts in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
+      case e => throw new IllegalStateException(s"Failed to send known facts in EMAC for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
     }
   }
 
