@@ -41,8 +41,9 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[AuditConnector]).toInstance(MicroserviceGlobal.auditConnector)
     bindBaseUrl("des")
     bindBaseUrl("auth")
-    bindBaseUrl("gg")
-    bindBaseUrl("gg-admin")
+    bindBaseUrl("gg") //TODO remove
+    bindBaseUrl("gg-admin") //TODO remove
+    bindBaseUrl("enrolment-store")
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
   }
