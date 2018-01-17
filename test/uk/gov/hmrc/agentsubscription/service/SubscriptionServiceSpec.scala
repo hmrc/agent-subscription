@@ -24,7 +24,7 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
-import uk.gov.hmrc.agentsubscription.connectors.{Address => _, KnownFacts => _, _}
+import uk.gov.hmrc.agentsubscription.connectors.{Address => _, _}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
@@ -36,11 +36,11 @@ import uk.gov.hmrc.http.HeaderCarrier
 class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
   private val desConnector = resettingMock[DesConnector]
-  private val ggAdminConnector = resettingMock[GovernmentGatewayAdminConnector]
+  private val emacConnector = resettingMock[EnrolmentStoreConnector]
   private val ggConnector = resettingMock[GovernmentGatewayConnector]
   private val auditService = resettingMock[AuditService]
 
-  private val service = new SubscriptionService(desConnector, ggAdminConnector, ggConnector, auditService)
+  private val service = new SubscriptionService(desConnector, emacConnector, ggConnector, auditService)
 
   private implicit val hc = HeaderCarrier()
   private implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
@@ -109,7 +109,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
       await(service.subscribeAgentToMtd(subscriptionRequest))
 
-      verify(ggAdminConnector).createKnownFacts(eqs(arn), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
+      verify(emacConnector).sendKnownFacts(eqs(arn), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
       verify(ggConnector).enrol(anyString, eqs(arn), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
     }
   }
@@ -122,7 +122,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
-    when(ggAdminConnector.createKnownFacts(eqs(arn), anyString)(eqs(hc), any[ExecutionContext]))
+    when(emacConnector.sendKnownFacts(eqs(arn), anyString)(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
 
     when(ggConnector.enrol(anyString, anyString, anyString)(eqs(hc), any[ExecutionContext]))
