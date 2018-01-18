@@ -26,7 +26,7 @@ import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.http.logging.Authorization
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpPost, HttpReads}
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -74,7 +74,7 @@ class DesConnector @Inject()(@Named("des.environment") environment: String,
                             ) extends Status with HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] =
+  def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     monitor("DES-SubscribeAgent-POST") {
       httpPost.POST[DesSubscriptionRequest, JsValue](desSubscribeUrl(utr).toString, request)(implicitly[Writes[DesSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
     } map {
@@ -82,23 +82,29 @@ class DesConnector @Inject()(@Named("des.environment") environment: String,
     } recover {
       case e => throw new RuntimeException(s"Failed to create subscription in ETMP for $utr ${e.getMessage}", e)
     }
+  }
 
-  def getRegistration(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DesRegistrationResponse]] =
+  def getRegistration(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DesRegistrationResponse]] = {
     getRegistrationJson(utr) map {
-      case Some(r) => Some(DesRegistrationResponse((r \ "address" \ "postalCode").asOpt[String],
-        (r \ "isAnASAgent").as[Boolean],
-        (r \ "organisation" \ "organisationName").asOpt[String],
-        (r \ "individual").asOpt[DesIndividual],
-        (r \ "agentReferenceNumber").asOpt[Arn]))
-      case _ => None
+      case Some(r) => {
+        Some(DesRegistrationResponse((r \ "address" \ "postalCode").asOpt[String],
+          (r \ "isAnASAgent").as[Boolean],
+          (r \ "organisation" \ "organisationName").asOpt[String],
+          (r \ "individual").asOpt[DesIndividual],
+          (r \ "agentReferenceNumber").asOpt[Arn]))
+      }
+      case _ =>  None
     }
+  }
 
   private def getRegistrationJson(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] =
     monitor("DES-GetAgentRegistration-POST") {
-      httpPost.POST[DesRegistrationRequest, Option[JsValue]](desRegistrationUrl(utr).toString, DesRegistrationRequest(isAnAgent = false))(implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], desHeaders, ec)
+      httpPost.POST[DesRegistrationRequest, Option[JsValue]](desRegistrationUrl(utr).toString,
+        DesRegistrationRequest(isAnAgent = false))(implicitly[Writes[DesRegistrationRequest]],
+        implicitly[HttpReads[Option[JsValue]]], desHeaders, ec)
     } recover {
       case badRequest: BadRequestException =>
-        throw new RuntimeException(s"400 Bad Request response from DES for utr ${utr.value}", badRequest)
+        throw new DesConnectorException(s"400 Bad Request response from DES for utr ${utr.value}", badRequest)
     }
 
   private def desSubscribeUrl(utr: Utr): URL =
@@ -113,3 +119,5 @@ class DesConnector @Inject()(@Named("des.environment") environment: String,
       extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
   }
 }
+
+class DesConnectorException(val reason: String, val cause: Throwable) extends RuntimeException(reason, cause)

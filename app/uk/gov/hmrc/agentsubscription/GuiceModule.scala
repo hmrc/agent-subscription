@@ -23,10 +23,10 @@ import com.google.inject.AbstractModule
 import com.google.inject.name.Names.named
 import play.api.Mode.Mode
 import play.api.{Configuration, Environment}
-import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, DesConnector}
+import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, AuthConnector}
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.http.{ HttpGet, HttpPost }
+import uk.gov.hmrc.http.{HttpGet, HttpPost}
 
 class GuiceModule(environment: Environment, configuration: Configuration) extends AbstractModule with ServicesConfig {
 
@@ -38,8 +38,8 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bind(classOf[HttpPost]).toInstance(WSHttp)
     bind(classOf[HttpGet]).toInstance(WSHttp)
     bind(classOf[DesConnector])
-    bind(classOf[AuthConnector])
     bind(classOf[AuditConnector]).toInstance(MicroserviceGlobal.auditConnector)
+    bind(classOf[AuthConnector])
     bindBaseUrl("des")
     bindBaseUrl("auth")
     bindBaseUrl("gg")

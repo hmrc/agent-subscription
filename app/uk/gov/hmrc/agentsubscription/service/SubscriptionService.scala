@@ -65,14 +65,17 @@ class SubscriptionService @Inject() (
   }
 
   def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+
     desConnector.getRegistration(subscriptionRequest.utr) flatMap {
         case Some(DesRegistrationResponse(Some(desPostcode), _, _, _, _))
-          if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => subscribe(subscriptionRequest)
-        case _ => Future successful None
+          if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => {
+          subscribe(subscriptionRequest)
+        }
+        case _ =>  Future successful None
     }
   }
 
-  private def subscribe(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] =
+  private def subscribe(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     for {
       arn <- desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
       _ <- createKnownFacts(arn, subscriptionRequest)
@@ -81,6 +84,7 @@ class SubscriptionService @Inject() (
       auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
       Some(arn)
     }
+  }
 
   private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest) =
     toJsObject(
@@ -96,7 +100,6 @@ class SubscriptionService @Inject() (
 
   private def createKnownFacts(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
     val tries = 3
-
     Retry.retry(tries)(
       governmentGatewayAdminConnector.createKnownFacts(arn.value, subscriptionRequest.agency.address.postcode)
     ).recover {
@@ -106,11 +109,12 @@ class SubscriptionService @Inject() (
 
   private def enrol(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
     val tries = 3
-
     Retry.retry(tries)(
       governmentGatewayConnector.enrol(subscriptionRequest.agency.name, arn.value, subscriptionRequest.agency.address.postcode)
     ).recover {
-      case e => throw new IllegalStateException(s"Failed to create enrolment in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
+      case e => {
+        throw new IllegalStateException(s"Failed to create enrolment in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
+      }
     }
   }
 

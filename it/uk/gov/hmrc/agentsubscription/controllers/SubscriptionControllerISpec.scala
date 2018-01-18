@@ -83,26 +83,29 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
 
     "return Bad Request " when {
-
       "utr is missing" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "utr"))))
 
         result.status shouldBe 400
       }
 
       "utr contains non-numeric characters" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345")))))
 
         result.status shouldBe 400
       }
 
       "utr contains fewer than 10 digits" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345")))))
 
         result.status shouldBe 400
       }
 
       "utr contains more than 10 digits" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901")))))
 
         result.status shouldBe 400
@@ -110,78 +113,92 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
 
       "name contains invalid characters" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "InvalidAgencyName!@")))))
 
         result.status shouldBe 400
       }
 
       "address is missing" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(removeFields(Seq(address))))
 
         result.status shouldBe 400
       }
 
       "address line 1 contains invalid characters" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", invalidAddress)))))
 
         result.status shouldBe 400
       }
 
       "address line 2 contains invalid characters" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine2", invalidAddress)))))
         result.status shouldBe 400
       }
 
       "address line 3 contains invalid characters" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine3", invalidAddress)))))
         result.status shouldBe 400
       }
 
       "address line 4 contains invalid characters" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine4", invalidAddress)))))
         result.status shouldBe 400
       }
 
       "email is missing" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "email"))))
 
         result.status shouldBe 400
       }
       "email has no local part" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "@domain")))))
 
         result.status shouldBe 400
       }
       "email has no domain part" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "local@")))))
 
         result.status shouldBe 400
       }
       "email has no @" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "local")))))
 
         result.status shouldBe 400
       }
 
       "telephone number contains words" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "0123 456 78aa")))))
 
         result.status shouldBe 400
       }
 
       "postcode is missing" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(removeFields(Seq(address \ "postcode"))))
 
         result.status shouldBe 400
       }
 
       "known facts postcode is not valid" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567")))))
 
         result.status shouldBe 400
       }
 
       "countryCode is missing" in {
+        requestIsAuthenticated()
         val result = await(doSubscriptionRequest(removeFields(Seq(address \ "countryCode"))))
 
         result.status shouldBe 400
@@ -190,7 +207,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "throw a 500 error if " when {
       "create known facts fails in GG " in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticated()
         organisationRegistrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
         createKnownFactsFails()
@@ -201,7 +218,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "create enrolment fails in GG " in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
         createKnownFactsSucceeds()
@@ -232,7 +249,6 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     val request = Json.parse(subscriptionRequest).as[JsObject]
     val filtered: JsObject = replaceFields(request, fields)
 
-    println (stringify(filtered))
     stringify(filtered)
   }
 

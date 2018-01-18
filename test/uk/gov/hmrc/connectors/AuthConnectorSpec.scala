@@ -16,53 +16,112 @@
 
 package uk.gov.hmrc.connectors
 
-import java.net.URL
-
-import org.mockito.ArgumentMatchers.{any, anyString, eq => eqs}
-import org.mockito.Mockito.{verify, when}
-import play.api.libs.json.{JsValue, Json}
+import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers.any
-import uk.gov.hmrc.agentsubscription.auth.{Authority, Enrolment, UserDetails}
-import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
-import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
+import org.mockito.Mockito.{reset, when}
+import org.scalatest.BeforeAndAfterEach
+import org.scalatest.mock.MockitoSugar
+import play.api.http.Status._
+import play.api.libs.json.JsValue
+import play.api.mvc.Results.Ok
+import play.api.mvc.{AnyContent, Request, Result}
+import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
+import uk.gov.hmrc.agentsubscription.connectors.{AuthConnector, Provider}
+import uk.gov.hmrc.agentsubscription.support.TestData
+import uk.gov.hmrc.auth.core.{authorise, _}
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.ExecutionContext.Implicits.global
-import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpReads}
+import scala.concurrent.Future
 
-class AuthConnectorSpec extends UnitSpec with ResettingMockitoSugar {
+class AuthConnectorSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach with TestData {
 
-  private implicit val hc = resettingMock[HeaderCarrier]
-  private val httpGet = resettingMock[HttpGet]
-  private val authConnector = new AuthConnector(new URL("http://localhost"), httpGet)
-  private val authorityUrl = new URL("http://localhost/auth/authority")
-  private val testAuthority = Authority(authorityUrl, authProviderId = Some("54321-credId"), authProviderType = Some("GovernmentGateway"), "", enrolmentsUrl = "relativeEnrolments")
-  private val expectedEnrolmentsUrl = "http://localhost/auth/relativeEnrolments"
-  private val expectedUserDetailsUrl = "http://localhost/auth/userDetailsLink"
-  private val authorityJsonWithRelativeUrl = Json.obj("enrolments" -> "relativeEnrolments", "userDetailsLink" → "userDetailsLink")
+  val mockMicroserviceAuthConnector: MicroserviceAuthConnector = mock[MicroserviceAuthConnector]
+  val mockMetrics: Metrics = mock[Metrics]
+  val mockAuthConnector: AuthConnector = new AuthConnector(mockMetrics, mockMicroserviceAuthConnector)
 
+  private type SubscriptionAuthAction = Request[JsValue] => Future[Result]
+  private type RegistrationAuthAction = Request[AnyContent] => Provider => Future[Result]
 
-  "AuthConnector.enrolments" should {
-    "resolve the enrolments URL relative to the authority URL" in {
+  val subscriptionAction: SubscriptionAuthAction = { implicit request => Future successful Ok }
+  val registrationAction: RegistrationAuthAction = { implicit request => implicit provider => Future successful Ok }
 
-      val agentEnrolment = Enrolment("HMRC-AS-AGENT")
-      when(httpGet.GET[List[Enrolment]](eqs(expectedEnrolmentsUrl))(any[HttpReads[List[Enrolment]]], any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful List(agentEnrolment))
-      await(authConnector.enrolments(testAuthority))
-      verify(httpGet).GET[List[Enrolment]](eqs(expectedEnrolmentsUrl))(any[HttpReads[List[Enrolment]]], any[HeaderCarrier], any[ExecutionContext])
+  private def agentAuthStub(returnValue: Future[~[Option[AffinityGroup], Enrolments]]) =
+    when(mockMicroserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[~[Option[AffinityGroup], Enrolments]]]())(any(), any())).thenReturn(returnValue)
+
+  override def beforeEach(): Unit = reset(mockMicroserviceAuthConnector)
+
+  "onlyForAgents" should {
+    "return OK for an Agent with HMRC-AS-AGENT enrolment" in {
+      agentAuthStub(agentAffinityAndEnrolments)
+
+      val response: Result = await(mockAuthConnector.forSubscription(subscriptionAction).apply(fakeRequestJson))
+
+      status(response) shouldBe OK
+    }
+
+    "return UNAUTHORISED when the user does not belong to Agent affinity group" in {
+      agentAuthStub(agentIncorrectAffinity)
+
+      val response: Result = await(mockAuthConnector.forSubscription(subscriptionAction).apply(fakeRequestJson))
+
+      status(response) shouldBe UNAUTHORIZED
+    }
+
+    "return UNAUTHORISED when auth fails to return an AffinityGroup or Enrolments" in {
+      agentAuthStub(neitherHaveAffinityOrEnrolment)
+
+      val response: Result = await(mockAuthConnector.forSubscription(subscriptionAction).apply(fakeRequestJson))
+
+      status(response) shouldBe UNAUTHORIZED
+    }
+
+    "return UNAUTHORISED when auth throws an error" in {
+      agentAuthStub(failedStubForAgent)
+
+      val response: Result = await(mockAuthConnector.forSubscription(subscriptionAction).apply(fakeRequestJson))
+
+      status(response) shouldBe UNAUTHORIZED
     }
   }
-    "currentAuthority" should {
-    " resolve the userDetails URL relative to the authority URL" in {
 
-      when(httpGet.GET[JsValue](eqs(authorityUrl.toString))(any[HttpReads[JsValue]], any[HeaderCarrier], any[ExecutionContext]))
-        .thenReturn(Future successful authorityJsonWithRelativeUrl)
-      val userDetails = UserDetails(Some("1234"), Some("Agent"), "God")
+  "onlyForAffinityGroup" should {
 
-      when(httpGet.GET[UserDetails](eqs(expectedUserDetailsUrl))(any[HttpReads[UserDetails]], any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful userDetails)
+    "return OK when we have the correct affinity group" in {
+      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
+        .thenReturn(validAgentAffinity)
 
-      await(authConnector.currentAuthority())
-      verify(httpGet).GET[UserDetails](eqs(expectedUserDetailsUrl))(any[HttpReads[UserDetails]], any[HeaderCarrier], any[ExecutionContext])
+      val response: Result = await(mockAuthConnector.forRegistration(registrationAction).apply(fakeRequestAny))
+
+      status(response) shouldBe OK
+    }
+
+    "return UNAUTHORISED when we have the wrong affinity group" in {
+      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
+        .thenReturn(invalidAgentAffinity)
+
+      val response: Result = await(mockAuthConnector.forRegistration(registrationAction).apply(fakeRequestAny))
+
+      status(response) shouldBe UNAUTHORIZED
+    }
+
+    "return UNAUTHORISED when we have no affinity group" in {
+      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
+        .thenReturn(noAffinity)
+
+      val response: Result = await(mockAuthConnector.forRegistration(registrationAction).apply(fakeRequestAny))
+
+      status(response) shouldBe UNAUTHORIZED
+    }
+
+    "return UNAUTHORISED when auth throws an error" in {
+      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
+        .thenReturn(Future failed new NullPointerException)
+
+
+      val response: Result = await(mockAuthConnector.forRegistration(registrationAction).apply(fakeRequestAny))
+
+      status(response) shouldBe UNAUTHORIZED
     }
   }
 }

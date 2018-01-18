@@ -18,35 +18,38 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import javax.inject._
 
+import com.kenshoo.play.metrics.Metrics
+import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
 import play.api.mvc._
-import uk.gov.hmrc.agentsubscription.auth.AuthActions
+import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
 import uk.gov.hmrc.agentsubscription.model.{SubscriptionRequest, SubscriptionResponse}
 import uk.gov.hmrc.agentsubscription.service.SubscriptionService
 import uk.gov.hmrc.play.microservice.controller.BaseController
-
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
-import scala.concurrent.Future
-import uk.gov.hmrc.http.Upstream4xxResponse
+import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
 
 @Singleton
-class SubscriptionController @Inject()(subscriptionService: SubscriptionService,
-                                       override val authConnector: AuthConnector) extends BaseController with AuthActions {
-  private val parseToSubscriptionRequest = parse.json[SubscriptionRequest]
+class SubscriptionController @Inject()(subscriptionService: SubscriptionService)
+                                      (implicit metrics: Metrics,
+                                       microserviceAuthConnector: MicroserviceAuthConnector)
+  extends AuthConnector(metrics, microserviceAuthConnector) with BaseController {
 
-  def createSubscription: Action[SubscriptionRequest] = withAgentAffinityGroupAndEnrolments.async(parseToSubscriptionRequest) { implicit request =>
-    if (request.enrolments.isEmpty) {
-      subscriptionService.subscribeAgentToMtd(request.body).map {
-        case Some(a) => Created(toJson(SubscriptionResponse(a)))
-        case None => Forbidden
-      }.recover {
-        case e: RuntimeException
-          if e.getCause.isInstanceOf[Upstream4xxResponse] &&
-             e.getCause.asInstanceOf[Upstream4xxResponse].upstreamResponseCode == CONFLICT => Conflict
+  override implicit val hc: HeaderCarrier = new HeaderCarrier
+
+  def createSubscription = forSubscription {
+    implicit request =>
+      withJsonBody[SubscriptionRequest] { subscriptionRequest =>
+        subscriptionService.subscribeAgentToMtd(subscriptionRequest).map {
+          case Some(a) => Created(toJson(SubscriptionResponse(a)))
+          case None => Forbidden
+        }.recover {
+          case e: RuntimeException
+            if e.getCause.isInstanceOf[Upstream4xxResponse] &&
+               e.getCause.asInstanceOf[Upstream4xxResponse].upstreamResponseCode == CONFLICT => Conflict
+          case ex: IllegalStateException => InternalServerError
+        }
       }
-    } else {
-      Future successful Forbidden
-    }
   }
 }

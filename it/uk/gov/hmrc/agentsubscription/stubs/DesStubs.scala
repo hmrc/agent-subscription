@@ -218,7 +218,8 @@ trait DesStubs {
         s"""
            |{
            |  "regime": "ITSA",
-           |  "requiresNameMatch": "false"
+           |  "requiresNameMatch": "false",
+           |  "isAnASAgent": true
            |}
               """.stripMargin, true, true))
       .willReturn(aResponse()

@@ -37,7 +37,7 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
       writeAuditMergedSucceeds()
       writeAuditSucceeds()
 
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticated()
       organisationRegistrationExists(utr, true)
 
       val path = encodePathSegments("agent-subscription", "registration", utr.value, "postcode", postcode)
@@ -61,8 +61,8 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
     Json.parse(
       s"""
          |{
-         |  "authProviderId": "12345-credId",
-         |  "authProviderType": "GovernmentGateway",
+         |  "authProviderId": "12345",
+         |  "authProviderType": "GG",
          |  "utr": "${utr.value}",
          |  "postcode": "$postcode",
          |  "knownFactsMatched": true,

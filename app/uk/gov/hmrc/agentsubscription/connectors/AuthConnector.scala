@@ -16,40 +16,88 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
-import javax.inject._
+import javax.inject.Inject
 
-import com.google.inject.Singleton
+import com.kenshoo.play.metrics.Metrics
+import play.api.Logger
 import play.api.libs.json.JsValue
-import uk.gov.hmrc.agentsubscription.auth.{Authority, Enrolment, UserDetails}
-import uk.gov.hmrc.play.http._
+import play.api.mvc.{Result, _}
+import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
+import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
+import uk.gov.hmrc.agentsubscription.controllers.ErrorResult._
+import uk.gov.hmrc.auth.core
+import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
+import uk.gov.hmrc.auth.core.retrieve.Retrievals.{affinityGroup, allEnrolments, credentials}
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
+import uk.gov.hmrc.auth.core.{Enrolment, _}
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.microservice.controller.BaseController
 
-import scala.concurrent.{ExecutionContext, Future}
-import scala.language.postfixOps
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, Upstream4xxResponse }
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-@Singleton
-class AuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL, httpGet: HttpGet) {
-  val authorityUrl = new URL(baseUrl, "/auth/authority")
-  def currentAuthority()(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[Authority]] = {
-    val response: Future[JsValue] = httpGet.GET[JsValue](authorityUrl.toString)
-    response flatMap { r =>
-      for {
-        userDetails <- userDetails(authorityUrl, (r \ "userDetailsLink").as[String])
-        enrolmentsUrl <- Future successful (r \ "enrolments").as[String]
-      } yield Some(Authority(authorityUrl, userDetails.authProviderId, userDetails.authProviderType, userDetails.affinityGroup, enrolmentsUrl))
-    } recover {
-      case error: Upstream4xxResponse if error.upstreamResponseCode == 401 => None
-      case e => throw e
-    }
+case class Provider(providerId: String, providerType: String)
+
+class AuthConnector @Inject()(metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
+  extends HttpAPIMonitor with AuthorisedFunctions with BaseController {
+  override def authConnector: core.AuthConnector = microserviceAuthConnector
+
+  override val kenshooRegistry = metrics.defaultRegistry
+  private type SubscriptionAuthAction = Request[JsValue] => Future[Result]
+  private type RegistrationAuthAction = Request[AnyContent] => Provider => Future[Result]
+
+  private val affinityGroupAllEnrols: Retrieval[~[Option[AffinityGroup], Enrolments]] = affinityGroup and allEnrolments
+
+  private val AuthProvider: AuthProviders = AuthProviders(GovernmentGateway)
+  private val agentEnrol = "HMRC-AS-AGENT"
+  private val agentEnrolId = "AgentReferenceNumber"
+  private val isAnAgent = true
+
+  implicit val hc: HeaderCarrier = new HeaderCarrier
+
+  def forSubscription(action: SubscriptionAuthAction) = Action.async(parse.json) {
+    implicit request =>
+      authorised(AuthProvider).retrieve(affinityGroupAllEnrols) {
+        case Some(affinityG) ~ allEnrols ⇒
+          (isAgent(affinityG), extractEnrolmentData(allEnrols.enrolments, agentEnrol, agentEnrolId)) match {
+            case (`isAnAgent`, Some(_)) => action(request)
+            case (`isAnAgent`, None) => action(request)
+            case _ => Future successful GenericUnauthorized
+          }
+        case _ => Future successful GenericUnauthorized
+      } recover {
+        case e @ _ => {
+          Logger.error("Failed to auth", e)
+          GenericUnauthorized
+        }
+      }
   }
 
-  private def userDetails(authorityUrl: URL, userDetailsLink: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[UserDetails] = {
-    val absoluteUserDetailsUrl = new URL(authorityUrl, userDetailsLink).toString
-    httpGet.GET[UserDetails](absoluteUserDetailsUrl)
+  def forRegistration(action: RegistrationAuthAction) = Action.async {
+    implicit request =>
+      authorised(AuthProvider).retrieve(affinityGroup and credentials) {
+        case (Some(affinityG) ~ Credentials(providerId, providerType)) => {
+          (isAgent(affinityG)) match {
+            case `isAnAgent` => action(request)(Provider(providerId, providerType))
+            case _ => Future successful GenericUnauthorized
+          }
+        }
+        case _ => Future successful GenericUnauthorized
+      } recover {
+        case ex: DesConnectorException => {
+          Logger.error("DES issue", ex)
+          InternalServerError
+        }
+        case e @ _ => {
+          Logger.error("Failed to auth", e)
+          GenericUnauthorized
+        }
+      }
   }
 
-  def enrolments(authority: Authority)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[List[Enrolment]] = {
-    httpGet.GET[List[Enrolment]](authority.absoluteEnrolmentsUrl)
-  }
+  private def extractEnrolmentData(enrolls: Set[Enrolment], enrolKey: String, enrolId: String): Option[String] =
+    enrolls.find(_.key == enrolKey).flatMap(_.getIdentifier(enrolId)).map(_.value)
+
+  private def isAgent(group: AffinityGroup): Boolean = group.toString.contains("Agent")
+
 }
