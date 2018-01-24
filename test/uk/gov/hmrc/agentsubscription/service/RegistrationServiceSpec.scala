@@ -26,10 +26,11 @@ import play.api.LoggerLike
 import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentsubscription.RequestWithAuthority
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.audit.AuditService
-import uk.gov.hmrc.agentsubscription.auth.{Authority, RequestWithAuthority}
-import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse}
+import uk.gov.hmrc.agentsubscription.auth.Authority
+import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse, Provider}
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -48,7 +49,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
   private val authorityUrl = new URL("http://localhost/auth/authority")
   private val hc = HeaderCarrier()
-  private val request = RequestWithAuthority(Authority(authorityUrl, authProviderId = Some("54321-credId"), authProviderType = Some("GovernmentGateway"), "", ""), FakeRequest())
+  private val provider = Provider("provId", "provType")
+  private val request = RequestWithAuthority(Authority(authorityUrl, authProviderId = Some(provider.providerId), authProviderType = Some(provider.providerType), "", ""), FakeRequest())
   private val requestWithoutAuthProvider = RequestWithAuthority(Authority(authorityUrl, authProviderId = None, authProviderType = None, "", ""), FakeRequest())
 
   override def beforeEach(): Unit = {
@@ -70,13 +72,13 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           arn)))
 
-      await(service.getRegistration(utr, postcode)(hc, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
           |{
-          |  "authProviderId": "54321-credId",
-          |  "authProviderType": "GovernmentGateway",
+          |  "authProviderId": "${provider.providerId}",
+          |  "authProviderType": "${provider.providerType}",
           |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
@@ -105,13 +107,13 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           None)))
 
-      await(service.getRegistration(utr, postcode)(hc, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
            |{
-           |  "authProviderId": "54321-credId",
-           |  "authProviderType": "GovernmentGateway",
+           |  "authProviderId": "${provider.providerId}",
+           |  "authProviderType": "${provider.providerType}",
            |  "utr": "${utr.value}",
            |  "postcode": "$postcode",
            |  "knownFactsMatched": true,
@@ -138,13 +140,13 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           None)))
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, request))
+      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
            |{
-           |  "authProviderId": "54321-credId",
-           |  "authProviderType": "GovernmentGateway",
+           |  "authProviderId": "${provider.providerId}",
+           |  "authProviderType": "${provider.providerType}",
            |  "utr": "${utr.value}",
            |  "postcode": "$suppliedPostcode",
            |  "knownFactsMatched": false
@@ -171,13 +173,13 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some(DesIndividual("First", "Last")),
           arn)))
 
-      await(service.getRegistration(utr, postcode)(hc, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
           |{
-          |  "authProviderId": "54321-credId",
-          |  "authProviderType": "GovernmentGateway",
+          |  "authProviderId": "${provider.providerId}",
+          |  "authProviderType": "${provider.providerType}",
           |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
@@ -206,13 +208,13 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some(DesIndividual("First", "Last")),
           None)))
 
-      await(service.getRegistration(utr, postcode)(hc, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
           |{
-          |  "authProviderId": "54321-credId",
-          |  "authProviderType": "GovernmentGateway",
+          |  "authProviderId": "${provider.providerId}",
+          |  "authProviderType": "${provider.providerType}",
           |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
@@ -239,13 +241,13 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some(DesIndividual("First", "Last")),
           None)))
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, request))
+      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
           |{
-          |  "authProviderId": "54321-credId",
-          |  "authProviderType": "GovernmentGateway",
+          |  "authProviderId": "${provider.providerId}",
+          |  "authProviderType": "${provider.providerType}",
           |  "utr": "${utr.value}",
           |  "postcode": "$suppliedPostcode",
           |  "knownFactsMatched": false
@@ -259,7 +261,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       stubbedLogger.logMessages.size shouldBe 0
     }
 
-    "tolerate optional fields being absent (agentReferenceNumber, authProviderId, authProviderType, postcode) where not subscribed" in {
+    "tolerate optional fields being absent (agentReferenceNumber, postcode) where not subscribed" in {
       val utr = Utr("4000000009")
       val suppliedPostcode = "AA1 1AA"
 
@@ -271,11 +273,13 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           None)))
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, requestWithoutAuthProvider))
+      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, requestWithoutAuthProvider))
 
       val expectedExtraDetail = Json.parse(
         s"""
           |{
+          |  "authProviderId": "${provider.providerId}",
+          |  "authProviderType": "${provider.providerType}",
           |  "utr": "${utr.value}",
           |  "postcode": "$suppliedPostcode",
           |  "knownFactsMatched": false
@@ -290,7 +294,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       stubbedLogger.logMessages.head shouldBe s"The business partner record associated with $utr is not subscribed with postcode: false"
     }
 
-    "tolerate optional fields being absent (agentReferenceNumber, authProviderId, authProviderType, postcode) where subscribed" in {
+    "tolerate optional fields being absent (agentReferenceNumber, postcode) where subscribed" in {
       val utr = Utr("4000000009")
       val suppliedPostcode = "AA1 1AA"
 
@@ -302,11 +306,13 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           None)))
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, requestWithoutAuthProvider))
+      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, requestWithoutAuthProvider))
 
       val expectedExtraDetail = Json.parse(
         s"""
           |{
+          |  "authProviderId": "${provider.providerId}",
+          |  "authProviderType": "${provider.providerType}",
           |  "utr": "${utr.value}",
           |  "postcode": "$suppliedPostcode",
           |  "knownFactsMatched": false,
@@ -327,13 +333,13 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val postcode = "AA1 1AA"
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext])).thenReturn(Future successful None)
-      await(service.getRegistration(utr, postcode)(hc, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
           |{
-          |  "authProviderId": "54321-credId",
-          |  "authProviderType": "GovernmentGateway",
+          |  "authProviderId": "${provider.providerId}",
+          |  "authProviderType": "${provider.providerType}",
           |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": false

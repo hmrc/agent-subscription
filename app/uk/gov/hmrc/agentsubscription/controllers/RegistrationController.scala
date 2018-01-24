@@ -18,24 +18,28 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import javax.inject._
 
+import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{Action, AnyContent, Result}
-import uk.gov.hmrc.agentsubscription.auth.{AuthActions, RequestWithAuthority}
-import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
-import uk.gov.hmrc.agentsubscription.model.{postcodeWithoutSpacesRegex}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Utr}
+import play.api.mvc.{AnyContent, Request, Result}
+import uk.gov.hmrc.agentsubscription.connectors.{AuthActions, Provider}
+import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
 import scala.concurrent.Future
 
 @Singleton
-class RegistrationController @Inject()(service: RegistrationService, override val authConnector: AuthConnector)
-  extends BaseController with AuthActions {
+class RegistrationController @Inject()(service: RegistrationService)
+                                      (implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
+  extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
-  private[controllers] def getRegistrationBlock(utr: Utr, postcode: String): RequestWithAuthority[AnyContent] => Future[Result] = { implicit request =>
+  private[controllers] def register(utr: Utr, postcode: String)
+                                   (implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Future[Result] = {
     if (!Utr.isValid(utr.value))
       badRequest("INVALID_UTR")
     else if (!validPostcode(postcode))
@@ -44,14 +48,19 @@ class RegistrationController @Inject()(service: RegistrationService, override va
       service.getRegistration(utr, postcode).map(_
         .map(registrationDetails => Ok(toJson(registrationDetails)))
         .getOrElse(NotFound))
+
   }
 
   private def badRequest(code: String) = {
     Future successful BadRequest(Json.obj("code" -> code))
   }
 
-  def getRegistration(utr: Utr, postcode: String): Action[AnyContent] =
-    withAgentAffinityGroup.async(getRegistrationBlock(utr, postcode))
+  def getRegistration(utr: Utr, postcode: String) = affinityGroupAndCredentials {
+    implicit request =>
+      implicit provider => {
+        register(utr, postcode)
+      }
+  }
 
   private def validPostcode(postcode: String): Boolean = {
     postcode.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)

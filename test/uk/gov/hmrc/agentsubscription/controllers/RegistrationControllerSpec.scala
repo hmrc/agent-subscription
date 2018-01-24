@@ -16,20 +16,25 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
+import com.kenshoo.play.metrics.Metrics
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.auth.RequestWithAuthority
-import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
+import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
+import uk.gov.hmrc.agentsubscription.connectors.Provider
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.agentsubscription.support.{AkkaMaterializerSpec, ResettingMockitoSugar}
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
 class RegistrationControllerSpec extends UnitSpec with AkkaMaterializerSpec with ResettingMockitoSugar {
 
+  private val metrics: Metrics = resettingMock[Metrics]
+  private val microserviceAuthConnector: MicroserviceAuthConnector = resettingMock[MicroserviceAuthConnector]
   private val registrationService = resettingMock[RegistrationService]
   private val authConnector = resettingMock[AuthConnector]
 
-  private val controller = new RegistrationController(registrationService, authConnector)
+  private val controller = new RegistrationController(registrationService)(metrics, microserviceAuthConnector)
 
   private val validUtr = Utr("2000000000")
   private val validPostcode = "AA1 1AA"
@@ -37,15 +42,18 @@ class RegistrationControllerSpec extends UnitSpec with AkkaMaterializerSpec with
   private val invalidUtr = Utr("not a UTR")
   private val invalidPostcode = "not a postcode"
 
-  "getRegistrationBlock" should {
+  val hc: HeaderCarrier = new HeaderCarrier
+  val provider = Provider("provId", "provType")
+
+  "register" should {
     "return 400 INVALID_UTR if the UTR is invalid " in {
-      val result = await(controller.getRegistrationBlock(invalidUtr, validPostcode)(RequestWithAuthority(null, FakeRequest())))
+      val result = await(controller.register(invalidUtr, validPostcode)(hc,provider, FakeRequest()))
       status(result) shouldBe 400
       (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_UTR"
     }
 
     "return 400 INVALID_POSTCODE if the postcode is invalid " in {
-      val result = await(controller.getRegistrationBlock(validUtr, invalidPostcode)(RequestWithAuthority(null, FakeRequest())))
+      val result = await(controller.register(validUtr, invalidPostcode)(hc,provider, FakeRequest()))
       status(result) shouldBe 400
       (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_POSTCODE"
     }

@@ -20,10 +20,10 @@ import javax.inject.{Inject, Singleton}
 
 import play.api.{Logger, LoggerLike}
 import play.api.libs.json.{Json, _}
+import play.api.mvc.{AnyContent, Request}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
-import uk.gov.hmrc.agentsubscription.auth.RequestWithAuthority
-import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse}
+import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse, Provider}
 import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.agentsubscription.postcodesMatch
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
@@ -51,7 +51,7 @@ private case class CheckAgencyStatusAuditDetail(
 class RegistrationService @Inject() (desConnector: DesConnector, auditService: AuditService) {
   protected def getLogger: LoggerLike = Logger
 
-  def getRegistration(utr: Utr, postcode: String)(implicit hc: HeaderCarrier, request: RequestWithAuthority[Any]): Future[Option[RegistrationDetails]] =
+  def getRegistration(utr: Utr, postcode: String)(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Future[Option[RegistrationDetails]] = {
     desConnector.getRegistration(utr) map {
       case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName, None, agentReferenceNumber)) =>
         if (isAnASAgent) {
@@ -77,8 +77,8 @@ class RegistrationService @Inject() (desConnector: DesConnector, auditService: A
           auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, None)
           None
         }
-      case Some(DesRegistrationResponse(postCode, isAnASAgent, _, _, agentReferenceNumber))  =>
-        if (isAnASAgent){
+      case Some(DesRegistrationResponse(postCode, isAnASAgent, _, _, agentReferenceNumber)) =>
+        if (isAnASAgent) {
           getLogger.warn(s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${postCode.nonEmpty}")
           auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, Some(true), agentReferenceNumber)
         }
@@ -86,22 +86,22 @@ class RegistrationService @Inject() (desConnector: DesConnector, auditService: A
           getLogger.warn(s"The business partner record associated with $utr is not subscribed with postcode: ${postCode.nonEmpty}")
           auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, None)
         }
-
         None
       case None =>
         getLogger.warn(s"No business partner record was associated with $utr")
         auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, None)
         None
     }
+  }
 
   private def auditCheckAgencyStatus(utr: Utr, postcode: String, knownFactsMatched: Boolean, isSubscribedToAgentServices: Option[Boolean], agentReferenceNumber: Option[Arn])
-    (implicit hc: HeaderCarrier, request: RequestWithAuthority[Any]): Unit =
+    (implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Unit =
     auditService.auditEvent(
       AgentSubscriptionEvent.CheckAgencyStatus,
       "Check agency status",
       toJsObject(CheckAgencyStatusAuditDetail(
-        request.authority.authProviderId,
-        request.authority.authProviderType,
+        Some(provider.providerId),
+        Some(provider.providerType),
         utr,
         postcode,
         knownFactsMatched,

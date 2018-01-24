@@ -16,18 +16,25 @@
 
 package uk.gov.hmrc.agentsubscription
 
+import javax.inject.{Inject, Singleton}
+
+import uk.gov.hmrc.auth.core.PlayAuthConnector
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.auth.microservice.connectors.AuthConnector
 import uk.gov.hmrc.play.config.{AppName, RunMode, ServicesConfig}
 import uk.gov.hmrc.play.http.ws._
-import uk.gov.hmrc.http.hooks.{HttpHook, HttpHooks}
-import uk.gov.hmrc.play.audit.http.config.AuditingConfig
+import uk.gov.hmrc.http.hooks.HttpHooks
 import uk.gov.hmrc.play.microservice.config.LoadAuditingConfig
 
-object MicroserviceAuditConnector extends AuditConnector {
-  lazy val auditingConfig: AuditingConfig = LoadAuditingConfig(s"auditing")
+@Singleton
+class MicroserviceAuthConnector @Inject()(val auditConnector: AuditConnector) extends PlayAuthConnector with ServicesConfig {
+  val serviceUrl: String = baseUrl("auth")
+  override def http = WSHttp
+}
+
+object MicroserviceAuditConnector extends AuditConnector with RunMode {
+  lazy val auditingConfig = LoadAuditingConfig(s"auditing")
 }
 
 trait Hooks extends HttpHooks with HttpAuditing {
@@ -36,8 +43,5 @@ trait Hooks extends HttpHooks with HttpAuditing {
 }
 
 trait WSHttp extends HttpGet with WSGet with HttpPut with WSPut with HttpPost with WSPost with HttpDelete with WSDelete with Hooks with AppName
-object WSHttp extends WSHttp
 
-object MicroserviceAuthConnector extends AuthConnector with ServicesConfig with WSHttp {
-  override val authBaseUrl: String = baseUrl("auth")
-}
+object WSHttp extends WSHttp

@@ -29,7 +29,8 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "microservice-bootstrap" % microserviceBootstrapVersion,
     "uk.gov.hmrc" %% "domain" % domainVersion,
     "uk.gov.hmrc" %% "agent-mtd-identifiers" % mtdIdentifiersVersion,
-    "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % agentKenshooMonitoringVersion
+    "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % agentKenshooMonitoringVersion,
+    "uk.gov.hmrc" %% "auth-client" % "2.5.0"
   )
 
   trait TestDependencies {

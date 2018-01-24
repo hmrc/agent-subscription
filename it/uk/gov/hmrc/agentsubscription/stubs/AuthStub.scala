@@ -10,12 +10,12 @@ trait AuthStub {
   val oid: String = "556737e15500005500eaf68f"
 
   def requestIsNotAuthenticated(): AuthStub = {
-    stubFor(get(urlEqualTo("/auth/authority")).willReturn(aResponse().withStatus(401)))
+    stubFor(post(urlEqualTo("/auth/authorise")).willReturn(aResponse().withStatus(401)))
     this
   }
 
   def requestIsAuthenticated(): AuthStub = {
-    stubFor(get(urlEqualTo("/auth/authority"))
+    stubFor(post(urlEqualTo("/auth/authorise"))
       .willReturn(aResponse()
         .withStatus(200)
         .withBody(s"""
@@ -25,7 +25,9 @@ trait AuthStub {
                        |  "uri":"/auth/oid/$oid",
                        |  "loggedInAt":"2016-06-20T10:44:29.634Z",
                        |  "credentials":{
-                       |    "gatewayId":"0000001234567890"
+                       |    "gatewayId":"0000001234567890",
+                       |    "providerId": "12345",
+                       |    "providerType": "GG"
                        |  },
                        |  "accounts":{
                        |  },
@@ -34,7 +36,74 @@ trait AuthStub {
                        |  "confidenceLevel":50,
                        |  "userDetailsLink":"$wireMockBaseUrl/user-details/id/$oid",
                        |  "levelOfAssurance":"1",
-                       |  "previouslyLoggedInAt":"2016-06-20T09:48:37.112Z"
+                       |  "previouslyLoggedInAt":"2016-06-20T09:48:37.112Z",
+                       |  "affinityGroup": "Agent",
+                       |  "allEnrolments": [
+                       |  {
+                       |    "key": "HMRC-AS-AGENT",
+                       |    "identifiers": [
+                       |      {
+                       |        "key": "AgentReferenceNumber",
+                       |        "value": "JARN1234567"
+                       |      }
+                       |    ],
+                       |    "state": "Activated"
+                       |  },
+                       |  {
+                       |    "key": "IR-PAYE-AGENT",
+                       |    "identifiers": [
+                       |      {
+                       |        "key": "IrAgentReference",
+                       |        "value": "HZ1234"
+                       |      }
+                       |    ],
+                       |    "state": "Activated"
+                       |  },
+                       |  {
+                       |    "key": "HMRC-AS-AGENT",
+                       |    "identifiers": [
+                       |      {
+                       |        "key": "AnotherIdentifier",
+                       |        "value": "not the ARN"
+                       |      },
+                       |      {
+                       |        "key": "AgentReferenceNumber",
+                       |        "value": "JARN1234567"
+                       |      }
+                       |    ],
+                       |    "state": "Activated"
+                       |  }
+                       | ]
+                       |}
+       """.stripMargin)))
+      this
+  }
+
+  def requestIsAuthenticatedWithNoEnrolments(): AuthStub = {
+    stubFor(post(urlEqualTo("/auth/authorise"))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(s"""
+                       |{
+                       |  "new-session":"/auth/oid/$oid/session",
+                       |  "enrolments":"/auth/oid/$oid/enrolments",
+                       |  "uri":"/auth/oid/$oid",
+                       |  "loggedInAt":"2016-06-20T10:44:29.634Z",
+                       |  "credentials":{
+                       |    "gatewayId":"0000001234567890",
+                       |    "providerId": "12345",
+                       |    "providerType": "GG"
+                       |  },
+                       |  "accounts":{
+                       |  },
+                       |  "lastUpdated":"2016-06-20T10:44:29.634Z",
+                       |  "credentialStrength":"strong",
+                       |  "confidenceLevel":50,
+                       |  "userDetailsLink":"$wireMockBaseUrl/user-details/id/$oid",
+                       |  "levelOfAssurance":"1",
+                       |  "previouslyLoggedInAt":"2016-06-20T09:48:37.112Z",
+                       |  "affinityGroup": "Agent",
+                       |  "allEnrolments": []
                        |}
        """.stripMargin)))
       this
