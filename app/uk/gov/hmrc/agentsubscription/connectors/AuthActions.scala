@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import javax.inject.Inject
+import javax.inject.{Inject, Singleton}
 
 import com.kenshoo.play.metrics.Metrics
 import play.api.Logger
@@ -38,7 +38,8 @@ import scala.concurrent.Future
 
 case class Provider(providerId: String, providerType: String)
 
-class AuthConnector @Inject()(metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
+@Singleton
+class AuthActions @Inject()(metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
   extends HttpAPIMonitor with AuthorisedFunctions with BaseController {
   override def authConnector: core.AuthConnector = microserviceAuthConnector
 
@@ -55,13 +56,12 @@ class AuthConnector @Inject()(metrics: Metrics, microserviceAuthConnector: Micro
 
   implicit val hc: HeaderCarrier = new HeaderCarrier
 
-  def forSubscription(action: SubscriptionAuthAction) = Action.async(parse.json) {
+  def affinityGroupAndEnrolments(action: SubscriptionAuthAction) = Action.async(parse.json) {
     implicit request =>
       authorised(AuthProvider).retrieve(affinityGroupAllEnrols) {
         case Some(affinityG) ~ allEnrols ⇒
           (isAgent(affinityG), extractEnrolmentData(allEnrols.enrolments, agentEnrol, agentEnrolId)) match {
-            case (`isAnAgent`, Some(_)) => action(request)
-            case (`isAnAgent`, None) => action(request)
+            case (`isAnAgent`, None | Some(_)) => action(request)
             case _ => Future successful GenericUnauthorized
           }
         case _ => Future successful GenericUnauthorized
@@ -73,7 +73,7 @@ class AuthConnector @Inject()(metrics: Metrics, microserviceAuthConnector: Micro
       }
   }
 
-  def forRegistration(action: RegistrationAuthAction) = Action.async {
+  def affinityGroupAndCredentials(action: RegistrationAuthAction) = Action.async {
     implicit request =>
       authorised(AuthProvider).retrieve(affinityGroup and credentials) {
         case (Some(affinityG) ~ Credentials(providerId, providerType)) => {

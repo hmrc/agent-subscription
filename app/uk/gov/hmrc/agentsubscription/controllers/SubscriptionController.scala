@@ -23,7 +23,7 @@ import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
 import play.api.mvc._
 import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.connectors.AuthConnector
+import uk.gov.hmrc.agentsubscription.connectors.AuthActions
 import uk.gov.hmrc.agentsubscription.model.{SubscriptionRequest, SubscriptionResponse}
 import uk.gov.hmrc.agentsubscription.service.SubscriptionService
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -34,11 +34,11 @@ import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
 class SubscriptionController @Inject()(subscriptionService: SubscriptionService)
                                       (implicit metrics: Metrics,
                                        microserviceAuthConnector: MicroserviceAuthConnector)
-  extends AuthConnector(metrics, microserviceAuthConnector) with BaseController {
+  extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
   override implicit val hc: HeaderCarrier = new HeaderCarrier
 
-  def createSubscription = forSubscription {
+  def createSubscription = affinityGroupAndEnrolments {
     implicit request =>
       withJsonBody[SubscriptionRequest] { subscriptionRequest =>
         subscriptionService.subscribeAgentToMtd(subscriptionRequest).map {

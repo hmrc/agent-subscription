@@ -45,15 +45,15 @@ class RegistrationControllerSpec extends UnitSpec with AkkaMaterializerSpec with
   val hc: HeaderCarrier = new HeaderCarrier
   val provider = Provider("provId", "provType")
 
-  "getRegistrationBlock" should {
+  "register" should {
     "return 400 INVALID_UTR if the UTR is invalid " in {
-      val result = await(controller.getRegistrationBlock(invalidUtr, validPostcode)(hc,provider, FakeRequest()))
+      val result = await(controller.register(invalidUtr, validPostcode)(hc,provider, FakeRequest()))
       status(result) shouldBe 400
       (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_UTR"
     }
 
     "return 400 INVALID_POSTCODE if the postcode is invalid " in {
-      val result = await(controller.getRegistrationBlock(validUtr, invalidPostcode)(hc,provider, FakeRequest()))
+      val result = await(controller.register(validUtr, invalidPostcode)(hc,provider, FakeRequest()))
       status(result) shouldBe 400
       (jsonBodyOf(result) \ "code").as[String] shouldBe "INVALID_POSTCODE"
     }
