@@ -32,6 +32,7 @@ import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
 import uk.gov.hmrc.auth.core.{Enrolment, _}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -58,6 +59,8 @@ class AuthActions @Inject()(metrics: Metrics, microserviceAuthConnector: Microse
 
   def affinityGroupAndEnrolments(action: SubscriptionAuthAction) = Action.async(parse.json) {
     implicit request =>
+      implicit val hc = fromHeadersAndSession(request.headers, None)
+
       authorised(AuthProvider).retrieve(affinityGroupAllEnrols) {
         case Some(affinityG) ~ allEnrols ⇒
           (isAgent(affinityG), extractEnrolmentData(allEnrols.enrolments, agentEnrol, agentEnrolId)) match {
@@ -75,6 +78,8 @@ class AuthActions @Inject()(metrics: Metrics, microserviceAuthConnector: Microse
 
   def affinityGroupAndCredentials(action: RegistrationAuthAction) = Action.async {
     implicit request =>
+      implicit val hc = fromHeadersAndSession(request.headers, None)
+
       authorised(AuthProvider).retrieve(affinityGroup and credentials) {
         case (Some(affinityG) ~ Credentials(providerId, providerType)) => {
           (isAgent(affinityG)) match {
