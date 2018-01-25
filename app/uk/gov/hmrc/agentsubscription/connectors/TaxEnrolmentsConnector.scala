@@ -56,7 +56,7 @@ class TaxEnrolmentsConnector @Inject()(@Named("tax-enrolments-baseUrl") baseUrl:
   def sendKnownFacts(arn: String, postcode: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
     val request = KnownFactsRequest(List(KnownFact("arn",arn), KnownFact("postcode",postcode)), None)
 
-    monitor("ESP-AddKnownFacts-HMRC-AS-AGENT-POST") {
+    monitor("EMAC-AddKnownFacts-HMRC-AS-AGENT-POST") {
       http.PUT[JsValue, HttpResponse](s"""${baseUrl}/tax-enrolments/enrolments/${enrolmentKey(arn)}""", Json.toJson(request)) map {
         response => response.status
       }
@@ -67,7 +67,7 @@ class TaxEnrolmentsConnector @Inject()(@Named("tax-enrolments-baseUrl") baseUrl:
            (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
     val serviceUrl = s"""${baseUrl}/tax-enrolments/groups/$groupId/enrolments/${enrolmentKey(arn.value)}"""
 
-    monitor("ESP-Enrol-HMRC-AS-AGENT-POST") {
+    monitor("EMAC-Enrol-HMRC-AS-AGENT-POST") {
       http.POST[JsValue, HttpResponse](serviceUrl, Json.toJson(enrolmentRequest)) map {
         response => response.status
       }
