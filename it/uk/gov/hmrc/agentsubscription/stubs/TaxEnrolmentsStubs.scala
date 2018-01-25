@@ -4,22 +4,23 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 
 trait TaxEnrolmentsStubs {
 
-  val serviceUrl = "/enrolment-store/enrolments/HMRC-AS-AGENT"
+  val knownFactsUrl = "/tax-enrolments/enrolments/HMRC-AS-AGENT~AgentReferenceNumber~"
+  def enrolmentUrl(groupId: String, arn: String) = s"/tax-enrolments/groups/$groupId/enrolments/HMRC-AS-AGENT~AgentReferenceNumber~$arn"
 
-  def createKnownFactsSucceeds(): Unit = {
-    stubFor(put(urlEqualTo(serviceUrl)).willReturn(aResponse().withStatus(200)))
+  def createKnownFactsSucceeds(arn: String): Unit = {
+    stubFor(put(urlEqualTo(s"$knownFactsUrl$arn")).willReturn(aResponse().withStatus(200)))
   }
 
-  def createKnownFactsFails(): Unit = {
-    stubFor(put(urlEqualTo(serviceUrl)).willReturn(aResponse().withStatus(500)))
+  def createKnownFactsFails(arn: String): Unit = {
+    stubFor(put(urlEqualTo(s"$knownFactsUrl$arn")).willReturn(aResponse().withStatus(500)))
   }
 
-  def enrolmentSucceeds(): Unit = {
-    stubFor(post(urlEqualTo("/enrol")).willReturn(aResponse().withStatus(200)))
+  def enrolmentSucceeds(groupId: String, arn: String): Unit = {
+    stubFor(post(urlEqualTo(enrolmentUrl(groupId, arn))).willReturn(aResponse().withStatus(200)))
   }
 
-  def enrolmentFails(): Unit = {
-    stubFor(post(urlEqualTo("/enrol")).willReturn(aResponse().withStatus(500)))
+  def enrolmentFails(groupId: String, arn: String): Unit = {
+    stubFor(post(urlEqualTo(enrolmentUrl(groupId, arn))).willReturn(aResponse().withStatus(500)))
   }
 
 }
