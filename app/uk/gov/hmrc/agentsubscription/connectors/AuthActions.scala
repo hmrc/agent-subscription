@@ -27,8 +27,8 @@ import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.controllers.ErrorResult._
 import uk.gov.hmrc.auth.core
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
-import uk.gov.hmrc.auth.core.retrieve.Retrievals.{affinityGroup, allEnrolments, credentials}
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
+import uk.gov.hmrc.auth.core.retrieve.Retrievals.{affinityGroup, allEnrolments, credentials, groupIdentifier}
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, Retrievals, ~}
 import uk.gov.hmrc.auth.core.{Enrolment, _}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -37,6 +37,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 case class Provider(providerId: String, providerType: String)
+case class AuthIds(userId: String, groupId: String)
 
 @Singleton
 class AuthActions @Inject()(metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
@@ -44,10 +45,8 @@ class AuthActions @Inject()(metrics: Metrics, microserviceAuthConnector: Microse
   override def authConnector: core.AuthConnector = microserviceAuthConnector
 
   override val kenshooRegistry = metrics.defaultRegistry
-  private type SubscriptionAuthAction = Request[JsValue] => Future[Result]
+  private type SubscriptionAuthAction = Request[JsValue] => AuthIds => Future[Result]
   private type RegistrationAuthAction = Request[AnyContent] => Provider => Future[Result]
-
-  private val affinityGroupAllEnrols: Retrieval[~[Option[AffinityGroup], Enrolments]] = affinityGroup and allEnrolments
 
   private val AuthProvider: AuthProviders = AuthProviders(GovernmentGateway)
   private val agentEnrol = "HMRC-AS-AGENT"
@@ -58,10 +57,10 @@ class AuthActions @Inject()(metrics: Metrics, microserviceAuthConnector: Microse
 
   def affinityGroupAndEnrolments(action: SubscriptionAuthAction) = Action.async(parse.json) {
     implicit request =>
-      authorised(AuthProvider).retrieve(affinityGroupAllEnrols) {
-        case Some(affinityG) ~ allEnrols ⇒
+      authorised(AuthProvider).retrieve(affinityGroup and allEnrolments and credentials and groupIdentifier) {
+        case Some(affinityG) ~ allEnrols ~ Credentials(providerId, _) ~ Some(groupId) =>
           (isAgent(affinityG), extractEnrolmentData(allEnrols.enrolments, agentEnrol, agentEnrolId)) match {
-            case (`isAnAgent`, None | Some(_)) => action(request)
+            case (`isAnAgent`, None | Some(_)) => action(request)(AuthIds(providerId, groupId))
             case _ => Future successful GenericUnauthorized
           }
         case _ => Future successful GenericUnauthorized

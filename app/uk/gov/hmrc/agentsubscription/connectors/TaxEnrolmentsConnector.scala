@@ -21,17 +21,16 @@ import javax.inject.{Inject, Named, Singleton}
 
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.{JsValue, Json}
-import play.api.libs.json.Json.format
+import play.api.libs.json.Json.{format, toJson}
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.http.{HeaderCarrier, HttpPost, HttpPut, HttpResponse}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-//TODO rename EnrolmentRequest2
-
 case class KnownFact(key: String, value: String)
-case class Legacy(previousVerifiers: List[KnownFact])
-case class KnownFactsRequest(verifiers: List[KnownFact], legacy: Legacy)
+case class Legacy(previousVerifiers: Seq[KnownFact])
+case class KnownFactsRequest(verifiers: Seq[KnownFact], legacy: Option[Legacy])
 
 object KnownFact {
   implicit val formatKf = format[KnownFact]
@@ -44,24 +43,37 @@ object Legacy {
 object KnownFactsRequest {
   implicit val formatKFR = format[KnownFactsRequest]
 }
+case class EnrolmentRequest(userId: String, `type`: String, friendlyName: String, postcode: String, verifiers: Seq[KnownFact])
+
+object EnrolmentRequest {
+  implicit val formats = format[EnrolmentRequest]
+}
 
 @Singleton
-class EnrolmentStoreConnector @Inject() (@Named("enrolment-store-baseUrl") baseUrl: URL, httpPut: HttpPut, metrics:Metrics) extends HttpAPIMonitor {
+class TaxEnrolmentsConnector @Inject()(@Named("tax-enrolments-baseUrl") baseUrl: URL, http: HttpPut with HttpPost, metrics:Metrics) extends HttpAPIMonitor {
   override val kenshooRegistry = metrics.defaultRegistry
 
   def sendKnownFacts(arn: String, postcode: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
-    val request = KnownFactsRequest(List(KnownFact("arn",arn), KnownFact("postcode",postcode)), Legacy(List.empty))
+    val request = KnownFactsRequest(List(KnownFact("arn",arn), KnownFact("postcode",postcode)), None)
 
-    //TODO get correct name??? - GGW-AddKnownFacts-HMRC-AS-AGENT-POST
-    monitor("GGW-AddKnownFacts-HMRC-AS-AGENT-POST") {
-      httpPut.PUT[JsValue, HttpResponse](s"""${baseUrl}/enrolment-store/enrolments/HMRC-AS-AGENT""", Json.toJson(request)) map {
+    monitor("ESP-AddKnownFacts-HMRC-AS-AGENT-POST") {
+      http.PUT[JsValue, HttpResponse](s"""${baseUrl}/tax-enrolments/enrolments/${enrolmentKey(arn)}""", Json.toJson(request)) map {
         response => response.status
       }
     }
   }
 
-  def enrol(): Unit ={
+  def enrol(groupId: String, arn: Arn, enrolmentRequest: EnrolmentRequest)
+           (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
+    val serviceUrl = s"""${baseUrl}/tax-enrolments/groups/$groupId/enrolments/${enrolmentKey(arn.value)}"""
 
+    monitor("ESP-Enrol-HMRC-AS-AGENT-POST") {
+      http.POST[JsValue, HttpResponse](serviceUrl, Json.toJson(enrolmentRequest)) map {
+        response => response.status
+      }
+    }
   }
+
+  private def enrolmentKey(arn: String): String = s"HMRC-AS-AGENT~AgentReferenceNumber~$arn"
 
 }
