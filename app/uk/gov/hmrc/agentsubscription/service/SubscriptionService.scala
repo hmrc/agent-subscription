@@ -45,10 +45,9 @@ private case class SubscriptionAuditDetail (
 
 @Singleton
 class SubscriptionService @Inject() (
-  desConnector: DesConnector,
-  enrolmentStoreConnector: EnrolmentStoreConnector,
-  governmentGatewayConnector: GovernmentGatewayConnector,
-  auditService: AuditService) {
+                                      desConnector: DesConnector,
+                                      taxEnrolmentsConnector: TaxEnrolmentsConnector,
+                                      auditService: AuditService) {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
       val address = subscriptionRequest.agency.address
@@ -64,22 +63,22 @@ class SubscriptionService @Inject() (
                                 address.countryCode))
   }
 
-  def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+  def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
 
     desConnector.getRegistration(subscriptionRequest.utr) flatMap {
         case Some(DesRegistrationResponse(Some(desPostcode), _, _, _, _))
           if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => {
-          subscribe(subscriptionRequest)
+          subscribe(subscriptionRequest, authIds)
         }
         case _ =>  Future successful None
     }
   }
 
-  private def subscribe(subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+  private def subscribe(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     for {
       arn <- desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
       _ <- createKnownFacts(arn, subscriptionRequest)
-      _ <- enrol(arn, subscriptionRequest)
+      _ <- enrol(arn, subscriptionRequest, authIds)
     } yield {
       auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
       Some(arn)
@@ -101,19 +100,22 @@ class SubscriptionService @Inject() (
   private def createKnownFacts(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
     val tries = 3
     Retry.retry(tries)(
-      enrolmentStoreConnector.sendKnownFacts(arn.value, subscriptionRequest.agency.address.postcode)
+      taxEnrolmentsConnector.sendKnownFacts(arn.value, subscriptionRequest.agency.address.postcode)
     ).recover {
       case e => throw new IllegalStateException(s"Failed to send known facts in EMAC for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
     }
   }
 
-  private def enrol(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
+  private def enrol(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
+    val enrolRequest = EnrolmentRequest(authIds.userId,"principal",subscriptionRequest.agency.name,
+      subscriptionRequest.agency.address.postcode,Seq(KnownFact("AgencyPostcode",subscriptionRequest.knownFacts.postcode)))
+
     val tries = 3
     Retry.retry(tries)(
-      governmentGatewayConnector.enrol(subscriptionRequest.agency.name, arn.value, subscriptionRequest.agency.address.postcode)
+      taxEnrolmentsConnector.enrol(authIds.groupId, arn, enrolRequest)
     ).recover {
       case e => {
-        throw new IllegalStateException(s"Failed to create enrolment in GG for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
+        throw new IllegalStateException(s"Failed to create enrolment in EMAC for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
       }
     }
   }

@@ -36,7 +36,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
   private val desConnector = resettingMock[DesConnector]
-  private val emacConnector = resettingMock[EnrolmentStoreConnector]
+  private val emacConnector = resettingMock[TaxEnrolmentsConnector]
   private val ggConnector = resettingMock[GovernmentGatewayConnector]
   private val auditService = resettingMock[AuditService]
 
