@@ -43,7 +43,7 @@ object Legacy {
 object KnownFactsRequest {
   implicit val formatKFR = format[KnownFactsRequest]
 }
-case class EnrolmentRequest(userId: String, `type`: String, friendlyName: String, postcode: String, verifiers: Seq[KnownFact])
+case class EnrolmentRequest(userId: String, `type`: String, friendlyName: String, verifiers: Seq[KnownFact])
 
 object EnrolmentRequest {
   implicit val formats = format[EnrolmentRequest]

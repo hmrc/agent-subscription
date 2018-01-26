@@ -43,7 +43,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
   }
 
   "addEnrolment" should {
-    val enrolmentRequest = EnrolmentRequest("userId", "principal", "friendlyName", "AB11BA",
+    val enrolmentRequest = EnrolmentRequest("userId", "principal", "friendlyName",
       Seq(KnownFact("AgencyPostcode", "AB11BA")))
 
     "return status 200 after a successful enrolment" in {

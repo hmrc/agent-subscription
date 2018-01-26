@@ -108,7 +108,7 @@ class SubscriptionService @Inject() (
 
   private def enrol(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
     val enrolRequest = EnrolmentRequest(authIds.userId,"principal",subscriptionRequest.agency.name,
-      subscriptionRequest.agency.address.postcode,Seq(KnownFact("AgencyPostcode",subscriptionRequest.knownFacts.postcode)))
+      Seq(KnownFact("AgencyPostcode",subscriptionRequest.knownFacts.postcode)))
 
     val tries = 3
     Retry.retry(tries)(
