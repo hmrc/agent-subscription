@@ -34,16 +34,12 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
   override protected lazy val runModeConfiguration: Configuration = configuration
 
   override def configure(): Unit = {
-    bind(classOf[HttpGet]).toInstance(WSHttp)
-    bind(classOf[HttpPost]).toInstance(WSHttp)//TODO remove
+    bind(classOf[HttpPost]).toInstance(WSHttp)
     bind(classOf[HttpPut]).toInstance(WSHttp)
-    bind(classOf[HttpGet]).toInstance(WSHttp)
     bind(classOf[DesConnector])
     bind(classOf[AuditConnector]).toInstance(MicroserviceGlobal.auditConnector)
     bindBaseUrl("des")
     bindBaseUrl("auth")
-    bindBaseUrl("gg") //TODO remove
-    bindBaseUrl("gg-admin") //TODO remove
     bindBaseUrl("tax-enrolments")
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
