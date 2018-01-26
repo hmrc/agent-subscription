@@ -37,7 +37,6 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
   private val desConnector = resettingMock[DesConnector]
   private val taxEnrolmentConnector = resettingMock[TaxEnrolmentsConnector]
-//  private val ggConnector = resettingMock[GovernmentGatewayConnector]
   private val auditService = resettingMock[AuditService]
 
   private val authIds = AuthIds("userId", "groupId")
@@ -126,7 +125,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(taxEnrolmentConnector.sendKnownFacts(eqs(arn), anyString)(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
 
-//    when(ggConnector.enrol(anyString, anyString, anyString)(eqs(hc), any[ExecutionContext]))
-//      .thenReturn(Future successful new Integer(200))
+    when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful new Integer(200))
   }
 }

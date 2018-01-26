@@ -51,7 +51,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
 
   override def beforeEach(): Unit = reset(mockMicroserviceAuthConnector)
 
-  "forSubscription" should {
+  "affinityGroupAndEnrolments" should {
     "return OK for an Agent with HMRC-AS-AGENT enrolment" in {
       agentAuthStub(agentAffinityAndEnrolments)
 
@@ -92,7 +92,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
     }
   }
 
-  "forRegistration" should {
+  "affinityGroupAndCredentials" should {
 
     "return OK when we have the correct affinity group" in {
       when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))

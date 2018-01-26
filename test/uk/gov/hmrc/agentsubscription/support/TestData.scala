@@ -21,7 +21,7 @@ import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.{AffinityGroup, Enrolment, EnrolmentIdentifier, Enrolments}
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, Retrievals, ~}
 
 import scala.concurrent.Future
 
@@ -36,6 +36,11 @@ trait TestData {
 
   val agentAffinityAndEnrolments: Future[~[Option[AffinityGroup], Enrolments]] =
     Future successful new ~[Option[AffinityGroup], Enrolments](Some(AffinityGroup.Agent), Enrolments(agentEnrolment))
+
+  val agentAffinityAndEnrolments1: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]] = {
+    val r1: ~[Option[AffinityGroup], Enrolments] = ~(Some(AffinityGroup.Agent, Enrolments(agentEnrolment)))
+    Future successful new ~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]](((Some(AffinityGroup.Agent), Enrolments(agentEnrolment)), Credentials("credId", "credType")), Some(""))
+  }
 
 
   val agentNoEnrolments: Future[~[Option[AffinityGroup], Enrolments]] =
