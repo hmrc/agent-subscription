@@ -54,7 +54,7 @@ class TaxEnrolmentsConnector @Inject()(@Named("tax-enrolments-baseUrl") baseUrl:
   override val kenshooRegistry = metrics.defaultRegistry
 
   def sendKnownFacts(arn: String, postcode: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
-    val request = KnownFactsRequest(List(KnownFact("arn",arn), KnownFact("postcode",postcode)), None)
+    val request = KnownFactsRequest(List(KnownFact("AgencyPostcode",postcode)), None)
 
     monitor("EMAC-AddKnownFacts-HMRC-AS-AGENT-POST") {
       http.PUT[JsValue, HttpResponse](s"""${baseUrl}/tax-enrolments/enrolments/${enrolmentKey(arn)}""", Json.toJson(request)) map {

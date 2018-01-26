@@ -35,7 +35,6 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
     "propogate an exception after failing to create known facts" in {
       createKnownFactsFails(arn.value)
 
-
       val exception = intercept[Upstream5xxResponse] {
         await(connector.sendKnownFacts(arn.value,postcode))
       }
