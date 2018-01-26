@@ -4,11 +4,14 @@ import play.api.libs.json.Json.{stringify, toJson}
 import play.api.libs.json._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.{KnownFacts, SubscriptionRequest}
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, GGAdminStubs, GGStubs}
+import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, TaxEnrolmentsStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
-class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with GGStubs with GGAdminStubs{
+class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs{
   private val utr = Utr("7000000002")
+
+  val arn = "ARN0001"
+  val groupId = "groupId"
 
   "creating a subscription" should {
     val agency = __ \ "agency"
@@ -20,8 +23,8 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         organisationRegistrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
-        createKnownFactsSucceeds()
-        enrolmentSucceeds()
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(groupId, arn)
 
         val result = await(doSubscriptionRequest())
 
@@ -34,8 +37,8 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         val fields = Seq(address \ "addressLine2", address \ "addressLine3", address \ "addressLine4")
         organisationRegistrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
-        createKnownFactsSucceeds()
-        enrolmentSucceeds()
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(groupId, arn)
 
         val result = await(doSubscriptionRequest(removeFields(fields)))
 
@@ -206,23 +209,23 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
 
     "throw a 500 error if " when {
-      "create known facts fails in GG " in {
+      "create known facts fails in EMAC " in {
         requestIsAuthenticated()
         organisationRegistrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
-        createKnownFactsFails()
+        createKnownFactsFails("")
 
         val result = await(doSubscriptionRequest())
 
         result.status shouldBe 500
       }
 
-      "create enrolment fails in GG " in {
+      "create enrolment fails in EMAC " in {
         requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
-        createKnownFactsSucceeds()
-        enrolmentFails()
+        createKnownFactsSucceeds(arn)
+        enrolmentFails(groupId,arn)
 
         val result = await(doSubscriptionRequest())
 

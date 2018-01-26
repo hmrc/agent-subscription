@@ -26,7 +26,7 @@ import play.api.{Configuration, Environment}
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.ServicesConfig
-import uk.gov.hmrc.http.{HttpGet, HttpPost}
+import uk.gov.hmrc.http.{HttpGet, HttpPost, HttpPut}
 
 class GuiceModule(environment: Environment, configuration: Configuration) extends AbstractModule with ServicesConfig {
 
@@ -34,15 +34,13 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
   override protected lazy val runModeConfiguration: Configuration = configuration
 
   override def configure(): Unit = {
-    bind(classOf[HttpGet]).toInstance(WSHttp)
     bind(classOf[HttpPost]).toInstance(WSHttp)
-    bind(classOf[HttpGet]).toInstance(WSHttp)
+    bind(classOf[HttpPut]).toInstance(WSHttp)
     bind(classOf[DesConnector])
     bind(classOf[AuditConnector]).toInstance(MicroserviceGlobal.auditConnector)
     bindBaseUrl("des")
     bindBaseUrl("auth")
-    bindBaseUrl("gg")
-    bindBaseUrl("gg-admin")
+    bindBaseUrl("tax-enrolments")
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
   }

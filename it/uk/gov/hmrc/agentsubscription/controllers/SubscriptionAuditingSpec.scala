@@ -5,11 +5,14 @@ import play.api.libs.json._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, GGAdminStubs, GGStubs}
+import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, TaxEnrolmentsStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
 
-class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with GGStubs with GGAdminStubs{
+class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs{
   private val utr = Utr("7000000002")
+
+  val arn = "ARN0001"
+  val groupId = "groupId"
 
   "creating a subscription" should {
     import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
@@ -22,8 +25,8 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
       organisationRegistrationExists(utr)
       subscriptionSucceeds(utr, Json.parse(subscriptionRequest(utr)).as[SubscriptionRequest])
-      createKnownFactsSucceeds()
-      enrolmentSucceeds()
+      createKnownFactsSucceeds(arn)
+      enrolmentSucceeds(groupId,arn)
 
       val result = await(doSubscriptionRequest(subscriptionRequest(utr)))
 

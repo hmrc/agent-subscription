@@ -26,7 +26,7 @@ import play.api.libs.json.JsValue
 import play.api.mvc.Results.Ok
 import play.api.mvc.{AnyContent, Request, Result}
 import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.connectors.{AuthActions, Provider}
+import uk.gov.hmrc.agentsubscription.connectors.{AuthActions, AuthIds, Provider}
 import uk.gov.hmrc.agentsubscription.support.TestData
 import uk.gov.hmrc.auth.core.{authorise, _}
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
@@ -40,18 +40,18 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
   val mockMetrics: Metrics = mock[Metrics]
   val mockAuthConnector: AuthActions = new AuthActions(mockMetrics, mockMicroserviceAuthConnector)
 
-  private type SubscriptionAuthAction = Request[JsValue] => Future[Result]
+  private type SubscriptionAuthAction = Request[JsValue] => AuthIds => Future[Result]
   private type RegistrationAuthAction = Request[AnyContent] => Provider => Future[Result]
 
-  val subscriptionAction: SubscriptionAuthAction = { implicit request => Future successful Ok }
+  val subscriptionAction: SubscriptionAuthAction = { implicit request => implicit authIds => Future successful Ok }
   val registrationAction: RegistrationAuthAction = { implicit request => implicit provider => Future successful Ok }
 
-  private def agentAuthStub(returnValue: Future[~[Option[AffinityGroup], Enrolments]]) =
-    when(mockMicroserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[~[Option[AffinityGroup], Enrolments]]]())(any(), any())).thenReturn(returnValue)
+  private def agentAuthStub(returnValue:  Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]]) =
+    when(mockMicroserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]]]())(any(), any())).thenReturn(returnValue)
 
   override def beforeEach(): Unit = reset(mockMicroserviceAuthConnector)
 
-  "forSubscription" should {
+  "affinityGroupAndEnrolments" should {
     "return OK for an Agent with HMRC-AS-AGENT enrolment" in {
       agentAuthStub(agentAffinityAndEnrolments)
 
@@ -92,7 +92,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
     }
   }
 
-  "forRegistration" should {
+  "affinityGroupAndCredentials" should {
 
     "return OK when we have the correct affinity group" in {
       when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))

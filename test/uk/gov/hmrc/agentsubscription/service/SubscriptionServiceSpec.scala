@@ -24,7 +24,7 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
-import uk.gov.hmrc.agentsubscription.connectors.{Address => _, KnownFacts => _, _}
+import uk.gov.hmrc.agentsubscription.connectors.{Address => _, _}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
@@ -36,13 +36,14 @@ import uk.gov.hmrc.http.HeaderCarrier
 class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
   private val desConnector = resettingMock[DesConnector]
-  private val ggAdminConnector = resettingMock[GovernmentGatewayAdminConnector]
-  private val ggConnector = resettingMock[GovernmentGatewayConnector]
+  private val taxEnrolmentConnector = resettingMock[TaxEnrolmentsConnector]
   private val auditService = resettingMock[AuditService]
 
-  private val service = new SubscriptionService(desConnector, ggAdminConnector, ggConnector, auditService)
+  private val authIds = AuthIds("userId", "groupId")
 
+  private val service = new SubscriptionService(desConnector, taxEnrolmentConnector, auditService)
   private implicit val hc = HeaderCarrier()
+
   private implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
 
   "subscribeAgentToMtd" should {
@@ -62,8 +63,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = "BB1 1BB", countryCode = "GB"),
           "01234 567890",
           "testagency@example.com"))
-
-      await(service.subscribeAgentToMtd(subscriptionRequest))
+      await(service.subscribeAgentToMtd(subscriptionRequest, authIds))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -91,12 +91,12 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     "add the agency postcode, not the business postcode, to the HMRC-AS-AGENT enrolment known facts" in {
       val utr = Utr("4000000009")
-      val arn = "ARN0001"
+      val arn = Arn("ARN0001")
 
       val businessPostcode = "BU1 1BB"
       val agencyPostcode = "AG1 1CY"
 
-      subscriptionWillBeCreated(utr, businessPostcode, arn)
+      subscriptionWillBeCreated(utr, businessPostcode, arn.value)
 
       val subscriptionRequest = SubscriptionRequest(
         utr,
@@ -107,10 +107,10 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           "01234 567890",
           "testagency@example.com"))
 
-      await(service.subscribeAgentToMtd(subscriptionRequest))
+      await(service.subscribeAgentToMtd(subscriptionRequest, authIds))
 
-      verify(ggAdminConnector).createKnownFacts(eqs(arn), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
-      verify(ggConnector).enrol(anyString, eqs(arn), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
+      verify(taxEnrolmentConnector).sendKnownFacts(eqs(arn.value), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
+      verify(taxEnrolmentConnector).enrol(anyString, eqs(arn), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext])
     }
   }
 
@@ -122,10 +122,11 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
-    when(ggAdminConnector.createKnownFacts(eqs(arn), anyString)(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.sendKnownFacts(eqs(arn), anyString)(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
 
-    when(ggConnector.enrol(anyString, anyString, anyString)(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
+
   }
 }

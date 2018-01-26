@@ -21,7 +21,7 @@ import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.{AffinityGroup, Enrolment, EnrolmentIdentifier, Enrolments}
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, Retrievals, ~}
 
 import scala.concurrent.Future
 
@@ -34,19 +34,29 @@ trait TestData {
       delegatedAuthRule = None)
   )
 
-  val agentAffinityAndEnrolments: Future[~[Option[AffinityGroup], Enrolments]] =
-    Future successful new ~[Option[AffinityGroup], Enrolments](Some(AffinityGroup.Agent), Enrolments(agentEnrolment))
+  val agentAffinityAndEnrolments: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]] = {
+    val retrievals = new ~(new ~(new ~(
+      Some(AffinityGroup.Agent), Enrolments(agentEnrolment)), Credentials("providerId", "providerType")), Some("groupId"))
+    Future.successful(retrievals)
+  }
 
+  val agentNoEnrolments: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]] = {
+    val retrievals = new ~(new ~(new ~(
+      Some(AffinityGroup.Agent), Enrolments(Set.empty[Enrolment])), Credentials("providerId", "providerType")), Some("groupId"))
+    Future.successful(retrievals)
+  }
 
-  val agentNoEnrolments: Future[~[Option[AffinityGroup], Enrolments]] =
-    Future successful new ~[Option[AffinityGroup], Enrolments](Some(AffinityGroup.Agent), Enrolments(Set.empty[Enrolment]))
-  val agentIncorrectAffinity: Future[~[Option[AffinityGroup], Enrolments]] =
-    Future successful new ~[Option[AffinityGroup], Enrolments](Some(AffinityGroup.Individual), Enrolments(agentEnrolment))
-  val neitherHaveAffinityOrEnrolment: Future[~[Option[AffinityGroup], Enrolments]] =
-    Future successful new ~[Option[AffinityGroup], Enrolments](None, Enrolments(Set.empty[Enrolment]))
-  val failedStubForAgent: Future[~[Option[AffinityGroup], Enrolments]] =
-    Future failed new NullPointerException
+  val agentIncorrectAffinity: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]] = {
+    val retrievals = new ~(new ~(new ~(Some(AffinityGroup.Individual), Enrolments(agentEnrolment)), Credentials("providerId", "providerType")), Some("groupId"))
+    Future.successful(retrievals)
+  }
 
+  val neitherHaveAffinityOrEnrolment: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]] = {
+    val retrievals = new ~(new ~(new ~(None, Enrolments(Set.empty[Enrolment])), Credentials("providerId", "providerType")), Some("groupId"))
+    Future.successful(retrievals)
+  }
+
+  val failedStubForAgent = Future failed new NullPointerException
 
   val validAgentAffinity: Future[~[Option[AffinityGroup], Credentials]] =
     Future successful new ~[Option[AffinityGroup], Credentials](Some(AffinityGroup.Agent), Credentials("credId","credType"))

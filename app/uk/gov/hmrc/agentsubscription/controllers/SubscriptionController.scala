@@ -39,18 +39,18 @@ class SubscriptionController @Inject()(subscriptionService: SubscriptionService)
 
   def createSubscription = affinityGroupAndEnrolments {
     implicit request =>
+      implicit authIds =>
       implicit val hc = fromHeadersAndSession(request.headers, None)
-
-      withJsonBody[SubscriptionRequest] { subscriptionRequest =>
-        subscriptionService.subscribeAgentToMtd(subscriptionRequest).map {
-          case Some(a) => Created(toJson(SubscriptionResponse(a)))
-          case None => Forbidden
-        }.recover {
-          case e: RuntimeException
-            if e.getCause.isInstanceOf[Upstream4xxResponse] &&
-               e.getCause.asInstanceOf[Upstream4xxResponse].upstreamResponseCode == CONFLICT => Conflict
-          case ex: IllegalStateException => InternalServerError
+        withJsonBody[SubscriptionRequest] { subscriptionRequest =>
+          subscriptionService.subscribeAgentToMtd(subscriptionRequest, authIds).map {
+            case Some(a) => Created(toJson(SubscriptionResponse(a)))
+            case None => Forbidden
+          }.recover {
+            case e: RuntimeException
+              if e.getCause.isInstanceOf[Upstream4xxResponse] &&
+                e.getCause.asInstanceOf[Upstream4xxResponse].upstreamResponseCode == CONFLICT => Conflict
+            case ex: IllegalStateException => InternalServerError
+          }
         }
-      }
   }
 }

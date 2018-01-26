@@ -62,7 +62,7 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
       s"""
          |{
          |  "authProviderId": "12345",
-         |  "authProviderType": "GG",
+         |  "authProviderType": "GovernmentGateway",
          |  "utr": "${utr.value}",
          |  "postcode": "$postcode",
          |  "knownFactsMatched": true,
