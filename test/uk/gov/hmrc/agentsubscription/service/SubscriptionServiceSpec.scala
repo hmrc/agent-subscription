@@ -127,5 +127,6 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
+
   }
 }

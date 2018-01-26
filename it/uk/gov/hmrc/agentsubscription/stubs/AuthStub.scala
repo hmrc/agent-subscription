@@ -25,9 +25,8 @@ trait AuthStub {
                        |  "uri":"/auth/oid/$oid",
                        |  "loggedInAt":"2016-06-20T10:44:29.634Z",
                        |  "credentials":{
-                       |    "gatewayId":"0000001234567890",
                        |    "providerId": "12345",
-                       |    "providerType": "GG"
+                       |    "providerType": "GovernmentGateway"
                        |  },
                        |  "accounts":{
                        |  },
@@ -37,6 +36,7 @@ trait AuthStub {
                        |  "userDetailsLink":"$wireMockBaseUrl/user-details/id/$oid",
                        |  "levelOfAssurance":"1",
                        |  "previouslyLoggedInAt":"2016-06-20T09:48:37.112Z",
+                       |  "groupIdentifier": "groupId",
                        |  "affinityGroup": "Agent",
                        |  "allEnrolments": [
                        |  {
@@ -90,9 +90,8 @@ trait AuthStub {
                        |  "uri":"/auth/oid/$oid",
                        |  "loggedInAt":"2016-06-20T10:44:29.634Z",
                        |  "credentials":{
-                       |    "gatewayId":"0000001234567890",
                        |    "providerId": "12345",
-                       |    "providerType": "GG"
+                       |    "providerType": "GovernmentGateway"
                        |  },
                        |  "accounts":{
                        |  },
@@ -102,6 +101,7 @@ trait AuthStub {
                        |  "userDetailsLink":"$wireMockBaseUrl/user-details/id/$oid",
                        |  "levelOfAssurance":"1",
                        |  "previouslyLoggedInAt":"2016-06-20T09:48:37.112Z",
+                       |  "groupIdentifier": "groupId",
                        |  "affinityGroup": "Agent",
                        |  "allEnrolments": []
                        |}

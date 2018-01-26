@@ -60,6 +60,7 @@ class AuthActions @Inject()(metrics: Metrics, microserviceAuthConnector: Microse
 
   def affinityGroupAndEnrolments(action: SubscriptionAuthAction) = Action.async(parse.json) {
     implicit request =>
+      implicit val hc = fromHeadersAndSession(request.headers, None)
       authorised(AuthProvider).retrieve(affinityGroup and allEnrolments and credentials and groupIdentifier) {
         case Some(affinityG) ~ allEnrols ~ Credentials(providerId, _) ~ Some(groupId) =>
           (isAgent(affinityG), extractEnrolmentData(allEnrols.enrolments, agentEnrol, agentEnrolId)) match {
