@@ -46,8 +46,8 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
   val subscriptionAction: SubscriptionAuthAction = { implicit request => implicit authIds => Future successful Ok }
   val registrationAction: RegistrationAuthAction = { implicit request => implicit provider => Future successful Ok }
 
-  private def agentAuthStub(returnValue: Future[~[Option[AffinityGroup], Enrolments]]) =
-    when(mockMicroserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[~[Option[AffinityGroup], Enrolments]]]())(any(), any())).thenReturn(returnValue)
+  private def agentAuthStub(returnValue:  Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]]) =
+    when(mockMicroserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]]]())(any(), any())).thenReturn(returnValue)
 
   override def beforeEach(): Unit = reset(mockMicroserviceAuthConnector)
 
