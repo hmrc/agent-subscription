@@ -45,15 +45,15 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private implicit val hc = HeaderCarrier()
 
   private implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
+
   "subscribeAgentToMtd" should {
     "audit appropriate values" in {
       val businessUtr = Utr("4000000009")
-
       val businessPostcode = "AA1 1AA"
 
       val arn = "ARN0001"
-      subscriptionWillBeCreated(businessUtr, businessPostcode, arn)
 
+      subscriptionWillBeCreated(businessUtr, businessPostcode, arn)
 
       val subscriptionRequest = SubscriptionRequest(
         businessUtr,

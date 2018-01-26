@@ -29,7 +29,6 @@ import uk.gov.hmrc.agentsubscription.service.SubscriptionService
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
 import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
-import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
 @Singleton
 class SubscriptionController @Inject()(subscriptionService: SubscriptionService)
@@ -37,10 +36,11 @@ class SubscriptionController @Inject()(subscriptionService: SubscriptionService)
                                        microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
+  override implicit val hc: HeaderCarrier = new HeaderCarrier
+
   def createSubscription = affinityGroupAndEnrolments {
     implicit request =>
       implicit authIds =>
-      implicit val hc = fromHeadersAndSession(request.headers, None)
         withJsonBody[SubscriptionRequest] { subscriptionRequest =>
           subscriptionService.subscribeAgentToMtd(subscriptionRequest, authIds).map {
             case Some(a) => Created(toJson(SubscriptionResponse(a)))
