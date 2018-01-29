@@ -29,7 +29,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       createKnownFactsSucceeds(arn.value)
       val result = await(connector.sendKnownFacts(arn.value,postcode))
       result shouldBe 200
-      verifyTimerExistsAndBeenUpdated("EMAC-AddKnownFacts-HMRC-AS-AGENT-POST")
+      verifyTimerExistsAndBeenUpdated("EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT")
     }
 
     "propogate an exception after failing to create known facts" in {
