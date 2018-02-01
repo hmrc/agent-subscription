@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{Inject, Singleton}
 
+import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.Request
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
@@ -25,6 +26,7 @@ import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
+import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -47,7 +49,9 @@ private case class SubscriptionAuditDetail (
 class SubscriptionService @Inject() (
                                       desConnector: DesConnector,
                                       taxEnrolmentsConnector: TaxEnrolmentsConnector,
-                                      auditService: AuditService) {
+                                      auditService: AuditService,
+                                      recoveryRepository: RecoveryRepository
+                                    ) {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
       val address = subscriptionRequest.agency.address
@@ -77,7 +81,7 @@ class SubscriptionService @Inject() (
   private def subscribe(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     for {
       arn <- desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
-      _ <- createKnownFacts(arn, subscriptionRequest)
+      _ <- createKnownFacts(arn, subscriptionRequest, authIds)
       _ <- enrol(arn, subscriptionRequest, authIds)
     } yield {
       auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
@@ -97,12 +101,15 @@ class SubscriptionService @Inject() (
       )
     )
 
-  private def createKnownFacts(arn: Arn, subscriptionRequest: SubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
+  private def createKnownFacts(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
     val tries = 3
     Retry.retry(tries)(
       taxEnrolmentsConnector.sendKnownFacts(arn.value, subscriptionRequest.agency.address.postcode)
     ).recover {
-      case e => throw new IllegalStateException(s"Failed to send known facts in EMAC for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
+      case e =>
+        Logger.error(s"Failed to create known facts for: ${arn.value} after $tries attempts", e)
+        recoveryRepository.create(authIds, arn, subscriptionRequest, s"Failed to create known facts due to; ${e.getClass.getName}: ${e.getMessage}")
+        throw new IllegalStateException(s"Failed to create known facts in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}", e)
     }
   }
 
@@ -114,9 +121,10 @@ class SubscriptionService @Inject() (
     Retry.retry(tries)(
       taxEnrolmentsConnector.enrol(authIds.groupId, arn, enrolRequest)
     ).recover {
-      case e => {
-        throw new IllegalStateException(s"Failed to create enrolment in EMAC for utr: ${subscriptionRequest.utr} and arn: ${arn.value}", e)
-      }
+      case e =>
+        Logger.error(s"Failed to Enrol for: ${arn.value} after $tries attempts", e)
+        recoveryRepository.create(authIds, arn, subscriptionRequest, s"Failed to Enrol due to; ${e.getClass.getName}: ${e.getMessage}")
+        throw new IllegalStateException(s"Failed to create enrolment in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}", e)
     }
   }
 

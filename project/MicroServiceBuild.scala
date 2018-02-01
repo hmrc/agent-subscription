@@ -19,7 +19,7 @@ private object AppDependencies {
   private val wiremockVersion = "2.13.0"
   private val scalaTestPlusVersion = "1.5.1"
   private val mockitoVersion = "2.13.0"
-  private val mtdIdentifiersVersion = "0.8.0"
+  private val mtdIdentifiersVersion = "0.10.0"
   private val agentKenshooMonitoringVersion = "2.4.0"
 
 
@@ -30,6 +30,7 @@ private object AppDependencies {
     "uk.gov.hmrc" %% "domain" % domainVersion,
     "uk.gov.hmrc" %% "agent-mtd-identifiers" % mtdIdentifiersVersion,
     "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % agentKenshooMonitoringVersion,
+    "uk.gov.hmrc" %% "play-reactivemongo" % "5.2.0",
     "uk.gov.hmrc" %% "auth-client" % "2.5.0"
   )
 
@@ -62,7 +63,8 @@ private object AppDependencies {
         "org.pegdown" % "pegdown" % pegdownVersion % scope,
         "com.typesafe.play" %% "play-test" % PlayVersion.current % scope,
         "org.mockito" % "mockito-core" % mockitoVersion % scope,
-        "com.github.tomakehurst" % "wiremock" % wiremockVersion % scope
+        "com.github.tomakehurst" % "wiremock" % wiremockVersion % scope,
+        "uk.gov.hmrc" %% "reactivemongo-test" % "2.0.0" % scope
       )
     }.test
   }
