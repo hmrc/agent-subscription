@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import org.mockito.ArgumentMatchers.{any, anyString, eq => eqs}
+import org.mockito.{ArgumentMatcher, ArgumentMatchers, Matchers}
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json.{JsObject, Json}
@@ -24,7 +25,7 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
-import uk.gov.hmrc.agentsubscription.connectors.{Address => _, _}
+import uk.gov.hmrc.agentsubscription.connectors.{EnrolmentRequest, Address => _, _}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
@@ -113,7 +114,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       await(service.subscribeAgentToMtd(subscriptionRequest, authIds))
 
       verify(taxEnrolmentConnector).sendKnownFacts(eqs(arn.value), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
-      verify(taxEnrolmentConnector).enrol(anyString, eqs(arn), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext])
+
+      val expectedEnrolmentRequest = EnrolmentRequest(authIds.userId, "principal", "Test Agency", Seq(KnownFact("AgencyPostcode", agencyPostcode)))
+      verify(taxEnrolmentConnector).enrol(anyString, eqs(arn), eqs(expectedEnrolmentRequest))(eqs(hc), any[ExecutionContext])
     }
 
     "fail when attempting to create known facts more than 3 times" in {
@@ -184,7 +187,6 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
-
   }
 
   private def subscriptionKnownFactsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
