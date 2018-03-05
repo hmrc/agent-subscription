@@ -23,8 +23,10 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       writeAuditSucceeds()
 
       requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-      organisationRegistrationExists(utr)
+      organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
       subscriptionSucceeds(utr, Json.parse(subscriptionRequest(utr)).as[SubscriptionRequest])
+      allocatedPrincipalEnrolmentNotExists(arn)
+      deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(groupId,arn)
 

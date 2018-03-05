@@ -14,8 +14,8 @@ import uk.gov.hmrc.play.test.UnitSpec
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with TaxEnrolmentsStubs with MetricsTestSupport {
-
-  private lazy val connector = new TaxEnrolmentsConnector(new URL(s"http://localhost:$wireMockPort"), WSHttp, app.injector.instanceOf[Metrics])
+  private lazy val wiremockUrl = new URL(s"http://localhost:$wireMockPort")
+  private lazy val connector = new TaxEnrolmentsConnector(wiremockUrl, wiremockUrl, WSHttp, app.injector.instanceOf[Metrics])
 
   private implicit val hc = HeaderCarrier()
   private val arn = Arn("AARN1234567")
@@ -42,6 +42,25 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
     }
   }
 
+  "deleteKnownFacts" should {
+    "return successfully deleting known facts" in {
+      givenCleanMetricRegistry()
+      deleteKnownFactsSucceeds(arn.value)
+      val result = await(connector.deleteKnownFacts(arn))
+      result shouldBe 204
+      verifyTimerExistsAndBeenUpdated("EMAC-DeleteKnownFacts-HMRC-AS-AGENT-DELETE")
+    }
+
+    "propogate an exception after failing to delete known facts" in {
+      deleteKnownFactsFails(arn.value)
+
+      val exception = intercept[Upstream5xxResponse] {
+        await(connector.deleteKnownFacts(arn))
+      }
+      exception.upstreamResponseCode shouldBe 500
+    }
+  }
+
   "addEnrolment" should {
     val enrolmentRequest = EnrolmentRequest("userId", "principal", "friendlyName",
       Seq(KnownFact("AgencyPostcode", "AB11BA")))
@@ -63,6 +82,40 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
 
       exception.upstreamResponseCode shouldBe 500
     }
+  }
+
+  "hasPrincipalGroupIds" should {
+
+    "return true after a successful query for principal enrolment" in {
+      givenCleanMetricRegistry()
+      allocatedPrincipalEnrolmentExists(arn.value, groupId)
+      val result = await(connector.hasPrincipalGroupIds(arn))
+      result shouldBe true
+      verifyTimerExistsAndBeenUpdated("EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET")
+    }
+
+    "return false after a successful query for principal enrolment" in {
+      givenCleanMetricRegistry()
+      allocatedPrincipalEnrolmentNotExists(arn.value)
+      val result = await(connector.hasPrincipalGroupIds(arn))
+      result shouldBe false
+      verifyTimerExistsAndBeenUpdated("EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET")
+    }
+
+    "throw an exception if Arn is unknown" in {
+      fail("TODO")
+    }
+
+    "propagate an exception for a failed query" in {
+      allocatedPrincipalEnrolmentFails(arn.value)
+
+      val exception = intercept[Upstream5xxResponse] {
+        await(connector.hasPrincipalGroupIds(arn))
+      }
+
+      exception.upstreamResponseCode shouldBe 500
+    }
+
   }
 
 }

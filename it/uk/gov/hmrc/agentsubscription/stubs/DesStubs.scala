@@ -138,7 +138,7 @@ trait DesStubs {
            |}
               """.stripMargin))
 
-  def organisationRegistrationExists(utr: Utr, isAnASAgent: Boolean = true): Unit = {
+  def organisationRegistrationExists(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001"): Unit = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -154,7 +154,7 @@ trait DesStubs {
              |  {
              |    "organisationName": "My Agency"
              |  },
-             |  "agentReferenceNumber": "TARN0000001"
+             |  "agentReferenceNumber": "$arn"
              |}
                """.stripMargin)))
   }

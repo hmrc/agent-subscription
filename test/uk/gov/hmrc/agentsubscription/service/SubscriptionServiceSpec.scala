@@ -119,6 +119,60 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       verify(taxEnrolmentConnector).enrol(anyString, eqs(arn), eqs(expectedEnrolmentRequest))(eqs(hc), any[ExecutionContext])
     }
 
+    "fail when attempting to query existing allocated enrolments more than 3 times" in {
+      val utr = Utr("4000000009")
+      val arn = Arn("ARN0001")
+
+      val businessPostcode = "BU1 1BB"
+      val agencyPostcode = "AG1 1CY"
+
+      subscriptionHasPrincipalGroupIdsFailed(utr, businessPostcode, arn.value)
+
+      val subscriptionRequest = SubscriptionRequest(
+        utr,
+        KnownFacts(businessPostcode),
+        Agency(
+          "Test Agency",
+          Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = agencyPostcode, countryCode = "GB"),
+          "01234 567890",
+          "testagency@example.com"))
+
+      val thrown = intercept[IllegalStateException](
+        await(service.subscribeAgentToMtd(subscriptionRequest, authIds))
+      ).getMessage
+
+      thrown shouldBe "Failed to check for existing enrolment in EMAC for utr: 4000000009 and arn: ARN0001"
+
+      verify(recoveryRepository).create(eqs(authIds), eqs(arn), eqs(subscriptionRequest), any())(any())
+    }
+
+    "fail when attempting to delete known facts more than 3 times" in {
+      val utr = Utr("4000000009")
+      val arn = Arn("ARN0001")
+
+      val businessPostcode = "BU1 1BB"
+      val agencyPostcode = "AG1 1CY"
+
+      subscriptionDeleteKnownFactsFailed(utr, businessPostcode, arn.value)
+
+      val subscriptionRequest = SubscriptionRequest(
+        utr,
+        KnownFacts(businessPostcode),
+        Agency(
+          "Test Agency",
+          Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = agencyPostcode, countryCode = "GB"),
+          "01234 567890",
+          "testagency@example.com"))
+
+      val thrown = intercept[IllegalStateException](
+        await(service.subscribeAgentToMtd(subscriptionRequest, authIds))
+      ).getMessage
+
+      thrown shouldBe "Failed to delete known facts in EMAC for utr: 4000000009 and arn: ARN0001"
+
+      verify(recoveryRepository).create(eqs(authIds), eqs(arn), eqs(subscriptionRequest), any())(any())
+    }
+
     "fail when attempting to create known facts more than 3 times" in {
       val utr = Utr("4000000009")
       val arn = Arn("ARN0001")
@@ -126,7 +180,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val businessPostcode = "BU1 1BB"
       val agencyPostcode = "AG1 1CY"
 
-      subscriptionKnownFactsFailed(utr, businessPostcode, arn.value)
+      subscriptionCreateKnownFactsFailed(utr, businessPostcode, arn.value)
 
       val subscriptionRequest = SubscriptionRequest(
         utr,
@@ -182,6 +236,12 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
+    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful false)
+
+    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful new Integer(204))
+
     when(taxEnrolmentConnector.sendKnownFacts(eqs(arn), anyString)(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
 
@@ -189,7 +249,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       .thenReturn(Future successful new Integer(200))
   }
 
-  private def subscriptionKnownFactsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
+  private def subscriptionHasPrincipalGroupIdsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         postalCode = Some(businessPostcode), isAnASAgent = false, organisationName = Some("Test Business"), None, None)))
@@ -197,11 +257,50 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
+    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES1"))
+
+    when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
+      .thenReturn(Future successful())
+  }
+
+  private def subscriptionDeleteKnownFactsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
+    when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Some(DesRegistrationResponse(
+        postalCode = Some(businessPostcode), isAnASAgent = false, organisationName = Some("Test Business"), None, None)))
+
+    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Arn(arn))
+
+    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful false)
+
+    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES7"))
+
+    when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
+    .thenReturn(Future successful())
+  }
+
+  private def subscriptionCreateKnownFactsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
+    when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Some(DesRegistrationResponse(
+        postalCode = Some(businessPostcode), isAnASAgent = false, organisationName = Some("Test Business"), None, None)))
+
+    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Arn(arn))
+
+    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful false)
+
+    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful new Integer(204))
+
     when(taxEnrolmentConnector.sendKnownFacts(eqs(arn), anyString)(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES6"))
 
     when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
-    .thenReturn(Future successful())
+      .thenReturn(Future successful())
   }
 
   private def subscriptionEnrolmentsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
@@ -211,6 +310,12 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
+
+    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful false)
+
+    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful new Integer(204))
 
     when(taxEnrolmentConnector.sendKnownFacts(eqs(arn), anyString)(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
