@@ -25,10 +25,9 @@ import play.api.mvc._
 import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.connectors.AuthActions
 import uk.gov.hmrc.agentsubscription.model.{SubscriptionRequest, SubscriptionResponse}
-import uk.gov.hmrc.agentsubscription.service.SubscriptionService
+import uk.gov.hmrc.agentsubscription.service.{EnrolmentAlreadyAllocated, SubscriptionService}
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
 @Singleton
@@ -46,10 +45,8 @@ class SubscriptionController @Inject()(subscriptionService: SubscriptionService)
             case Some(a) => Created(toJson(SubscriptionResponse(a)))
             case None => Forbidden
           }.recover {
-            case e: RuntimeException
-              if e.getCause.isInstanceOf[Upstream4xxResponse] &&
-                e.getCause.asInstanceOf[Upstream4xxResponse].upstreamResponseCode == CONFLICT => Conflict
-            case ex: IllegalStateException => InternalServerError
+            case _: EnrolmentAlreadyAllocated => Conflict
+            case _: IllegalStateException => InternalServerError
           }
         }
   }

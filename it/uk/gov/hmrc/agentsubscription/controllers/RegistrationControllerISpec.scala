@@ -17,12 +17,12 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs}
+import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, TaxEnrolmentsStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
 import scala.language.postfixOps
 
-class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub {
+class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolmentsStubs with AuthStub {
 
   "GET of /registration/:utr/postcode/:postcode" should {
     "return a 401 when the user is not authenticated" in {
@@ -74,13 +74,26 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
       response.status shouldBe 400
     }
 
-    "return 200 when des returns an AS Agent for the utr and the postcodes match" in {
-      requestIsAuthenticated().andIsAnAgent()
-      organisationRegistrationExists(Utr("7000000002"), true)
-      val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
-      response.status shouldBe 200
-      (response.json \ "isSubscribedToAgentServices" ).as[Boolean] shouldBe true
-      (response.json \ "taxpayerName" ).as[String] shouldBe "My Agency"
+    "return 200 when des returns an AS Agent for the utr and the postcodes match" when {
+      "there is a group already allocated the HMRC-AS-AGENT enrolment with their AgentReferenceNumber" in {
+        requestIsAuthenticated().andIsAnAgent()
+        organisationRegistrationExists(Utr("7000000002"), true)
+        allocatedPrincipalEnrolmentExists("TARN0000001", "SomeAllocatedGroupId")
+        val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
+        response.status shouldBe 200
+        (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe true
+        (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
+      }
+
+      "there is no group already allocated the HMRC-AS-AGENT enrolment with their AgentReferenceNumber" in {
+        requestIsAuthenticated().andIsAnAgent()
+        organisationRegistrationExists(Utr("7000000002"), true)
+        allocatedPrincipalEnrolmentNotExists("TARN0000001")
+        val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
+        response.status shouldBe 200
+        (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
+        (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
+      }
     }
 
     "return 200 when des returns a non-AS Agent for the utr and the postcodes match" in {
@@ -88,8 +101,8 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with AuthStub 
       organisationRegistrationExists(Utr("7000000002"), false)
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
-      (response.json \ "isSubscribedToAgentServices" ).as[Boolean] shouldBe false
-      (response.json \ "taxpayerName" ).as[String] shouldBe "My Agency"
+      (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
+      (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
     }
 
     "return 200 when des returns an individual for the utr and the postcodes match" in {

@@ -41,6 +41,7 @@ class GuiceModule(environment: Environment, configuration: Configuration) extend
     bindBaseUrl("des")
     bindBaseUrl("auth")
     bindBaseUrl("tax-enrolments")
+    bindBaseUrl("enrolment-store-proxy")
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
   }

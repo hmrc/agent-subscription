@@ -6,6 +6,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.{KnownFacts, SubscriptionRequest}
 import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, TaxEnrolmentsStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+import com.github.tomakehurst.wiremock.client.WireMock._
 
 class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs{
   private val utr = Utr("7000000002")
@@ -21,8 +22,10 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     "return a response containing the ARN" when {
       "all fields are populated" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-        organisationRegistrationExists(utr)
+        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
 
@@ -30,13 +33,18 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "ARN0001"
+
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
       }
 
       "addressLine2, addressLine3 and addressLine4 are missing" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         val fields = Seq(address \ "addressLine2", address \ "addressLine3", address \ "addressLine4")
-        organisationRegistrationExists(utr)
+        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
 
@@ -44,17 +52,41 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "ARN0001"
+
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+      }
+
+      "BPR has isAnAsAgent=true and there is no previous allocation for HMRC-AS-AGENT for the arn" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        allocatedPrincipalEnrolmentNotExists(arn)
+        enrolmentSucceeds(groupId, arn)
+
+        val result = await(doSubscriptionRequest())
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe "ARN0001"
+
+        verify(0, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
       }
     }
 
-    "return Conflict if subscription exists" in {
+    "return Conflict if already subscribed (both ETMP has isAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in {
       requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-      organisationRegistrationExists(utr)
-      subscriptionAlreadyExists(utr)
+      organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
+      allocatedPrincipalEnrolmentExists(arn, "someGroupId")
 
       val result = await(doSubscriptionRequest())
 
       result.status shouldBe 409
+
+      verify(0, deleteRequestedFor(urlEqualTo(s"$deleteKnownFactsUrl$arn")))
+      verify(0, putRequestedFor(urlEqualTo(s"$createKnownFactsUrl$arn")))
+      verify(0, postRequestedFor(urlEqualTo(enrolmentUrl("groupId", arn))))
     }
 
     "return forbidden" when {
@@ -209,10 +241,35 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
 
     "throw a 500 error if " when {
+      "query allocated enrolment fails in EMAC " in {
+        requestIsAuthenticated()
+        organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentFails(arn)
+
+        val result = await(doSubscriptionRequest())
+
+        result.status shouldBe 500
+      }
+
+      "delete known facts fails in EMAC " in {
+        requestIsAuthenticated()
+        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsFails("")
+
+        val result = await(doSubscriptionRequest())
+
+        result.status shouldBe 500
+      }
+
       "create known facts fails in EMAC " in {
         requestIsAuthenticated()
-        organisationRegistrationExists(utr)
+        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds("")
         createKnownFactsFails("")
 
         val result = await(doSubscriptionRequest())
@@ -222,8 +279,9 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
       "create enrolment fails in EMAC " in {
         requestIsAuthenticatedWithNoEnrolments()
-        organisationRegistrationExists(utr)
+        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
         createKnownFactsSucceeds(arn)
         enrolmentFails(groupId,arn)
 

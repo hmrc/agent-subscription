@@ -21,16 +21,17 @@ import play.api.libs.json._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DataStreamStub, DesStubs}
+import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DataStreamStub, DesStubs, TaxEnrolmentsStubs}
 import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegments
 
 import scala.language.postfixOps
 
-class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub {
+class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub with TaxEnrolmentsStubs {
 
   private val utr = Utr("2000000000")
   private val postcode = "AA1 1AA"
+  val arn = "ARN0001"
 
   "GET of /registration/:utr/postcode/:postcode" should {
     "audit a CheckAgencyStatus event" in {
@@ -38,7 +39,8 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
       writeAuditSucceeds()
 
       requestIsAuthenticated()
-      organisationRegistrationExists(utr, true)
+      organisationRegistrationExists(utr, true, arn)
+      allocatedPrincipalEnrolmentExists(arn, "groupId")
 
       val path = encodePathSegments("agent-subscription", "registration", utr.value, "postcode", postcode)
 
@@ -67,7 +69,8 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
          |  "postcode": "$postcode",
          |  "knownFactsMatched": true,
          |  "isSubscribedToAgentServices": true,
-         |  "agentReferenceNumber": "TARN0000001"
+         |  "isAnAsAgentInDes" : true,
+         |  "agentReferenceNumber": "$arn"
          |}
          |""".stripMargin)
       .asInstanceOf[JsObject]

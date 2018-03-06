@@ -23,12 +23,9 @@ We're still building this service so some/all of the API described here might no
 
     GET /agent-subscription/registration/:utr/postcode/:postcode
 
-TODO: should we call it postcode or postalcode?
-
-Gets information from the ETMP BPR (Business Partner Record) for the taxpayer with SA or CT UTR `utr` and postcode `postcode`.
-
-N.B. This API is intended to be used to check whether a given taxpayer is subscribed to agent services. 
-Therefore UTR, postcode and name in the taxpayer registration details are checked/retrieved, NOT any data in the Agent Services subscription details. 
+This API checks whether a given taxpayer is subscribed to agent services.
+It checks information from the ETMP BPR (Business Partner Record) for the taxpayer with SA or CT UTR `utr` and postcode `postcode`.
+It also checks whether any user/group has been allocated the HMRC-AS-AGENT for the Arn present in the BPR.
 
 Possible responses:
 
@@ -43,7 +40,12 @@ If a business partner was found for given known facts then a 200 OK response wil
     {
       "isSubscribedToAgentServices": true
     }
-    
+
+The `isSubscribedToAgentServices` flag will be true if the following holds:
+- BPR's postcode matches the `postcode` in the url
+- BPR's `isAsAgent` flag is true
+- HMRC-AS-AGENT enrolment has already been allocated to a group for the same AgentReferenceNumber in the BPR
+
 Notes: 
 1. The Agents team have implemented this through necessity however we believe this should be part of the Business Registration service.    
 2. This endpoint is currently not secured by auth. If the end point is rehomed then this should be reconsidered.

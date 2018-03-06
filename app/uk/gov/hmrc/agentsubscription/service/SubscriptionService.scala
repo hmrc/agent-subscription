@@ -30,7 +30,7 @@ import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
 
 import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{ConflictException, HeaderCarrier, Upstream4xxResponse}
 
 private object SubscriptionAuditDetail {
   implicit val writes = Json.writes[SubscriptionAuditDetail]
@@ -44,6 +44,8 @@ private case class SubscriptionAuditDetail (
   agencyEmail: String,
   agencyTelephoneNumber: String
 )
+
+case class EnrolmentAlreadyAllocated(message: String) extends Exception(message)
 
 @Singleton
 class SubscriptionService @Inject() (
@@ -70,19 +72,22 @@ class SubscriptionService @Inject() (
   def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
 
     desConnector.getRegistration(subscriptionRequest.utr) flatMap {
-        case Some(DesRegistrationResponse(Some(desPostcode), _, _, _, _))
+        case Some(DesRegistrationResponse(Some(desPostcode), isAnAsAgent, _, _, maybeArn))
           if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => {
-          subscribe(subscriptionRequest, authIds)
+          subscribe(subscriptionRequest, authIds, isAnAsAgent, maybeArn)
         }
         case _ =>  Future successful None
     }
   }
 
-  private def subscribe(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+  private def subscribe(subscriptionRequest: SubscriptionRequest, authIds: AuthIds, isAnAsAgent: Boolean, maybeArn: Option[Arn])
+                       (implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     for {
-      arn <- desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
-      _ <- createKnownFacts(arn, subscriptionRequest, authIds)
-      _ <- enrol(arn, subscriptionRequest, authIds)
+      arn <- maybeArn match {
+        case Some(arn) if isAnAsAgent => Future.successful(arn)
+        case _ => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
+      }
+      _ <- addKnownFactsAndEnrol(arn, subscriptionRequest, authIds)
     } yield {
       auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
       Some(arn)
@@ -101,32 +106,30 @@ class SubscriptionService @Inject() (
       )
     )
 
-  private def createKnownFacts(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
-    val tries = 3
-    Retry.retry(tries)(
-      taxEnrolmentsConnector.sendKnownFacts(arn.value, subscriptionRequest.agency.address.postcode)
-    ).recover {
-      case e =>
-        Logger.error(s"Failed to create known facts for: ${arn.value} after $tries attempts", e)
-        recoveryRepository.create(authIds, arn, subscriptionRequest, s"Failed to create known facts due to; ${e.getClass.getName}: ${e.getMessage}")
-        throw new IllegalStateException(s"Failed to create known facts in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}", e)
-    }
-  }
-
-  private def enrol(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext) = {
-    val enrolRequest = EnrolmentRequest(authIds.userId,"principal",subscriptionRequest.agency.name,
-      Seq(KnownFact("AgencyPostcode",subscriptionRequest.agency.address.postcode)))
-
-    val tries = 3
-    Retry.retry(tries)(
-      taxEnrolmentsConnector.enrol(authIds.groupId, arn, enrolRequest)
-    ).recover {
-      case e =>
-        Logger.error(s"Failed to Enrol for: ${arn.value} after $tries attempts", e)
-        recoveryRepository.create(authIds, arn, subscriptionRequest, s"Failed to Enrol due to; ${e.getClass.getName}: ${e.getMessage}")
-        throw new IllegalStateException(s"Failed to create enrolment in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}", e)
-    }
-  }
-
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
+
+  private def addKnownFactsAndEnrol(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+    val tries = 3
+    Retry.retry(tries)(
+      taxEnrolmentsConnector.hasPrincipalGroupIds(arn).flatMap { alreadyEnrolled =>
+        if (!alreadyEnrolled) {
+          for {
+            _ <- taxEnrolmentsConnector.deleteKnownFacts(arn)
+            _ <- taxEnrolmentsConnector.sendKnownFacts(arn.value, subscriptionRequest.agency.address.postcode)
+            enrolRequest = EnrolmentRequest(authIds.userId,"principal",subscriptionRequest.agency.name,
+              Seq(KnownFact("AgencyPostcode",subscriptionRequest.agency.address.postcode)))
+            _ <- taxEnrolmentsConnector.enrol(authIds.groupId, arn, enrolRequest)
+          } yield ()
+        } else {
+          Future.failed(EnrolmentAlreadyAllocated("An enrolment for HMRC-AS-AGENT with this Arn as an identifier already exists"))
+        }
+      }
+    ).recover {
+      case e : EnrolmentAlreadyAllocated => throw e
+      case e =>
+        Logger.error(s"Failed to add known facts and enrol for: ${arn.value} after $tries attempts", e)
+        recoveryRepository.create(authIds, arn, subscriptionRequest, s"Failed to add known facts and enrol due to; ${e.getClass.getName}: ${e.getMessage}")
+        throw new IllegalStateException(s"Failed to add known facts and enrol in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}", e)
+    }
+  }
 }

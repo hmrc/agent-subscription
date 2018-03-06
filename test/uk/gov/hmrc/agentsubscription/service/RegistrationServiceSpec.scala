@@ -30,7 +30,7 @@ import uk.gov.hmrc.agentsubscription.RequestWithAuthority
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.auth.Authority
-import uk.gov.hmrc.agentsubscription.connectors.{DesConnector, DesIndividual, DesRegistrationResponse, Provider}
+import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -40,10 +40,11 @@ import uk.gov.hmrc.http.HeaderCarrier
 class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
   private val desConnector = resettingMock[DesConnector]
+  private val teConnector = resettingMock[TaxEnrolmentsConnector]
   private val auditService = resettingMock[AuditService]
 
   val stubbedLogger = new LoggerLikeStub()
-  val service = new RegistrationService(desConnector, auditService){
+  val service = new RegistrationService(desConnector, teConnector, auditService){
     override def getLogger = stubbedLogger
   }
 
@@ -59,10 +60,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   }
 
   "getRegistration" should {
-    "audit appropriate values when a matching subscribed organisation registration is found" in {
+    "audit appropriate values when a matching subscribed organisation registration is found and a matching HMRC-AS-AGENT enrolment is found" in {
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
-      val arn = Some(Arn("TARN0000001"))
+      val arn = Arn("TARN0000001")
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
@@ -70,7 +71,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           isAnASAgent = true,
           Some("Organisation name"),
           None,
-          arn)))
+          Some(arn))))
+
+      when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful true)
 
       await(service.getRegistration(utr, postcode)(hc, provider, request))
 
@@ -83,6 +87,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
           |  "isSubscribedToAgentServices": true,
+          |  "isAnAsAgentInDes" : true,
           |  "agentReferenceNumber": "TARN0000001"
           |}
           |""".stripMargin).asInstanceOf[JsObject]
@@ -92,8 +97,49 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       }
 
       stubbedLogger.logMessages.size shouldBe 1
-      stubbedLogger.logMessages.head shouldBe s"The business partner record of type organisation associated with $utr is already subscribed with arn $arn and a postcode was returned"
+      stubbedLogger.logMessages.head shouldBe s"The business partner record of type organisation associated with $utr is already subscribed with arn ${Some(arn)} and a postcode was returned"
     }
+
+    "audit appropriate values when a matching subscribed organisation registration is found and no matching HMRC-AS-AGENT enrolment is found" in {
+      val utr = Utr("4000000009")
+      val postcode = "AA1 1AA"
+      val arn = Arn("TARN0000001")
+
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful Some(DesRegistrationResponse(
+          Some(postcode),
+          isAnASAgent = true,
+          Some("Organisation name"),
+          None,
+          Some(arn))))
+
+      when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful false)
+
+      await(service.getRegistration(utr, postcode)(hc, provider, request))
+
+      val expectedExtraDetail = Json.parse(
+        s"""
+           |{
+           |  "authProviderId": "${provider.providerId}",
+           |  "authProviderType": "${provider.providerType}",
+           |  "utr": "${utr.value}",
+           |  "postcode": "$postcode",
+           |  "knownFactsMatched": true,
+           |  "isSubscribedToAgentServices": false,
+           |  "isAnAsAgentInDes" : true,
+           |  "agentReferenceNumber": "TARN0000001"
+           |}
+           |""".stripMargin).asInstanceOf[JsObject]
+      eventually {
+        verify(auditService)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+      }
+
+      stubbedLogger.logMessages.size shouldBe 1
+      stubbedLogger.logMessages.head shouldBe s"The business partner record of type organisation associated with $utr is already subscribed with arn ${Some(arn)} and a postcode was returned"
+    }
+
 
     "audit appropriate values when a matching unsubscribed organisation registration is found" in {
       val utr = Utr("4000000009")
@@ -117,7 +163,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
            |  "utr": "${utr.value}",
            |  "postcode": "$postcode",
            |  "knownFactsMatched": true,
-           |  "isSubscribedToAgentServices": false
+           |  "isSubscribedToAgentServices": false,
+           |  "isAnAsAgentInDes" : false
            |}
            |""".stripMargin).asInstanceOf[JsObject]
       eventually {
@@ -149,7 +196,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
            |  "authProviderType": "${provider.providerType}",
            |  "utr": "${utr.value}",
            |  "postcode": "$suppliedPostcode",
-           |  "knownFactsMatched": false
+           |  "knownFactsMatched": false,
+           |  "isAnAsAgentInDes" : false
            |}
            |""".stripMargin).asInstanceOf[JsObject]
       eventually {
@@ -160,7 +208,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       stubbedLogger.logMessages.size shouldBe 0
     }
 
-    "audit appropriate values when a matching subscribed individual registration is found" in {
+    "audit appropriate values when a matching subscribed individual registration is found and a matching HMRC-AS-AGENT enrolment is found" in {
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
       val arn = Some(Arn("AARN0000002"))
@@ -173,6 +221,49 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some(DesIndividual("First", "Last")),
           arn)))
 
+      when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful true)
+
+      await(service.getRegistration(utr, postcode)(hc, provider, request))
+
+      val expectedExtraDetail = Json.parse(
+        s"""
+           |{
+           |  "authProviderId": "${provider.providerId}",
+           |  "authProviderType": "${provider.providerType}",
+           |  "utr": "${utr.value}",
+           |  "postcode": "$postcode",
+           |  "knownFactsMatched": true,
+           |  "isSubscribedToAgentServices": true,
+           |  "isAnAsAgentInDes" : true,
+           |  "agentReferenceNumber": "AARN0000002"
+           |}
+           |""".stripMargin).asInstanceOf[JsObject]
+      eventually {
+        verify(auditService)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+      }
+
+      stubbedLogger.logMessages.size shouldBe 1
+      stubbedLogger.logMessages.head shouldBe s"The business partner record of type individual associated with $utr is already subscribed with arn $arn and a postcode was returned"
+    }
+
+    "audit appropriate values when a matching subscribed individual registration is found and no matching HMRC-AS-AGENT enrolment is found" in {
+      val utr = Utr("4000000009")
+      val postcode = "AA1 1AA"
+      val arn = Some(Arn("AARN0000002"))
+
+      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful Some(DesRegistrationResponse(
+          Some(postcode),
+          isAnASAgent = true,
+          None,
+          Some(DesIndividual("First", "Last")),
+          arn)))
+
+      when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful false)
+
       await(service.getRegistration(utr, postcode)(hc, provider, request))
 
       val expectedExtraDetail = Json.parse(
@@ -183,7 +274,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
-          |  "isSubscribedToAgentServices": true,
+          |  "isSubscribedToAgentServices": false,
+          |  "isAnAsAgentInDes" : true,
           |  "agentReferenceNumber": "AARN0000002"
           |}
           |""".stripMargin).asInstanceOf[JsObject]
@@ -218,7 +310,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "utr": "${utr.value}",
           |  "postcode": "$postcode",
           |  "knownFactsMatched": true,
-          |  "isSubscribedToAgentServices": false
+          |  "isSubscribedToAgentServices": false,
+          |  "isAnAsAgentInDes": false
           |}
           |""".stripMargin).asInstanceOf[JsObject]
       eventually {
@@ -250,7 +343,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "authProviderType": "${provider.providerType}",
           |  "utr": "${utr.value}",
           |  "postcode": "$suppliedPostcode",
-          |  "knownFactsMatched": false
+          |  "knownFactsMatched": false,
+          |  "isAnAsAgentInDes": false
           |}
           |""".stripMargin).asInstanceOf[JsObject]
       eventually {
@@ -282,7 +376,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "authProviderType": "${provider.providerType}",
           |  "utr": "${utr.value}",
           |  "postcode": "$suppliedPostcode",
-          |  "knownFactsMatched": false
+          |  "knownFactsMatched": false,
+          |  "isAnAsAgentInDes": false
           |}
           |""".stripMargin).asInstanceOf[JsObject]
       eventually {
@@ -316,7 +411,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "utr": "${utr.value}",
           |  "postcode": "$suppliedPostcode",
           |  "knownFactsMatched": false,
-          |  "isSubscribedToAgentServices": true
+          |  "isSubscribedToAgentServices": true,
+          |  "isAnAsAgentInDes": true
           |}
           |""".stripMargin).asInstanceOf[JsObject]
       eventually {
