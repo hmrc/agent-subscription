@@ -90,10 +90,8 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
 
     if (knownFactsMatched) {
       val isSubscribedToAgentServices = maybeArn match {
-        case Some(arn) if isAnASAgent =>
-          taxEnrolmentsConnector.hasPrincipalGroupIds(arn).map(_ && isAnASAgent)
-        case _ =>
-          Future.successful(false)
+        case Some(arn) if isAnASAgent => taxEnrolmentsConnector.hasPrincipalGroupIds(arn)
+        case _ => Future.successful(false)
       }
 
       isSubscribedToAgentServices.map { x =>
