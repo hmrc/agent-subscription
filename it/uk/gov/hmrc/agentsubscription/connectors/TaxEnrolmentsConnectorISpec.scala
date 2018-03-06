@@ -8,7 +8,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
 import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream5xxResponse}
+import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -86,7 +86,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
 
   "hasPrincipalGroupIds" should {
 
-    "return true after a successful query for principal enrolment" in {
+    "return true if a successful query for principal enrolments returns some groups" in {
       givenCleanMetricRegistry()
       allocatedPrincipalEnrolmentExists(arn.value, groupId)
       val result = await(connector.hasPrincipalGroupIds(arn))
@@ -102,18 +102,25 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       verifyTimerExistsAndBeenUpdated("EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET")
     }
 
-    "throw an exception if Arn is unknown" in {
-      fail("TODO")
-    }
+    "propagate an exception for a failed query" when {
+      "failed with 500" in {
+        allocatedPrincipalEnrolmentFails(arn.value, 500)
 
-    "propagate an exception for a failed query" in {
-      allocatedPrincipalEnrolmentFails(arn.value)
+        val exception = intercept[Upstream5xxResponse] {
+          await(connector.hasPrincipalGroupIds(arn))
+        }
 
-      val exception = intercept[Upstream5xxResponse] {
-        await(connector.hasPrincipalGroupIds(arn))
+        exception.upstreamResponseCode shouldBe 500
       }
+      "failed with 400" in {
+        allocatedPrincipalEnrolmentFails(arn.value, 400)
 
-      exception.upstreamResponseCode shouldBe 500
+        val exception = intercept[BadRequestException] {
+          await(connector.hasPrincipalGroupIds(arn))
+        }
+
+        exception.responseCode shouldBe 400
+      }
     }
 
   }

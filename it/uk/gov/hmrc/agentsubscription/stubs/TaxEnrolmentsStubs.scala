@@ -53,17 +53,10 @@ trait TaxEnrolmentsStubs {
   def allocatedPrincipalEnrolmentNotExists(arn: String): Unit = {
     stubFor(get(urlEqualTo(es1Url(arn)))
       .willReturn(aResponse()
-        .withBody(
-          s"""
-             |{
-             |    "principalGroupIds": [],
-             |    "delegatedGroupIds": []
-             |}
-          """.stripMargin)
-        .withStatus(200)))
+        .withStatus(204)))
   }
 
-  def allocatedPrincipalEnrolmentFails(arn: String): Unit = {
-    stubFor(get(urlEqualTo(es1Url(arn))).willReturn(aResponse().withStatus(500)))
+  def allocatedPrincipalEnrolmentFails(arn: String, errorCode: Int = 500): Unit = {
+    stubFor(get(urlEqualTo(es1Url(arn))).willReturn(aResponse().withStatus(errorCode)))
   }
 }

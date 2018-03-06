@@ -90,11 +90,10 @@ class TaxEnrolmentsConnector @Inject()(@Named("tax-enrolments-baseUrl") teBaseUr
     val url = new URL(espBaseUrl, s"/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(arn.value)}/groups?type=principal")
 
     monitor("EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET") {
-      http.GET[JsValue](url.toString)
-    }.map(json => {
-      val groupIds = (json \ "principalGroupIds").as[Seq[String]]
-
-      groupIds.nonEmpty
+      http.GET[HttpResponse](url.toString)
+    }.map(response => response.status match {
+      case 200 => (response.json \ "principalGroupIds").as[Seq[String]].nonEmpty
+      case 204 => false
     })
   }
 
