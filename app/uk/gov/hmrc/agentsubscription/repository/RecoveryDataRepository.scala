@@ -22,7 +22,7 @@ import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.api.indexes.{ Index, IndexType }
 import reactivemongo.bson.BSONObjectID
 import reactivemongo.core.errors.GenericDatabaseException
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
@@ -31,10 +31,11 @@ import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
-class RecoveryRepository @Inject()(mongoComponent: ReactiveMongoComponent)
-  extends ReactiveRepository[RecoveryData, BSONObjectID]("agent-recovery-store",
+class RecoveryRepository @Inject() (mongoComponent: ReactiveMongoComponent)
+  extends ReactiveRepository[RecoveryData, BSONObjectID](
+    "agent-recovery-store",
     mongoComponent.mongoConnector.db,
     RecoveryData.recoveryDataFormat,
     ReactiveMongoFormats.objectIdFormats) {
@@ -47,9 +48,7 @@ class RecoveryRepository @Inject()(mongoComponent: ReactiveMongoComponent)
     Index(
       key = Seq("createdDate" -> IndexType.Ascending),
       name = Some("createDate"),
-      unique = false
-    )
-  )
+      unique = false))
 
   private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
     val indexInfo = s"""name=${index.eventualName}, key=${index.key.map { case (k, _) => k }.mkString("+")}, unique=${index.unique}, background=${index.background}, sparse=${index.sparse}"""
@@ -88,11 +87,12 @@ class RecoveryRepository @Inject()(mongoComponent: ReactiveMongoComponent)
   }
 }
 
-case class RecoveryData(authIds: AuthIds,
-                        arn: Arn,
-                        subscriptionRequest: SubscriptionRequest,
-                        errorMessage: String,
-                        createdDate: DateTime = DateTime.now)
+case class RecoveryData(
+  authIds: AuthIds,
+  arn: Arn,
+  subscriptionRequest: SubscriptionRequest,
+  errorMessage: String,
+  createdDate: DateTime = DateTime.now)
 
 object RecoveryData {
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats

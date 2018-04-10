@@ -18,14 +18,14 @@ package uk.gov.hmrc.agentsubscription.service
 
 import java.net.URL
 
-import org.mockito.ArgumentMatchers.{any, eq => eqs}
-import org.mockito.Mockito.{verify, when}
+import org.mockito.ArgumentMatchers.{ any, eq => eqs }
+import org.mockito.Mockito.{ verify, when }
 import org.scalatest.concurrent.Eventually
 import org.slf4j.Logger
 import play.api.LoggerLike
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{ JsObject, Json }
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.audit.AuditService
@@ -34,7 +34,7 @@ import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 import uk.gov.hmrc.http.HeaderCarrier
 
 class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
@@ -44,7 +44,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private val auditService = resettingMock[AuditService]
 
   val stubbedLogger = new LoggerLikeStub()
-  val service = new RegistrationService(desConnector, teConnector, auditService){
+  val service = new RegistrationService(desConnector, teConnector, auditService) {
     override def getLogger = stubbedLogger
   }
 
@@ -139,7 +139,6 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       stubbedLogger.logMessages.size shouldBe 1
       stubbedLogger.logMessages.head shouldBe s"The business partner record of type organisation associated with $utr is already subscribed with arn ${Some(arn)} and a postcode was returned"
     }
-
 
     "audit appropriate values when a matching unsubscribed organisation registration is found" in {
       val utr = Utr("4000000009")

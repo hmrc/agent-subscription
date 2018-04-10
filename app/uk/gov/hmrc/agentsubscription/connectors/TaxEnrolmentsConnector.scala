@@ -17,17 +17,17 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
-import javax.inject.{Inject, Named, Singleton}
+import javax.inject.{ Inject, Named, Singleton }
 
 import com.kenshoo.play.metrics.Metrics
 import play.api.Logger
-import play.api.libs.json.{JsObject, JsValue, Json}
-import play.api.libs.json.Json.{format, toJson}
+import play.api.libs.json.{ JsObject, JsValue, Json }
+import play.api.libs.json.Json.{ format, toJson }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.http._
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 case class KnownFact(key: String, value: String)
 case class Legacy(previousVerifiers: Seq[KnownFact])
@@ -51,14 +51,15 @@ object EnrolmentRequest {
 }
 
 @Singleton
-class TaxEnrolmentsConnector @Inject()(@Named("tax-enrolments-baseUrl") teBaseUrl: URL,
-                                       @Named("enrolment-store-proxy-baseUrl") espBaseUrl: URL,
-                                       http: HttpPut with HttpPost with HttpGet with HttpDelete,
-                                       metrics:Metrics) extends HttpAPIMonitor {
+class TaxEnrolmentsConnector @Inject() (
+  @Named("tax-enrolments-baseUrl") teBaseUrl: URL,
+  @Named("enrolment-store-proxy-baseUrl") espBaseUrl: URL,
+  http: HttpPut with HttpPost with HttpGet with HttpDelete,
+  metrics: Metrics) extends HttpAPIMonitor {
   override val kenshooRegistry = metrics.defaultRegistry
 
   def sendKnownFacts(arn: String, postcode: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
-    val request = KnownFactsRequest(List(KnownFact("AgencyPostcode",postcode)), None)
+    val request = KnownFactsRequest(List(KnownFact("AgencyPostcode", postcode)), None)
 
     monitor("EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT") {
       http.PUT[JsValue, HttpResponse](s"""${teBaseUrl}/tax-enrolments/enrolments/${enrolmentKey(arn)}""", Json.toJson(request)) map {
@@ -74,8 +75,7 @@ class TaxEnrolmentsConnector @Inject()(@Named("tax-enrolments-baseUrl") teBaseUr
     }
   }
 
-  def enrol(groupId: String, arn: Arn, enrolmentRequest: EnrolmentRequest)
-           (implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
+  def enrol(groupId: String, arn: Arn, enrolmentRequest: EnrolmentRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
     val serviceUrl = s"""${teBaseUrl}/tax-enrolments/groups/$groupId/enrolments/${enrolmentKey(arn.value)}"""
 
     monitor("EMAC-Enrol-HMRC-AS-AGENT-POST") {

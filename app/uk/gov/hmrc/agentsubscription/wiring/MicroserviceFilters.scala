@@ -14,8 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model
+package uk.gov.hmrc.agentsubscription.wiring
 
-sealed trait DesBusinessPartnerRecordApiResponse
-case class BusinessPartnerRecordFound(postalCode: String, isSubscribedToAgentServices: Boolean) extends DesBusinessPartnerRecordApiResponse
-object BusinessPartnerRecordNotFound extends DesBusinessPartnerRecordApiResponse
+import javax.inject.{ Inject, Singleton }
+
+import com.kenshoo.play.metrics.MetricsFilter
+import play.api.http.DefaultHttpFilters
+import uk.gov.hmrc.play.bootstrap.filters.{ AuditFilter, CacheControlFilter, LoggingFilter }
+
+@Singleton
+class MicroserviceFilters @Inject() (
+  metricsFilter: MetricsFilter,
+  auditFilter: AuditFilter,
+  loggingFilter: LoggingFilter,
+  cacheFilter: CacheControlFilter,
+  monitoringFilter: MicroserviceMonitoringFilter) extends DefaultHttpFilters(metricsFilter, monitoringFilter, auditFilter, loggingFilter, cacheFilter)

@@ -17,8 +17,8 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.libs.json.Json.toJson
-import play.api.mvc.Results.{Forbidden, Unauthorized}
-import play.api.libs.json.{JsValue, Json, Writes}
+import play.api.mvc.Results.{ Forbidden, Unauthorized }
+import play.api.libs.json.{ JsValue, Json, Writes }
 
 object ErrorResult {
 
@@ -29,6 +29,6 @@ object ErrorResult {
   }
 
   val GenericUnauthorized = Unauthorized(toJson(ErrorBody("UNAUTHORIZED", "Bearer token is missing or not authorized.")))
-  val AgentNotSubscribed  = Forbidden(toJson(ErrorBody("AGENT_NOT_SUBSCRIBED", "The Agent is not subscribed to Agent Services.")))
+  val AgentNotSubscribed = Forbidden(toJson(ErrorBody("AGENT_NOT_SUBSCRIBED", "The Agent is not subscribed to Agent Services.")))
 
 }

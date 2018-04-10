@@ -20,9 +20,9 @@ import org.scalatest.concurrent.Eventually._
 import play.api.libs.json._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencyStatus
-import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DataStreamStub, DesStubs, TaxEnrolmentsStubs}
-import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
+import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DataStreamStub, DesStubs, TaxEnrolmentsStubs }
+import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegments
 
 import scala.language.postfixOps

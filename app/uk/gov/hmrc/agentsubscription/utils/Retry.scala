@@ -17,9 +17,9 @@
 package uk.gov.hmrc.agentsubscription.utils
 
 import play.api.Logger
-import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException, Upstream5xxResponse}
+import uk.gov.hmrc.http.{ BadGatewayException, GatewayTimeoutException, Upstream5xxResponse }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 object Retry {
 

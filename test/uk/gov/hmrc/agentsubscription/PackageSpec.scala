@@ -20,7 +20,7 @@ import org.scalatest.FunSuite
 
 class PackageSpec extends FunSuite {
 
-  test("Postcode matcher should return false when postcodes are not the same"){
+  test("Postcode matcher should return false when postcodes are not the same") {
     val postcode1 = "AB1 1BA"
     val postcode2 = "CD11DC"
     assert(!postcodesMatch(postcode1, postcode2))

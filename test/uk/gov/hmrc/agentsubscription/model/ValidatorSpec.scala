@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.model
 
 import play.api.data.validation.ValidationError
-import play.api.libs.json.{JsError, JsString, JsSuccess}
+import play.api.libs.json.{ JsError, JsString, JsSuccess }
 import uk.gov.hmrc.play.test.UnitSpec
 
 class ValidatorSpec extends UnitSpec {
@@ -89,7 +89,6 @@ class ValidatorSpec extends UnitSpec {
       validatePostcode("AA1 1A%") shouldBe postcodeValidationError
     }
 
-
     "accept postcodes with 2 characters in the outbound part" in {
       validatePostcode("A1 1AA") shouldBe JsSuccess("A1 1AA")
     }
@@ -140,7 +139,6 @@ class ValidatorSpec extends UnitSpec {
         validateAddress("Agency's Building/Castle")
       }
 
-
     }
     "reject address" when {
       "there is whitespace" in {
@@ -170,8 +168,8 @@ class ValidatorSpec extends UnitSpec {
 
       "valid symbols are provided" in {
         validateName("Agency/firm") shouldBe JsSuccess("Agency/firm")
-        validateName("Agency-Co") shouldBe JsSuccess ("Agency-Co")
-        validateName("Agency,firm,limited") shouldBe JsSuccess ("Agency,firm,limited")
+        validateName("Agency-Co") shouldBe JsSuccess("Agency-Co")
+        validateName("Agency,firm,limited") shouldBe JsSuccess("Agency,firm,limited")
       }
     }
 
@@ -181,7 +179,7 @@ class ValidatorSpec extends UnitSpec {
         validateName("#1 Agency Worldwide") shouldBe nameValidationError
         validateName("|Agency|") shouldBe nameValidationError
       }
-        "an ampersand is provided" in {
+      "an ampersand is provided" in {
         validateName("Agency & Co") shouldBe JsError(ValidationError("error.Ampersand"))
       }
 
