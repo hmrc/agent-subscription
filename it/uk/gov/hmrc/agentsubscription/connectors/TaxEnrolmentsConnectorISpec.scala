@@ -3,19 +3,23 @@ package uk.gov.hmrc.agentsubscription.connectors
 import java.net.URL
 
 import com.kenshoo.play.metrics.Metrics
+import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
+import uk.gov.hmrc.HttpVerbs
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
-import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
-import uk.gov.hmrc.http._
+import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, Upstream5xxResponse}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with TaxEnrolmentsStubs with MetricsTestSupport {
+class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with TaxEnrolmentsStubs with MetricsTestSupport with MockitoSugar {
   private lazy val wiremockUrl = new URL(s"http://localhost:$wireMockPort")
-  private lazy val connector = new TaxEnrolmentsConnector(wiremockUrl, wiremockUrl, WSHttp, app.injector.instanceOf[Metrics])
+  private lazy val auditConnector = mock[AuditConnector]
+  private lazy val httpVerbs = new HttpVerbs(auditConnector, "appName")
+  private lazy val connector = new TaxEnrolmentsConnector(wiremockUrl, wiremockUrl, httpVerbs, app.injector.instanceOf[Metrics])
 
   private implicit val hc = HeaderCarrier()
   private val arn = Arn("AARN1234567")

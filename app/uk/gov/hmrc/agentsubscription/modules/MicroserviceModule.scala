@@ -14,14 +14,31 @@
  * limitations under the License.
  */
 
+package uk.gov.hmrc.agentsubscription.modules
+
+/*
+ * Copyright 2018 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.net.URL
 
-import javax.inject.{ Inject, Provider, Singleton }
 import com.google.inject.AbstractModule
 import com.google.inject.name.Names.named
 import com.google.inject.name.{ Named, Names }
+import javax.inject.{ Inject, Provider, Singleton }
 import org.slf4j.MDC
-import play.api.{ Configuration, Environment, Logger }
 import uk.gov.hmrc.agentsubscription.connectors.{ DesConnector, MicroserviceAuthConnector }
 import uk.gov.hmrc.auth.core.AuthConnector
 import uk.gov.hmrc.http._
@@ -29,6 +46,7 @@ import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.config.ServicesConfig
 import uk.gov.hmrc.play.http.ws.WSHttp
+import play.api.{ Configuration, Environment, Logger }
 
 class MicroserviceModule(val environment: Environment, val configuration: Configuration) extends AbstractModule with ServicesConfig {
 
@@ -47,6 +65,8 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
 
     bind(classOf[HttpGet]).to(classOf[HttpVerbs])
     bind(classOf[HttpPost]).to(classOf[HttpVerbs])
+    bind(classOf[HttpPut]).to(classOf[HttpVerbs])
+    bind(classOf[HttpDelete]).to(classOf[HttpVerbs])
     bind(classOf[AuthConnector]).to(classOf[MicroserviceAuthConnector])
     bind(classOf[DesConnector])
 
@@ -80,9 +100,10 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
     override lazy val get = getConfString(propertyName, throw new RuntimeException(s"No configuration value found for '$propertyName'"))
   }
 
-  import scala.reflect.ClassTag
   import com.google.inject.binder.ScopedBindingBuilder
   import com.google.inject.name.Names.named
+
+  import scala.reflect.ClassTag
 
   private def bindServiceConfigProperty[A](propertyName: String)(implicit classTag: ClassTag[A], ct: ServiceConfigPropertyType[A]): ScopedBindingBuilder =
     ct.bindServiceConfigProperty(classTag.runtimeClass.asInstanceOf[Class[A]])(propertyName)
