@@ -3,19 +3,22 @@ package uk.gov.hmrc.agentsubscription.connectors
 import java.net.URL
 
 import com.kenshoo.play.metrics.Metrics
+import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
-import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
+import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with TaxEnrolmentsStubs with MetricsTestSupport {
+class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with TaxEnrolmentsStubs with MetricsTestSupport with MockitoSugar {
   private lazy val wiremockUrl = new URL(s"http://localhost:$wireMockPort")
-  private lazy val connector = new TaxEnrolmentsConnector(wiremockUrl, wiremockUrl, WSHttp, app.injector.instanceOf[Metrics])
+  private lazy val auditConnector = mock[AuditConnector]
+  private lazy val httpVerbs = app.injector.instanceOf[HttpPut with HttpPost with HttpGet with HttpDelete]
+  private lazy val connector = new TaxEnrolmentsConnector(wiremockUrl, wiremockUrl, httpVerbs, app.injector.instanceOf[Metrics])
 
   private implicit val hc = HeaderCarrier()
   private val arn = Arn("AARN1234567")
@@ -27,7 +30,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
     "return status 200 after successfully creating known facts" in {
       givenCleanMetricRegistry()
       createKnownFactsSucceeds(arn.value)
-      val result = await(connector.sendKnownFacts(arn.value,postcode))
+      val result = await(connector.sendKnownFacts(arn.value, postcode))
       result shouldBe 200
       verifyTimerExistsAndBeenUpdated("EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT")
     }
@@ -36,7 +39,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       createKnownFactsFails(arn.value)
 
       val exception = intercept[Upstream5xxResponse] {
-        await(connector.sendKnownFacts(arn.value,postcode))
+        await(connector.sendKnownFacts(arn.value, postcode))
       }
       exception.upstreamResponseCode shouldBe 500
     }
@@ -68,7 +71,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
     "return status 200 after a successful enrolment" in {
       givenCleanMetricRegistry()
       enrolmentSucceeds(groupId, arn.value)
-      val result = await(connector.enrol(groupId,arn,enrolmentRequest))
+      val result = await(connector.enrol(groupId, arn, enrolmentRequest))
       result shouldBe 200
       verifyTimerExistsAndBeenUpdated("EMAC-Enrol-HMRC-AS-AGENT-POST")
     }
@@ -77,7 +80,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       enrolmentFails(groupId, arn.value)
 
       val exception = intercept[Upstream5xxResponse] {
-        await(connector.enrol(groupId,arn,enrolmentRequest))
+        await(connector.enrol(groupId, arn, enrolmentRequest))
       }
 
       exception.upstreamResponseCode shouldBe 500

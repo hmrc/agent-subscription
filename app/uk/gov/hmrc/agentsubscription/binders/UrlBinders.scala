@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.controllers.binders
+package uk.gov.hmrc.agentsubscription.binders
 
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 

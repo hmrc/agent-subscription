@@ -1,7 +1,7 @@
 package uk.gov.hmrc.agentsubscription.support
 
-import org.scalatest.{BeforeAndAfterEach, Suite}
-import uk.gov.hmrc.mongo.{MongoSpecSupport, Awaiting => MongoAwaiting}
+import org.scalatest.{ BeforeAndAfterEach, Suite }
+import uk.gov.hmrc.mongo.{ MongoSpecSupport, Awaiting => MongoAwaiting }
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.global

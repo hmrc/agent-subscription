@@ -18,11 +18,12 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import org.scalatest.concurrent.Eventually._
 import play.api.libs.json._
+import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencyStatus
-import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DataStreamStub, DesStubs, TaxEnrolmentsStubs}
-import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
+import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DataStreamStub, DesStubs, TaxEnrolmentsStubs }
+import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegments
 
 import scala.language.postfixOps
@@ -32,6 +33,7 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
   private val utr = Utr("2000000000")
   private val postcode = "AA1 1AA"
   val arn = "ARN0001"
+  implicit val ws = app.injector.instanceOf[WSClient]
 
   "GET of /registration/:utr/postcode/:postcode" should {
     "audit a CheckAgencyStatus event" in {

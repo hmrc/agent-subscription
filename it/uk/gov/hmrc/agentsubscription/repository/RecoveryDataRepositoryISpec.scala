@@ -5,7 +5,7 @@ import org.scalatestplus.play.OneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.connectors.AuthIds
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.agentsubscription.support.MongoApp
@@ -54,12 +54,12 @@ class RecoveryDataRepositoryISpec extends UnitSpec with OneAppPerSuite with Mong
   "RecoveryDataRepository" should {
     "create a record if Upsert KnownFacts failed" in {
       val result = await(repo.create(authIds, arn, subscriptionRequestBody, "Failed to Upsert Known Facts"))
-      result shouldBe ()
+      result shouldBe (())
     }
 
     "create a record if Allocate Enrolment failed" in {
       val result = await(repo.create(authIds, arn, subscriptionRequestBody, "Failed to Enrol to HMRC-AS-AGENT"))
-      result shouldBe ()
+      result shouldBe (())
     }
   }
 }

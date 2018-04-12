@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.play.encoding
 
-import org.scalatest.{Matchers, WordSpec}
+import org.scalatest.{ Matchers, WordSpec }
 
 class UriPathEncodingSpec extends WordSpec with Matchers {
   "encodePathSegments" should {

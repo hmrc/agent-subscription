@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentsubscription.auth
 
 import java.net.URL
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{ Format, Json }
 
 case class Enrolment(key: String)
 

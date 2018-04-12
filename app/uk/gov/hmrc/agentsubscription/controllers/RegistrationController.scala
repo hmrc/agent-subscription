@@ -17,15 +17,13 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import javax.inject._
-
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{AnyContent, Request, Result}
-import uk.gov.hmrc.agentsubscription.connectors.{AuthActions, Provider}
+import play.api.mvc.{ AnyContent, Request, Result }
+import uk.gov.hmrc.agentsubscription.connectors.{ AuthActions, MicroserviceAuthConnector, Provider }
 import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
@@ -34,12 +32,10 @@ import uk.gov.hmrc.play.microservice.controller.BaseController
 import scala.concurrent.Future
 
 @Singleton
-class RegistrationController @Inject()(service: RegistrationService)
-                                      (implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
+class RegistrationController @Inject() (service: RegistrationService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
-  private[controllers] def register(utr: Utr, postcode: String)
-                                   (implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Future[Result] = {
+  private[controllers] def register(utr: Utr, postcode: String)(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Future[Result] = {
     if (!Utr.isValid(utr.value))
       badRequest("INVALID_UTR")
     else if (!validPostcode(postcode))
@@ -55,11 +51,9 @@ class RegistrationController @Inject()(service: RegistrationService)
     Future successful BadRequest(Json.obj("code" -> code))
   }
 
-  def getRegistration(utr: Utr, postcode: String) = affinityGroupAndCredentials {
-    implicit request =>
-      implicit provider => {
-        register(utr, postcode)
-      }
+  def getRegistration(utr: Utr, postcode: String) = affinityGroupAndCredentials { implicit request => implicit provider => {
+    register(utr, postcode)
+  }
   }
 
   private def validPostcode(postcode: String): Boolean = {

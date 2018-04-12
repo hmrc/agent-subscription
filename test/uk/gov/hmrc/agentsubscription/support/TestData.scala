@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.agentsubscription.support
 
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{ JsValue, Json }
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.auth.core.{AffinityGroup, Enrolment, EnrolmentIdentifier, Enrolments}
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, Retrievals, ~}
+import uk.gov.hmrc.auth.core.{ AffinityGroup, Enrolment, EnrolmentIdentifier, Enrolments }
+import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, Retrievals, ~ }
 
 import scala.concurrent.Future
 
@@ -31,8 +31,7 @@ trait TestData {
 
   val agentEnrolment = Set(
     Enrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)), state = "",
-      delegatedAuthRule = None)
-  )
+      delegatedAuthRule = None))
 
   val agentAffinityAndEnrolments: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]] = {
     val retrievals = new ~(new ~(new ~(
@@ -59,11 +58,11 @@ trait TestData {
   val failedStubForAgent = Future failed new NullPointerException
 
   val validAgentAffinity: Future[~[Option[AffinityGroup], Credentials]] =
-    Future successful new ~[Option[AffinityGroup], Credentials](Some(AffinityGroup.Agent), Credentials("credId","credType"))
+    Future successful new ~[Option[AffinityGroup], Credentials](Some(AffinityGroup.Agent), Credentials("credId", "credType"))
   val invalidAgentAffinity: Future[~[Option[AffinityGroup], Credentials]] =
-    Future successful new ~[Option[AffinityGroup], Credentials](Some(AffinityGroup.Individual), Credentials("credId","credType"))
+    Future successful new ~[Option[AffinityGroup], Credentials](Some(AffinityGroup.Individual), Credentials("credId", "credType"))
   val noAffinity: Future[~[Option[AffinityGroup], Credentials]] =
-    Future successful new ~[Option[AffinityGroup], Credentials](None, Credentials("credId","credType"))
+    Future successful new ~[Option[AffinityGroup], Credentials](None, Credentials("credId", "credType"))
 
   val fakeRequestJson: FakeRequest[JsValue] = FakeRequest().withBody(Json.obj("" -> ""))
   val fakeRequestAny: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()

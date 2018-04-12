@@ -16,15 +16,15 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import org.mockito.ArgumentMatchers.{any, anyString, eq => eqs, contains}
-import org.mockito.Mockito.{verify, when}
+import org.mockito.ArgumentMatchers.{ any, anyString, eq => eqs, contains }
+import org.mockito.Mockito.{ verify, when }
 import org.scalatest.concurrent.Eventually
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{ JsObject, Json }
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
-import uk.gov.hmrc.agentsubscription.connectors.{EnrolmentRequest, Address => _, _}
+import uk.gov.hmrc.agentsubscription.connectors.{ EnrolmentRequest, Address => _, _ }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
@@ -33,7 +33,7 @@ import uk.gov.hmrc.play.http.GatewayTimeoutException
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
@@ -136,8 +136,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
             "testagency@example.com"))
 
         val thrown = intercept[IllegalStateException](
-          await(service.subscribeAgentToMtd(subscriptionRequest, authIds))
-        ).getMessage
+          await(service.subscribeAgentToMtd(subscriptionRequest, authIds))).getMessage
 
         thrown shouldBe "Failed to add known facts and enrol in EMAC for utr: 4000000009 and arn: ARN0001"
 
@@ -169,7 +168,6 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       }
 
     }
-
 
   }
 
@@ -206,7 +204,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES1"))
 
     when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
-      .thenReturn(Future successful())
+      .thenReturn(Future successful (()))
   }
 
   private def subscriptionDeleteKnownFactsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
@@ -224,7 +222,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES7"))
 
     when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
-    .thenReturn(Future successful())
+      .thenReturn(Future successful (()))
   }
 
   private def subscriptionCreateKnownFactsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
@@ -245,7 +243,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES6"))
 
     when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
-      .thenReturn(Future successful())
+      .thenReturn(Future successful (()))
   }
 
   private def subscriptionEnrolmentsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {

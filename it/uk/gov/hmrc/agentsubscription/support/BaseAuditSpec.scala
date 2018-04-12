@@ -7,6 +7,5 @@ abstract class BaseAuditSpec extends BaseISpec {
     .configure(
       "auditing.enabled" -> true,
       "auditing.consumer.baseUri.host" -> wireMockHost,
-      "auditing.consumer.baseUri.port" -> wireMockPort
-    )
+      "auditing.consumer.baseUri.port" -> wireMockPort)
 }

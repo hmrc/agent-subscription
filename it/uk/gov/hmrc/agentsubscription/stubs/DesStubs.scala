@@ -42,9 +42,7 @@ trait DesStubs {
       .willReturn(
         aResponse()
           .withStatus(400)
-          .withBody(invalidUtrResponse)
-      )
-    )
+          .withBody(invalidUtrResponse)))
   }
 
   def subscriptionSucceeds(utr: Utr, request: SubscriptionRequest): Unit = {
@@ -56,9 +54,9 @@ trait DesStubs {
            |  "agencyName": "${request.agency.name}",
            |  "agencyAddress": {
            |    "addressLine1": "${request.agency.address.addressLine1}",
-           |    ${request.agency.address.addressLine2.map (l => s""""addressLine2":"$l",""") getOrElse ""}
-           |    ${request.agency.address.addressLine3.map (l => s""""addressLine3":"$l",""") getOrElse ""}
-           |    ${request.agency.address.addressLine4.map (l => s""""addressLine4":"$l",""") getOrElse ""}
+           |    ${request.agency.address.addressLine2.map(l => s""""addressLine2":"$l",""") getOrElse ""}
+           |    ${request.agency.address.addressLine3.map(l => s""""addressLine3":"$l",""") getOrElse ""}
+           |    ${request.agency.address.addressLine4.map(l => s""""addressLine4":"$l",""") getOrElse ""}
            |    "postalCode": "${request.agency.address.postcode}",
            |    "countryCode": "${request.agency.address.countryCode}"
            |  },
@@ -125,7 +123,6 @@ trait DesStubs {
        |  "reason": "$reason"
        |}
      """.stripMargin
-
 
   private def registrationRequest(utr: Utr, isAnAgent: Boolean) =
     post(urlEqualTo(s"/registration/individual/utr/${utr.value}"))
@@ -217,9 +214,9 @@ trait DesStubs {
       .withRequestBody(equalToJson(
         s"""
            |{
+           |  "requiresNameMatch": false,
            |  "regime": "ITSA",
-           |  "requiresNameMatch": "false",
-           |  "isAnASAgent": true
+           |  "isAnASAgent": false
            |}
               """.stripMargin, true, true))
       .willReturn(aResponse()

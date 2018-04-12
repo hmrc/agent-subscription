@@ -1,6 +1,5 @@
 package uk.gov.hmrc.agentsubscription.stubs
 
-
 import com.github.tomakehurst.wiremock.client.WireMock._
 import uk.gov.hmrc.agentsubscription.support.WireMockSupport
 
@@ -76,7 +75,7 @@ trait AuthStub {
                        | ]
                        |}
        """.stripMargin)))
-      this
+    this
   }
 
   def requestIsAuthenticatedWithNoEnrolments(): AuthStub = {
@@ -106,7 +105,7 @@ trait AuthStub {
                        |  "allEnrolments": []
                        |}
        """.stripMargin)))
-      this
+    this
   }
 
   def andIsAnAgent(): AuthStub = {
@@ -164,7 +163,7 @@ trait AuthStub {
     stubFor(get(urlPathEqualTo(s"/auth/oid/$oid/enrolments"))
       .willReturn(aResponse()
         .withStatus(200)
-        .withBody( s"""
+        .withBody(s"""
                      |[{"key": "IR-SA-AGENT"}]
         """.stripMargin)))
     this

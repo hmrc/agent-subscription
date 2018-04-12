@@ -1,18 +1,20 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
-import play.api.libs.json.Json.{stringify, toJson}
+import play.api.libs.json.Json.{ stringify, toJson }
 import play.api.libs.json._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{KnownFacts, SubscriptionRequest}
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, TaxEnrolmentsStubs}
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentsubscription.model.{ KnownFacts, SubscriptionRequest }
+import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
+import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 import com.github.tomakehurst.wiremock.client.WireMock._
+import play.api.libs.ws.WSClient
 
-class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs{
+class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs {
   private val utr = Utr("7000000002")
 
   val arn = "ARN0001"
   val groupId = "groupId"
+  implicit val ws = app.injector.instanceOf[WSClient]
 
   "creating a subscription" should {
     val agency = __ \ "agency"
@@ -145,7 +147,6 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         result.status shouldBe 400
       }
-
 
       "name contains invalid characters" in {
         requestIsAuthenticated()
@@ -283,7 +284,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
         allocatedPrincipalEnrolmentNotExists(arn)
         createKnownFactsSucceeds(arn)
-        enrolmentFails(groupId,arn)
+        enrolmentFails(groupId, arn)
 
         val result = await(doSubscriptionRequest())
 
@@ -292,9 +293,9 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
   }
 
-  private def doSubscriptionRequest(request:String = subscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
+  private def doSubscriptionRequest(request: String = subscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
 
-  private def removeFields(fields: Seq[JsPath]): String  = {
+  private def removeFields(fields: Seq[JsPath]): String = {
     val request = Json.parse(subscriptionRequest).as[JsObject]
     val filtered: JsObject = removeFields(request, fields)
 
@@ -306,7 +307,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     jsObject.transform(transformer).get
   }
 
-  private def replaceFields(fields: Seq[(JsPath, String, String)]): String  = {
+  private def replaceFields(fields: Seq[(JsPath, String, String)]): String = {
     val request = Json.parse(subscriptionRequest).as[JsObject]
     val filtered: JsObject = replaceFields(request, fields)
 
@@ -315,11 +316,11 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
   private def replaceFields(jsObject: JsObject, fields: Seq[(JsPath, String, String)]): JsObject = {
     val transformer = fields.map(field => field._1.json.update(
-      __.read[JsObject].map(o => o ++ Json.obj(field._2 -> field._3))
-    )).reduce((a, b) => a andThen b)
+      __.read[JsObject].map(o => o ++ Json.obj(field._2 -> field._3)))).reduce((a, b) => a andThen b)
     jsObject.transform(transformer) match {
       case s: JsSuccess[JsObject] => s.get
-      case e: JsError => println (e)
+      case e: JsError =>
+        println(e)
         throw new RuntimeException(s"Unable to transform JSON: $e")
     }
   }

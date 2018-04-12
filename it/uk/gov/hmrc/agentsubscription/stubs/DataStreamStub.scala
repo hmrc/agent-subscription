@@ -8,15 +8,13 @@ object DataStreamStub {
   def writeAuditSucceeds(): Unit = {
     stubFor(post(urlEqualTo(auditUrl))
       .willReturn(aResponse()
-        .withStatus(204)
-      ))
+        .withStatus(204)))
   }
 
   def writeAuditMergedSucceeds(): Unit = {
     stubFor(post(urlEqualTo(auditUrl + "/merged"))
       .willReturn(aResponse()
-        .withStatus(204)
-      ))
+        .withStatus(204)))
   }
 
   def verifyAuditRequestSent(event: AgentSubscriptionEvent, tags: JsObject, detail: JsObject) = {
@@ -27,9 +25,7 @@ object DataStreamStub {
            |  "auditType": "$event",
            |  "tags": ${tags},
            |  "detail": ${detail}
-           |}"""
-      ))
-    )
+           |}""")))
   }
 
   private def similarToJson(value: String) = equalToJson(value.stripMargin, true, true)

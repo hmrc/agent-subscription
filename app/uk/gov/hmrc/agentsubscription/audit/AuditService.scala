@@ -17,7 +17,6 @@
 package uk.gov.hmrc.agentsubscription.audit
 
 import javax.inject.{Inject, Singleton}
-
 import play.api.libs.json.{JsObject, JsString}
 import play.api.mvc.Request
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
@@ -34,15 +33,13 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
   def auditEvent(
     event: AgentSubscriptionEvent,
     transactionName: String,
-    extraDetail: JsObject)
-    (implicit hc: HeaderCarrier, request: Request[Any]): Unit =
+    extraDetail: JsObject)(implicit hc: HeaderCarrier, request: Request[Any]): Unit =
     send(createEvent(event, transactionName, extraDetail))
 
   private def createEvent(
     event: AgentSubscriptionEvent,
     transactionName: String,
-    extraDetail: JsObject)
-    (implicit hc: HeaderCarrier, request: Request[Any]) =
+    extraDetail: JsObject)(implicit hc: HeaderCarrier, request: Request[Any]) =
     ExtendedDataEvent(
       auditSource = "agent-subscription",
       auditType = event.toString,

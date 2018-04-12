@@ -19,28 +19,26 @@ package uk.gov.hmrc.agentsubscription.model
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
-import uk.gov.hmrc.agentmtdidentifiers.model.{Utr, Arn}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Utr, Arn }
 
 object Address {
   implicit val writes: Writes[Address] = Json.writes[Address]
   implicit val reads: Reads[Address] = (
-      (__ \ "addressLine1").read[String](addressValidation) and
-      (__ \ "addressLine2").readNullable[String](addressValidation) and
-      (__ \ "addressLine3").readNullable[String](addressValidation) and
-      (__ \ "addressLine4").readNullable[String](addressValidation) and
-      (__ \ "postcode").read[String](postcodeValidation) and
-      (__ \ "countryCode").read[String]
-  )(Address.apply _)
+    (__ \ "addressLine1").read[String](addressValidation) and
+    (__ \ "addressLine2").readNullable[String](addressValidation) and
+    (__ \ "addressLine3").readNullable[String](addressValidation) and
+    (__ \ "addressLine4").readNullable[String](addressValidation) and
+    (__ \ "postcode").read[String](postcodeValidation) and
+    (__ \ "countryCode").read[String])(Address.apply _)
 }
 
 object Agency {
   implicit val writes: Writes[Agency] = Json.writes[Agency]
   implicit val reads: Reads[Agency] = (
-      (__ \ "name").read[String](nameValidation) and
-      (__ \ "address").read[Address] and
-      (__ \ "telephone").read[String](telephoneNumberValidation) and
-      (__ \ "email").read[String](email)
-  )(Agency.apply _)
+    (__ \ "name").read[String](nameValidation) and
+    (__ \ "address").read[Address] and
+    (__ \ "telephone").read[String](telephoneNumberValidation) and
+    (__ \ "email").read[String](email))(Agency.apply _)
 }
 
 object KnownFacts {
@@ -53,30 +51,29 @@ object SubscriptionRequest {
   implicit val reads: Reads[SubscriptionRequest] = (
     (__ \ "utr").read[Utr](verifying[Utr](utr => Utr.isValid(utr.value))) and
     (__ \ "knownFacts").read[KnownFacts] and
-    (__ \ "agency").read[Agency]
-  )(SubscriptionRequest.apply _)
+    (__ \ "agency").read[Agency])(SubscriptionRequest.apply _)
 }
 
-case class Address(addressLine1: String,
-                   addressLine2: Option[String],
-                   addressLine3: Option[String],
-                   addressLine4: Option[String],
-                   postcode: String,
-                   countryCode: String
-                  )
+case class Address(
+  addressLine1: String,
+  addressLine2: Option[String],
+  addressLine3: Option[String],
+  addressLine4: Option[String],
+  postcode: String,
+  countryCode: String)
 
-case class Agency(name: String,
-                  address: Address,
-                  telephone: String,
-                  email: String
-                 )
+case class Agency(
+  name: String,
+  address: Address,
+  telephone: String,
+  email: String)
 
 case class KnownFacts(postcode: String)
 
-case class SubscriptionRequest(utr: Utr,
-                               knownFacts: KnownFacts,
-                               agency: Agency
-                               )
+case class SubscriptionRequest(
+  utr: Utr,
+  knownFacts: KnownFacts,
+  agency: Agency)
 
 case class SubscriptionResponse(arn: Arn)
 object SubscriptionResponse {

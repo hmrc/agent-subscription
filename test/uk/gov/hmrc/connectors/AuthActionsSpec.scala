@@ -18,18 +18,17 @@ package uk.gov.hmrc.connectors
 
 import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{reset, when}
+import org.mockito.Mockito.{ reset, when }
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import play.api.http.Status._
 import play.api.libs.json.JsValue
 import play.api.mvc.Results.Ok
-import play.api.mvc.{AnyContent, Request, Result}
-import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.connectors.{AuthActions, AuthIds, Provider}
+import play.api.mvc.{ AnyContent, Request, Result }
+import uk.gov.hmrc.agentsubscription.connectors.{ AuthActions, AuthIds, MicroserviceAuthConnector, Provider }
 import uk.gov.hmrc.agentsubscription.support.TestData
-import uk.gov.hmrc.auth.core.{authorise, _}
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
+import uk.gov.hmrc.auth.core.{ authorise, _ }
+import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, ~ }
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
@@ -46,7 +45,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
   val subscriptionAction: SubscriptionAuthAction = { implicit request => implicit authIds => Future successful Ok }
   val registrationAction: RegistrationAuthAction = { implicit request => implicit provider => Future successful Ok }
 
-  private def agentAuthStub(returnValue:  Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]]) =
+  private def agentAuthStub(returnValue: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]]) =
     when(mockMicroserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]]]())(any(), any())).thenReturn(returnValue)
 
   override def beforeEach(): Unit = reset(mockMicroserviceAuthConnector)
@@ -124,7 +123,6 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
     "return UNAUTHORISED when auth throws an error" in {
       when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
         .thenReturn(Future failed new NullPointerException)
-
 
       val response: Result = await(mockAuthConnector.affinityGroupAndCredentials(registrationAction).apply(fakeRequestAny))
 

@@ -16,13 +16,16 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
+import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, TaxEnrolmentsStubs}
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
+import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 
 import scala.language.postfixOps
 
 class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolmentsStubs with AuthStub {
+
+  implicit val ws = app.injector.instanceOf[WSClient]
 
   "GET of /registration/:utr/postcode/:postcode" should {
     "return a 401 when the user is not authenticated" in {
@@ -110,8 +113,8 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       individualRegistrationExists(Utr("7000000002"), false)
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
-      (response.json \ "isSubscribedToAgentServices" ).as[Boolean] shouldBe false
-      (response.json \ "taxpayerName" ).as[String] shouldBe "First Last"
+      (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
+      (response.json \ "taxpayerName").as[String] shouldBe "First Last"
     }
 
     "return 200 when des returns no organisation name" in {
@@ -119,7 +122,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       registrationExistsWithNoOrganisationName(Utr("7000000002"), false)
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
-      (response.json \ "isSubscribedToAgentServices" ).as[Boolean] shouldBe false
+      (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
     }
   }
 }

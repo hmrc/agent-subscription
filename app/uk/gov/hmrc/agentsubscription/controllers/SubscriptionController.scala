@@ -17,37 +17,31 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import javax.inject._
-
 import com.kenshoo.play.metrics.Metrics
-import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
-import play.api.mvc._
-import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.connectors.AuthActions
-import uk.gov.hmrc.agentsubscription.model.{SubscriptionRequest, SubscriptionResponse}
-import uk.gov.hmrc.agentsubscription.service.{EnrolmentAlreadyAllocated, SubscriptionService}
+import uk.gov.hmrc.agentsubscription.connectors.{ AuthActions, MicroserviceAuthConnector }
+import uk.gov.hmrc.agentsubscription.model.{ SubscriptionRequest, SubscriptionResponse }
+import uk.gov.hmrc.agentsubscription.service.{ EnrolmentAlreadyAllocated, SubscriptionService }
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
 @Singleton
-class SubscriptionController @Inject()(subscriptionService: SubscriptionService)
-                                      (implicit metrics: Metrics,
-                                       microserviceAuthConnector: MicroserviceAuthConnector)
+class SubscriptionController @Inject() (subscriptionService: SubscriptionService)(implicit
+  metrics: Metrics,
+  microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
-  def createSubscription = affinityGroupAndEnrolments {
-    implicit request =>
-      implicit authIds =>
-      implicit val hc = fromHeadersAndSession(request.headers, None)
-        withJsonBody[SubscriptionRequest] { subscriptionRequest =>
-          subscriptionService.subscribeAgentToMtd(subscriptionRequest, authIds).map {
-            case Some(a) => Created(toJson(SubscriptionResponse(a)))
-            case None => Forbidden
-          }.recover {
-            case _: EnrolmentAlreadyAllocated => Conflict
-            case _: IllegalStateException => InternalServerError
-          }
-        }
+  def createSubscription = affinityGroupAndEnrolments { implicit request => implicit authIds =>
+    implicit val hc = fromHeadersAndSession(request.headers, None)
+    withJsonBody[SubscriptionRequest] { subscriptionRequest =>
+      subscriptionService.subscribeAgentToMtd(subscriptionRequest, authIds).map {
+        case Some(a) => Created(toJson(SubscriptionResponse(a)))
+        case None => Forbidden
+      }.recover {
+        case _: EnrolmentAlreadyAllocated => Conflict
+        case _: IllegalStateException => InternalServerError
+      }
+    }
   }
 }

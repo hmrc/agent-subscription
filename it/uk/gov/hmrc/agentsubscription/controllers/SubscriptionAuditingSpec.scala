@@ -2,17 +2,19 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
+import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
-import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, TaxEnrolmentsStubs}
-import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
+import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
+import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
 
-class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs{
+class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs {
   private val utr = Utr("7000000002")
 
   val arn = "ARN0001"
   val groupId = "groupId"
+  implicit val ws = app.injector.instanceOf[WSClient]
 
   "creating a subscription" should {
     import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
@@ -28,7 +30,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       allocatedPrincipalEnrolmentNotExists(arn)
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
-      enrolmentSucceeds(groupId,arn)
+      enrolmentSucceeds(groupId, arn)
 
       val result = await(doSubscriptionRequest(subscriptionRequest(utr)))
 
@@ -43,7 +45,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
     }
   }
 
-  private def doSubscriptionRequest(request:String) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
+  private def doSubscriptionRequest(request: String) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
 
   private def subscriptionRequest(utr: Utr): String =
     s"""

@@ -20,6 +20,6 @@ import play.api.libs.json.Json.format
 
 case class RegistrationDetails(isSubscribedToAgentServices: Boolean, taxpayerName: Option[String])
 
-object RegistrationDetails{
+object RegistrationDetails {
   implicit val registrationDetailsObjectFormat = format[RegistrationDetails]
 }

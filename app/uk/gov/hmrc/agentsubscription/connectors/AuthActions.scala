@@ -16,20 +16,19 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 
 import com.kenshoo.play.metrics.Metrics
 import play.api.Logger
-import play.api.libs.json.{JsValue, Json, OFormat}
-import play.api.mvc.{Result, _}
+import play.api.libs.json.{ JsValue, Json, OFormat }
+import play.api.mvc.{ Result, _ }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.agentsubscription.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.controllers.ErrorResult._
 import uk.gov.hmrc.auth.core
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
-import uk.gov.hmrc.auth.core.retrieve.Retrievals.{affinityGroup, allEnrolments, credentials, groupIdentifier}
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
-import uk.gov.hmrc.auth.core.{Enrolment, _}
+import uk.gov.hmrc.auth.core.retrieve.Retrievals.{ affinityGroup, allEnrolments, credentials, groupIdentifier }
+import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
+import uk.gov.hmrc.auth.core.{ Enrolment, _ }
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -45,7 +44,7 @@ object AuthIds {
 }
 
 @Singleton
-class AuthActions @Inject()(metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
+class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
   extends HttpAPIMonitor with AuthorisedFunctions with BaseController {
   override def authConnector: core.AuthConnector = microserviceAuthConnector
 

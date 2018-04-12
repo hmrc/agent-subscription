@@ -7,22 +7,23 @@ import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 import org.scalatest.concurrent.Eventually
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{ JsValue, Json }
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
-import uk.gov.hmrc.agentsubscription.WSHttp
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
-import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
+import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
+import uk.gov.hmrc.play.http.ws.WSPost
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with DesStubs with MetricsTestSupport {
+class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with DesStubs with MetricsTestSupport with MockitoSugar {
   private implicit val hc = HeaderCarrier()
   val utr = Utr("1234567890")
 
@@ -30,12 +31,14 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
   private val environment = "des-env"
 
   override protected def expectedBearerToken = Some(bearerToken)
+
   override protected def expectedEnvironment = Some(environment)
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
+  private lazy val httpPost: HttpPost = app.injector.instanceOf[HttpPost]
 
   private lazy val connector: DesConnector =
-    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), WSHttp, metrics)
+    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), httpPost, metrics)
 
   "subscribeToAgentServices" should {
     "return an ARN when subscription is successful" in {
@@ -128,7 +131,6 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       registration shouldBe Some(DesRegistrationResponse(None, isAnASAgent = true, None, None, None))
     }
 
-
     "not return a registration for a UTR that is unknown to DES" in {
       registrationDoesNotExist(utr)
 
@@ -157,25 +159,28 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     }
   }
 
-  def request = DesSubscriptionRequest(agencyName = "My Agency",
-                                       agencyAddress =Address(addressLine1 = "1 Some Street", addressLine2 = Some("MyTown"), postalCode = "AA1 1AA", countryCode = "GB"),
-                                       agencyEmail = "agency@example.com",
-                                       telephoneNumber = "0123 456 7890")
+  def request = DesSubscriptionRequest(
+    agencyName = "My Agency",
+    agencyAddress = Address(addressLine1 = "1 Some Street", addressLine2 = Some("MyTown"), postalCode = "AA1 1AA", countryCode = "GB"),
+    agencyEmail = "agency@example.com",
+    telephoneNumber = "0123 456 7890")
 
+  trait MockAuditingContext extends MockitoSugar with Eventually {
+    private val mockAuditConnector = mock[AuditConnector]
 
-}
+    val wsHttp = new HttpPost with WSPost with HttpAuditing {
+      val auditConnector = mockAuditConnector
+      val appName = "agent-subscription"
+      override val hooks = Seq(AuditingHook)
+    }
 
-trait MockAuditingContext extends MockitoSugar with Eventually {
-  private val mockAuditConnector = mock[AuditConnector]
-  val wsHttp = new WSHttp {
-    override lazy val auditConnector = mockAuditConnector
+    def capturedEvent(): MergedDataEvent = {
+      eventually[MergedDataEvent]({
+        val captor = ArgumentCaptor.forClass(classOf[MergedDataEvent])
+        verify(mockAuditConnector).sendMergedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
+        captor.getValue
+      })
+    }
   }
 
-  def capturedEvent(): MergedDataEvent = {
-    eventually[MergedDataEvent]({
-      val captor = ArgumentCaptor.forClass(classOf[MergedDataEvent])
-      verify(mockAuditConnector).sendMergedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
-      captor.getValue
-    })
-  }
 }
