@@ -54,12 +54,12 @@ class RecoveryDataRepositoryISpec extends UnitSpec with OneAppPerSuite with Mong
   "RecoveryDataRepository" should {
     "create a record if Upsert KnownFacts failed" in {
       val result = await(repo.create(authIds, arn, subscriptionRequestBody, "Failed to Upsert Known Facts"))
-      result shouldBe ()
+      result shouldBe (())
     }
 
     "create a record if Allocate Enrolment failed" in {
       val result = await(repo.create(authIds, arn, subscriptionRequestBody, "Failed to Enrol to HMRC-AS-AGENT"))
-      result shouldBe ()
+      result shouldBe (())
     }
   }
 }
