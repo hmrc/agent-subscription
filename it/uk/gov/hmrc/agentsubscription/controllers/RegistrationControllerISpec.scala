@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
+import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
@@ -23,6 +24,8 @@ import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 import scala.language.postfixOps
 
 class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolmentsStubs with AuthStub {
+
+  implicit val ws = app.injector.instanceOf[WSClient]
 
   "GET of /registration/:utr/postcode/:postcode" should {
     "return a 401 when the user is not authenticated" in {

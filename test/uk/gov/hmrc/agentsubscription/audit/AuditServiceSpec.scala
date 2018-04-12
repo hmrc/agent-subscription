@@ -20,7 +20,7 @@ import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{ verify, when }
 import org.scalatest.concurrent.Eventually
-import org.scalatest.mock.MockitoSugar
+import org.scalatest.mockito.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
@@ -43,7 +43,6 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         authorization = Some(Authorization("dummy bearer token")),
         sessionId = Some(SessionId("dummy session id")),
         requestId = Some(RequestId("dummy request id")),
-        trueClientIp = Some("1.1.1.1"),
         trueClientPort = Some("12345"))
 
       val detail = Json.obj(
@@ -78,7 +77,6 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         sentEvent.tags("X-Session-ID") shouldBe "dummy session id"
         sentEvent.tags("X-Request-ID") shouldBe "dummy request id"
 
-        sentEvent.tags("clientIP") shouldBe "1.1.1.1"
         sentEvent.tags("clientPort") shouldBe "12345"
       }
     }

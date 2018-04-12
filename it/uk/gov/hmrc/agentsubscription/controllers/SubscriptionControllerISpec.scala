@@ -7,12 +7,14 @@ import uk.gov.hmrc.agentsubscription.model.{ KnownFacts, SubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 import com.github.tomakehurst.wiremock.client.WireMock._
+import play.api.libs.ws.WSClient
 
 class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs {
   private val utr = Utr("7000000002")
 
   val arn = "ARN0001"
   val groupId = "groupId"
+  implicit val ws = app.injector.instanceOf[WSClient]
 
   "creating a subscription" should {
     val agency = __ \ "agency"

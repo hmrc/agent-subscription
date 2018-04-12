@@ -2,6 +2,7 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
+import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
@@ -13,6 +14,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
 
   val arn = "ARN0001"
   val groupId = "groupId"
+  implicit val ws = app.injector.instanceOf[WSClient]
 
   "creating a subscription" should {
     import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
