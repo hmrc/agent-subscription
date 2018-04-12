@@ -214,9 +214,9 @@ trait DesStubs {
       .withRequestBody(equalToJson(
         s"""
            |{
+           |  "requiresNameMatch": false,
            |  "regime": "ITSA",
-           |  "requiresNameMatch": "false",
-           |  "isAnASAgent": true
+           |  "isAnASAgent": false
            |}
               """.stripMargin, true, true))
       .willReturn(aResponse()

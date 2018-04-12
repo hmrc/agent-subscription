@@ -9,14 +9,15 @@ import org.mockito.Mockito.verify
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
-import play.api.libs.json.{JsValue, Json}
-import uk.gov.hmrc.HttpVerbs
+import play.api.libs.json.{ JsValue, Json }
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
-import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
+import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
+import uk.gov.hmrc.play.http.ws.WSPost
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext
@@ -30,16 +31,14 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
   private val environment = "des-env"
 
   override protected def expectedBearerToken = Some(bearerToken)
+
   override protected def expectedEnvironment = Some(environment)
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
-  private lazy val auditConnector = mock[AuditConnector]
-
-  private lazy val httpVerbs = new HttpVerbs(auditConnector, "appName")
-
+  private lazy val httpPost: HttpPost = app.injector.instanceOf[HttpPost]
 
   private lazy val connector: DesConnector =
-    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), httpVerbs, metrics)
+    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), httpPost, metrics)
 
   "subscribeToAgentServices" should {
     "return an ARN when subscription is successful" in {
@@ -166,17 +165,22 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     agencyEmail = "agency@example.com",
     telephoneNumber = "0123 456 7890")
 
-}
+  trait MockAuditingContext extends MockitoSugar with Eventually {
+    private val mockAuditConnector = mock[AuditConnector]
 
-trait MockAuditingContext extends MockitoSugar with Eventually {
-  private val mockAuditConnector = mock[AuditConnector]
-  val wsHttp = new HttpVerbs(mockAuditConnector, "appName")
+    val wsHttp = new HttpPost with WSPost with HttpAuditing {
+      val auditConnector = mockAuditConnector
+      val appName = "agent-subscription"
+      override val hooks = Seq(AuditingHook)
+    }
 
-  def capturedEvent(): MergedDataEvent = {
-    eventually[MergedDataEvent]({
-      val captor = ArgumentCaptor.forClass(classOf[MergedDataEvent])
-      verify(mockAuditConnector).sendMergedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
-      captor.getValue
-    })
+    def capturedEvent(): MergedDataEvent = {
+      eventually[MergedDataEvent]({
+        val captor = ArgumentCaptor.forClass(classOf[MergedDataEvent])
+        verify(mockAuditConnector).sendMergedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
+        captor.getValue
+      })
+    }
   }
+
 }
