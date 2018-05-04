@@ -2,8 +2,9 @@
 
 [![Build Status](https://travis-ci.org/hmrc/agent-subscription.svg)](https://travis-ci.org/hmrc/agent-subscription) [ ![Download](https://api.bintray.com/packages/hmrc/releases/agent-subscription/images/download.svg) ](https://bintray.com/hmrc/releases/agent-subscription/_latestVersion)
 
-This is a backend microservice whose domain is Subscriptions to Agent Services 
-following the ROSM (Register Once Subscribe Many) pattern.
+This is a backend microservice for agent-subscription-frontend. It allows for an agent to proceed through the subscription
+journey to gain an HMRC-AS-AGENT enrolment, this will allow them to access the functionality of Agent Services and easily 
+interact with their clients. The domain is Subscriptions to Agent Services following the ROSM (Register Once Subscribe Many) pattern.
 
 ## Running the tests
 
@@ -13,11 +14,9 @@ following the ROSM (Register Once Subscribe Many) pattern.
 
     sm --start AGENT_MTD -f
     sm --stop AGENT_SUBSCRIPTION
-    ./run-local
+    sbt run
 
-## Proposed API
-
-We're still building this service so some/all of the API described here might not be implemented yet!
+## APIs
 
 ### Check Agent Services Subscription Status for a Taxpayer
 
@@ -32,6 +31,9 @@ Possible responses:
 #### Not Found
 
 HTTP status 404 with no body will be returned if no business partner found for given known facts (UTR and postcode)
+
+#### Bad Request
+Return 400 if the UTR or postcode are invalid
 
 #### OK
 
@@ -56,25 +58,42 @@ Notes:
 
     POST /agent-subscription/subscription
     
+This API allows for an agent to subscribe to Agent Services using their details    
+    
 Request body:
 
     {
       "utr": "<SA or CT UTR>",
       "knownFacts": {
-        "registration": {
-          "address": {
             "postcode": "<postcode of the agency's registered taxpayer address (NOT their agency address)>"
-          }
-        }
       }
       "agency": {
+        "name": "AgencyName"
         "address": {
+          "addressLine1": "Line1"
+          "addressLine2": "Line2"
+          "addressLine3": "Line3"
+          "addressLine4": "Line4"
           "postcode": "<postcode of the agency's agency address>",
-          other address fields TODO
+          "countryCode": "GB"
         }
+        "telephone": 1234
+        "email": a@a.com
       }
     }
 
+Possible responses:
+
+#### Forbidden
+Response 403 if DES returns no registration that matches the user details.
+
+#### Conflict
+Response 409 if the enrolment is already allocated to someone else
+
+#### InternalServerError
+Response 500 if there is an illegal state
+
+#### Ok
 Response: 201 Created with
 
     Location: /agent-subscription/subscription/:arn
