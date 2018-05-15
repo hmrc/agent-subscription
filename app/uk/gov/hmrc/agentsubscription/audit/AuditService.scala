@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.audit
 
-import javax.inject.{Inject, Singleton}
-import play.api.libs.json.{JsObject, JsString}
+import javax.inject.{ Inject, Singleton }
+import play.api.libs.json.{ JsObject, JsString }
 import play.api.mvc.Request
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
