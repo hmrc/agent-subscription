@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.repository
 
-import javax.inject.Inject
-
+import javax.inject.{ Inject, Singleton }
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
@@ -33,6 +32,7 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
 import scala.concurrent.{ ExecutionContext, Future }
 
+@Singleton
 class RecoveryRepository @Inject() (mongoComponent: ReactiveMongoComponent)
   extends ReactiveRepository[RecoveryData, BSONObjectID](
     "agent-recovery-store",
