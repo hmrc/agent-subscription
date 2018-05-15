@@ -38,7 +38,7 @@ class RecoveryRepository @Inject() (mongoComponent: ReactiveMongoComponent)
     "agent-recovery-store",
     mongoComponent.mongoConnector.db,
     RecoveryData.recoveryDataFormat,
-    ReactiveMongoFormats.objectIdFormats) {
+    ReactiveMongoFormats.objectIdFormats) with StrictlyEnsureIndexes[RecoveryData, BSONObjectID] {
 
   override def indexes: Seq[Index] = Seq(
     Index(
@@ -49,33 +49,6 @@ class RecoveryRepository @Inject() (mongoComponent: ReactiveMongoComponent)
       key = Seq("createdDate" -> IndexType.Ascending),
       name = Some("createDate"),
       unique = false))
-
-  private def ensureIndex(index: Index)(implicit ec: ExecutionContext): Future[Boolean] = {
-    val indexInfo = s"""name=${index.eventualName}, key=${index.key.map { case (k, _) => k }.mkString("+")}, unique=${index.unique}, background=${index.background}, sparse=${index.sparse}"""
-    collection.indexesManager.create(index).map(wr => {
-      if (wr.ok) {
-        logger.info(s"Successfully Created Index $indexInfo")
-        true
-      } else {
-        val msg = wr.writeErrors.mkString(", ")
-        if (msg.contains("E11000")) {
-          // this is for backwards compatibility to mongodb 2.6.x
-          throw GenericDatabaseException(msg, wr.code)
-        } else {
-          logger.error(s"Failed to ensure index $indexInfo, error=$msg")
-          false
-        }
-      }
-    }).recover {
-      case t =>
-        logger.error(message, t)
-        false
-    }
-  }
-
-  override def ensureIndexes(implicit ec: ExecutionContext): Future[Seq[Boolean]] = {
-    Future.sequence(indexes.map(ensureIndex))
-  }
 
   def create(authIds: AuthIds, arn: Arn, subscriptionRequest: SubscriptionRequest, errorMessage: String)(implicit ec: ExecutionContext): Future[Unit] = {
     insert(RecoveryData(authIds, arn, subscriptionRequest, errorMessage)).map(_ => ())
