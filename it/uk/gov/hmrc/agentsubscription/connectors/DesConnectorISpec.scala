@@ -82,7 +82,6 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/agents/utr/${utr.value}"
       auditEvent.auditType shouldBe "OutboundCall"
       val requestJson: JsValue = Json.parse(auditEvent.request.detail("requestBody"))
-      (requestJson \ "regime").as[String] shouldBe "ITSA"
       (requestJson \ "agencyName").as[String] shouldBe "My Agency"
       (requestJson \ "telephoneNumber").as[String] shouldBe "0123 456 7890"
       (requestJson \ "agencyEmail").as[String] shouldBe "agency@example.com"
