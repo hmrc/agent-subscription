@@ -17,14 +17,14 @@ lazy val scoverageSettings = {
 
 lazy val compileDeps = Seq(
   ws,
-  "uk.gov.hmrc" %% "bootstrap-play-25" % "1.5.0",
+  "uk.gov.hmrc" %% "bootstrap-play-25" % "1.6.0",
   "uk.gov.hmrc" %% "auth-client" % "2.6.0",
   "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.10.0",
   "de.threedimensions" %% "metrics-play" % "2.5.13",
   "uk.gov.hmrc" %% "domain" % "5.1.0",
   "com.github.blemale" %% "scaffeine" % "2.4.0",
   "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "2.4.0",
-  "uk.gov.hmrc" %% "play-reactivemongo" % "5.2.0",
+  "uk.gov.hmrc" %% "play-reactivemongo" % "6.2.0",
   ws
 )
 
@@ -34,7 +34,7 @@ def testDeps(scope: String) = Seq(
   "org.mockito" % "mockito-core" % "2.15.0" % scope,
   "org.scalatestplus.play" %% "scalatestplus-play" % "2.0.1" % scope,
   "com.github.tomakehurst" % "wiremock" % "2.15.0" % scope,
-  "uk.gov.hmrc" %% "reactivemongo-test" % "2.0.0" % scope
+  "uk.gov.hmrc" %% "reactivemongo-test" % "3.1.0" % scope
 )
 
 lazy val root = (project in file("."))
