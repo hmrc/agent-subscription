@@ -50,7 +50,6 @@ trait DesStubs {
       .withRequestBody(equalToJson(
         s"""
            |{
-           |  "regime": "ITSA",
            |  "agencyName": "${request.agency.name}",
            |  "agencyAddress": {
            |    "addressLine1": "${request.agency.address.addressLine1}",
@@ -79,7 +78,6 @@ trait DesStubs {
       .withRequestBody(equalToJson(
         s"""
            |{
-           |  "regime": "ITSA",
            |  "agencyName": "${request.agencyName}",
            |  "agencyAddress": {
            |    "addressLine1": "${request.agencyAddress.addressLine1}",
