@@ -17,14 +17,16 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
-import javax.inject.{ Inject, Named, Singleton }
 
+import javax.inject.{ Inject, Named, Singleton }
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import play.api.http.Status
 import play.api.libs.json._
+import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentsubscription.model.AgentRecord
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
@@ -71,6 +73,7 @@ class DesConnector @Inject() (
   @Named("des.authorization-token") authorizationToken: String,
   @Named("des-baseUrl") baseUrl: URL,
   httpPost: HttpPost,
+  httpGet: HttpGet,
   metrics: Metrics) extends Status with HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
@@ -98,6 +101,14 @@ class DesConnector @Inject() (
     }
   }
 
+  /** API 1170 (API 4) - Get Agent Record - UTR */
+  def getAgentRecordDetails(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AgentRecord] = {
+    val encodedUtr = UriEncoding.encodePathSegment(utr.value, "UTF-8")
+
+    val url = new URL(baseUrl, s"/registration/personal-details/utr/$encodedUtr")
+    getWithDesHeaders[AgentRecord]("GetAgentRecord", url)
+  }
+
   private def getRegistrationJson(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] =
     monitor("DES-GetAgentRegistration-POST") {
       httpPost.POST[DesRegistrationRequest, Option[JsValue]](
@@ -121,6 +132,15 @@ class DesConnector @Inject() (
       authorization = Some(Authorization(s"Bearer $authorizationToken")),
       extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
   }
+
+  private def getWithDesHeaders[A: HttpReads](apiName: String, url: URL)(
+    implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext): Future[A] =
+    monitor(s"ConsumedAPI-DES-$apiName-GET") {
+      httpGet.GET[A](url.toString)(implicitly[HttpReads[A]], desHeaders, ec)
+    }
+
 }
 
 class DesConnectorException(val reason: String, val cause: Throwable) extends RuntimeException(reason, cause)

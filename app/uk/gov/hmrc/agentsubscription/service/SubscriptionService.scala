@@ -16,21 +16,20 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{ Inject, Singleton }
-
+import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.Request
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription._
-import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscriptionEvent, AuditService }
+import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
+import uk.gov.hmrc.agentsubscription.model.{Agency, AgentRecord, KnownFacts, SubscriptionRequest, UpdateSubscriptionRequest}
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
-import scala.concurrent.{ ExecutionContext, Future }
-import uk.gov.hmrc.http.{ ConflictException, HeaderCarrier, Upstream4xxResponse }
+import scala.concurrent.{ExecutionContext, Future}
 
 private object SubscriptionAuditDetail {
   implicit val writes = Json.writes[SubscriptionAuditDetail]
@@ -78,7 +77,31 @@ class SubscriptionService @Inject() (
     }
   }
 
-  private def subscribe(subscriptionRequest: SubscriptionRequest, authIds: AuthIds, isAnAsAgent: Boolean, maybeArn: Option[Arn])(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+  def updateSubscription(updateSubscriptionRequest: UpdateSubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+    desConnector
+      .getAgentRecordDetails(updateSubscriptionRequest.utr)
+      .flatMap { agentRecord =>
+        if (agentRecord.isAnASAgent) {
+          val subscriptionRequest = requestForPartialSubscription(updateSubscriptionRequest, agentRecord)
+          addKnownFactsAndEnrol(agentRecord.arn, subscriptionRequest, authIds)
+            .map { _ =>
+              auditService.auditEvent(
+                AgentSubscriptionEvent.AgentSubscription,
+                "Agent services subscription",
+                auditDetailJsObject(agentRecord.arn, subscriptionRequest))
+              Some(agentRecord.arn)
+            }
+        } else Future.successful(None)
+      }.recover {
+      case _: NotFoundException => None
+    }
+  }
+
+  private def subscribe(
+    subscriptionRequest: SubscriptionRequest,
+    authIds: AuthIds,
+    isAnAsAgent: Boolean,
+    maybeArn: Option[Arn])(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     for {
       arn <- maybeArn match {
         case Some(arn) if isAnAsAgent => Future.successful(arn)
@@ -126,4 +149,20 @@ class SubscriptionService @Inject() (
           throw new IllegalStateException(s"Failed to add known facts and enrol in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}", e)
       }
   }
+
+  /** This method creates a SubscriptionRequest for partially subscribed agents */
+  private def requestForPartialSubscription(request: UpdateSubscriptionRequest, agentRecord: AgentRecord) = SubscriptionRequest(
+    utr = request.utr,
+    knownFacts = KnownFacts(postcode = agentRecord.knownfactPostcode),
+    agency = Agency(
+      name = agentRecord.agencyName,
+      address = model.Address(
+        addressLine1 = agentRecord.address.addressLine1,
+        addressLine2 = agentRecord.address.addressLine2,
+        addressLine3 = agentRecord.address.addressLine3,
+        addressLine4 = agentRecord.address.addressLine4,
+        postcode = agentRecord.address.postalCode,
+        countryCode = agentRecord.address.countryCode),
+      telephone = agentRecord.phoneNUmber.getOrElse(""),
+      email = agentRecord.email))
 }

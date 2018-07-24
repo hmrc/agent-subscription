@@ -9,15 +9,16 @@ import org.mockito.Mockito.verify
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
-import play.api.libs.json.{ JsValue, Json }
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import play.api.libs.json.{JsValue, Json}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentsubscription.model.{AgentAddress, AgentRecord}
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
-import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
+import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import uk.gov.hmrc.play.http.ws.WSPost
+import uk.gov.hmrc.play.http.ws.{WSGet, WSPost}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext
@@ -36,9 +37,10 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
   private lazy val httpPost: HttpPost = app.injector.instanceOf[HttpPost]
+  private lazy val httpGet: HttpGet = app.injector.instanceOf[HttpGet]
 
   private lazy val connector: DesConnector =
-    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), httpPost, metrics)
+    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), httpPost, httpGet, metrics)
 
   "subscribeToAgentServices" should {
     "return an ARN when subscription is successful" in {
@@ -46,7 +48,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val result = await(connector.subscribeToAgentServices(utr, request))
 
-      result shouldBe Arn("ARN0001")
+      result shouldBe Arn("TARN0000001")
     }
 
     "propagate an exception containing the utr if there is a duplicate submission" in {
@@ -73,7 +75,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     "audit the request and response" in new MockAuditingContext {
       givenCleanMetricRegistry()
       val connector: DesConnector =
-        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, metrics)
+        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, wsHttp, metrics)
       subscriptionSucceeds(utr, request)
 
       await(connector.subscribeToAgentServices(utr, request))
@@ -91,7 +93,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       (requestJson \ "agencyAddress" \ "countryCode").as[String] shouldBe "GB"
 
       val responseJson: JsValue = Json.parse(auditEvent.response.detail("responseMessage"))
-      (responseJson \ "agentRegistrationNumber").as[String] shouldBe "ARN0001"
+      (responseJson \ "agentRegistrationNumber").as[String] shouldBe "TARN0000001"
       verifyTimerExistsAndBeenUpdated("DES-SubscribeAgent-POST")
     }
 
@@ -141,7 +143,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     "audit the request and response" in new MockAuditingContext {
       givenCleanMetricRegistry()
       val connector: DesConnector =
-        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, metrics)
+        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, wsHttp, metrics)
       organisationRegistrationExists(utr)
 
       await(connector.getRegistration(utr))
@@ -158,6 +160,41 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     }
   }
 
+  "getAgentRecord" should {
+    "return agent record for a organisation UTR that is known by DES" in {
+      agentRecordExists(utr)
+
+      val agentRecord = await(connector.getAgentRecordDetails(utr))
+
+      agentRecord shouldBe AgentRecord(Arn("TARN0000001" ),true, "My Agency",
+        AgentAddress("Flat 1", Some("1 Some Street"), Some("Anytown"), Some("County"),"AA1 2AA","GB"), "agency@example.com", "TF3 4ER" ,Some("0123 456 7890"))
+    }
+
+    "not return a agent record for a UTR that is unknown to DES" in {
+      agentRecordDoesNotExist(utr)
+
+      an[NotFoundException] shouldBe thrownBy(await(connector.getAgentRecordDetails(utr)))
+    }
+
+    "audit the request and response" in new MockAuditingContext {
+      givenCleanMetricRegistry()
+      val connector: DesConnector =
+        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, wsHttp, metrics)
+      agentRecordExists(utr)
+
+      await(connector.getAgentRecordDetails(utr))
+
+      val auditEvent = capturedEvent()
+      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/personal-details/utr/${utr.value}"
+      auditEvent.auditType shouldBe "OutboundCall"
+
+      val responseJson = Json.parse(auditEvent.response.detail("responseMessage"))
+      (responseJson \ "agencyDetails" \ "agencyAddress" \ "postalCode").as[String] shouldBe "AA1 2AA"
+      (responseJson \ "isAnASAgent").as[Boolean] shouldBe true
+      verifyTimerExistsAndBeenUpdated("ConsumedAPI-DES-GetAgentRecord-GET")
+    }
+  }
+
   def request = DesSubscriptionRequest(
     agencyName = "My Agency",
     agencyAddress = Address(addressLine1 = "1 Some Street", addressLine2 = Some("MyTown"), postalCode = "AA1 1AA", countryCode = "GB"),
@@ -167,7 +204,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
   trait MockAuditingContext extends MockitoSugar with Eventually {
     private val mockAuditConnector = mock[AuditConnector]
 
-    val wsHttp = new HttpPost with WSPost with HttpAuditing {
+    val wsHttp = new HttpPost with HttpGet with WSPost with WSGet with HttpAuditing {
       val auditConnector = mockAuditConnector
       val appName = "agent-subscription"
       override val hooks = Seq(AuditingHook)

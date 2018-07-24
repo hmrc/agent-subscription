@@ -79,3 +79,10 @@ case class SubscriptionResponse(arn: Arn)
 object SubscriptionResponse {
   implicit val format = Json.format[SubscriptionResponse]
 }
+
+case class UpdateSubscriptionRequest(utr: Utr)
+
+object UpdateSubscriptionRequest {
+  implicit val reads: Reads[UpdateSubscriptionRequest] =
+    (__ \ "utr").read[Utr](verifying[Utr](utr => Utr.isValid(utr.value))).map(UpdateSubscriptionRequest(_))
+}
