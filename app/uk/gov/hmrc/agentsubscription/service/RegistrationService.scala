@@ -90,9 +90,9 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
         case _ => Future.successful(false)
       }
 
-      isSubscribedToAgentServices.map { x =>
-        auditCheckAgencyStatus(utr, postcode, knownFactsMatched, isSubscribedToAgentServices = Some(x), Some(isAnASAgent), maybeArn)
-        Some(RegistrationDetails(x, taxpayerName))
+      isSubscribedToAgentServices.map { isSubscribed =>
+        auditCheckAgencyStatus(utr, postcode, knownFactsMatched, isSubscribedToAgentServices = Some(isSubscribed), Some(isAnASAgent), maybeArn)
+        Some(RegistrationDetails(isSubscribed, isAnASAgent, taxpayerName))
       }
 
     } else {
