@@ -85,6 +85,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
         val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
         response.status shouldBe 200
         (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe true
+        (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe true
         (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
       }
 
@@ -95,6 +96,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
         val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
         response.status shouldBe 200
         (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
+        (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe true
         (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
       }
     }
@@ -105,6 +107,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
+      (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
       (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
     }
 
@@ -114,6 +117,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
+      (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
       (response.json \ "taxpayerName").as[String] shouldBe "First Last"
     }
 
@@ -123,6 +127,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
+      (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
     }
   }
 }
