@@ -295,7 +295,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
   "updating a partial subscription" should {
     "return a response containing the ARN" when {
-      "a valid utr is given as input" in {
+      "a valid utr is given as input when the user is not enrolled in EMAC and registered in ETMP" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         agentRecordExists(utr, true, arn)
         allocatedPrincipalEnrolmentNotExists(arn)
@@ -339,7 +339,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
       "postcodes don't match" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-        agentRecordDoesNotExist(utr)
+        agentRecordExists(utr)
         val request = Json.parse(updateSubscriptionRequest).as[UpdateSubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
 
         val result = await(doUpdateSubscriptionRequest(stringify(toJson(request))))
