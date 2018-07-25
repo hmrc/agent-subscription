@@ -9,16 +9,17 @@ import org.mockito.Mockito.verify
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
-import play.api.libs.json.{JsValue, Json}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
-import uk.gov.hmrc.agentsubscription.model.{AgentAddress, AgentRecord}
+import play.api.libs.json.{ JsValue, Json }
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentsubscription.model
+import uk.gov.hmrc.agentsubscription.model.AgentRecord
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
-import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
+import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import uk.gov.hmrc.play.http.ws.{WSGet, WSPost}
+import uk.gov.hmrc.play.http.ws.{ WSGet, WSPost }
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext
@@ -166,8 +167,8 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val agentRecord = await(connector.getAgentRecordDetails(utr))
 
-      agentRecord shouldBe AgentRecord(Arn("TARN0000001" ),true, "My Agency",
-        AgentAddress("Flat 1", Some("1 Some Street"), Some("Anytown"), Some("County"),"AA1 2AA","GB"), "agency@example.com", "TF3 4ER" ,Some("0123 456 7890"))
+      agentRecord shouldBe AgentRecord(Arn("TARN0000001"), true, "My Agency",
+        model.Address("Flat 1", Some("1 Some Street"), Some("Anytown"), Some("County"), "AA1 2AA", "GB"), "agency@example.com", "TF3 4ER", Some("0123 456 7890"))
     }
 
     "not return a agent record for a UTR that is unknown to DES" in {

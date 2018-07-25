@@ -21,25 +21,13 @@ import play.api.libs.json._
 import play.api.libs.functional.syntax._
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 
-case class AgentAddress(
-  addressLine1: String,
-  addressLine2: Option[String],
-  addressLine3: Option[String],
-  addressLine4: Option[String],
-  postalCode: String,
-  countryCode: String)
-
-object AgentAddress {
-  implicit val format = Json.format[AgentAddress]
-}
-
 case class AgentRecord(
   arn: Arn,
   isAnASAgent: Boolean,
   agencyName: String,
-  address: AgentAddress,
-  email: String,
-  knownfactPostcode: String,
+  agencyAddress: Address,
+  agencyEmail: String,
+  businessPostcode: String,
   phoneNUmber: Option[String])
 
 object AgentRecord {
@@ -47,9 +35,20 @@ object AgentRecord {
     (__ \ "agentReferenceNumber").read[Arn](verifying[Arn](arn => Arn.isValid(arn.value))) and
     (__ \ "isAnASAgent").read[Boolean] and
     (__ \ "agencyDetails" \ "agencyName").read[String] and
-    (__ \ "agencyDetails" \ "agencyAddress").read[AgentAddress] and
+    (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine1").read[String] and
+    (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine2").readNullable[String] and
+    (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine3").readNullable[String] and
+    (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine4").readNullable[String] and
+    (__ \ "agencyDetails" \ "agencyAddress" \ "postalCode").read[String] and
+    (__ \ "agencyDetails" \ "agencyAddress" \ "countryCode").read[String] and
     (__ \ "agencyDetails" \ "agencyEmail").read[String] and
     (__ \ "addressDetails" \ "postalCode").read[String] and
-    (__ \ "contactDetails" \ "phoneNumber").readNullable[String])(AgentRecord.apply _)
+    (__ \ "contactDetails" \ "phoneNumber").readNullable[String])((arn, isAnASAgent, agencyName, addressLine1,
+      addressLine2, addressLine3, addressLine4,
+      agencyPostcode, countryCode, agencyEmail, businessPostcode, phoneNumber) =>
+      AgentRecord(arn, isAnASAgent, agencyName, Address(
+        addressLine1,
+        addressLine2, addressLine3, addressLine4,
+        agencyPostcode, countryCode), agencyEmail, businessPostcode, phoneNumber))
 
 }

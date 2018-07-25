@@ -49,7 +49,7 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
     implicit val hc = fromHeadersAndSession(request.headers, None)
     withJsonBody[UpdateSubscriptionRequest] { subscriptionRequest =>
       subscriptionService.updateSubscription(subscriptionRequest, authIds).map {
-        case Some(arn) => Created(toJson(SubscriptionResponse(arn)))
+        case Some(arn) => Ok(toJson(SubscriptionResponse(arn)))
         case None => Forbidden
       }.recover {
         case _: EnrolmentAlreadyAllocated => Conflict

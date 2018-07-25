@@ -8,6 +8,8 @@ import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
 import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
 import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
+import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
 
 class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs {
   private val utr = Utr("7000000002")
@@ -17,9 +19,6 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
   implicit val ws = app.injector.instanceOf[WSClient]
 
   "creating a subscription" should {
-    import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
-    import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
-
     "audit an AgentSubscription event" in {
       writeAuditMergedSucceeds()
       writeAuditSucceeds()
@@ -46,9 +45,6 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
   }
 
   "updating a partial subscription" should {
-    import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
-    import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
-
     "audit an AgentSubscription event" in {
       writeAuditMergedSucceeds()
       writeAuditSucceeds()
@@ -62,7 +58,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
 
       val result = await(doUpdateSubscriptionRequest(updateSubscriptionRequest))
 
-      result.status shouldBe 201
+      result.status shouldBe 200
 
       eventually {
         DataStreamStub.verifyAuditRequestSent(
@@ -101,7 +97,12 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
 
   private val updateSubscriptionRequest =
     s"""
-       |{ "utr": "${utr.value}" }
+       |{
+       |  "utr": "${utr.value}",
+       |  "knownFacts": {
+       |    "postcode": "TF3 4ER"
+       |  }
+       |}
     """.stripMargin
 
   private def expectedDetails(utr: Utr): JsObject =

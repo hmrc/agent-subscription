@@ -3,7 +3,7 @@ package uk.gov.hmrc.agentsubscription.controllers
 import play.api.libs.json.Json.{ stringify, toJson }
 import play.api.libs.json._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{ KnownFacts, SubscriptionRequest }
+import uk.gov.hmrc.agentsubscription.model.{ KnownFacts, SubscriptionRequest, UpdateSubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 import com.github.tomakehurst.wiremock.client.WireMock._
@@ -305,7 +305,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         val result = await(doUpdateSubscriptionRequest())
 
-        result.status shouldBe 201
+        result.status shouldBe 200
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
 
         verify(1, getRequestedFor(urlEqualTo(s"/registration/personal-details/utr/${utr.value}")))
@@ -333,6 +333,16 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         agentRecordDoesNotExist(utr)
 
         val result = await(doUpdateSubscriptionRequest())
+
+        result.status shouldBe 403
+      }
+
+      "postcodes don't match" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        agentRecordDoesNotExist(utr)
+        val request = Json.parse(updateSubscriptionRequest).as[UpdateSubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
+
+        val result = await(doUpdateSubscriptionRequest(stringify(toJson(request))))
 
         result.status shouldBe 403
       }
@@ -370,6 +380,20 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       "utr contains more than 10 digits" in {
         requestIsAuthenticated()
         val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901")))))
+
+        result.status shouldBe 400
+      }
+
+      "postcode is missing" in {
+        requestIsAuthenticated()
+        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "")))))
+
+        result.status shouldBe 400
+      }
+
+      "known facts postcode is not valid" in {
+        requestIsAuthenticated()
+        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567")))))
 
         result.status shouldBe 400
       }
@@ -485,6 +509,11 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
   private val updateSubscriptionRequest =
     s"""
-      |{ "utr": "${utr.value}" }
+      |{
+      |  "utr": "${utr.value}" ,
+      |  "knownFacts": {
+      |    "postcode": "TF3 4ER"
+      |  }
+      |}
     """.stripMargin
 }
