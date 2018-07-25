@@ -101,7 +101,7 @@ class DesConnector @Inject() (
     }
   }
 
-  /** API 1170 (API 4) - Get Agent Record - UTR */
+  /** This method uses DES API 1170 (API 4) - Get Agent Record - UTR */
   def getAgentRecordDetails(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AgentRecord] = {
     val encodedUtr = UriEncoding.encodePathSegment(utr.value, "UTF-8")
 
