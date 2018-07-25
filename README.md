@@ -100,6 +100,41 @@ Response: 201 Created with
     {
       "arn": <the Agency Registration Number for this agency, as returned to us by DES/ETMP>
     }
+    
+### Subscribe Partially-Subscribed Registered Taxpayer to Agent Services
+
+    PUT /agent-subscription/subscription
+    
+This API allows for an agent to fully subscribe to Agent Services using their details when they are already subscribed to ETMP 
+and they have not completed the enrollment to HMRC-AS-AGENT.  
+    
+Request body:
+
+    {
+      "utr": "<SA or CT UTR>",
+      "knownFacts": {
+        "postcode": "<postcode of the agency's registered taxpayer address (NOT their agency address)>"
+      }
+    }
+
+Possible responses:
+
+#### Forbidden
+Response 403 if DES returns no registration that matches the user details.
+
+#### Conflict
+Response 409 if the enrolment is already allocated to someone else
+
+#### InternalServerError
+Response 500 if there is an illegal state
+
+#### Ok
+Response: 200 OK
+
+    Location: /agent-subscription/subscription/:arn
+    {
+      "arn": <the Agency Registration Number for this agency, as returned to us by DES/ETMP>
+    }
 
 ### License
 

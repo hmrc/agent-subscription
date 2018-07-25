@@ -20,7 +20,7 @@ import javax.inject._
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.Json.toJson
 import uk.gov.hmrc.agentsubscription.connectors.{ AuthActions, MicroserviceAuthConnector }
-import uk.gov.hmrc.agentsubscription.model.{ SubscriptionRequest, SubscriptionResponse }
+import uk.gov.hmrc.agentsubscription.model.{ SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.service.{ EnrolmentAlreadyAllocated, SubscriptionService }
 import uk.gov.hmrc.play.microservice.controller.BaseController
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
@@ -37,6 +37,19 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
     withJsonBody[SubscriptionRequest] { subscriptionRequest =>
       subscriptionService.subscribeAgentToMtd(subscriptionRequest, authIds).map {
         case Some(a) => Created(toJson(SubscriptionResponse(a)))
+        case None => Forbidden
+      }.recover {
+        case _: EnrolmentAlreadyAllocated => Conflict
+        case _: IllegalStateException => InternalServerError
+      }
+    }
+  }
+
+  def updateSubscription = affinityGroupAndEnrolments { implicit request => implicit authIds =>
+    implicit val hc = fromHeadersAndSession(request.headers, None)
+    withJsonBody[UpdateSubscriptionRequest] { subscriptionRequest =>
+      subscriptionService.updateSubscription(subscriptionRequest, authIds).map {
+        case Some(arn) => Ok(toJson(SubscriptionResponse(arn)))
         case None => Forbidden
       }.recover {
         case _: EnrolmentAlreadyAllocated => Conflict

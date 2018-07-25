@@ -8,18 +8,17 @@ import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
 import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
 import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
+import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
 
 class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs {
   private val utr = Utr("7000000002")
 
-  val arn = "ARN0001"
+  val arn = "TARN0000001"
   val groupId = "groupId"
   implicit val ws = app.injector.instanceOf[WSClient]
 
   "creating a subscription" should {
-    import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
-    import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
-
     "audit an AgentSubscription event" in {
       writeAuditMergedSucceeds()
       writeAuditSucceeds()
@@ -45,7 +44,33 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
     }
   }
 
+  "updating a partial subscription" should {
+    "audit an AgentSubscription event" in {
+      writeAuditMergedSucceeds()
+      writeAuditSucceeds()
+
+      requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+      agentRecordExists(utr, true, arn)
+      allocatedPrincipalEnrolmentNotExists(arn)
+      deleteKnownFactsSucceeds(arn)
+      createKnownFactsSucceeds(arn)
+      enrolmentSucceeds(groupId, arn)
+
+      val result = await(doUpdateSubscriptionRequest(updateSubscriptionRequest))
+
+      result.status shouldBe 200
+
+      eventually {
+        DataStreamStub.verifyAuditRequestSent(
+          AgentSubscriptionEvent.AgentSubscription,
+          expectedTags,
+          expectedDetailsForUpdateSubscription(utr))
+      }
+    }
+  }
+
   private def doSubscriptionRequest(request: String) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
+  private def doUpdateSubscriptionRequest(request: String = updateSubscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).putAsJson(request)
 
   private def subscriptionRequest(utr: Utr): String =
     s"""
@@ -70,6 +95,16 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
        |}
      """.stripMargin
 
+  private val updateSubscriptionRequest =
+    s"""
+       |{
+       |  "utr": "${utr.value}",
+       |  "knownFacts": {
+       |    "postcode": "TF3 4ER"
+       |  }
+       |}
+    """.stripMargin
+
   private def expectedDetails(utr: Utr): JsObject =
     Json.parse(
       s"""
@@ -83,9 +118,29 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
          |     "postcode": "AA1 2AA",
          |     "countryCode": "GB"
          |  },
-         |  "agentReferenceNumber": "ARN0001",
+         |  "agentReferenceNumber": "TARN0000001",
          |  "agencyEmail": "agency@example.com",
          |  "agencyTelephoneNumber": "0123 456 7890",
+         |  "utr": "${utr.value}"
+         |}
+         |""".stripMargin)
+      .asInstanceOf[JsObject]
+
+  private def expectedDetailsForUpdateSubscription(utr: Utr): JsObject =
+    Json.parse(
+      s"""
+         |{
+         |  "agencyName": "My Agency",
+         |  "agencyAddress": {
+         |     "addressLine1": "Flat 1",
+         |     "addressLine2": "1 Some Street",
+         |     "addressLine3": "Anytown",
+         |     "addressLine4": "County",
+         |     "postcode": "AA1 2AA",
+         |     "countryCode": "GB"
+         |  },
+         |  "agentReferenceNumber": "TARN0000001",
+         |  "agencyEmail": "agency@example.com",
          |  "utr": "${utr.value}"
          |}
          |""".stripMargin)

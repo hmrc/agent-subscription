@@ -41,6 +41,10 @@ object Http {
     request.post(Results.EmptyContent())
   }
 
+  def put(url: String, body: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier, ws: WSClient): HttpResponse = perform(url) { request =>
+    request.withHeaders(headers: _*).put(body)
+  }
+
   def putEmpty(url: String)(implicit hc: HeaderCarrier, ws: WSClient): HttpResponse = perform(url) { request =>
     import play.api.http.Writeable._
     request.put(Results.EmptyContent())
@@ -71,4 +75,7 @@ class Resource(path: String, port: Int) {
 
   def putEmpty()(implicit hc: HeaderCarrier = HeaderCarrier(), ws: WSClient) =
     Http.putEmpty(url)(hc, ws)
+
+  def putAsJson(body: String)(implicit hc: HeaderCarrier = HeaderCarrier(), ws: WSClient) =
+    Http.put(url, body, Seq(HeaderNames.CONTENT_TYPE -> MimeTypes.JSON))(hc, ws)
 }

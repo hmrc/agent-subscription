@@ -32,7 +32,7 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
 
   private val utr = Utr("2000000000")
   private val postcode = "AA1 1AA"
-  val arn = "ARN0001"
+  val arn = "TARN0000001"
   implicit val ws = app.injector.instanceOf[WSClient]
 
   "GET of /registration/:utr/postcode/:postcode" should {

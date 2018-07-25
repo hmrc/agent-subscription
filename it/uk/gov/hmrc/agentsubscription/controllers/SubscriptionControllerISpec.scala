@@ -3,7 +3,7 @@ package uk.gov.hmrc.agentsubscription.controllers
 import play.api.libs.json.Json.{ stringify, toJson }
 import play.api.libs.json._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{ KnownFacts, SubscriptionRequest }
+import uk.gov.hmrc.agentsubscription.model.{ KnownFacts, SubscriptionRequest, UpdateSubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 import com.github.tomakehurst.wiremock.client.WireMock._
@@ -12,7 +12,7 @@ import play.api.libs.ws.WSClient
 class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs {
   private val utr = Utr("7000000002")
 
-  val arn = "ARN0001"
+  val arn = "TARN0000001"
   val groupId = "groupId"
   implicit val ws = app.injector.instanceOf[WSClient]
 
@@ -34,7 +34,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         val result = await(doSubscriptionRequest())
 
         result.status shouldBe 201
-        (result.json \ "arn").as[String] shouldBe "ARN0001"
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
 
         verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
@@ -53,7 +53,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         val result = await(doSubscriptionRequest(removeFields(fields)))
 
         result.status shouldBe 201
-        (result.json \ "arn").as[String] shouldBe "ARN0001"
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
 
         verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
@@ -70,7 +70,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         val result = await(doSubscriptionRequest())
 
         result.status shouldBe 201
-        (result.json \ "arn").as[String] shouldBe "ARN0001"
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
 
         verify(0, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
@@ -293,7 +293,166 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
   }
 
+  "updating a partial subscription" should {
+    "return a response containing the ARN" when {
+      "a valid utr is given as input when the user is not enrolled in EMAC and registered in ETMP" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        agentRecordExists(utr, true, arn)
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(groupId, arn)
+
+        val result = await(doUpdateSubscriptionRequest())
+
+        result.status shouldBe 200
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verify(1, getRequestedFor(urlEqualTo(s"/registration/personal-details/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+      }
+    }
+
+    "return Conflict if already subscribed (both ETMP has isAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in {
+      requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+      agentRecordExists(utr, true, arn)
+      allocatedPrincipalEnrolmentExists(arn, "someGroupId")
+
+      val result = await(doUpdateSubscriptionRequest())
+
+      result.status shouldBe 409
+
+      verify(0, deleteRequestedFor(urlEqualTo(s"$deleteKnownFactsUrl$arn")))
+      verify(0, putRequestedFor(urlEqualTo(s"$createKnownFactsUrl$arn")))
+      verify(0, postRequestedFor(urlEqualTo(enrolmentUrl("groupId", arn))))
+    }
+
+    "return forbidden" when {
+      "no registration exists" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        agentRecordDoesNotExist(utr)
+
+        val result = await(doUpdateSubscriptionRequest())
+
+        result.status shouldBe 403
+      }
+
+      "postcodes don't match" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        agentRecordExists(utr)
+        val request = Json.parse(updateSubscriptionRequest).as[UpdateSubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
+
+        val result = await(doUpdateSubscriptionRequest(stringify(toJson(request))))
+
+        result.status shouldBe 403
+      }
+
+      "the user already has enrolments" in {
+        requestIsAuthenticated().andIsAnAgent().andHasEnrolments()
+        val result = await(doUpdateSubscriptionRequest())
+
+        result.status shouldBe 403
+      }
+    }
+
+    "return Bad Request " when {
+      "utr is missing" in {
+        requestIsAuthenticated()
+        val result = await(doUpdateSubscriptionRequest(removeFields(Seq(__ \ "utr"))))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains non-numeric characters" in {
+        requestIsAuthenticated()
+        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345")))))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains fewer than 10 digits" in {
+        requestIsAuthenticated()
+        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345")))))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains more than 10 digits" in {
+        requestIsAuthenticated()
+        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901")))))
+
+        result.status shouldBe 400
+      }
+
+      "postcode is missing" in {
+        requestIsAuthenticated()
+        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "")))))
+
+        result.status shouldBe 400
+      }
+
+      "known facts postcode is not valid" in {
+        requestIsAuthenticated()
+        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567")))))
+
+        result.status shouldBe 400
+      }
+    }
+
+    "throw a 500 error if " when {
+      "query allocated enrolment fails in EMAC " in {
+        requestIsAuthenticated()
+        agentRecordExists(utr, true, arn)
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentFails(arn)
+
+        val result = await(doUpdateSubscriptionRequest())
+
+        result.status shouldBe 500
+      }
+
+      "delete known facts fails in EMAC " in {
+        requestIsAuthenticated()
+        agentRecordExists(utr, true, arn)
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsFails("")
+
+        val result = await(doUpdateSubscriptionRequest())
+
+        result.status shouldBe 500
+      }
+
+      "create known facts fails in EMAC " in {
+        requestIsAuthenticated()
+        agentRecordExists(utr, true, arn)
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds("")
+        createKnownFactsFails("")
+
+        val result = await(doUpdateSubscriptionRequest())
+
+        result.status shouldBe 500
+      }
+
+      "create enrolment fails in EMAC " in {
+        requestIsAuthenticatedWithNoEnrolments()
+        agentRecordExists(utr, true, arn)
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentFails(groupId, arn)
+
+        val result = await(doUpdateSubscriptionRequest())
+
+        result.status shouldBe 500
+      }
+    }
+  }
+
   private def doSubscriptionRequest(request: String = subscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
+  private def doUpdateSubscriptionRequest(request: String = updateSubscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).putAsJson(request)
 
   private def removeFields(fields: Seq[JsPath]): String = {
     val request = Json.parse(subscriptionRequest).as[JsObject]
@@ -347,4 +506,14 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
        |  }
        |}
      """.stripMargin
+
+  private val updateSubscriptionRequest =
+    s"""
+      |{
+      |  "utr": "${utr.value}" ,
+      |  "knownFacts": {
+      |    "postcode": "TF3 4ER"
+      |  }
+      |}
+    """.stripMargin
 }
