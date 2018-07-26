@@ -17,7 +17,6 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import javax.inject.{ Inject, Singleton }
-
 import com.kenshoo.play.metrics.Metrics
 import play.api.Logger
 import play.api.libs.json.{ JsValue, Json, OFormat }
@@ -29,7 +28,7 @@ import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core.retrieve.Retrievals.{ affinityGroup, allEnrolments, credentials, groupIdentifier }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
 import uk.gov.hmrc.auth.core.{ Enrolment, _ }
-import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.{ HeaderCarrier, Upstream5xxResponse }
 import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.microservice.controller.BaseController
 

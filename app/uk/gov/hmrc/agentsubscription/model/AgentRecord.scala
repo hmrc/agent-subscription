@@ -28,7 +28,7 @@ case class AgentRecord(
   agencyAddress: Address,
   agencyEmail: String,
   businessPostcode: String,
-  phoneNUmber: Option[String])
+  phoneNumber: Option[String])
 
 object AgentRecord {
   implicit val agentRecordReads: Reads[AgentRecord] = (
