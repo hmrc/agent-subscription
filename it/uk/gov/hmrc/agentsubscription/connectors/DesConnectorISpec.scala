@@ -167,8 +167,20 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val agentRecord = await(connector.getAgentRecordDetails(utr))
 
-      agentRecord shouldBe AgentRecord(Arn("TARN0000001"), true, "My Agency",
-        model.Address("Flat 1", Some("1 Some Street"), Some("Anytown"), Some("County"), "AA1 2AA", "GB"), "agency@example.com", "TF3 4ER", Some("0123 456 7890"))
+      agentRecord shouldBe AgentRecord(
+        arn = Arn("TARN0000001"),
+        isAnASAgent = true,
+        agencyName = "My Agency",
+        agencyAddress = model.Address(
+          addressLine1 = "Flat 1",
+          addressLine2 = Some("1 Some Street"),
+          addressLine3 = Some("Anytown"),
+          addressLine4 = Some("County"),
+          postcode = "AA1 2AA",
+          countryCode = "GB"),
+        agencyEmail = "agency@example.com",
+        businessPostcode = "TF3 4ER",
+        phoneNumber = Some("0123 456 7890"))
     }
 
     "not return a agent record for a UTR that is unknown to DES" in {

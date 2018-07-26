@@ -77,7 +77,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
     }
 
-    "return Conflict if already subscribed (both ETMP has isAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in {
+    "return Conflict if already subscribed (both ETMP has isAnAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in {
       requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
       organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
       allocatedPrincipalEnrolmentExists(arn, "someGroupId")
@@ -242,6 +242,15 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
 
     "throw a 500 error if " when {
+      "DES API #1173 Subscribe to Agent Services fails" in {
+        requestIsAuthenticated()
+        registrationRequestFails()
+
+        val result = await(doSubscriptionRequest())
+
+        result.status shouldBe 500
+      }
+
       "query allocated enrolment fails in EMAC " in {
         requestIsAuthenticated()
         organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
@@ -295,7 +304,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
   "updating a partial subscription" should {
     "return a response containing the ARN" when {
-      "a valid utr is given as input when the user is not enrolled in EMAC and registered in ETMP" in {
+      "a valid utr is given as input when the user is not enrolled in EMAC but is subscribed in ETMP" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         agentRecordExists(utr, true, arn)
         allocatedPrincipalEnrolmentNotExists(arn)
@@ -400,6 +409,15 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
 
     "throw a 500 error if " when {
+      "DES API #1170 Get Agent Record fails" in {
+        requestIsAuthenticated()
+        agentRecordFails()
+
+        val result = await(doUpdateSubscriptionRequest())
+
+        result.status shouldBe 500
+      }
+
       "query allocated enrolment fails in EMAC " in {
         requestIsAuthenticated()
         agentRecordExists(utr, true, arn)

@@ -164,6 +164,12 @@ trait DesStubs {
         .withBody(notFoundResponse)))
   }
 
+  def agentRecordFails(): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlPathMatching(s"/registration/personal-details/utr/.*")))
+      .willReturn(aResponse()
+        .withStatus(500)))
+  }
+
   private def registrationRequest(utr: Utr, isAnAgent: Boolean) =
     post(urlEqualTo(s"/registration/individual/utr/${utr.value}"))
       .withRequestBody(equalToJson(
@@ -262,6 +268,12 @@ trait DesStubs {
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(notFoundResponse)))
+  }
+
+  def registrationRequestFails(): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlPathMatching(s"/registration/(individual|organisation)/utr/.*")))
+      .willReturn(aResponse()
+        .withStatus(500)))
   }
 
   private def maybeWithDesHeaderCheck(mappingBuilder: MappingBuilder): MappingBuilder =

@@ -82,15 +82,9 @@ class SubscriptionService @Inject() (
       .getAgentRecordDetails(updateSubscriptionRequest.utr)
       .flatMap { agentRecord =>
         if (agentRecord.isAnASAgent && postcodesMatch(agentRecord.businessPostcode, updateSubscriptionRequest.knownFacts.postcode)) {
-          val subscriptionRequest = requestForPartialSubscription(updateSubscriptionRequest, agentRecord)
-          addKnownFactsAndEnrol(agentRecord.arn, subscriptionRequest, authIds)
-            .map { _ =>
-              auditService.auditEvent(
-                AgentSubscriptionEvent.AgentSubscription,
-                "Agent services subscription",
-                auditDetailJsObject(agentRecord.arn, subscriptionRequest))
-              Some(agentRecord.arn)
-            }
+          val subscriptionRequest = mergeSubscriptionRequest(updateSubscriptionRequest, agentRecord)
+
+          subscribe(subscriptionRequest, authIds, agentRecord.isAnASAgent, Some(agentRecord.arn))
         } else Future.successful(None)
       }.recover {
         case _: NotFoundException => None
@@ -151,12 +145,12 @@ class SubscriptionService @Inject() (
   }
 
   /** This method creates a SubscriptionRequest for partially subscribed agents */
-  private def requestForPartialSubscription(request: UpdateSubscriptionRequest, agentRecord: AgentRecord) = SubscriptionRequest(
+  private def mergeSubscriptionRequest(request: UpdateSubscriptionRequest, agentRecord: AgentRecord) = SubscriptionRequest(
     utr = request.utr,
     knownFacts = request.knownFacts,
     agency = Agency(
       name = agentRecord.agencyName,
       address = agentRecord.agencyAddress,
-      telephone = agentRecord.phoneNUmber.getOrElse(""),
+      telephone = agentRecord.phoneNumber.getOrElse(""),
       email = agentRecord.agencyEmail))
 }
