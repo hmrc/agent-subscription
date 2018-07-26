@@ -83,14 +83,8 @@ class SubscriptionService @Inject() (
       .flatMap { agentRecord =>
         if (agentRecord.isAnASAgent && postcodesMatch(agentRecord.businessPostcode, updateSubscriptionRequest.knownFacts.postcode)) {
           val subscriptionRequest = requestForPartialSubscription(updateSubscriptionRequest, agentRecord)
-          addKnownFactsAndEnrol(agentRecord.arn, subscriptionRequest, authIds)
-            .map { _ =>
-              auditService.auditEvent(
-                AgentSubscriptionEvent.AgentSubscription,
-                "Agent services subscription",
-                auditDetailJsObject(agentRecord.arn, subscriptionRequest))
-              Some(agentRecord.arn)
-            }
+
+          subscribe(subscriptionRequest, authIds, agentRecord.isAnASAgent, Some(agentRecord.arn))
         } else Future.successful(None)
       }.recover {
         case _: NotFoundException => None
