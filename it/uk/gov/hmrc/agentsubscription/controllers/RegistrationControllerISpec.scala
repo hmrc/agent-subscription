@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
+import play.api.libs.json.JsValue
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
@@ -87,6 +88,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
         (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe true
         (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe true
         (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
+        testBusinessAddress(response.json)
       }
 
       "there is no group already allocated the HMRC-AS-AGENT enrolment with their AgentReferenceNumber" in {
@@ -98,6 +100,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
         (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
         (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe true
         (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
+        testBusinessAddress(response.json)
       }
     }
 
@@ -109,6 +112,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
       (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
+      testBusinessAddress(response.json)
     }
 
     "return 200 when des returns an individual for the utr and the postcodes match" in {
@@ -119,6 +123,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
       (response.json \ "taxpayerName").as[String] shouldBe "First Last"
+      testBusinessAddress(response.json)
     }
 
     "return 200 when des returns no organisation name" in {
@@ -128,6 +133,16 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
+      testBusinessAddress(response.json)
     }
+  }
+
+  private def testBusinessAddress(json: JsValue): Unit = {
+    (json \ "address" \ "addressLine1").as[String] shouldBe "AddressLine1 A"
+    (json \ "address" \ "addressLine2").as[String] shouldBe "AddressLine2 A"
+    (json \ "address" \ "addressLine3").as[String] shouldBe "AddressLine3 A"
+    (json \ "address" \ "addressLine4").as[String] shouldBe "AddressLine4 A"
+    (json \ "address" \ "postalCode").as[String] shouldBe "AA1 1AA"
+    (json \ "address" \ "countryCode").as[String] shouldBe "GB"
   }
 }

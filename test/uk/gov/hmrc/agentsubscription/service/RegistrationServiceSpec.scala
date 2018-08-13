@@ -64,14 +64,16 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
       val arn = Arn("TARN0000001")
+      val businessAddress =
+        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("AA1 1AA"), "GB")
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          Some(postcode),
           isAnASAgent = true,
           Some("Organisation name"),
           None,
-          Some(arn))))
+          Some(arn),
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"))))
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful true)
@@ -107,11 +109,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          Some(postcode),
           isAnASAgent = true,
           Some("Organisation name"),
           None,
-          Some(arn))))
+          Some(arn),
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"))))
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful false)
@@ -146,11 +148,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          Some(postcode),
           isAnASAgent = false,
           Some("Organisation name"),
           None,
-          None)))
+          None,
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"))))
 
       await(service.getRegistration(utr, postcode)(hc, provider, request))
 
@@ -180,11 +182,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          Some("XX9 9XX"),
           isAnASAgent = false,
           Some("Organisation name"),
           None,
-          None)))
+          None,
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("XX9 9XX"), "GB"))))
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, request))
 
@@ -214,11 +216,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          Some(postcode),
           isAnASAgent = true,
           None,
           Some(DesIndividual("First", "Last")),
-          arn)))
+          arn,
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"))))
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful true)
@@ -254,11 +256,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          Some(postcode),
           isAnASAgent = true,
           None,
           Some(DesIndividual("First", "Last")),
-          arn)))
+          arn,
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"))))
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful false)
@@ -293,11 +295,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          Some(postcode),
           isAnASAgent = false,
           None,
           Some(DesIndividual("First", "Last")),
-          None)))
+          None,
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"))))
 
       await(service.getRegistration(utr, postcode)(hc, provider, request))
 
@@ -327,11 +329,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          Some("XX9 9XX"),
           isAnASAgent = false,
           None,
           Some(DesIndividual("First", "Last")),
-          None)))
+          None,
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("XX9 9XX"), "GB"))))
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, request))
 
@@ -360,11 +362,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          None,
           isAnASAgent = false,
           None,
           None,
-          None)))
+          None,
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), None, "GB"))))
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, requestWithoutAuthProvider))
 
@@ -394,11 +396,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(
-          None,
           isAnASAgent = true,
           None,
           None,
-          None)))
+          None,
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), None, "GB"))))
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, requestWithoutAuthProvider))
 
