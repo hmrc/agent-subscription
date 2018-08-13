@@ -131,7 +131,7 @@ trait DesStubs {
           |    "agentReferenceNumber": "$arn",
           |    "isAnASAgent": $isAnASAgent,
           |    "addressDetails": {
-          |        "addressLine1": "AdressLine1 A",
+          |        "addressLine1": "AddressLine1 A",
           |        "addressLine2": "AddressLine2 A",
           |        "addressLine3": "AddressLine3 A",
           |        "addressLine4": "AddressLine4 A",
@@ -190,6 +190,11 @@ trait DesStubs {
              |{
              |  "address":
              |  {
+             |   "addressLine1": "AddressLine1 A",
+         |        "addressLine2": "AddressLine2 A",
+         |        "addressLine3": "AddressLine3 A",
+         |        "addressLine4": "AddressLine4 A",
+         |        "countryCode": "GB",
              |    "postalCode": "AA1 1AA"
              |  },
              |  "isAnASAgent": $isAnASAgent,
@@ -211,6 +216,11 @@ trait DesStubs {
              |{
              |  "address":
              |  {
+             |    "addressLine1": "AddressLine1 A",
+         |        "addressLine2": "AddressLine2 A",
+         |        "addressLine3": "AddressLine3 A",
+         |        "addressLine4": "AddressLine4 A",
+             |    "countryCode": "GB",
              |    "postalCode": "AA1 1AA"
              |  },
              |  "isAnASAgent": $isAnASAgent,
@@ -233,6 +243,11 @@ trait DesStubs {
              |{
              |  "address":
              |  {
+             |    "addressLine1": "AddressLine1 A",
+         |        "addressLine2": "AddressLine2 A",
+         |        "addressLine3": "AddressLine3 A",
+         |        "addressLine4": "AddressLine4 A",
+         |        "countryCode": "GB",
              |    "postalCode": "AA1 1AA"
              |  },
              |  "isAnASAgent": $isAnASAgent
@@ -249,6 +264,8 @@ trait DesStubs {
              |{
              |  "address":
              |  {
+             |    "addressLine1": "AddressLine1 A",
+             |    "countryCode": "GB"
              |  },
              |  "isAnASAgent": true
              |}

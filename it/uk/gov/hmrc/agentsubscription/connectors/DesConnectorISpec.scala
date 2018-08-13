@@ -101,12 +101,15 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
   }
 
   "getRegistration" should {
+    val businessAddress =
+      BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("AA1 1AA"), "GB")
+
     "return registration details for a organisation UTR that is known by DES" in {
       organisationRegistrationExists(utr)
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(Some("AA1 1AA"), isAnASAgent = true, Some("My Agency"), None, Some(Arn("TARN0000001"))))
+      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, Some("My Agency"), None, Some(Arn("TARN0000001")), businessAddress))
     }
 
     "return registration details for an individual UTR that is known by DES" in {
@@ -114,7 +117,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(Some("AA1 1AA"), isAnASAgent = true, None, Some(DesIndividual("First", "Last")), Some(Arn("AARN0000002"))))
+      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, Some(DesIndividual("First", "Last")), Some(Arn("AARN0000002")), businessAddress))
     }
 
     "return registration details without organisationName for a UTR that is known by DES" in {
@@ -122,7 +125,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(Some("AA1 1AA"), isAnASAgent = true, None, None, None))
+      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, None, None, businessAddress))
     }
 
     "return registration details without postcode for a UTR that is known by DES" in {
@@ -130,7 +133,8 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(None, isAnASAgent = true, None, None, None))
+      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, None, None,
+        BusinessAddress("AddressLine1 A", None, None, None, None, "GB")))
     }
 
     "not return a registration for a UTR that is unknown to DES" in {

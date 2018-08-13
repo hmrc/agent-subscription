@@ -70,7 +70,7 @@ class SubscriptionService @Inject() (
   def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
 
     desConnector.getRegistration(subscriptionRequest.utr) flatMap {
-      case Some(DesRegistrationResponse(Some(desPostcode), isAnAsAgent, _, _, maybeArn)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => {
+      case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _))) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => {
         subscribe(subscriptionRequest, authIds, isAnAsAgent, maybeArn)
       }
       case _ => Future successful None

@@ -17,8 +17,13 @@
 package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.Json.format
+import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 
-case class RegistrationDetails(isSubscribedToAgentServices: Boolean, isSubscribedToETMP: Boolean, taxpayerName: Option[String])
+case class RegistrationDetails(
+  isSubscribedToAgentServices: Boolean,
+  isSubscribedToETMP: Boolean,
+  taxpayerName: Option[String],
+  address: BusinessAddress)
 
 object RegistrationDetails {
   implicit val registrationDetailsObjectFormat = format[RegistrationDetails]

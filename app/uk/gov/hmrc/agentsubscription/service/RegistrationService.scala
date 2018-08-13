@@ -51,24 +51,24 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
 
   def getRegistration(utr: Utr, postcode: String)(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Future[Option[RegistrationDetails]] = {
     desConnector.getRegistration(utr) flatMap {
-      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, organisationName, None, agentReferenceNumber)) =>
+      case Some(DesRegistrationResponse(isAnASAgent, organisationName, None, agentReferenceNumber, businessAddress)) if businessAddress.postalCode.nonEmpty =>
         if (isAnASAgent) {
           getLogger.warn(s"The business partner record of type organisation associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned")
         }
 
-        checkRegistrationAndEnrolment(utr, postcode, desPostcode, isAnASAgent, organisationName, agentReferenceNumber)
-      case Some(DesRegistrationResponse(Some(desPostcode), isAnASAgent, _, Some(DesIndividual(first, last)), agentReferenceNumber)) =>
+        checkRegistrationAndEnrolment(utr, postcode, businessAddress.postalCode.get, isAnASAgent, organisationName, agentReferenceNumber, businessAddress)
+      case Some(DesRegistrationResponse(isAnASAgent, _, Some(DesIndividual(first, last)), agentReferenceNumber, businessAddress)) if businessAddress.postalCode.nonEmpty =>
         if (isAnASAgent) {
           getLogger.warn(s"The business partner record of type individual associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned")
         }
 
-        checkRegistrationAndEnrolment(utr, postcode, desPostcode, isAnASAgent, Some(s"$first $last"), agentReferenceNumber)
-      case Some(DesRegistrationResponse(postCode, isAnASAgent, _, _, agentReferenceNumber)) =>
+        checkRegistrationAndEnrolment(utr, postcode, businessAddress.postalCode.get, isAnASAgent, Some(s"$first $last"), agentReferenceNumber, businessAddress)
+      case Some(DesRegistrationResponse(isAnASAgent, _, _, agentReferenceNumber, address)) =>
         if (isAnASAgent) {
-          getLogger.warn(s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${postCode.nonEmpty}")
+          getLogger.warn(s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${address.postalCode.nonEmpty}")
           auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, Some(true), Some(isAnASAgent), agentReferenceNumber)
         } else {
-          getLogger.warn(s"The business partner record associated with $utr is not subscribed with postcode: ${postCode.nonEmpty}")
+          getLogger.warn(s"The business partner record associated with $utr is not subscribed with postcode: ${address.postalCode.nonEmpty}")
           auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, Some(isAnASAgent), None)
         }
         Future.successful(None)
@@ -81,7 +81,8 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
 
   private def checkRegistrationAndEnrolment(utr: Utr, postcode: String, desPostcode: String,
     isAnASAgent: Boolean, taxpayerName: Option[String],
-    maybeArn: Option[Arn])(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Future[Option[RegistrationDetails]] = {
+    maybeArn: Option[Arn],
+    businessAddress: BusinessAddress)(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Future[Option[RegistrationDetails]] = {
     val knownFactsMatched = postcodesMatch(desPostcode, postcode)
 
     if (knownFactsMatched) {
@@ -92,7 +93,7 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
 
       isSubscribedToAgentServices.map { isSubscribed =>
         auditCheckAgencyStatus(utr, postcode, knownFactsMatched, isSubscribedToAgentServices = Some(isSubscribed), Some(isAnASAgent), maybeArn)
-        Some(RegistrationDetails(isSubscribed, isAnASAgent, taxpayerName))
+        Some(RegistrationDetails(isSubscribed, isAnASAgent, taxpayerName, businessAddress))
       }
 
     } else {
