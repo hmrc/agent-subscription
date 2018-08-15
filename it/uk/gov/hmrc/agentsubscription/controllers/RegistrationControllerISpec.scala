@@ -89,6 +89,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
         (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe true
         (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
         testBusinessAddress(response.json)
+        (response.json \ "emailAddress").as[String] shouldBe "agent1@example.com"
       }
 
       "there is no group already allocated the HMRC-AS-AGENT enrolment with their AgentReferenceNumber" in {
@@ -101,6 +102,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
         (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe true
         (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
         testBusinessAddress(response.json)
+        (response.json \ "emailAddress").as[String] shouldBe "agent1@example.com"
       }
     }
 
@@ -113,6 +115,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
       (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
       testBusinessAddress(response.json)
+      (response.json \ "emailAddress").as[String] shouldBe "agent1@example.com"
     }
 
     "return 200 when des returns an individual for the utr and the postcodes match" in {
@@ -124,6 +127,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
       (response.json \ "taxpayerName").as[String] shouldBe "First Last"
       testBusinessAddress(response.json)
+      (response.json \ "emailAddress").as[String] shouldBe "individual@example.com"
     }
 
     "return 200 when des returns no organisation name" in {
@@ -134,6 +138,16 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
       testBusinessAddress(response.json)
+    }
+
+    "return 200 when des returns no email address" in {
+      requestIsAuthenticated().andIsAnAgent()
+      registrationExistsWithNoEmail(Utr("7000000002"))
+      val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
+      response.status shouldBe 200
+      (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
+      (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
+      (response.json \ "emailAddress").asOpt[String] shouldBe None
     }
   }
 

@@ -190,11 +190,11 @@ trait DesStubs {
              |{
              |  "address":
              |  {
-             |   "addressLine1": "AddressLine1 A",
-         |        "addressLine2": "AddressLine2 A",
-         |        "addressLine3": "AddressLine3 A",
-         |        "addressLine4": "AddressLine4 A",
-         |        "countryCode": "GB",
+             |    "addressLine1": "AddressLine1 A",
+             |    "addressLine2": "AddressLine2 A",
+             |    "addressLine3": "AddressLine3 A",
+             |    "addressLine4": "AddressLine4 A",
+             |    "countryCode": "GB",
              |    "postalCode": "AA1 1AA"
              |  },
              |  "isAnASAgent": $isAnASAgent,
@@ -202,7 +202,10 @@ trait DesStubs {
              |  {
              |    "organisationName": "My Agency"
              |  },
-             |  "agentReferenceNumber": "$arn"
+             |  "agentReferenceNumber": "$arn",
+             |  "contactDetails": {
+             |        "emailAddress": "agent1@example.com"
+             |    }
              |}
                """.stripMargin)))
   }
@@ -217,9 +220,9 @@ trait DesStubs {
              |  "address":
              |  {
              |    "addressLine1": "AddressLine1 A",
-         |        "addressLine2": "AddressLine2 A",
-         |        "addressLine3": "AddressLine3 A",
-         |        "addressLine4": "AddressLine4 A",
+             |    "addressLine2": "AddressLine2 A",
+             |    "addressLine3": "AddressLine3 A",
+             |    "addressLine4": "AddressLine4 A",
              |    "countryCode": "GB",
              |    "postalCode": "AA1 1AA"
              |  },
@@ -229,7 +232,10 @@ trait DesStubs {
              |    "firstName": "First",
              |    "lastName": "Last"
              |  },
-             |  "agentReferenceNumber": "AARN0000002"
+             |  "agentReferenceNumber": "AARN0000002",
+             |  "contactDetails": {
+             |        "emailAddress": "individual@example.com"
+             |    }
              |}
                """.stripMargin)))
   }
@@ -244,13 +250,16 @@ trait DesStubs {
              |  "address":
              |  {
              |    "addressLine1": "AddressLine1 A",
-         |        "addressLine2": "AddressLine2 A",
-         |        "addressLine3": "AddressLine3 A",
-         |        "addressLine4": "AddressLine4 A",
-         |        "countryCode": "GB",
+             |    "addressLine2": "AddressLine2 A",
+             |    "addressLine3": "AddressLine3 A",
+             |    "addressLine4": "AddressLine4 A",
+             |    "countryCode": "GB",
              |    "postalCode": "AA1 1AA"
              |  },
-             |  "isAnASAgent": $isAnASAgent
+             |  "isAnASAgent": $isAnASAgent,
+             |  "contactDetails": {
+             |        "emailAddress": "agent1@example.com"
+             |    }
              |}
                """.stripMargin)))
   }
@@ -267,7 +276,30 @@ trait DesStubs {
              |    "addressLine1": "AddressLine1 A",
              |    "countryCode": "GB"
              |  },
-             |  "isAnASAgent": true
+             |  "isAnASAgent": true,
+             |  "contactDetails": {
+             |        "emailAddress": "agent1@example.com"
+             |    }
+             |}
+               """.stripMargin)))
+  }
+
+  def registrationExistsWithNoEmail(utr: Utr): Unit = {
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "address":
+             |  {
+             |    "addressLine1": "AddressLine1 A",
+             |    "countryCode": "GB",
+             |    "postalCode": "AA1 1AA"
+             |  },
+             |  "isAnASAgent": false,
+             |  "contactDetails": {
+             |    }
              |}
                """.stripMargin)))
   }

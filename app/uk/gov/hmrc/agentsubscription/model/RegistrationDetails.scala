@@ -23,7 +23,8 @@ case class RegistrationDetails(
   isSubscribedToAgentServices: Boolean,
   isSubscribedToETMP: Boolean,
   taxpayerName: Option[String],
-  address: BusinessAddress)
+  address: BusinessAddress,
+  emailAddress: Option[String])
 
 object RegistrationDetails {
   implicit val registrationDetailsObjectFormat = format[RegistrationDetails]
