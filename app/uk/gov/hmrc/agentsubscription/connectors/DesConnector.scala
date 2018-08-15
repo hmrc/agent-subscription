@@ -64,7 +64,8 @@ case class DesRegistrationResponse(
   organisationName: Option[String],
   individual: Option[DesIndividual],
   agentReferenceNumber: Option[Arn],
-  address: BusinessAddress)
+  address: BusinessAddress,
+  emailAddress: Option[String])
 
 object DesIndividual {
   implicit val formats: Format[DesIndividual] = Json.format[DesIndividual]
@@ -107,7 +108,8 @@ class DesConnector @Inject() (
           (r \ "organisation" \ "organisationName").asOpt[String],
           (r \ "individual").asOpt[DesIndividual],
           (r \ "agentReferenceNumber").asOpt[Arn],
-          (r \ "address").as[BusinessAddress]))
+          (r \ "address").as[BusinessAddress],
+          (r \ "contactDetails" \ "emailAddress").asOpt[String]))
       }
       case _ => None
     }
