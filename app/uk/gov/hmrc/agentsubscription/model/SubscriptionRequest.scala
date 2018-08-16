@@ -37,7 +37,7 @@ object Agency {
   implicit val reads: Reads[Agency] = (
     (__ \ "name").read[String](nameValidation) and
     (__ \ "address").read[Address] and
-    (__ \ "telephone").read[String](telephoneNumberValidation) and
+    (__ \ "telephone").readNullable[String](telephoneNumberValidation) and
     (__ \ "email").read[String](email))(Agency.apply _)
 }
 
@@ -65,7 +65,7 @@ case class Address(
 case class Agency(
   name: String,
   address: Address,
-  telephone: String,
+  telephone: Option[String],
   email: String)
 
 case class KnownFacts(postcode: String)

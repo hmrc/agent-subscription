@@ -64,7 +64,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         Agency(
           "Test Agency",
           Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = "BB1 1BB", countryCode = "GB"),
-          "01234 567890",
+          Some("01234 567890"),
           "testagency@example.com"))
       await(service.subscribeAgentToMtd(subscriptionRequest, authIds))
 
@@ -82,7 +82,6 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  },
           |  "agentReferenceNumber": "$arn",
           |  "agencyEmail": "testagency@example.com",
-          |  "agencyTelephoneNumber": "01234 567890",
           |  "utr": "${businessUtr.value}"
           |}
           |""".stripMargin).asInstanceOf[JsObject]
@@ -107,7 +106,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         Agency(
           "Test Agency",
           Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = agencyPostcode, countryCode = "GB"),
-          "01234 567890",
+          Some("01234 567890"),
           "testagency@example.com"))
 
       await(service.subscribeAgentToMtd(subscriptionRequest, authIds))
@@ -132,7 +131,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Agency(
             "Test Agency",
             Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = agencyPostcode, countryCode = "GB"),
-            "01234 567890",
+            Some("01234 567890"),
             "testagency@example.com"))
 
         val thrown = intercept[IllegalStateException](

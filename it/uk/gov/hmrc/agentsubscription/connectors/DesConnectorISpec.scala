@@ -52,6 +52,14 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       result shouldBe Arn("TARN0000001")
     }
 
+    "return an ARN when subscription is successful and the request does not have a telephone number" in {
+      subscriptionSucceedsWithoutTelephoneNo(utr, request.copy(telephoneNumber = None))
+
+      val result = await(connector.subscribeToAgentServices(utr, request.copy(telephoneNumber = None)))
+
+      result shouldBe Arn("TARN0000001")
+    }
+
     "propagate an exception containing the utr if there is a duplicate submission" in {
       subscriptionAlreadyExists(utr)
 
@@ -225,7 +233,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     agencyName = "My Agency",
     agencyAddress = Address(addressLine1 = "1 Some Street", addressLine2 = Some("MyTown"), postalCode = "AA1 1AA", countryCode = "GB"),
     agencyEmail = "agency@example.com",
-    telephoneNumber = "0123 456 7890")
+    telephoneNumber = Some("0123 456 7890"))
 
   trait MockAuditingContext extends MockitoSugar with Eventually {
     private val mockAuditConnector = mock[AuditConnector]

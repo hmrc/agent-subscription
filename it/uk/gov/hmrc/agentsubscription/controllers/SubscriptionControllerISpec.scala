@@ -75,6 +75,24 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         verify(0, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
       }
+
+      "all fields except telephone number are populated" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
+        subscriptionSucceedsWithoutTelephoneNo(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(groupId, arn)
+
+        val result = await(doSubscriptionRequest(subscriptionRequestWithoutTelephoneNo))
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+      }
     }
 
     "return Conflict if already subscribed (both ETMP has isAnAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in {
@@ -215,6 +233,13 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       "telephone number contains words" in {
         requestIsAuthenticated()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "0123 456 78aa")))))
+
+        result.status shouldBe 400
+      }
+
+      "telephone number is provided but empty" in {
+        requestIsAuthenticated()
+        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "")))))
 
         result.status shouldBe 400
       }
@@ -521,6 +546,28 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
        |    },
        |    "email": "agency@example.com",
        |    "telephone": "0123 456 7890"
+       |  }
+       |}
+     """.stripMargin
+
+  private val subscriptionRequestWithoutTelephoneNo: String =
+    s"""
+       |{
+       |  "utr": "${utr.value}",
+       |  "knownFacts": {
+       |    "postcode": "AA1 1AA"
+       |  },
+       |  "agency": {
+       |    "name": "My Agency",
+       |    "address": {
+       |      "addressLine1": "Flat 1",
+       |      "addressLine2": "1 Some Street",
+       |      "addressLine3": "Anytown",
+       |      "addressLine4": "County",
+       |      "postcode": "AA1 2AA",
+       |      "countryCode": "GB"
+       |    },
+       |    "email": "agency@example.com"
        |  }
        |}
      """.stripMargin

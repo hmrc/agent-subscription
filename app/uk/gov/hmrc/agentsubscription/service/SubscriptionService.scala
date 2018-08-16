@@ -40,8 +40,7 @@ private case class SubscriptionAuditDetail(
   utr: Utr,
   agencyName: String,
   agencyAddress: model.Address,
-  agencyEmail: String,
-  agencyTelephoneNumber: String)
+  agencyEmail: String)
 
 case class EnrolmentAlreadyAllocated(message: String) extends Exception(message)
 
@@ -115,8 +114,7 @@ class SubscriptionService @Inject() (
         subscriptionRequest.utr,
         subscriptionRequest.agency.name,
         subscriptionRequest.agency.address,
-        subscriptionRequest.agency.email,
-        subscriptionRequest.agency.telephone))
+        subscriptionRequest.agency.email))
 
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
@@ -151,6 +149,6 @@ class SubscriptionService @Inject() (
     agency = Agency(
       name = agentRecord.agencyName,
       address = agentRecord.agencyAddress,
-      telephone = agentRecord.phoneNumber.getOrElse(""),
+      telephone = agentRecord.phoneNumber,
       email = agentRecord.agencyEmail))
 }
