@@ -43,10 +43,6 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
         case _: EnrolmentAlreadyAllocated => Conflict
         case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
       }
-    }.recover {
-      case ex =>
-        ex.printStackTrace()
-        BadRequest
     }
   }
 

@@ -2,6 +2,7 @@ package uk.gov.hmrc.agentsubscription.stubs
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
+import play.api.libs.json.Json
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesSubscriptionRequest
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
@@ -112,7 +113,32 @@ trait DesStubs {
            |    "postalCode": "${request.agencyAddress.postalCode}",
            |    "countryCode": "${request.agencyAddress.countryCode}"
            |  },
-           |  "telephoneNumber": "${request.telephoneNumber.getOrElse("")}",
+           |  "telephoneNumber": "${request.telephoneNumber.get}",
+           |  "agencyEmail": "${request.agencyEmail}"
+           |}
+          """.stripMargin))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "agentRegistrationNumber": "TARN0000001"
+             |}
+               """.stripMargin)))
+  }
+
+  def subscriptionSucceedsWithoutTelephoneNo(utr: Utr, request: DesSubscriptionRequest): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+      .withRequestBody(equalToJson(
+        s"""
+           |{
+           |  "agencyName": "${request.agencyName}",
+           |  "agencyAddress": {
+           |    "addressLine1": "${request.agencyAddress.addressLine1}",
+           |    "addressLine2": "${request.agencyAddress.addressLine2.get}",
+           |    "postalCode": "${request.agencyAddress.postalCode}",
+           |    "countryCode": "${request.agencyAddress.countryCode}"
+           |  },
            |  "agencyEmail": "${request.agencyEmail}"
            |}
           """.stripMargin))
