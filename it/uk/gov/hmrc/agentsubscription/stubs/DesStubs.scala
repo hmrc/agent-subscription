@@ -59,7 +59,34 @@ trait DesStubs {
            |    "postalCode": "${request.agency.address.postcode}",
            |    "countryCode": "${request.agency.address.countryCode}"
            |  },
-           |  "telephoneNumber": "${request.agency.telephone}",
+           |  "telephoneNumber": "${request.agency.telephone.get}",
+           |  "agencyEmail": "${request.agency.email}"
+           |}
+              """.stripMargin))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "agentRegistrationNumber": "TARN0000001"
+             |}
+               """.stripMargin)))
+  }
+
+  def subscriptionSucceedsWithoutTelephoneNo(utr: Utr, request: SubscriptionRequest): Unit = {
+    stubFor(post(urlEqualTo(s"/registration/agents/utr/${utr.value}"))
+      .withRequestBody(equalToJson(
+        s"""
+           |{
+           |  "agencyName": "${request.agency.name}",
+           |  "agencyAddress": {
+           |    "addressLine1": "${request.agency.address.addressLine1}",
+           |    ${request.agency.address.addressLine2.map(l => s""""addressLine2":"$l",""") getOrElse ""}
+           |    ${request.agency.address.addressLine3.map(l => s""""addressLine3":"$l",""") getOrElse ""}
+           |    ${request.agency.address.addressLine4.map(l => s""""addressLine4":"$l",""") getOrElse ""}
+           |    "postalCode": "${request.agency.address.postcode}",
+           |    "countryCode": "${request.agency.address.countryCode}"
+           |  },
            |  "agencyEmail": "${request.agency.email}"
            |}
               """.stripMargin))
@@ -85,7 +112,7 @@ trait DesStubs {
            |    "postalCode": "${request.agencyAddress.postalCode}",
            |    "countryCode": "${request.agencyAddress.countryCode}"
            |  },
-           |  "telephoneNumber": "${request.telephoneNumber}",
+           |  "telephoneNumber": "${request.telephoneNumber.getOrElse("")}",
            |  "agencyEmail": "${request.agencyEmail}"
            |}
           """.stripMargin))

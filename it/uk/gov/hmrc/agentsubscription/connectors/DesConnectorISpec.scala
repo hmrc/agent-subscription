@@ -225,7 +225,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     agencyName = "My Agency",
     agencyAddress = Address(addressLine1 = "1 Some Street", addressLine2 = Some("MyTown"), postalCode = "AA1 1AA", countryCode = "GB"),
     agencyEmail = "agency@example.com",
-    telephoneNumber = "0123 456 7890")
+    telephoneNumber = Some("0123 456 7890"))
 
   trait MockAuditingContext extends MockitoSugar with Eventually {
     private val mockAuditConnector = mock[AuditConnector]

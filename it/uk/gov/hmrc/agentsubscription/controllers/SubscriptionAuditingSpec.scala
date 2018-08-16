@@ -120,7 +120,6 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
          |  },
          |  "agentReferenceNumber": "TARN0000001",
          |  "agencyEmail": "agency@example.com",
-         |  "agencyTelephoneNumber": "0123 456 7890",
          |  "utr": "${utr.value}"
          |}
          |""".stripMargin)
