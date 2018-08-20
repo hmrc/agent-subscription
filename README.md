@@ -42,16 +42,16 @@ If a business partner was found for given known facts then a 200 OK response wil
     {
       "isSubscribedToAgentServices": true,
       "isSubscribedToETMP": true,
-      "taxpayerName": "AgencyName",
+      "taxpayerName": "AgencyName", //optional
       "address": {
         "addressLine1": "Line1"
-        "addressLine2": "Line2"
-        "addressLine3": "Line3"
-        "addressLine4": "Line4"
+        "addressLine2": "Line2" //optional
+        "addressLine3": "Line3" //optional
+        "addressLine4": "Line4" //optionalt
         "postcode": "<postcode of the agency's registered taxpayer address>",
         "countryCode": "GB"
       },
-      "emailAddress": "agency@example.org"
+      "emailAddress": "agency@example.org" //optional
     }
 
 The `isSubscribedToAgentServices` flag will be true if the following holds:
