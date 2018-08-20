@@ -40,7 +40,18 @@ Return 400 if the UTR or postcode are invalid
 If a business partner was found for given known facts then a 200 OK response will be returned with a JSON body structured as follows:
 
     {
-      "isSubscribedToAgentServices": true
+      "isSubscribedToAgentServices": true,
+      "isSubscribedToETMP": true,
+      "taxpayerName": "AgencyName",
+      "address": {
+        "addressLine1": "Line1"
+        "addressLine2": "Line2"
+        "addressLine3": "Line3"
+        "addressLine4": "Line4"
+        "postcode": "<postcode of the agency's registered taxpayer address>",
+        "countryCode": "GB"
+      },
+      "emailAddress": "agency@example.org"
     }
 
 The `isSubscribedToAgentServices` flag will be true if the following holds:
@@ -48,10 +59,11 @@ The `isSubscribedToAgentServices` flag will be true if the following holds:
 - BPR's `isAsAgent` flag is true
 - HMRC-AS-AGENT enrolment has already been allocated to a group for the same AgentReferenceNumber in the BPR
 
+The `isSubscribedToETMP` flag will be true if BPR's `isAsAgent` flag is true.
+
 Notes: 
 1. The Agents team have implemented this through necessity however we believe this should be part of the Business Registration service.    
-2. This endpoint is currently not secured by auth. If the end point is rehomed then this should be reconsidered.
-3. It is anticipated that additional information will be added to the json response.
+2. It is anticipated that additional information will be added to the json response.
 
 
 ### Subscribe Registered Taxpayer to Agent Services
@@ -71,13 +83,13 @@ Request body:
         "name": "AgencyName"
         "address": {
           "addressLine1": "Line1"
-          "addressLine2": "Line2"
-          "addressLine3": "Line3"
-          "addressLine4": "Line4"
+          "addressLine2": "Line2" //optional
+          "addressLine3": "Line3" //optional
+          "addressLine4": "Line4" //optional
           "postcode": "<postcode of the agency's agency address>",
           "countryCode": "GB"
         }
-        "telephone": 1234
+        "telephone": "1234" // optional
         "email": a@a.com
       }
     }
