@@ -47,7 +47,7 @@ If a business partner was found for given known facts then a 200 OK response wil
         "addressLine1": "Line1"
         "addressLine2": "Line2" //optional
         "addressLine3": "Line3" //optional
-        "addressLine4": "Line4" //optionalt
+        "addressLine4": "Line4" //optional
         "postcode": "<postcode of the agency's registered taxpayer address>",
         "countryCode": "GB"
       },
