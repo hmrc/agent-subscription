@@ -43,7 +43,7 @@ object AgentRecord {
     (__ \ "agencyDetails" \ "agencyAddress" \ "countryCode").read[String] and
     (__ \ "agencyDetails" \ "agencyEmail").read[String] and
     (__ \ "addressDetails" \ "postalCode").read[String] and
-    (__ \ "contactDetails" \ "phoneNumber").readNullable[String])((arn, isAnASAgent, agencyName, addressLine1,
+    (__ \ "contactDetails" \ "phoneNumber").readNullable[String].or(Reads.pure(None: Option[String])))((arn, isAnASAgent, agencyName, addressLine1,
       addressLine2, addressLine3, addressLine4,
       agencyPostcode, countryCode, agencyEmail, businessPostcode, phoneNumber) =>
       AgentRecord(arn, isAnASAgent, agencyName, Address(

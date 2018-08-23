@@ -347,6 +347,40 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
     }
 
+    "a valid utr is given as input when the user is not enrolled in EMAC but is subscribed in ETMP and DES-GetAgentRecord record does not contain a telephone number" in {
+      requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+      agentRecordExistsWithoutPhoneNumber(utr, true, arn)
+      allocatedPrincipalEnrolmentNotExists(arn)
+      deleteKnownFactsSucceeds(arn)
+      createKnownFactsSucceeds(arn)
+      enrolmentSucceeds(groupId, arn)
+
+      val result = await(doUpdateSubscriptionRequest())
+
+      result.status shouldBe 200
+      (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+      verify(1, getRequestedFor(urlEqualTo(s"/registration/personal-details/utr/${utr.value}")))
+      verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+    }
+
+    "a valid utr is given as input when the user is not enrolled in EMAC but is subscribed in ETMP and DES-GetAgentRecord record does not contain contact details" in {
+      requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+      agentRecordExistsWithoutContactDetails(utr, true, arn)
+      allocatedPrincipalEnrolmentNotExists(arn)
+      deleteKnownFactsSucceeds(arn)
+      createKnownFactsSucceeds(arn)
+      enrolmentSucceeds(groupId, arn)
+
+      val result = await(doUpdateSubscriptionRequest())
+
+      result.status shouldBe 200
+      (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+      verify(1, getRequestedFor(urlEqualTo(s"/registration/personal-details/utr/${utr.value}")))
+      verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+    }
+
     "return Conflict if already subscribed (both ETMP has isAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in {
       requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
       agentRecordExists(utr, true, arn)
