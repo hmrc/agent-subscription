@@ -328,10 +328,22 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
   }
 
   "updating a partial subscription" should {
-    "return a response containing the ARN" when {
-      "a valid utr is given as input when the user is not enrolled in EMAC but is subscribed in ETMP" in {
+    "return a response containing the ARN a valid utr is given as input and when the user is not enrolled in EMAC but is subscribed in ETMP" when {
+      "with full DES-GetAgentRecord" in {
+        testPartialSubscriptionWith(agentRecordExists(utr, true, arn))
+      }
+
+      "the DES-GetAgentRecord does not contain a telephone number" in {
+        testPartialSubscriptionWith(agentRecordExistsWithoutPhoneNumber(utr, true, arn))
+      }
+
+      "DES-GetAgentRecord does not contain contact details" in {
+        testPartialSubscriptionWith(agentRecordExistsWithoutContactDetails(utr, true, arn))
+      }
+
+      def testPartialSubscriptionWith(givenAgentRecord: => Unit) = {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-        agentRecordExists(utr, true, arn)
+        givenAgentRecord
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)

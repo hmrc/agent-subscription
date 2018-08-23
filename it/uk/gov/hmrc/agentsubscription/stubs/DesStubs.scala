@@ -2,7 +2,6 @@ package uk.gov.hmrc.agentsubscription.stubs
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
-import play.api.libs.json.Json
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesSubscriptionRequest
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
@@ -207,6 +206,72 @@ trait DesStubs {
           |        "agencyEmail": "agency@example.com"
           |    }
           |}
+        """.stripMargin)))
+  }
+
+  def agentRecordExistsWithoutContactDetails(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001"): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/registration/personal-details/utr/${utr.value}"))).willReturn(aResponse()
+      .withStatus(200)
+      .withBody(
+        s"""
+           |{
+           |    "agentReferenceNumber": "$arn",
+           |    "isAnASAgent": $isAnASAgent,
+           |    "addressDetails": {
+           |        "addressLine1": "AddressLine1 A",
+           |        "addressLine2": "AddressLine2 A",
+           |        "addressLine3": "AddressLine3 A",
+           |        "addressLine4": "AddressLine4 A",
+           |        "postalCode": "TF3 4ER",
+           |        "countryCode": "GB"
+           |    },
+           |    "agencyDetails": {
+           |        "agencyName": "My Agency",
+           |        "agencyAddress": {
+           |            "addressLine1": "Flat 1",
+           |            "addressLine2": "1 Some Street",
+           |            "addressLine3": "Anytown",
+           |            "addressLine4": "County",
+           |            "postalCode": "AA1 2AA",
+           |            "countryCode": "GB"
+           |        },
+           |        "agencyEmail": "agency@example.com"
+           |    }
+           |}
+        """.stripMargin)))
+  }
+
+  def agentRecordExistsWithoutPhoneNumber(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001"): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/registration/personal-details/utr/${utr.value}"))).willReturn(aResponse()
+      .withStatus(200)
+      .withBody(
+        s"""
+           |{
+           |    "agentReferenceNumber": "$arn",
+           |    "isAnASAgent": $isAnASAgent,
+           |    "addressDetails": {
+           |        "addressLine1": "AddressLine1 A",
+           |        "addressLine2": "AddressLine2 A",
+           |        "addressLine3": "AddressLine3 A",
+           |        "addressLine4": "AddressLine4 A",
+           |        "postalCode": "TF3 4ER",
+           |        "countryCode": "GB"
+           |    },
+           |    "contactDetails": {
+           |    },
+           |    "agencyDetails": {
+           |        "agencyName": "My Agency",
+           |        "agencyAddress": {
+           |            "addressLine1": "Flat 1",
+           |            "addressLine2": "1 Some Street",
+           |            "addressLine3": "Anytown",
+           |            "addressLine4": "County",
+           |            "postalCode": "AA1 2AA",
+           |            "countryCode": "GB"
+           |        },
+           |        "agencyEmail": "agency@example.com"
+           |    }
+           |}
         """.stripMargin)))
   }
 
