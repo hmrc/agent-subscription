@@ -2,7 +2,6 @@ package uk.gov.hmrc.agentsubscription.stubs
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
-import play.api.libs.json.{ JsObject, Json }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesSubscriptionRequest
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
