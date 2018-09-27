@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import javax.inject.{ Inject, Singleton }
 import com.kenshoo.play.metrics.Metrics
+import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import play.api.libs.json.{ JsValue, Json, OFormat }
 import play.api.mvc.{ Result, _ }
@@ -28,8 +28,6 @@ import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core.retrieve.Retrievals.{ affinityGroup, allEnrolments, credentials, groupIdentifier }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
 import uk.gov.hmrc.auth.core.{ Enrolment, _ }
-import uk.gov.hmrc.http.{ HeaderCarrier, Upstream5xxResponse }
-import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -56,11 +54,8 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
   private val agentEnrolId = "AgentReferenceNumber"
   private val isAnAgent = true
 
-  implicit val hc: HeaderCarrier = new HeaderCarrier
-
   def affinityGroupAndEnrolments(action: SubscriptionAuthAction) = Action.async(parse.json) {
     implicit request =>
-      implicit val hc = fromHeadersAndSession(request.headers, None)
       authorised(AuthProvider).retrieve(affinityGroup and allEnrolments and credentials and groupIdentifier) {
         case Some(affinityG) ~ allEnrols ~ Credentials(providerId, _) ~ Some(groupId) =>
           (isAgent(affinityG), extractEnrolmentData(allEnrols.enrolments, agentEnrol, agentEnrolId)) match {
@@ -78,7 +73,6 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
 
   def affinityGroupAndCredentials(action: RegistrationAuthAction) = Action.async {
     implicit request =>
-      implicit val hc = fromHeadersAndSession(request.headers, None)
 
       authorised(AuthProvider).retrieve(affinityGroup and credentials) {
         case (Some(affinityG) ~ Credentials(providerId, providerType)) => {
