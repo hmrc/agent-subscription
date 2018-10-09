@@ -18,10 +18,12 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import javax.inject._
 import com.kenshoo.play.metrics.Metrics
+import play.api.Logger
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
 import play.api.mvc.{ AnyContent, Request, Result }
 import uk.gov.hmrc.agentsubscription.connectors.{ AuthActions, MicroserviceAuthConnector, Provider }
+import uk.gov.hmrc.agentsubscription.connectors.{ InvalidBusinessAddressException, InvalidIsAnASAgentException }
 import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
@@ -44,6 +46,14 @@ class RegistrationController @Inject() (service: RegistrationService)(implicit m
       service.getRegistration(utr, postcode).map(_
         .map(registrationDetails => Ok(toJson(registrationDetails)))
         .getOrElse(NotFound))
+        .recover {
+          case InvalidBusinessAddressException =>
+            Logger.info(InvalidBusinessAddressException.error.getMessage)
+            NotFound
+          case InvalidIsAnASAgentException =>
+            Logger.info(InvalidIsAnASAgentException.error.getMessage)
+            InternalServerError
+        }
 
   }
 

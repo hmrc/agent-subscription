@@ -101,14 +101,24 @@ class DesConnector @Inject() (
   }
 
   def getRegistration(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DesRegistrationResponse]] = {
-    getRegistrationJson(utr) map {
+    getRegistrationJson(utr).map {
       case Some(r) => {
+        def address: BusinessAddress = (r \ "address").validate[BusinessAddress] match {
+          case JsSuccess(value, _) => value
+          case JsError(_) => throw InvalidBusinessAddressException
+        }
+
+        def isAnASAgent = (r \ "isAnASAgent").validate[Boolean] match {
+          case JsSuccess(value, _) => value
+          case JsError(_) => throw InvalidIsAnASAgentException
+        }
+
         Some(DesRegistrationResponse(
-          (r \ "isAnASAgent").as[Boolean],
+          isAnASAgent,
           (r \ "organisation" \ "organisationName").asOpt[String],
           (r \ "individual").asOpt[DesIndividual],
           (r \ "agentReferenceNumber").asOpt[Arn],
-          (r \ "address").as[BusinessAddress],
+          address,
           (r \ "contactDetails" \ "emailAddress").asOpt[String]))
       }
       case _ => None
@@ -158,3 +168,13 @@ class DesConnector @Inject() (
 }
 
 class DesConnectorException(val reason: String, val cause: Throwable) extends RuntimeException(reason, cause)
+
+sealed trait DesResponseJsonException extends RuntimeException {
+  def error = this match {
+    case InvalidBusinessAddressException => new RuntimeException("Invalid business address found in DES response")
+    case InvalidIsAnASAgentException => new RuntimeException("Invalid IsAnASAgent found in DES response")
+  }
+}
+
+case object InvalidBusinessAddressException extends DesResponseJsonException
+case object InvalidIsAnASAgentException extends DesResponseJsonException

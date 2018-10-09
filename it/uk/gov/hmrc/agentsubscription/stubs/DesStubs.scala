@@ -402,6 +402,44 @@ trait DesStubs {
                """.stripMargin)))
   }
 
+  def registrationExistsWithNoAddress(utr: Utr): Unit = {
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "address":
+             |  {
+             |    "countryCode": "ZZ"
+             |  },
+             |  "isAnASAgent": true,
+             |  "contactDetails": {
+             |        "emailAddress": "agent1@example.com"
+             |    }
+             |}
+               """.stripMargin)))
+  }
+
+  def registrationExistsWithNoIsAnASAgent(utr: Utr): Unit = {
+    stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             |{
+             |  "address":
+             |  {
+             |    "addressLine1": "AddressLine1 A",
+             |    "countryCode": "GB"
+             |  },
+             |  "contactDetails": {
+             |        "emailAddress": "agent1@example.com"
+             |    }
+             |}
+               """.stripMargin)))
+  }
+
   def registrationExistsWithNoEmail(utr: Utr): Unit = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
