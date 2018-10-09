@@ -78,6 +78,13 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       response.status shouldBe 400
     }
 
+    "return 404 when DES response does not contain addressline1 mandatory field" in {
+      requestIsAuthenticated().andIsAnAgent()
+      registrationExistsWithNoAddress(Utr("7000000002"))
+      val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
+      response.status shouldBe 404
+    }
+
     "return 500 when DES response does not contain isAnASAgent mandatory field" in {
       requestIsAuthenticated().andIsAnAgent()
       registrationExistsWithNoIsAnASAgent(Utr("7000000002"))
