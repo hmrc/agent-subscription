@@ -78,6 +78,13 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       response.status shouldBe 400
     }
 
+    "return 500 when DES response does not contain isAnASAgent mandatory field" in {
+      requestIsAuthenticated().andIsAnAgent()
+      registrationExistsWithNoIsAnASAgent(Utr("7000000002"))
+      val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
+      response.status shouldBe 500
+    }
+
     "return 200 when des returns an AS Agent for the utr and the postcodes match" when {
       "there is a group already allocated the HMRC-AS-AGENT enrolment with their AgentReferenceNumber" in {
         requestIsAuthenticated().andIsAnAgent()
