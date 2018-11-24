@@ -16,12 +16,14 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import org.mockito.ArgumentMatchers.{ any, anyString, eq => eqs, contains }
-import org.mockito.Mockito.{ verify, when }
+import java.time.LocalDate
+
+import org.mockito.ArgumentMatchers.{any, anyString, contains, eq => eqs}
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
-import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.connectors.{ EnrolmentRequest, Address => _, _ }
@@ -33,7 +35,7 @@ import uk.gov.hmrc.play.http.GatewayTimeoutException
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
@@ -41,10 +43,11 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private val taxEnrolmentConnector = resettingMock[TaxEnrolmentsConnector]
   private val auditService = resettingMock[AuditService]
   private val recoveryRepository = resettingMock[RecoveryRepository]
+  private val agentAssuranceConnector = resettingMock[AgentAssuranceConnector]
 
   private val authIds = AuthIds("userId", "groupId")
 
-  private val service = new SubscriptionService(desConnector, taxEnrolmentConnector, auditService, recoveryRepository)
+  private val service = new SubscriptionService(desConnector, taxEnrolmentConnector, auditService, recoveryRepository, agentAssuranceConnector)
   private implicit val hc = HeaderCarrier()
 
   private implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
@@ -190,6 +193,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
+
+    when(agentAssuranceConnector.updateAmls(any[Utr], eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Some(AmlsDetails(businessUtr, "supervisory", "12345", LocalDate.now(), Some(Arn(arn)))))
   }
 
   private def subscriptionHasPrincipalGroupIdsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {

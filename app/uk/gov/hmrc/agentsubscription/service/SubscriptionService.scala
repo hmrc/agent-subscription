@@ -16,20 +16,20 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.Request
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription._
-import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscriptionEvent, AuditService }
+import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.model.{ Agency, AgentRecord, KnownFacts, SubscriptionRequest, UpdateSubscriptionRequest }
+import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
-import uk.gov.hmrc.http.{ HeaderCarrier, NotFoundException }
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 private object SubscriptionAuditDetail {
   implicit val writes = Json.writes[SubscriptionAuditDetail]
@@ -40,7 +40,8 @@ private case class SubscriptionAuditDetail(
   utr: Utr,
   agencyName: String,
   agencyAddress: model.Address,
-  agencyEmail: String)
+  agencyEmail: String,
+  amlsDetails: Option[AmlsDetails])
 
 case class EnrolmentAlreadyAllocated(message: String) extends Exception(message)
 
@@ -49,7 +50,8 @@ class SubscriptionService @Inject() (
   desConnector: DesConnector,
   taxEnrolmentsConnector: TaxEnrolmentsConnector,
   auditService: AuditService,
-  recoveryRepository: RecoveryRepository) {
+  recoveryRepository: RecoveryRepository,
+  agentAssuranceConnector: AgentAssuranceConnector) {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
     val address = subscriptionRequest.agency.address
@@ -57,7 +59,7 @@ class SubscriptionService @Inject() (
       agencyName = subscriptionRequest.agency.name,
       agencyEmail = subscriptionRequest.agency.email,
       telephoneNumber = subscriptionRequest.agency.telephone,
-      agencyAddress = Address(
+      agencyAddress = connectors.Address(
         address.addressLine1,
         address.addressLine2,
         address.addressLine3,
@@ -101,20 +103,22 @@ class SubscriptionService @Inject() (
         case _ => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
       }
       _ <- addKnownFactsAndEnrol(arn, subscriptionRequest, authIds)
+      amlsDetails <- agentAssuranceConnector.updateAmls(subscriptionRequest.utr, arn)
     } yield {
-      auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
+      auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, amlsDetails))
       Some(arn)
     }
   }
 
-  private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest) =
+  private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, amlsDetails: Option[AmlsDetails]) =
     toJsObject(
       SubscriptionAuditDetail(
         arn,
         subscriptionRequest.utr,
         subscriptionRequest.agency.name,
         subscriptionRequest.agency.address,
-        subscriptionRequest.agency.email))
+        subscriptionRequest.agency.email,
+        amlsDetails))
 
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 

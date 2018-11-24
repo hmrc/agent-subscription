@@ -1,16 +1,16 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
-import play.api.libs.json.Json.{ stringify, toJson }
+import play.api.libs.json.Json.{stringify, toJson}
 import play.api.libs.json._
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{ KnownFacts, SubscriptionRequest, UpdateSubscriptionRequest }
-import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentsubscription.model.{KnownFacts, SubscriptionRequest, UpdateSubscriptionRequest}
+import uk.gov.hmrc.agentsubscription.stubs.{AgentAssuranceStub, AuthStub, DesStubs, TaxEnrolmentsStubs}
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.ws.WSClient
 
-class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs {
-  private val utr = Utr("7000000002")
+class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub {
+   val utr = Utr("7000000002")
 
   val arn = "TARN0000001"
   val groupId = "groupId"
@@ -25,6 +25,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       "all fields are populated" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
+        updateAmlsSucceeds(utr, Arn(arn))
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
@@ -49,6 +50,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
+        updateAmlsSucceeds(utr, Arn(arn))
 
         val result = await(doSubscriptionRequest(removeFields(fields)))
 
@@ -66,6 +68,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         createKnownFactsSucceeds(arn)
         allocatedPrincipalEnrolmentNotExists(arn)
         enrolmentSucceeds(groupId, arn)
+        updateAmlsSucceeds(utr, Arn(arn))
 
         val result = await(doSubscriptionRequest())
 
@@ -84,8 +87,28 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
+        updateAmlsSucceeds(utr, Arn(arn))
 
         val result = await(doSubscriptionRequest(subscriptionRequestWithoutTelephoneNo))
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+      }
+
+      "even if the updateAmls endpoint is failed with 404 error" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
+        updateAmlsFailsWith404(utr, Arn(arn))
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(groupId, arn)
+
+        val result = await(doSubscriptionRequest())
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
@@ -348,6 +371,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
+        updateAmlsSucceeds(utr, Arn(arn))
 
         val result = await(doUpdateSubscriptionRequest())
 
