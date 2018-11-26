@@ -18,12 +18,12 @@ package uk.gov.hmrc.agentsubscription.service
 
 import java.time.LocalDate
 
-import org.mockito.ArgumentMatchers.{any, anyString, contains, eq => eqs}
-import org.mockito.Mockito.{verify, when}
+import org.mockito.ArgumentMatchers.{ any, anyString, contains, eq => eqs }
+import org.mockito.Mockito.{ verify, when }
 import org.scalatest.concurrent.Eventually
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.{ JsObject, Json }
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.connectors.{ EnrolmentRequest, Address => _, _ }
@@ -35,7 +35,7 @@ import uk.gov.hmrc.play.http.GatewayTimeoutException
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 

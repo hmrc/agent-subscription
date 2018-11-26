@@ -21,14 +21,14 @@ import java.net.URL
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{Inject, Named, Singleton}
-import play.api.libs.json.{JsObject, Json}
+import javax.inject.{ Inject, Named, Singleton }
+import play.api.libs.json.{ JsObject, Json }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.model.AmlsDetails
-import uk.gov.hmrc.http.{HeaderCarrier, HttpPut, HttpResponse, NotFoundException}
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpPut, HttpResponse, NotFoundException }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 @ImplementedBy(classOf[AgentAssuranceConnectorImpl])
 trait AgentAssuranceConnector {
@@ -36,10 +36,10 @@ trait AgentAssuranceConnector {
 }
 
 @Singleton
-class AgentAssuranceConnectorImpl @Inject()(
-                                             @Named("agent-assurance-baseUrl") baseUrl: URL,
-                                             http: HttpPut,
-                                             metrics: Metrics)
+class AgentAssuranceConnectorImpl @Inject() (
+  @Named("agent-assurance-baseUrl") baseUrl: URL,
+  http: HttpPut,
+  metrics: Metrics)
   extends AgentAssuranceConnector with HttpAPIMonitor {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry

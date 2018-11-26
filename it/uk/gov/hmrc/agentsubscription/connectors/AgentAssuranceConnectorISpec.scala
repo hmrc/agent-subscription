@@ -5,9 +5,9 @@ import java.net.URL
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.stubs.AgentAssuranceStub
-import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
+import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
 import uk.gov.hmrc.http.HttpPut
 import uk.gov.hmrc.play.test.UnitSpec
 

@@ -16,20 +16,20 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.Request
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription._
-import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
+import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscriptionEvent, AuditService }
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.{ HeaderCarrier, NotFoundException }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 private object SubscriptionAuditDetail {
   implicit val writes = Json.writes[SubscriptionAuditDetail]

@@ -1,16 +1,16 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
-import play.api.libs.json.Json.{stringify, toJson}
+import play.api.libs.json.Json.{ stringify, toJson }
 import play.api.libs.json._
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
-import uk.gov.hmrc.agentsubscription.model.{KnownFacts, SubscriptionRequest, UpdateSubscriptionRequest}
-import uk.gov.hmrc.agentsubscription.stubs.{AgentAssuranceStub, AuthStub, DesStubs, TaxEnrolmentsStubs}
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentsubscription.model.{ KnownFacts, SubscriptionRequest, UpdateSubscriptionRequest }
+import uk.gov.hmrc.agentsubscription.stubs.{ AgentAssuranceStub, AuthStub, DesStubs, TaxEnrolmentsStubs }
+import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.ws.WSClient
 
 class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub {
-   val utr = Utr("7000000002")
+  val utr = Utr("7000000002")
 
   val arn = "TARN0000001"
   val groupId = "groupId"
