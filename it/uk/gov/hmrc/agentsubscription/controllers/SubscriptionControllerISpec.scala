@@ -98,10 +98,29 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
       }
 
-      "even if the updateAmls endpoint is failed with 404 error" in {
+      "even if the updateAmls endpoint is failed with 404 NotFound error" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
-        updateAmlsFailsWith404(utr, Arn(arn))
+        updateAmlsFailsWithStatus(utr, Arn(arn), 404)
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(groupId, arn)
+
+        val result = await(doSubscriptionRequest())
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+      }
+
+      "even if the updateAmls endpoint is failed with 409 Conflict error" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
+        updateAmlsFailsWithStatus(utr, Arn(arn), 409)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)

@@ -24,9 +24,9 @@ trait AgentAssuranceStub {
         .withBody(Json.toJson(amlsDetails.copy(utr = utr, arn = Some(arn))).toString())
         .withStatus(200)))
 
-  def updateAmlsFailsWith404(utr: Utr, arn: Arn): StubMapping =
+  def updateAmlsFailsWithStatus(utr: Utr, arn: Arn, status: Int): StubMapping =
     stubFor(put(urlEqualTo(url(utr)))
       .withRequestBody(equalToJson(s"""{"value": "${arn.value}"}"""))
-      .willReturn(notFound()))
+      .willReturn(aResponse().withStatus(status)))
 
 }

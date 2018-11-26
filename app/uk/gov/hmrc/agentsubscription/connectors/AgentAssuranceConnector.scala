@@ -26,7 +26,7 @@ import play.api.libs.json.{ JsObject, Json }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.model.AmlsDetails
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpPut, HttpResponse, NotFoundException }
+import uk.gov.hmrc.http._
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -52,7 +52,7 @@ class AgentAssuranceConnectorImpl @Inject() (
       http.PUT[JsObject, HttpResponse](url.toString, Json.obj("value" -> arn.value))
         .map[Option[AmlsDetails]](r => Some(r.json.as[AmlsDetails]))
         .recover {
-          case _: NotFoundException =>
+          case _: NotFoundException | _: Upstream4xxResponse =>
             //allow agent to continue with subscriptin if existing Amls record is not found during update
             None
         }

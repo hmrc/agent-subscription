@@ -85,7 +85,13 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  },
           |  "agentReferenceNumber": "$arn",
           |  "agencyEmail": "testagency@example.com",
-          |  "utr": "${businessUtr.value}"
+          |  "utr": "${businessUtr.value}",
+          |  "amlsDetails": {"utr":"4000000009",
+          |      "supervisoryBody":"supervisory",
+          |      "membershipNumber":"12345",
+          |      "membershipExpiresOn":"2018-11-26",
+          |      "arn":"ARN0001"
+          |   }
           |}
           |""".stripMargin).asInstanceOf[JsObject]
       eventually {
