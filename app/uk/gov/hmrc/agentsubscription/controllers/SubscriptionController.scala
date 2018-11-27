@@ -36,7 +36,7 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
   def createSubscription = affinityGroupAndEnrolments { implicit request => implicit authIds =>
     implicit val hc = fromHeadersAndSession(request.headers, None)
     withJsonBody[SubscriptionRequest] { subscriptionRequest =>
-      subscriptionService.subscribeAgentToMtd(subscriptionRequest, authIds).map {
+      subscriptionService.createSubscription(subscriptionRequest, authIds).map {
         case Some(a) => Created(toJson(SubscriptionResponse(a)))
         case None => Forbidden
       }.recover {

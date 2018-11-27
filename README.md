@@ -90,7 +90,14 @@ Request body:
           "countryCode": "GB"
         }
         "telephone": "1234" // optional
-        "email": a@a.com
+        "email": a@a.com,
+        "amlsDetails": {   //optional
+            "utr":"4000000009",
+            "supervisoryBody":"supervisory",
+            "membershipNumber":"12345",
+            "membershipExpiresOn":"2019-11-11",
+            "arn":"ARN0001"
+        }
       }
     }
 

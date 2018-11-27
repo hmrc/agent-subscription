@@ -1,5 +1,7 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
+import java.time.LocalDate
+
 import play.api.libs.json.Json.{ stringify, toJson }
 import play.api.libs.json._
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
@@ -25,7 +27,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       "all fields are populated" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
-        updateAmlsSucceeds(utr, Arn(arn))
+        createAmlsSucceeds()
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
@@ -50,7 +52,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
-        updateAmlsSucceeds(utr, Arn(arn))
+        createAmlsSucceeds()
 
         val result = await(doSubscriptionRequest(removeFields(fields)))
 
@@ -87,7 +89,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
-        updateAmlsSucceeds(utr, Arn(arn))
+        createAmlsSucceeds()
 
         val result = await(doSubscriptionRequest(subscriptionRequestWithoutTelephoneNo))
 
@@ -98,10 +100,10 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
       }
 
-      "even if the updateAmls endpoint is failed with 404 NotFound error" in {
+      "even if the create amls endpoint is failed with 400 error" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
-        updateAmlsFailsWithStatus(utr, Arn(arn), 404)
+        createAmlsFailsWithStatus(400)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
@@ -117,10 +119,10 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
       }
 
-      "even if the updateAmls endpoint is failed with 409 Conflict error" in {
+      "even if the updateAmls endpoint is failed with 403 error" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
-        updateAmlsFailsWithStatus(utr, Arn(arn), 409)
+        createAmlsFailsWithStatus(403)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
@@ -600,7 +602,14 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
        |      "countryCode": "GB"
        |    },
        |    "email": "agency@example.com",
-       |    "telephone": "0123 456 7890"
+       |    "telephone": "0123 456 7890",
+       |    "amlsDetails": {
+       |      "utr":"4000000009",
+       |      "supervisoryBody":"supervisory",
+       |      "membershipNumber":"12345",
+       |      "membershipExpiresOn":"${LocalDate.now()}",
+       |      "arn":"ARN0001"
+       |    }
        |  }
        |}
      """.stripMargin

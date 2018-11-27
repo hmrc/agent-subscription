@@ -68,12 +68,25 @@ class SubscriptionService @Inject() (
         address.countryCode))
   }
 
-  def subscribeAgentToMtd(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
-
+  def createSubscription(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     desConnector.getRegistration(subscriptionRequest.utr) flatMap {
-      case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _), _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) => {
-        subscribe(subscriptionRequest, authIds, isAnAsAgent, maybeArn)
-      }
+      case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _), _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) =>
+        for {
+          arn <- maybeArn match {
+            case Some(arn) if isAnAsAgent => Future.successful(arn)
+            case _ => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
+          }
+          _ <- addKnownFactsAndEnrol(arn, subscriptionRequest, authIds)
+          _ <- {
+            subscriptionRequest.amlsDetails match {
+              case Some(details) => agentAssuranceConnector.createAmls(details)
+              case None => Future.successful(arn)
+            }
+          }
+        } yield {
+          auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
+          Some(arn)
+        }
       case _ => Future successful None
     }
   }
@@ -84,33 +97,24 @@ class SubscriptionService @Inject() (
       .flatMap { agentRecord =>
         if (agentRecord.isAnASAgent && postcodesMatch(agentRecord.businessPostcode, updateSubscriptionRequest.knownFacts.postcode)) {
           val subscriptionRequest = mergeSubscriptionRequest(updateSubscriptionRequest, agentRecord)
-
-          subscribe(subscriptionRequest, authIds, agentRecord.isAnASAgent, Some(agentRecord.arn))
+          for {
+            arn <- Some(agentRecord.arn) match {
+              case Some(arn) if agentRecord.isAnASAgent => Future.successful(arn)
+              case _ => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
+            }
+            updatedAmlsDetails <- agentAssuranceConnector.updateAmls(updateSubscriptionRequest.utr, arn)
+            _ <- addKnownFactsAndEnrol(arn, subscriptionRequest, authIds)
+          } yield {
+            auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
+            Some(arn)
+          }
         } else Future.successful(None)
       }.recover {
         case _: NotFoundException => None
       }
   }
 
-  private def subscribe(
-    subscriptionRequest: SubscriptionRequest,
-    authIds: AuthIds,
-    isAnAsAgent: Boolean,
-    maybeArn: Option[Arn])(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
-    for {
-      arn <- maybeArn match {
-        case Some(arn) if isAnAsAgent => Future.successful(arn)
-        case _ => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
-      }
-      _ <- addKnownFactsAndEnrol(arn, subscriptionRequest, authIds)
-      amlsDetails <- agentAssuranceConnector.updateAmls(subscriptionRequest.utr, arn)
-    } yield {
-      auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, amlsDetails))
-      Some(arn)
-    }
-  }
-
-  private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, amlsDetails: Option[AmlsDetails]) =
+  private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, updatedAmlsDetails: Option[AmlsDetails] = None) =
     toJsObject(
       SubscriptionAuditDetail(
         arn,
@@ -118,7 +122,7 @@ class SubscriptionService @Inject() (
         subscriptionRequest.agency.name,
         subscriptionRequest.agency.address,
         subscriptionRequest.agency.email,
-        amlsDetails))
+        subscriptionRequest.amlsDetails.orElse(updatedAmlsDetails)))
 
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
@@ -154,5 +158,6 @@ class SubscriptionService @Inject() (
       name = agentRecord.agencyName,
       address = agentRecord.agencyAddress,
       telephone = agentRecord.phoneNumber,
-      email = agentRecord.agencyEmail))
+      email = agentRecord.agencyEmail),
+    None)
 }

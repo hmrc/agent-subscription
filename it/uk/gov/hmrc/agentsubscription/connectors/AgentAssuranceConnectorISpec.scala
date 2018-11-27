@@ -8,7 +8,7 @@ import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.stubs.AgentAssuranceStub
 import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
-import uk.gov.hmrc.http.HttpPut
+import uk.gov.hmrc.http.{ HttpPost, HttpPut }
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -18,10 +18,34 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
   val utr = Utr("1234567890")
   val arn = Arn("UTR12345")
   private lazy val metrics = app.injector.instanceOf[Metrics]
-  private lazy val httpPut: HttpPut = app.injector.instanceOf[HttpPut]
+  private lazy val http: HttpPut with HttpPost = app.injector.instanceOf[HttpPut with HttpPost]
 
   private lazy val connector: AgentAssuranceConnector =
-    new AgentAssuranceConnectorImpl(new URL(s"http://localhost:$wireMockPort"), httpPut, metrics)
+    new AgentAssuranceConnectorImpl(new URL(s"http://localhost:$wireMockPort"), http, metrics)
+
+  "creating AMLS" should {
+    "return a successful response" in {
+
+      createAmlsSucceeds()
+
+      val result = await(connector.createAmls(amlsDetails))
+
+      result shouldBe true
+
+    }
+
+    "handle failure responses from agent-assurance backend during create amls" in {
+
+      List(400, 403).foreach { status =>
+
+        createAmlsFailsWithStatus(status)
+
+        val result = await(connector.createAmls(amlsDetails))
+
+        result shouldBe false
+      }
+    }
+  }
 
   "updating AMLS" should {
 

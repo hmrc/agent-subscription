@@ -52,7 +52,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
   private implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
 
-  "subscribeAgentToMtd" should {
+  "CreateSubscription" should {
     "audit appropriate values" in {
       val businessUtr = Utr("4000000009")
       val businessPostcode = "AA1 1AA"
@@ -68,8 +68,10 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           "Test Agency",
           Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = "BB1 1BB", countryCode = "GB"),
           Some("01234 567890"),
-          "testagency@example.com"))
-      await(service.subscribeAgentToMtd(subscriptionRequest, authIds))
+          "testagency@example.com"),
+        Some(AmlsDetails(businessUtr, "supervisory", "12345", LocalDate.now(), Some(Arn(arn)))))
+
+      await(service.createSubscription(subscriptionRequest, authIds))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -89,7 +91,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "amlsDetails": {"utr":"4000000009",
           |      "supervisoryBody":"supervisory",
           |      "membershipNumber":"12345",
-          |      "membershipExpiresOn":"2018-11-26",
+          |      "membershipExpiresOn":"${LocalDate.now()}",
           |      "arn":"ARN0001"
           |   }
           |}
@@ -118,7 +120,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some("01234 567890"),
           "testagency@example.com"))
 
-      await(service.subscribeAgentToMtd(subscriptionRequest, authIds))
+      await(service.createSubscription(subscriptionRequest, authIds))
 
       verify(taxEnrolmentConnector).sendKnownFacts(eqs(arn.value), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
 
@@ -144,7 +146,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
             "testagency@example.com"))
 
         val thrown = intercept[IllegalStateException](
-          await(service.subscribeAgentToMtd(subscriptionRequest, authIds))).getMessage
+          await(service.createSubscription(subscriptionRequest, authIds))).getMessage
 
         thrown shouldBe "Failed to add known facts and enrol in EMAC for utr: 4000000009 and arn: ARN0001"
 
@@ -200,8 +202,8 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
 
-    when(agentAssuranceConnector.updateAmls(any[Utr], eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful Some(AmlsDetails(businessUtr, "supervisory", "12345", LocalDate.now(), Some(Arn(arn)))))
+    when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful true)
   }
 
   private def subscriptionHasPrincipalGroupIdsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {

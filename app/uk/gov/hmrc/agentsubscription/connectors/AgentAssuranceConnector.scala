@@ -23,6 +23,7 @@ import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Named, Singleton }
 import play.api.libs.json.{ JsObject, Json }
+import play.mvc.Http.Status.CREATED
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.model.AmlsDetails
@@ -32,17 +33,36 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 @ImplementedBy(classOf[AgentAssuranceConnectorImpl])
 trait AgentAssuranceConnector {
+
+  def createAmls(amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean]
+
   def updateAmls(utr: Utr, arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AmlsDetails]]
 }
 
 @Singleton
 class AgentAssuranceConnectorImpl @Inject() (
   @Named("agent-assurance-baseUrl") baseUrl: URL,
-  http: HttpPut,
+  http: HttpPut with HttpPost,
   metrics: Metrics)
   extends AgentAssuranceConnector with HttpAPIMonitor {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+
+  val createAmlsUrl: String = new URL(baseUrl, "/agent-assurance/amls").toString
+
+  override def createAmls(amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+    monitor(s"ConsumedAPI-AgentAssurance-amls-POST") {
+      http
+        .POST(createAmlsUrl, amlsDetails)
+        .map(_.status == CREATED)
+        .recover {
+          //400 -> Creating AMLS with Arn in it is not allowed
+          //403 -> There is an existing AMLS record for the Utr with Arn set
+          case e: Upstream4xxResponse if e.upstreamResponseCode == 403 => false
+          case _: BadRequestException => false
+        }
+    }
+  }
 
   def updateAmls(utr: Utr, arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AmlsDetails]] = {
 
