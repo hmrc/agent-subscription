@@ -53,7 +53,7 @@ class AgentAssuranceConnectorImpl @Inject() (
         .map[Option[AmlsDetails]](r => Some(r.json.as[AmlsDetails]))
         .recover {
           case _: NotFoundException | _: Upstream4xxResponse =>
-            //allow agent to continue with subscriptin if existing Amls record is not found during update
+            //allow agent to continue with subscription if existing Amls record is not found or already contains the same arn during update
             None
         }
     }
