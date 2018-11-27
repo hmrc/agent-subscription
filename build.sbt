@@ -37,7 +37,7 @@ def testDeps(scope: String) = Seq(
   "uk.gov.hmrc" %% "reactivemongo-test" % "3.1.0" % scope
 )
 
-lazy val root = (project in file("."))
+lazy val root = Project("agent-subscription", file("."))
   .settings(
     name := "agent-subscription",
     organization := "uk.gov.hmrc",
