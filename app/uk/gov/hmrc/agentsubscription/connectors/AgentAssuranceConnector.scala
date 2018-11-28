@@ -51,7 +51,7 @@ class AgentAssuranceConnectorImpl @Inject() (
   val createAmlsUrl: String = new URL(baseUrl, "/agent-assurance/amls").toString
 
   override def createAmls(amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
-    monitor(s"ConsumedAPI-AgentAssurance-amls-POST") {
+    monitor(s"AgentAssurance-amls-POST") {
       http
         .POST(createAmlsUrl, amlsDetails)
         .map(_.status == CREATED)
@@ -66,7 +66,7 @@ class AgentAssuranceConnectorImpl @Inject() (
 
     val url = new URL(baseUrl, s"/agent-assurance/amls/utr/${utr.value}")
 
-    monitor(s"ConsumedAPI-Put-AgentAssurance-Update-amls") {
+    monitor(s"AgentAssurance-amls-PUT") {
       http.PUT[JsObject, HttpResponse](url.toString, Json.obj("value" -> arn.value))
         .map[Option[AmlsDetails]](r => Some(r.json.as[AmlsDetails]))
     }
