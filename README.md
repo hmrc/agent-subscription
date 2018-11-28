@@ -95,8 +95,7 @@ Request body:
             "utr":"4000000009",
             "supervisoryBody":"supervisory",
             "membershipNumber":"12345",
-            "membershipExpiresOn":"2019-11-11",
-            "arn":"ARN0001"
+            "membershipExpiresOn":"2019-11-11"
         }
       }
     }

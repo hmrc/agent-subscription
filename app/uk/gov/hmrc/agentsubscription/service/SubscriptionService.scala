@@ -95,12 +95,9 @@ class SubscriptionService @Inject() (
       .getAgentRecordDetails(updateSubscriptionRequest.utr)
       .flatMap { agentRecord =>
         if (agentRecord.isAnASAgent && postcodesMatch(agentRecord.businessPostcode, updateSubscriptionRequest.knownFacts.postcode)) {
+          val arn = agentRecord.arn
           val subscriptionRequest = mergeSubscriptionRequest(updateSubscriptionRequest, agentRecord)
           for {
-            arn <- Some(agentRecord.arn) match {
-              case Some(arn) if agentRecord.isAnASAgent => Future.successful(arn)
-              case _ => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
-            }
             updatedAmlsDetails <- agentAssuranceConnector.updateAmls(updateSubscriptionRequest.utr, arn)
             _ <- addKnownFactsAndEnrol(arn, subscriptionRequest, authIds)
           } yield {

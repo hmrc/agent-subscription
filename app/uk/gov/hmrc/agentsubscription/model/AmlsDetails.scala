@@ -26,7 +26,7 @@ case class AmlsDetails(
   supervisoryBody: String,
   membershipNumber: String,
   membershipExpiresOn: LocalDate,
-  arn: Option[Arn])
+  arn: Option[Arn] = None)
 
 object AmlsDetails {
   implicit val amlsDetailsFormat: OFormat[AmlsDetails] = Json.format[AmlsDetails]

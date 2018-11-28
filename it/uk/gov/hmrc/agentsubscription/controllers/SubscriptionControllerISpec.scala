@@ -285,7 +285,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         val result = await(doSubscriptionRequest())
 
-        result.status shouldBe 401 // we expect 400 in this case but it returns 401, not sure why
+        result.status shouldBe 401 // we expect 400 in this case but it returns 401 due to how AuthActions handles exceptions
       }
 
       "create amls succeeds but update amls fails with 400 error from agent assurance" in {
@@ -298,7 +298,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         val result = await(doSubscriptionRequest())
 
-        result.status shouldBe 401 // we expect 400 in this case but it returns 401, not sure why
+        result.status shouldBe 401 // we expect 400 in this case but it returns 401 due to how AuthActions handles exceptions
       }
     }
 
@@ -613,15 +613,14 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
        |      "countryCode": "GB"
        |    },
        |    "email": "agency@example.com",
-       |    "telephone": "0123 456 7890",
-       |    "amlsDetails": {
-       |      "utr":"4000000009",
+       |    "telephone": "0123 456 7890"
+       |   },
+       |   "amlsDetails": {
+       |      "utr":"${utr.value}",
        |      "supervisoryBody":"supervisory",
        |      "membershipNumber":"12345",
-       |      "membershipExpiresOn":"${LocalDate.now()}",
-       |      "arn":"ARN0001"
+       |      "membershipExpiresOn":"${LocalDate.now()}"
        |    }
-       |  }
        |}
      """.stripMargin
 

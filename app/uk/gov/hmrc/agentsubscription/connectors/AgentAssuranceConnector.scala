@@ -69,11 +69,6 @@ class AgentAssuranceConnectorImpl @Inject() (
     monitor(s"ConsumedAPI-Put-AgentAssurance-Update-amls") {
       http.PUT[JsObject, HttpResponse](url.toString, Json.obj("value" -> arn.value))
         .map[Option[AmlsDetails]](r => Some(r.json.as[AmlsDetails]))
-        .recover {
-          case _: Upstream4xxResponse =>
-            //allow agent to continue with subscription if existing Amls record is not found or already contains the same arn during update
-            None
-        }
     }
   }
 }

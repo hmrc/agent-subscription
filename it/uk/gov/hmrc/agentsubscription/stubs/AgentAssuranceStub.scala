@@ -17,17 +17,16 @@ trait AgentAssuranceStub {
 
   private def updateUrl(utr: Utr): String = s"/agent-assurance/amls/utr/${utr.value}"
 
-  val amlsDetails: AmlsDetails = AmlsDetails(Utr("12345"), "supervisory", "12345", LocalDate.now(), Some(Arn("ARN12345")))
+  val amlsDetails: AmlsDetails = AmlsDetails(Utr("7000000002"), "supervisory", "12345", LocalDate.now())
 
-  def createAmlsSucceeds(): StubMapping =
+  def createAmlsSucceeds(mayBeAmlsDetails: Option[AmlsDetails] = None): StubMapping =
     stubFor(post(urlEqualTo(createUrl))
-      .withRequestBody(equalToJson(Json.toJson(amlsDetails).toString()))
+      .withRequestBody(equalToJson(Json.toJson(mayBeAmlsDetails.getOrElse(amlsDetails)).toString()))
       .willReturn(aResponse()
         .withStatus(201)))
 
   def createAmlsFailsWithStatus(status: Int): StubMapping =
     stubFor(post(urlEqualTo(createUrl))
-      .withRequestBody(equalToJson(Json.toJson(amlsDetails).toString()))
       .willReturn(aResponse().withStatus(status)))
 
   def updateAmlsSucceeds(utr: Utr, arn: Arn): StubMapping =

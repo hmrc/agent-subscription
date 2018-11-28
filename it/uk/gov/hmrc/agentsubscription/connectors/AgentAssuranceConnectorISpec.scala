@@ -15,8 +15,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with OneAppPerSuite with WireMockSupport with MetricsTestSupport with MockitoSugar {
 
-  val utr = Utr("1234567890")
-  val arn = Arn("UTR12345")
+  val utr = Utr("7000000002")
+  val arn = Arn("TARN0000001")
+
   private lazy val metrics = app.injector.instanceOf[Metrics]
   private lazy val http: HttpPut with HttpPost = app.injector.instanceOf[HttpPut with HttpPost]
 
@@ -54,15 +55,6 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
 
       result shouldBe Some(amlsDetails.copy(utr = utr, arn = Some(arn)))
 
-    }
-
-    "handle failure responses from agent-assurance backend during updateAmls" in {
-
-      updateAmlsFailsWithStatus(utr, arn, 409)
-
-      val result = await(connector.updateAmls(utr, arn))
-
-      result shouldBe None
     }
   }
 

@@ -23,8 +23,8 @@ object DataStreamStub {
         s"""{
            |  "auditSource": "agent-subscription",
            |  "auditType": "$event",
-           |  "tags": ${tags},
-           |  "detail": ${detail}
+           |  "tags": $tags,
+           |  "detail": $detail
            |}""")))
   }
 
