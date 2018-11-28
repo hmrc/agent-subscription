@@ -1,17 +1,18 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
+import java.time.LocalDate
+
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, SubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
-import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
+import uk.gov.hmrc.agentsubscription.stubs._
 import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
-import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
 
-class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs {
+class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub {
   private val utr = Utr("7000000002")
 
   val arn = "TARN0000001"
@@ -30,17 +31,17 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(groupId, arn)
+      createAmlsSucceeds(Some(AmlsDetails(utr, "supervisory", "12345", LocalDate.now())))
+      updateAmlsSucceeds(utr, Arn(arn))
 
       val result = await(doSubscriptionRequest(subscriptionRequest(utr)))
 
       result.status shouldBe 201
 
-      eventually {
-        DataStreamStub.verifyAuditRequestSent(
-          AgentSubscriptionEvent.AgentSubscription,
-          expectedTags,
-          expectedDetails(utr))
-      }
+      DataStreamStub.verifyAuditRequestSent(
+        AgentSubscriptionEvent.AgentSubscription,
+        expectedTags,
+        expectedDetails(utr))
     }
   }
 
@@ -55,6 +56,8 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(groupId, arn)
+      createAmlsSucceeds()
+      updateAmlsSucceeds(utr, Arn(arn))
 
       val result = await(doUpdateSubscriptionRequest(updateSubscriptionRequest))
 
@@ -91,6 +94,12 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
        |    },
        |    "email": "agency@example.com",
        |    "telephone": "0123 456 7890"
+       |  },
+       |  "amlsDetails": {
+       |      "utr":"${utr.value}",
+       |      "supervisoryBody":"supervisory",
+       |      "membershipNumber":"12345",
+       |      "membershipExpiresOn":"${LocalDate.now()}"
        |  }
        |}
      """.stripMargin
@@ -120,7 +129,14 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
          |  },
          |  "agentReferenceNumber": "TARN0000001",
          |  "agencyEmail": "agency@example.com",
-         |  "utr": "${utr.value}"
+         |  "utr": "${utr.value}",
+         |  "amlsDetails": {
+         |      "utr":"${utr.value}",
+         |      "supervisoryBody":"supervisory",
+         |      "membershipNumber":"12345",
+         |      "membershipExpiresOn":"${LocalDate.now()}",
+         |      "arn": "$arn"
+         |  }
          |}
          |""".stripMargin)
       .asInstanceOf[JsObject]

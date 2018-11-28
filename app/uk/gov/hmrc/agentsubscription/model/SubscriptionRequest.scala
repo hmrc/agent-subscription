@@ -51,7 +51,8 @@ object SubscriptionRequest {
   implicit val reads: Reads[SubscriptionRequest] = (
     (__ \ "utr").read[Utr](verifying[Utr](utr => Utr.isValid(utr.value))) and
     (__ \ "knownFacts").read[KnownFacts] and
-    (__ \ "agency").read[Agency])(SubscriptionRequest.apply _)
+    (__ \ "agency").read[Agency] and
+    (__ \ "amlsDetails").readNullable[AmlsDetails])(SubscriptionRequest.apply _)
 }
 
 case class Address(
@@ -73,7 +74,8 @@ case class KnownFacts(postcode: String)
 case class SubscriptionRequest(
   utr: Utr,
   knownFacts: KnownFacts,
-  agency: Agency)
+  agency: Agency,
+  amlsDetails: Option[AmlsDetails] = None)
 
 case class SubscriptionResponse(arn: Arn)
 object SubscriptionResponse {
