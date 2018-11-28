@@ -36,14 +36,11 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
 
     "handle failure responses from agent-assurance backend during create amls" in {
 
-      List(400, 403).foreach { status =>
+      createAmlsFailsWithStatus(403)
 
-        createAmlsFailsWithStatus(status)
+      val result = await(connector.createAmls(amlsDetails))
 
-        val result = await(connector.createAmls(amlsDetails))
-
-        result shouldBe false
-      }
+      result shouldBe false
     }
   }
 
@@ -61,14 +58,11 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
 
     "handle failure responses from agent-assurance backend during updateAmls" in {
 
-      List(404, 409).foreach { status =>
+      updateAmlsFailsWithStatus(utr, arn, 409)
 
-        updateAmlsFailsWithStatus(utr, arn, status)
+      val result = await(connector.updateAmls(utr, arn))
 
-        val result = await(connector.updateAmls(utr, arn))
-
-        result shouldBe None
-      }
+      result shouldBe None
     }
   }
 

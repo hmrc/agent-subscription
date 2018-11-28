@@ -72,19 +72,18 @@ class SubscriptionService @Inject() (
     desConnector.getRegistration(subscriptionRequest.utr) flatMap {
       case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _), _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) =>
         for {
+          _ <- subscriptionRequest.amlsDetails match {
+            case Some(details) => agentAssuranceConnector.createAmls(details)
+            case None => Future.successful(false)
+          }
           arn <- maybeArn match {
             case Some(arn) if isAnAsAgent => Future.successful(arn)
             case _ => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
           }
+          updatedAmlsDetails <- agentAssuranceConnector.updateAmls(subscriptionRequest.utr, arn)
           _ <- addKnownFactsAndEnrol(arn, subscriptionRequest, authIds)
-          _ <- {
-            subscriptionRequest.amlsDetails match {
-              case Some(details) => agentAssuranceConnector.createAmls(details)
-              case None => Future.successful(arn)
-            }
-          }
         } yield {
-          auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest))
+          auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
           Some(arn)
         }
       case _ => Future successful None
@@ -114,7 +113,7 @@ class SubscriptionService @Inject() (
       }
   }
 
-  private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, updatedAmlsDetails: Option[AmlsDetails] = None) =
+  private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, updatedAmlsDetails: Option[AmlsDetails]) =
     toJsObject(
       SubscriptionAuditDetail(
         arn,
@@ -122,7 +121,7 @@ class SubscriptionService @Inject() (
         subscriptionRequest.agency.name,
         subscriptionRequest.agency.address,
         subscriptionRequest.agency.email,
-        subscriptionRequest.amlsDetails.orElse(updatedAmlsDetails)))
+        updatedAmlsDetails))
 
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 

@@ -53,13 +53,14 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
 
   "CreateSubscription" should {
+    val businessUtr = Utr("4000000009")
+    val businessPostcode = "AA1 1AA"
+    val arn = "ARN0001"
+    val amlsDetails = AmlsDetails(businessUtr, "supervisory", "12345", LocalDate.now(), Some(Arn(arn)))
+
     "audit appropriate values" in {
-      val businessUtr = Utr("4000000009")
-      val businessPostcode = "AA1 1AA"
 
-      val arn = "ARN0001"
-
-      subscriptionWillBeCreated(businessUtr, businessPostcode, arn)
+      subscriptionWillBeCreated(businessUtr, businessPostcode, arn, amlsDetails)
 
       val subscriptionRequest = SubscriptionRequest(
         businessUtr,
@@ -69,7 +70,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = "BB1 1BB", countryCode = "GB"),
           Some("01234 567890"),
           "testagency@example.com"),
-        Some(AmlsDetails(businessUtr, "supervisory", "12345", LocalDate.now(), Some(Arn(arn)))))
+        Some(amlsDetails))
 
       await(service.createSubscription(subscriptionRequest, authIds))
 
@@ -109,7 +110,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val businessPostcode = "BU1 1BB"
       val agencyPostcode = "AG1 1CY"
 
-      subscriptionWillBeCreated(utr, businessPostcode, arn.value)
+      subscriptionWillBeCreated(utr, businessPostcode, arn.value, amlsDetails)
 
       val subscriptionRequest = SubscriptionRequest(
         utr,
@@ -118,7 +119,8 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           "Test Agency",
           Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = agencyPostcode, countryCode = "GB"),
           Some("01234 567890"),
-          "testagency@example.com"))
+          "testagency@example.com"),
+        Some(amlsDetails))
 
       await(service.createSubscription(subscriptionRequest, authIds))
 
@@ -143,7 +145,8 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
             "Test Agency",
             Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = agencyPostcode, countryCode = "GB"),
             Some("01234 567890"),
-            "testagency@example.com"))
+            "testagency@example.com"),
+          Some(amlsDetails))
 
         val thrown = intercept[IllegalStateException](
           await(service.createSubscription(subscriptionRequest, authIds))).getMessage
@@ -154,25 +157,25 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       }
 
       "the query for existing allocated enrolments fails more than 3 times" in {
-        subscriptionHasPrincipalGroupIdsFailed(utr, businessPostcode, arn.value)
+        subscriptionHasPrincipalGroupIdsFailed(utr, businessPostcode, arn.value, amlsDetails)
 
         behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES1")
       }
 
       "delete known facts fails more than 3 times" in {
-        subscriptionDeleteKnownFactsFailed(utr, businessPostcode, arn.value)
+        subscriptionDeleteKnownFactsFailed(utr, businessPostcode, arn.value, amlsDetails)
 
         behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES7")
       }
 
       "create known facts fails more than 3 times" in {
-        subscriptionCreateKnownFactsFailed(utr, businessPostcode, arn.value)
+        subscriptionCreateKnownFactsFailed(utr, businessPostcode, arn.value, amlsDetails)
 
         behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES6")
       }
 
       "the call to enrol fails more than 3 times" in {
-        subscriptionEnrolmentsFailed(utr, businessPostcode, arn.value)
+        subscriptionEnrolmentsFailed(utr, businessPostcode, arn.value, amlsDetails)
 
         behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES8")
       }
@@ -181,7 +184,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
   }
 
-  private def subscriptionWillBeCreated(businessUtr: Utr, businessPostcode: String, arn: String) = {
+  private def subscriptionWillBeCreated(businessUtr: Utr, businessPostcode: String, arn: String, amlsDetails: AmlsDetails) = {
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         isAnASAgent = false, organisationName = Some("Test Business"), None, None,
@@ -204,9 +207,12 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful true)
+
+    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Some(amlsDetails))
   }
 
-  private def subscriptionHasPrincipalGroupIdsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
+  private def subscriptionHasPrincipalGroupIdsFailed(businessUtr: Utr, businessPostcode: String, arn: String, amlsDetails: AmlsDetails) = {
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         isAnASAgent = false, organisationName = Some("Test Business"), None, None,
@@ -220,9 +226,15 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
       .thenReturn(Future successful (()))
+
+    when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful true)
+
+    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Some(amlsDetails))
   }
 
-  private def subscriptionDeleteKnownFactsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
+  private def subscriptionDeleteKnownFactsFailed(businessUtr: Utr, businessPostcode: String, arn: String, amlsDetails: AmlsDetails) = {
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         isAnASAgent = false, organisationName = Some("Test Business"), None, None,
@@ -239,9 +251,15 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
       .thenReturn(Future successful (()))
+
+    when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful true)
+
+    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Some(amlsDetails))
   }
 
-  private def subscriptionCreateKnownFactsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
+  private def subscriptionCreateKnownFactsFailed(businessUtr: Utr, businessPostcode: String, arn: String, amlsDetails: AmlsDetails) = {
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         isAnASAgent = false, organisationName = Some("Test Business"), None, None,
@@ -261,9 +279,15 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
       .thenReturn(Future successful (()))
+
+    when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful true)
+
+    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Some(amlsDetails))
   }
 
-  private def subscriptionEnrolmentsFailed(businessUtr: Utr, businessPostcode: String, arn: String) = {
+  private def subscriptionEnrolmentsFailed(businessUtr: Utr, businessPostcode: String, arn: String, amlsDetails: AmlsDetails) = {
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         isAnASAgent = false, organisationName = Some("Test Business"), None, None,
@@ -283,5 +307,11 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES8"))
+
+    when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful true)
+
+    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful Some(amlsDetails))
   }
 }

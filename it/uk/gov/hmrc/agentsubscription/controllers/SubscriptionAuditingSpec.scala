@@ -3,15 +3,14 @@ package uk.gov.hmrc.agentsubscription.controllers
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
-import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
+import uk.gov.hmrc.agentsubscription.stubs._
 import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
-import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
 
-class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs {
+class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub {
   private val utr = Utr("7000000002")
 
   val arn = "TARN0000001"
@@ -30,6 +29,8 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(groupId, arn)
+      createAmlsSucceeds()
+      updateAmlsSucceeds(utr, Arn(arn))
 
       val result = await(doSubscriptionRequest(subscriptionRequest(utr)))
 
@@ -55,6 +56,8 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(groupId, arn)
+      createAmlsSucceeds()
+      updateAmlsSucceeds(utr, Arn(arn))
 
       val result = await(doUpdateSubscriptionRequest(updateSubscriptionRequest))
 

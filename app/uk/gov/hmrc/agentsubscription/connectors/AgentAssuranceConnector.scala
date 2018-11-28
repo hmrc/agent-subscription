@@ -56,10 +56,8 @@ class AgentAssuranceConnectorImpl @Inject() (
         .POST(createAmlsUrl, amlsDetails)
         .map(_.status == CREATED)
         .recover {
-          //400 -> Creating AMLS with Arn in it is not allowed
           //403 -> There is an existing AMLS record for the Utr with Arn set
           case e: Upstream4xxResponse if e.upstreamResponseCode == 403 => false
-          case _: BadRequestException => false
         }
     }
   }
@@ -72,7 +70,7 @@ class AgentAssuranceConnectorImpl @Inject() (
       http.PUT[JsObject, HttpResponse](url.toString, Json.obj("value" -> arn.value))
         .map[Option[AmlsDetails]](r => Some(r.json.as[AmlsDetails]))
         .recover {
-          case _: NotFoundException | _: Upstream4xxResponse =>
+          case _: Upstream4xxResponse =>
             //allow agent to continue with subscription if existing Amls record is not found or already contains the same arn during update
             None
         }
