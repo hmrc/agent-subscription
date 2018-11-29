@@ -16,16 +16,18 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import javax.inject._
 import com.kenshoo.play.metrics.Metrics
+import javax.inject._
 import play.api.libs.json.Json.toJson
-import uk.gov.hmrc.agentsubscription.connectors.{ AuthActions, MicroserviceAuthConnector }
+import play.api.libs.json.{ JsError, JsSuccess }
+import play.api.mvc.{ Action, AnyContent }
+import uk.gov.hmrc.agentsubscription.auth.AuthActions
+import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.{ SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.service.{ EnrolmentAlreadyAllocated, SubscriptionService }
+import uk.gov.hmrc.agentsubscription.utils.toFuture
 import uk.gov.hmrc.http.Upstream5xxResponse
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
-import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
 @Singleton
 class SubscriptionController @Inject() (subscriptionService: SubscriptionService)(implicit
@@ -33,29 +35,42 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
   microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
-  def createSubscription = affinityGroupAndEnrolments { implicit request => implicit authIds =>
-    implicit val hc = fromHeadersAndSession(request.headers, None)
-    withJsonBody[SubscriptionRequest] { subscriptionRequest =>
-      subscriptionService.createSubscription(subscriptionRequest, authIds).map {
-        case Some(a) => Created(toJson(SubscriptionResponse(a)))
-        case None => Forbidden
-      }.recover {
-        case _: EnrolmentAlreadyAllocated => Conflict
-        case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
-      }
+  def createSubscription: Action[AnyContent] = authorisedWithAffinityGroup { implicit request => implicit authIds =>
+    request.body.asJson.map(_.validate[SubscriptionRequest]) match {
+      case Some(JsSuccess(subscriptionRequest, _)) ⇒
+        subscriptionService.createSubscription(subscriptionRequest, authIds).map {
+          case Some(a) => Created(toJson(SubscriptionResponse(a)))
+          case None => Forbidden
+        }.recover {
+          case _: EnrolmentAlreadyAllocated => Conflict
+          case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
+        }
+
+      case Some(JsError(_)) ⇒
+        BadRequest("Could not parse SubscriptionRequest JSON from the request")
+
+      case None ⇒
+        BadRequest("No SubscriptionRequest JSON found in the request body")
     }
   }
 
-  def updateSubscription = affinityGroupAndEnrolments { implicit request => implicit authIds =>
-    implicit val hc = fromHeadersAndSession(request.headers, None)
-    withJsonBody[UpdateSubscriptionRequest] { subscriptionRequest =>
-      subscriptionService.updateSubscription(subscriptionRequest, authIds).map {
-        case Some(arn) => Ok(toJson(SubscriptionResponse(arn)))
-        case None => Forbidden
-      }.recover {
-        case _: EnrolmentAlreadyAllocated => Conflict
-        case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
-      }
+  def updateSubscription: Action[AnyContent] = authorisedWithAffinityGroup { implicit request => implicit authIds =>
+    request.body.asJson.map(_.validate[UpdateSubscriptionRequest]) match {
+      case Some(JsSuccess(updateSubscriptionRequest, _)) ⇒
+        subscriptionService.updateSubscription(updateSubscriptionRequest, authIds).map {
+          case Some(arn) => Ok(toJson(SubscriptionResponse(arn)))
+          case None => Forbidden
+        }.recover {
+          case _: EnrolmentAlreadyAllocated => Conflict
+          case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
+        }
+
+      case Some(JsError(_)) ⇒
+        BadRequest("Could not parse updateSubscriptionRequest JSON from the request")
+
+      case None ⇒
+        BadRequest("No updateSubscriptionRequest JSON found in the request body")
     }
+
   }
 }

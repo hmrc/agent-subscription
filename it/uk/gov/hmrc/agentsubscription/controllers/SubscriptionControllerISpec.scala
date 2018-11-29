@@ -285,7 +285,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         val result = await(doSubscriptionRequest())
 
-        result.status shouldBe 401 // we expect 400 in this case but it returns 401 due to how AuthActions handles exceptions
+        result.status shouldBe 400
       }
 
       "create amls succeeds but update amls fails with 400 error from agent assurance" in {
@@ -298,7 +298,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
         val result = await(doSubscriptionRequest())
 
-        result.status shouldBe 401 // we expect 400 in this case but it returns 401 due to how AuthActions handles exceptions
+        result.status shouldBe 400
       }
     }
 

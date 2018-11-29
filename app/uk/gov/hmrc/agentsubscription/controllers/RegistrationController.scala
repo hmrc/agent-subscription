@@ -16,28 +16,25 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import javax.inject._
 import com.kenshoo.play.metrics.Metrics
+import javax.inject._
 import play.api.Logger
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{ AnyContent, Request, Result }
-import uk.gov.hmrc.agentsubscription.connectors.{ AuthActions, MicroserviceAuthConnector, Provider }
-import uk.gov.hmrc.agentsubscription.connectors.{ InvalidBusinessAddressException, InvalidIsAnASAgentException }
-import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
+import play.api.mvc.{ Action, AnyContent }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentsubscription.auth.AuthActions
+import uk.gov.hmrc.agentsubscription.connectors.{ InvalidBusinessAddressException, InvalidIsAnASAgentException, MicroserviceAuthConnector }
+import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
+import uk.gov.hmrc.agentsubscription.utils.toFuture
 import uk.gov.hmrc.play.microservice.controller.BaseController
-
-import scala.concurrent.Future
 
 @Singleton
 class RegistrationController @Inject() (service: RegistrationService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
-  private[controllers] def register(utr: Utr, postcode: String)(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Future[Result] = {
+  def getRegistration(utr: Utr, postcode: String): Action[AnyContent] = authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider => {
     if (!Utr.isValid(utr.value))
       badRequest("INVALID_UTR")
     else if (!validPostcode(postcode))
@@ -54,17 +51,11 @@ class RegistrationController @Inject() (service: RegistrationService)(implicit m
             Logger.info(InvalidIsAnASAgentException.error.getMessage)
             InternalServerError
         }
-
   }
-
-  private def badRequest(code: String) = {
-    Future successful BadRequest(Json.obj("code" -> code))
   }
 
-  def getRegistration(utr: Utr, postcode: String) = affinityGroupAndCredentials { implicit request => implicit provider => {
-    register(utr, postcode)
-  }
-  }
+  private def badRequest(code: String) =
+    toFuture(BadRequest(Json.obj("code" -> code)))
 
   private def validPostcode(postcode: String): Boolean = {
     postcode.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)

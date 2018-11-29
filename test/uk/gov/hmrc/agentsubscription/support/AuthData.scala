@@ -16,16 +16,13 @@
 
 package uk.gov.hmrc.agentsubscription.support
 
-import play.api.libs.json.{ JsValue, Json }
-import play.api.mvc.AnyContentAsEmpty
-import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
 import uk.gov.hmrc.auth.core.{ AffinityGroup, Enrolment, EnrolmentIdentifier, Enrolments }
-import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, Retrievals, ~ }
 
 import scala.concurrent.Future
 
-trait TestData {
+trait AuthData {
 
   val arn = Arn("arn1")
 
@@ -33,29 +30,27 @@ trait TestData {
     Enrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)), state = "",
       delegatedAuthRule = None))
 
-  val agentAffinityAndEnrolments: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]] = {
-    val retrievals = new ~(new ~(new ~(
-      Some(AffinityGroup.Agent), Enrolments(agentEnrolment)), Credentials("providerId", "providerType")), Some("groupId"))
+  val agentAffinityWithCredentialsAndGroupId: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]] = {
+    val retrievals = new ~(new ~(Some(AffinityGroup.Agent), Credentials("providerId", "providerType")), Some("groupId"))
     Future.successful(retrievals)
   }
 
-  val agentNoEnrolments: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]] = {
-    val retrievals = new ~(new ~(new ~(
-      Some(AffinityGroup.Agent), Enrolments(Set.empty[Enrolment])), Credentials("providerId", "providerType")), Some("groupId"))
+  val agentAffinityWithCredentials: Future[~[Option[AffinityGroup], Credentials]] = {
+    val retrievals = new ~(Some(AffinityGroup.Agent), Credentials("providerId", "providerType"))
     Future.successful(retrievals)
   }
 
-  val agentIncorrectAffinity: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]] = {
-    val retrievals = new ~(new ~(new ~(Some(AffinityGroup.Individual), Enrolments(agentEnrolment)), Credentials("providerId", "providerType")), Some("groupId"))
+  val agentIncorrectAffinity: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]] = {
+    val retrievals = new ~(new ~(Some(AffinityGroup.Individual), Credentials("providerId", "providerType")), Some("groupId"))
     Future.successful(retrievals)
   }
 
-  val neitherHaveAffinityOrEnrolment: Future[~[~[~[Option[AffinityGroup], Enrolments], Credentials], Option[String]]] = {
-    val retrievals = new ~(new ~(new ~(None, Enrolments(Set.empty[Enrolment])), Credentials("providerId", "providerType")), Some("groupId"))
+  val neitherHaveAffinityOrEnrolment: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]] = {
+    val retrievals = new ~(new ~(None, Credentials("providerId", "providerType")), Some("groupId"))
     Future.successful(retrievals)
   }
 
-  val failedStubForAgent = Future failed new NullPointerException
+  val failedStubForAgent = Future.failed(new Exception("oh no !"))
 
   val validAgentAffinity: Future[~[Option[AffinityGroup], Credentials]] =
     Future successful new ~[Option[AffinityGroup], Credentials](Some(AffinityGroup.Agent), Credentials("credId", "credType"))
@@ -63,8 +58,5 @@ trait TestData {
     Future successful new ~[Option[AffinityGroup], Credentials](Some(AffinityGroup.Individual), Credentials("credId", "credType"))
   val noAffinity: Future[~[Option[AffinityGroup], Credentials]] =
     Future successful new ~[Option[AffinityGroup], Credentials](None, Credentials("credId", "credType"))
-
-  val fakeRequestJson: FakeRequest[JsValue] = FakeRequest().withBody(Json.obj("" -> ""))
-  val fakeRequestAny: FakeRequest[AnyContentAsEmpty.type] = FakeRequest()
 
 }
