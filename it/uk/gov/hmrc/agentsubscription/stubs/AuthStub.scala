@@ -8,8 +8,8 @@ trait AuthStub {
 
   val oid: String = "556737e15500005500eaf68f"
 
-  def requestIsNotAuthenticated(): AuthStub = {
-    stubFor(post(urlEqualTo("/auth/authorise")).willReturn(aResponse().withStatus(401).withHeader("WWW-Authenticate", "MDTP detail=\"MissingBearerToken\"")))
+  def requestIsNotAuthenticated(header: String = "MissingBearerToken"): AuthStub = {
+    stubFor(post(urlEqualTo("/auth/authorise")).willReturn(aResponse().withStatus(401).withHeader("WWW-Authenticate", s"""MDTP detail="$header"""")))
     this
   }
 

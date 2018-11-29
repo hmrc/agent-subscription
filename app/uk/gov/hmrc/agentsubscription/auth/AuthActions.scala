@@ -19,10 +19,9 @@ package uk.gov.hmrc.agentsubscription.auth
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
-import play.api.Logger
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.{ JsValue, Json, OFormat, Writes }
-import play.api.mvc.Results.{ Forbidden, InternalServerError, Unauthorized }
+import play.api.mvc.Results.{ Forbidden, Unauthorized }
 import play.api.mvc.{ AnyContent, Result, _ }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.auth.AuthActions._
@@ -87,9 +86,6 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
   def handleFailure()(implicit request: Request[_]): PartialFunction[Throwable, Result] = {
     case _: NoActiveSession ⇒ GenericUnauthorized
     case _: UnsupportedAuthProvider ⇒ GenericUnauthorized
-    case ex: AuthorisationException =>
-      Logger.warn("unexpected error during auth", ex)
-      GenericAuthError
   }
 
   private def isAgent(group: AffinityGroup): Boolean = group.toString.contains("Agent")
@@ -117,6 +113,4 @@ object AuthActions {
   val GenericUnauthorized: Result = Unauthorized(toJson(ErrorBody("UNAUTHORIZED", "Bearer token is missing or not authorized.")))
 
   val AgentNotSubscribed: Result = Forbidden(toJson(ErrorBody("AGENT_NOT_SUBSCRIBED", "The Agent is not subscribed to Agent Services.")))
-
-  val GenericAuthError: Result = InternalServerError(toJson(ErrorBody("Auth Error", "unexpected server error during auth")))
 }
