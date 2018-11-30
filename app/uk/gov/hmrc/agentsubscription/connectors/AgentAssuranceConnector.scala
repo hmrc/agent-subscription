@@ -22,10 +22,11 @@ import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Named, Singleton }
-import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.json.{ Format, JsObject, Json }
 import play.mvc.Http.Status.CREATED
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentsubscription.connectors.AgentAssuranceConnector.CreateAmlsRequest
 import uk.gov.hmrc.agentsubscription.model.AmlsDetails
 import uk.gov.hmrc.http._
 
@@ -34,7 +35,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 @ImplementedBy(classOf[AgentAssuranceConnectorImpl])
 trait AgentAssuranceConnector {
 
-  def createAmls(amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean]
+  def createAmls(utr: Utr, amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean]
 
   def updateAmls(utr: Utr, arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AmlsDetails]]
 }
@@ -50,10 +51,10 @@ class AgentAssuranceConnectorImpl @Inject() (
 
   val createAmlsUrl: String = new URL(baseUrl, "/agent-assurance/amls").toString
 
-  override def createAmls(amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  override def createAmls(utr: Utr, amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     monitor(s"AgentAssurance-amls-POST") {
       http
-        .POST(createAmlsUrl, amlsDetails)
+        .POST(createAmlsUrl, CreateAmlsRequest(utr, amlsDetails))
         .map(_.status == CREATED)
         .recover {
           //403 -> There is an existing AMLS record for the Utr with Arn set
@@ -70,5 +71,13 @@ class AgentAssuranceConnectorImpl @Inject() (
       http.PUT[JsObject, HttpResponse](url.toString, Json.obj("value" -> arn.value))
         .map[Option[AmlsDetails]](r => Some(r.json.as[AmlsDetails]))
     }
+  }
+}
+
+object AgentAssuranceConnector {
+  case class CreateAmlsRequest(utr: Utr, amlsDetails: AmlsDetails)
+
+  object CreateAmlsRequest {
+    implicit val format: Format[CreateAmlsRequest] = Json.format[CreateAmlsRequest]
   }
 }

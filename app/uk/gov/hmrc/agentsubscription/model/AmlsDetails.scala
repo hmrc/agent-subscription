@@ -19,14 +19,11 @@ package uk.gov.hmrc.agentsubscription.model
 import java.time.LocalDate
 
 import play.api.libs.json.{ Json, OFormat }
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 
 case class AmlsDetails(
-  utr: Utr,
   supervisoryBody: String,
   membershipNumber: String,
-  membershipExpiresOn: LocalDate,
-  arn: Option[Arn] = None)
+  membershipExpiresOn: LocalDate)
 
 object AmlsDetails {
   implicit val amlsDetailsFormat: OFormat[AmlsDetails] = Json.format[AmlsDetails]

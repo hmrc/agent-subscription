@@ -56,7 +56,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     val businessUtr = Utr("4000000009")
     val businessPostcode = "AA1 1AA"
     val arn = "ARN0001"
-    val amlsDetails = AmlsDetails(businessUtr, "supervisory", "12345", LocalDate.now(), Some(Arn(arn)))
+    val amlsDetails = AmlsDetails("supervisory", "12345", LocalDate.now())
 
     "audit appropriate values" in {
 
@@ -89,11 +89,10 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "agentReferenceNumber": "$arn",
           |  "agencyEmail": "testagency@example.com",
           |  "utr": "${businessUtr.value}",
-          |  "amlsDetails": {"utr":"4000000009",
+          |  "amlsDetails": {
           |      "supervisoryBody":"supervisory",
           |      "membershipNumber":"12345",
-          |      "membershipExpiresOn":"${LocalDate.now()}",
-          |      "arn":"ARN0001"
+          |      "membershipExpiresOn":"${LocalDate.now()}"
           |   }
           |}
           |""".stripMargin).asInstanceOf[JsObject]
@@ -205,7 +204,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful new Integer(200))
 
-    when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful true)
 
     when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
@@ -227,7 +226,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
       .thenReturn(Future successful (()))
 
-    when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful true)
 
     when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
@@ -252,7 +251,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
       .thenReturn(Future successful (()))
 
-    when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful true)
 
     when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
@@ -280,7 +279,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any())(any()))
       .thenReturn(Future successful (()))
 
-    when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful true)
 
     when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
@@ -308,7 +307,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES8"))
 
-    when(agentAssuranceConnector.createAmls(any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful true)
 
     when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))

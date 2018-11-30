@@ -1,11 +1,13 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
+import java.time.LocalDate
 
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentsubscription.model.AmlsDetails
 import uk.gov.hmrc.agentsubscription.stubs.AgentAssuranceStub
 import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
 import uk.gov.hmrc.http.{ HttpPost, HttpPut }
@@ -24,12 +26,14 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
   private lazy val connector: AgentAssuranceConnector =
     new AgentAssuranceConnectorImpl(new URL(s"http://localhost:$wireMockPort"), http, metrics)
 
+  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", "12345", LocalDate.now())
+
   "creating AMLS" should {
     "return a successful response" in {
 
-      createAmlsSucceeds()
+      createAmlsSucceeds(utr, amlsDetails)
 
-      val result = await(connector.createAmls(amlsDetails))
+      val result = await(connector.createAmls(utr, amlsDetails))
 
       result shouldBe true
 
@@ -39,7 +43,7 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
 
       createAmlsFailsWithStatus(403)
 
-      val result = await(connector.createAmls(amlsDetails))
+      val result = await(connector.createAmls(utr, amlsDetails))
 
       result shouldBe false
     }
@@ -49,11 +53,11 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
 
     "return a successful response" in {
 
-      updateAmlsSucceeds(utr, arn)
+      updateAmlsSucceeds(utr, arn, amlsDetails)
 
       val result = await(connector.updateAmls(utr, arn))
 
-      result shouldBe Some(amlsDetails.copy(utr = utr, arn = Some(arn)))
+      result shouldBe Some(amlsDetails)
 
     }
   }
