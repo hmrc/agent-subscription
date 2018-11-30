@@ -19,6 +19,8 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
   val groupId = "groupId"
   implicit val ws = app.injector.instanceOf[WSClient]
 
+  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", "12345", LocalDate.now())
+
   "creating a subscription" should {
     "audit an AgentSubscription event" in {
       writeAuditMergedSucceeds()
@@ -31,8 +33,8 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(groupId, arn)
-      createAmlsSucceeds(Some(AmlsDetails(utr, "supervisory", "12345", LocalDate.now())))
-      updateAmlsSucceeds(utr, Arn(arn))
+      createAmlsSucceeds(utr, amlsDetails)
+      updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
 
       val result = await(doSubscriptionRequest(subscriptionRequest(utr)))
 
@@ -56,8 +58,8 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(groupId, arn)
-      createAmlsSucceeds()
-      updateAmlsSucceeds(utr, Arn(arn))
+      createAmlsSucceeds(utr, amlsDetails)
+      updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
 
       val result = await(doUpdateSubscriptionRequest(updateSubscriptionRequest))
 
@@ -96,7 +98,6 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
        |    "telephone": "0123 456 7890"
        |  },
        |  "amlsDetails": {
-       |      "utr":"${utr.value}",
        |      "supervisoryBody":"supervisory",
        |      "membershipNumber":"12345",
        |      "membershipExpiresOn":"${LocalDate.now()}"
@@ -131,11 +132,9 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
          |  "agencyEmail": "agency@example.com",
          |  "utr": "${utr.value}",
          |  "amlsDetails": {
-         |      "utr":"${utr.value}",
          |      "supervisoryBody":"supervisory",
          |      "membershipNumber":"12345",
-         |      "membershipExpiresOn":"${LocalDate.now()}",
-         |      "arn": "$arn"
+         |      "membershipExpiresOn":"${LocalDate.now()}"
          |  }
          |}
          |""".stripMargin)

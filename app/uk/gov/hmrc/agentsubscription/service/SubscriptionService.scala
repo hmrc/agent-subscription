@@ -69,18 +69,19 @@ class SubscriptionService @Inject() (
   }
 
   def createSubscription(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
-    desConnector.getRegistration(subscriptionRequest.utr) flatMap {
+    val utr = subscriptionRequest.utr
+    desConnector.getRegistration(utr) flatMap {
       case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _), _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) =>
         for {
           _ <- subscriptionRequest.amlsDetails match {
-            case Some(details) => agentAssuranceConnector.createAmls(details)
+            case Some(details) => agentAssuranceConnector.createAmls(utr, details)
             case None => Future.successful(false)
           }
           arn <- maybeArn match {
             case Some(arn) if isAnAsAgent => Future.successful(arn)
-            case _ => desConnector.subscribeToAgentServices(subscriptionRequest.utr, desRequest(subscriptionRequest))
+            case _ => desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
           }
-          updatedAmlsDetails <- agentAssuranceConnector.updateAmls(subscriptionRequest.utr, arn)
+          updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
           _ <- addKnownFactsAndEnrol(arn, subscriptionRequest, authIds)
         } yield {
           auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
