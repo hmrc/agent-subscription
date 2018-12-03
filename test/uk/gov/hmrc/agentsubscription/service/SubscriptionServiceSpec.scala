@@ -26,6 +26,7 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors.{ EnrolmentRequest, Address => _, _ }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository

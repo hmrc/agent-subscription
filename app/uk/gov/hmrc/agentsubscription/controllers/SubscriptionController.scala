@@ -16,16 +16,17 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import javax.inject._
 import com.kenshoo.play.metrics.Metrics
+import javax.inject._
+import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
-import uk.gov.hmrc.agentsubscription.connectors.{ AuthActions, MicroserviceAuthConnector }
+import play.api.mvc.Action
+import uk.gov.hmrc.agentsubscription.auth.AuthActions
+import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.{ SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.service.{ EnrolmentAlreadyAllocated, SubscriptionService }
 import uk.gov.hmrc.http.Upstream5xxResponse
 import uk.gov.hmrc.play.microservice.controller.BaseController
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
-import uk.gov.hmrc.play.HeaderCarrierConverter.fromHeadersAndSession
 
 @Singleton
 class SubscriptionController @Inject() (subscriptionService: SubscriptionService)(implicit
@@ -33,8 +34,7 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
   microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
-  def createSubscription = affinityGroupAndEnrolments { implicit request => implicit authIds =>
-    implicit val hc = fromHeadersAndSession(request.headers, None)
+  def createSubscription: Action[JsValue] = authorisedWithAffinityGroup { implicit request => implicit authIds =>
     withJsonBody[SubscriptionRequest] { subscriptionRequest =>
       subscriptionService.createSubscription(subscriptionRequest, authIds).map {
         case Some(a) => Created(toJson(SubscriptionResponse(a)))
@@ -46,10 +46,9 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
     }
   }
 
-  def updateSubscription = affinityGroupAndEnrolments { implicit request => implicit authIds =>
-    implicit val hc = fromHeadersAndSession(request.headers, None)
-    withJsonBody[UpdateSubscriptionRequest] { subscriptionRequest =>
-      subscriptionService.updateSubscription(subscriptionRequest, authIds).map {
+  def updateSubscription: Action[JsValue] = authorisedWithAffinityGroup { implicit request => implicit authIds =>
+    withJsonBody[UpdateSubscriptionRequest] { updateSubscriptionRequest =>
+      subscriptionService.updateSubscription(updateSubscriptionRequest, authIds).map {
         case Some(arn) => Ok(toJson(SubscriptionResponse(arn)))
         case None => Forbidden
       }.recover {

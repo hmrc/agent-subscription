@@ -17,18 +17,19 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{ Inject, Singleton }
-import play.api.{ Logger, LoggerLike }
 import play.api.libs.json.{ Json, _ }
 import play.api.mvc.{ AnyContent, Request }
+import play.api.{ Logger, LoggerLike }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscriptionEvent, AuditService }
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.agentsubscription.postcodesMatch
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
 import scala.concurrent.Future
-import uk.gov.hmrc.http.HeaderCarrier
 
 private object CheckAgencyStatusAuditDetail {
   implicit val writes = Json.writes[CheckAgencyStatusAuditDetail]

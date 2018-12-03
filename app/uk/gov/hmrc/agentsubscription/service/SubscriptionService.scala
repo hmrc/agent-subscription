@@ -23,6 +23,7 @@ import play.api.mvc.Request
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscriptionEvent, AuditService }
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository

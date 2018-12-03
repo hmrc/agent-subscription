@@ -35,6 +35,12 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       response.status shouldBe 401
     }
 
+    "return a 401 when auth returns unexpected response code in the headers" in {
+      requestIsNotAuthenticated(header = "some strange response from auth")
+      val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
+      response.status shouldBe 401
+    }
+
     "return 404 when no match is found in des" in {
       requestIsAuthenticated().andIsAnAgent()
 
