@@ -49,7 +49,7 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
   private val agentEnrolId = "AgentReferenceNumber"
   private val isAnAgent = true
 
-  def authorisedWithAffinityGroup(action: SubscriptionAuthAction): Action[AnyContent] = Action.async { implicit request =>
+  def authorisedWithAffinityGroup(action: SubscriptionAuthAction): Action[JsValue] = Action.async(parse.json) { implicit request =>
     authorised(AuthProvider)
       .retrieve(affinityGroup and credentials and groupIdentifier) {
         case Some(affinityG) ~ Credentials(providerId, _) ~ Some(groupId) =>
@@ -93,7 +93,7 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
 
 object AuthActions {
 
-  type SubscriptionAuthAction = Request[AnyContent] => AuthIds => Future[Result]
+  type SubscriptionAuthAction = Request[JsValue] => AuthIds => Future[Result]
   type RegistrationAuthAction = Request[AnyContent] => Provider => Future[Result]
 
   case class Provider(providerId: String, providerType: String)

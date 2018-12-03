@@ -22,6 +22,7 @@ import org.mockito.Mockito.{ reset, when }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import play.api.http.Status._
+import play.api.libs.json.{ JsValue, Json }
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 import play.api.test.FakeRequest
@@ -48,7 +49,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
 
   override def beforeEach(): Unit = reset(mockMicroserviceAuthConnector)
 
-  val fakeRequest = FakeRequest()
+  val fakeRequest = FakeRequest().withBody[JsValue](Json.parse("""{}"""))
 
   "authorisedWithAffinityGroup" should {
     "return OK for an Agent with HMRC-AS-AGENT enrolment" in {
@@ -87,6 +88,8 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
   }
 
   "authorisedWithAffinityGroupAndCredentials" should {
+
+    val fakeRequest = FakeRequest()
 
     "return OK when we have the correct affinity group" in {
       when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
