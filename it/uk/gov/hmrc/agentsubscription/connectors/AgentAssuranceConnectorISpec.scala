@@ -60,6 +60,15 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
       result shouldBe Some(amlsDetails)
 
     }
+
+    "return a None when agent assurance return 404" in {
+
+      updateAmlsFailsWithStatus(utr, arn, 404)
+
+      val result = await(connector.updateAmls(utr, arn))
+
+      result shouldBe None
+    }
   }
 
 }

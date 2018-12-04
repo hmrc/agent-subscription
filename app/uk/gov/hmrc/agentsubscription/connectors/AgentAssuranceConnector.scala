@@ -70,6 +70,9 @@ class AgentAssuranceConnectorImpl @Inject() (
     monitor(s"AgentAssurance-amls-PUT") {
       http.PUT[JsObject, HttpResponse](url.toString, Json.obj("value" -> arn.value))
         .map[Option[AmlsDetails]](r => Some(r.json.as[AmlsDetails]))
+    }.recover {
+      //404 -> Partially subscribed agents may not have any stored amls details, then updating fails with 404
+      case _: NotFoundException => None
     }
   }
 }
