@@ -21,12 +21,14 @@ import java.net.URL
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Named, Singleton }
+
+import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json._
 import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.model.AgentRecord
+import uk.gov.hmrc.agentsubscription.model.{ AgentRecord, OverseasRegistrationRequest, OverseasSubscriptionRequest, SafeId }
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
@@ -89,6 +91,31 @@ class DesConnector @Inject() (
   httpGet: HttpGet,
   metrics: Metrics) extends Status with HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+
+  def createOverseasBusinessPartnerRecord(request: OverseasRegistrationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SafeId] = {
+    monitor("DES-Overseas-CreateRegistration-POST") {
+      val url = new URL(baseUrl, "/registration/02.00.00/organisation")
+
+      httpPost.POST[OverseasRegistrationRequest, JsValue](url.toString, request)(implicitly[Writes[OverseasRegistrationRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
+        .map(response => (response \ "safeId").as[SafeId])
+        .recover {
+          case e @ _ => {
+            Logger.warn("Unexpected exception occurred, unable to obtain safeId")
+            throw new RuntimeException(s"Failed to register overseas agent in ETMP for ${e.getMessage}", e)
+          }
+        }
+    }
+  }
+
+  def subscribeToAgentServices(safeId: SafeId, request: OverseasSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
+    monitor("") {
+      httpPost.POST[OverseasSubscriptionRequest, JsValue]("", request)(implicitly[Writes[OverseasSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
+        .map { response => (response \ "agentRegistrationNumber").as[Arn] }
+        .recover {
+          case e => throw new RuntimeException(s"Failed to create subscription in ETMP for safeId: $safeId ${e.getMessage}", e)
+        }
+    }
+  }
 
   def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     monitor("DES-SubscribeAgent-POST") {

@@ -17,12 +17,10 @@
 package uk.gov.hmrc.agentsubscription
 
 import play.api.data.validation.ValidationError
-import play.api.libs.json.Reads._
 import play.api.libs.functional.syntax._
+import play.api.libs.json.Reads._
 import play.api.mvc.{ Request, WrappedRequest }
-import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
 import uk.gov.hmrc.agentsubscription.auth.{ Authority, Enrolment }
-import uk.gov.hmrc.domain.{ Nino, TaxIdentifier }
 
 package object model {
   val postcodeWithoutSpacesRegex = "^[A-Z]{1,2}[0-9][0-9A-Z]?\\s?[0-9][A-Z]{2}$|BFPO\\s?[0-9]{1,5}$"
@@ -50,6 +48,11 @@ package object model {
     filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
       filter[String](ValidationError("error.Ampersand"))(_.matches(noAmpersand)) andKeep
       filter[String](ValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(nameMax)))
+  }
+
+  private[model] val overseasCountryCodeValidation = {
+    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](ValidationError("error.overseas.countryCode"))(_ != "GB")
   }
 }
 
