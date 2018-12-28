@@ -17,5 +17,7 @@ abstract class BaseISpec extends UnitSpec with OneServerPerSuite with WireMockSu
         "microservice.services.gg.port" -> wireMockPort,
         "microservice.services.tax-enrolments.port" -> wireMockPort,
         "microservice.services.enrolment-store-proxy.port" -> wireMockPort,
-        "microservice.services.agent-assurance.port" -> wireMockPort)
+        "microservice.services.agent-assurance.port" -> wireMockPort,
+        "microservice.services.agent-overseas-application.host" -> wireMockHost,
+        "microservice.services.agent-overseas-application.port" -> wireMockPort)
 }

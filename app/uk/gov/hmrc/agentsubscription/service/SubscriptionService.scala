@@ -52,7 +52,8 @@ class SubscriptionService @Inject() (
   taxEnrolmentsConnector: TaxEnrolmentsConnector,
   auditService: AuditService,
   recoveryRepository: RecoveryRepository,
-  agentAssuranceConnector: AgentAssuranceConnector) {
+  agentAssuranceConnector: AgentAssuranceConnector,
+  agentOverseasApplicationConnector: AgentOverseasApplicationConnector) {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
     val address = subscriptionRequest.agency.address
@@ -110,6 +111,16 @@ class SubscriptionService @Inject() (
       }.recover {
         case _: NotFoundException => None
       }
+  }
+
+  def createOverseasSubscription(subscriptionRequest: OverseasSubscriptionRequest, userId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Arn] = {
+    for {
+      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
+      safeId <- desConnector.createOverseasBusinessPartnerRecord(subscriptionRequest.toRegistrationRequest)
+      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Registered, userId)
+      arn <- desConnector.subscribeToAgentServices(safeId, subscriptionRequest)
+      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, userId)
+    } yield arn
   }
 
   private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, updatedAmlsDetails: Option[AmlsDetails]) =
