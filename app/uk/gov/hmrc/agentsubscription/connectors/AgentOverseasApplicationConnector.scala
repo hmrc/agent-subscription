@@ -42,9 +42,7 @@ class AgentOverseasApplicationConnector @Inject() (
       http.GET(url.toString)
         .map(_.status == 204)
         .recover {
-          case e: Upstream4xxResponse => {
-            throw new RuntimeException(s"Could not update overseas agent application status to ${status.key} for userId: $authId with ${e.getMessage}")
-          }
+          case e => throw new RuntimeException(s"Could not update overseas agent application status to ${status.key} for userId: $authId with ${e.getMessage}")
         }
     }
   }
