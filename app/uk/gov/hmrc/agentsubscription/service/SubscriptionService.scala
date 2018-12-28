@@ -113,14 +113,13 @@ class SubscriptionService @Inject() (
       }
   }
 
-  def createOverseasSubscription(subscriptionRequest: OverseasSubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Arn] = {
-
+  def createOverseasSubscription(subscriptionRequest: OverseasSubscriptionRequest, userId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Arn] = {
     for {
-      _ <- agentOverseasAppConn.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, authIds.userId)
+      _ <- agentOverseasAppConn.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
       safeId <- desConnector.createOverseasBusinessPartnerRecord(subscriptionRequest.toRegistrationRequest)
-      _ <- agentOverseasAppConn.updateApplicationStatus(ApplicationStatus.Registered, authIds.userId)
+      _ <- agentOverseasAppConn.updateApplicationStatus(ApplicationStatus.Registered, userId)
       arn <- desConnector.subscribeToAgentServices(safeId, subscriptionRequest)
-      _ <- agentOverseasAppConn.updateApplicationStatus(ApplicationStatus.Complete, authIds.userId)
+      _ <- agentOverseasAppConn.updateApplicationStatus(ApplicationStatus.Complete, userId)
     } yield arn
   }
 

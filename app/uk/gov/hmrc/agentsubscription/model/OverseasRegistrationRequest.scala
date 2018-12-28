@@ -36,7 +36,8 @@ case class OverseasRegistrationRequest(
   isAnAgent: Boolean,
   isAGroup: Boolean,
   organisation: Organisation,
-  address: OverseasAddress)
+  address: OverseasAddress,
+  contactDetails: ContactDetails)
 
 object OverseasRegistrationRequest {
   implicit val overseasRegistrationRequestFormat = Json.format[OverseasRegistrationRequest]

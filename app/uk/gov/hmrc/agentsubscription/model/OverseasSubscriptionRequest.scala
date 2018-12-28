@@ -18,16 +18,22 @@ package uk.gov.hmrc.agentsubscription.model
 import java.util.UUID
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{ Json, Reads, Writes, _ }
+import play.api.libs.json.Reads.email
+import play.api.libs.json.{Json, Reads, Writes, _}
 
-case class OverseasSubscriptionRequest(agencyName: String, agencyEmail: String, telephoneNumber: String, agencyAddress: OverseasAddress) {
+case class OverseasSubscriptionRequest(
+                                        agencyName: String,
+                                        agencyEmail: String,
+                                        telephoneNumber: String,
+                                        agencyAddress: OverseasAddress) {
+
   def toRegistrationRequest: OverseasRegistrationRequest = OverseasRegistrationRequest(
     regime = "AGSV",
     acknowledgementReference = UUID.randomUUID.toString.replaceAll("-", ""),
     isAnAgent = false,
     isAGroup = false,
     Organisation(agencyName),
-    agencyAddress)
+    agencyAddress, ContactDetails(telephoneNumber, agencyEmail))
 }
 
 case class OverseasAddress(
@@ -38,15 +44,22 @@ case class OverseasAddress(
   countryCode: String)
 
 object OverseasSubscriptionRequest {
-  implicit val OSubRequestFormat = Json.format[OverseasSubscriptionRequest]
+  implicit val writes = Json.writes[OverseasSubscriptionRequest]
+
+  implicit val reads: Reads[OverseasSubscriptionRequest] = (
+    (__ \ "agencyName").read[String](nameValidation) and
+    (__ \ "agencyEmail").read[String](email) and
+    (__ \ "telephoneNumber").read[String](telephoneNumberValidation) and
+    (__ \ "agencyAddress").read[OverseasAddress]
+  )(OverseasSubscriptionRequest.apply _)
 }
 
 object OverseasAddress {
   implicit val writes: Writes[OverseasAddress] = Json.writes[OverseasAddress]
   implicit val reads: Reads[OverseasAddress] = (
-    (__ \ "addressLine1").read[String] and
-    (__ \ "addressLine2").read[String] and
-    (__ \ "addressLine3").readNullable[String] and
-    (__ \ "addressLine4").readNullable[String] and
+    (__ \ "addressLine1").read[String](addressValidation) and
+    (__ \ "addressLine2").read[String](addressValidation) and
+    (__ \ "addressLine3").readNullable[String](addressValidation) and
+    (__ \ "addressLine4").readNullable[String](addressValidation) and
     (__ \ "countryCode").read[String](overseasCountryCodeValidation))(OverseasAddress.apply _)
 }

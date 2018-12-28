@@ -99,18 +99,16 @@ class DesConnector @Inject() (
       httpPost.POST[OverseasRegistrationRequest, JsValue](url.toString, request)(implicitly[Writes[OverseasRegistrationRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
         .map(response => (response \ "safeId").as[SafeId])
         .recover {
-          case e @ _ => {
-            Logger.warn("Unexpected exception occurred, unable to obtain safeId")
+          case e =>
             throw new RuntimeException(s"Failed to register overseas agent in ETMP for ${e.getMessage}", e)
-          }
         }
     }
   }
 
   def subscribeToAgentServices(safeId: SafeId, request: OverseasSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
-    monitor("") {
-      httpPost.POST[OverseasSubscriptionRequest, JsValue]("", request)(implicitly[Writes[OverseasSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
-        .map { response => (response \ "agentRegistrationNumber").as[Arn] }
+    monitor("DES-SubscribeOverseasAgent-POST") {
+      httpPost.POST[OverseasSubscriptionRequest, JsValue](desOverseasSubscribeUrl(safeId).toString, request)(implicitly[Writes[OverseasSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
+        .map(response => (response \ "agentRegistrationNumber").as[Arn])
         .recover {
           case e => throw new RuntimeException(s"Failed to create subscription in ETMP for safeId: $safeId ${e.getMessage}", e)
         }
@@ -174,6 +172,9 @@ class DesConnector @Inject() (
 
   private def desSubscribeUrl(utr: Utr): URL =
     new URL(baseUrl, s"/registration/agents/utr/${encodePathSegment(utr.value)}")
+
+  private def desOverseasSubscribeUrl(safeId: SafeId): URL =
+    new URL(baseUrl, s"/registration/agents/safeId/${encodePathSegment(safeId.value)}")
 
   private def desRegistrationUrl(utr: Utr): URL =
     new URL(baseUrl, s"/registration/individual/utr/${encodePathSegment(utr.value)}")
