@@ -21,6 +21,6 @@ import uk.gov.hmrc.domain.{ SimpleObjectReads, SimpleObjectWrites, TaxIdentifier
 case class SafeId(value: String) extends TaxIdentifier
 
 object SafeId {
-  implicit val utrReads = new SimpleObjectReads[SafeId]("value", SafeId.apply)
-  implicit val utrWrites = new SimpleObjectWrites[SafeId](_.value)
+  implicit val reads = new SimpleObjectReads[SafeId]("value", SafeId.apply)
+  implicit val writes = new SimpleObjectWrites[SafeId](_.value)
 }

@@ -19,13 +19,13 @@ import java.util.UUID
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads.email
-import play.api.libs.json.{Json, Reads, Writes, _}
+import play.api.libs.json.{ Json, Reads, Writes, _ }
 
 case class OverseasSubscriptionRequest(
-                                        agencyName: String,
-                                        agencyEmail: String,
-                                        telephoneNumber: String,
-                                        agencyAddress: OverseasAddress) {
+  agencyName: String,
+  agencyEmail: String,
+  telephoneNumber: String,
+  agencyAddress: OverseasAddress) {
 
   def toRegistrationRequest: OverseasRegistrationRequest = OverseasRegistrationRequest(
     regime = "AGSV",
@@ -50,8 +50,7 @@ object OverseasSubscriptionRequest {
     (__ \ "agencyName").read[String](nameValidation) and
     (__ \ "agencyEmail").read[String](email) and
     (__ \ "telephoneNumber").read[String](telephoneNumberValidation) and
-    (__ \ "agencyAddress").read[OverseasAddress]
-  )(OverseasSubscriptionRequest.apply _)
+    (__ \ "agencyAddress").read[OverseasAddress])(OverseasSubscriptionRequest.apply _)
 }
 
 object OverseasAddress {

@@ -22,7 +22,6 @@ import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Named, Singleton }
 
-import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json._
 import play.utils.UriEncoding

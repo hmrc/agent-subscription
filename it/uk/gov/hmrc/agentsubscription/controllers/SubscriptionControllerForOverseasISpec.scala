@@ -4,10 +4,10 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.json.Json.stringify
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{AttemptingRegistration, Complete, Registered}
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Complete, Registered }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs._
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 
 class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesStubs with AuthStub with AgentOverseasApplicationStubs with AgentAssuranceStub {
   private val arn = "TARN0000001"
@@ -39,25 +39,25 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         verify(1, getRequestedFor(urlEqualTo(s"/application/complete")))
       }
 
-       "addressLine3 and addressLine4 are missing" in {
+      "addressLine3 and addressLine4 are missing" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         val fields = Seq(address \ "addressLine3", address \ "addressLine4")
-         givenGetUpdateApplicationStatus(AttemptingRegistration, 204)
-         organisationRegistrationSucceeds
-         givenGetUpdateApplicationStatus(Registered, 204)
-         subscriptionSucceeds(safeId.value, removeFields(fields))
-         givenGetUpdateApplicationStatus(Complete, 204)
+        givenGetUpdateApplicationStatus(AttemptingRegistration, 204)
+        organisationRegistrationSucceeds
+        givenGetUpdateApplicationStatus(Registered, 204)
+        subscriptionSucceeds(safeId.value, removeFields(fields))
+        givenGetUpdateApplicationStatus(Complete, 204)
 
         val result = await(doSubscriptionRequest(removeFields(fields)))
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
 
-         verify(1, getRequestedFor(urlEqualTo(s"/application/attempting_registration")))
-         verify(1, postRequestedFor(urlEqualTo(s"/registration/02.00.00/organisation")))
-         verify(1, getRequestedFor(urlEqualTo(s"/application/registered")))
-         verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/safeId/${safeId.value}")))
-         verify(1, getRequestedFor(urlEqualTo(s"/application/complete")))
+        verify(1, getRequestedFor(urlEqualTo(s"/application/attempting_registration")))
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/02.00.00/organisation")))
+        verify(1, getRequestedFor(urlEqualTo(s"/application/registered")))
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/safeId/${safeId.value}")))
+        verify(1, getRequestedFor(urlEqualTo(s"/application/complete")))
       }
     }
 
@@ -224,7 +224,6 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
        |  }
        |}
      """.stripMargin
-
 
   private def removeFields(fields: Seq[JsPath]): String = {
     val request = Json.parse(subscriptionRequestJson).as[JsObject]

@@ -53,7 +53,7 @@ class SubscriptionService @Inject() (
   auditService: AuditService,
   recoveryRepository: RecoveryRepository,
   agentAssuranceConnector: AgentAssuranceConnector,
-  agentOverseasAppConn: AgentOverseasApplicationConnector) {
+  agentOverseasApplicationConnector: AgentOverseasApplicationConnector) {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
     val address = subscriptionRequest.agency.address
@@ -115,11 +115,11 @@ class SubscriptionService @Inject() (
 
   def createOverseasSubscription(subscriptionRequest: OverseasSubscriptionRequest, userId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Arn] = {
     for {
-      _ <- agentOverseasAppConn.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
+      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
       safeId <- desConnector.createOverseasBusinessPartnerRecord(subscriptionRequest.toRegistrationRequest)
-      _ <- agentOverseasAppConn.updateApplicationStatus(ApplicationStatus.Registered, userId)
+      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Registered, userId)
       arn <- desConnector.subscribeToAgentServices(safeId, subscriptionRequest)
-      _ <- agentOverseasAppConn.updateApplicationStatus(ApplicationStatus.Complete, userId)
+      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, userId)
     } yield arn
   }
 
