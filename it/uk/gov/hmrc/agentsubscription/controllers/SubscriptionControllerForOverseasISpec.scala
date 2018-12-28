@@ -157,7 +157,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     }
 
     "throw a 500 error if " when {
-      "DES API #1173 Subscribe to Agent Services fails" in {
+      "etmp registration fails" in {
         requestIsAuthenticated()
         givenGetUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationFailsWithNotFound("{}")
@@ -203,6 +203,43 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         verify(1, getRequestedFor(urlEqualTo(s"/application/registered")))
         verify(0, postRequestedFor(urlEqualTo(s"/registration/agents/safeId/${safeId.value}")))
         verify(0, getRequestedFor(urlEqualTo(s"/application/complete")))
+      }
+
+      "subscribe to etmp fails" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenGetUpdateApplicationStatus(AttemptingRegistration, 204)
+        organisationRegistrationSucceeds
+        givenGetUpdateApplicationStatus(Registered, 204)
+        subscriptionAlreadyExists(safeId.value, subscriptionRequestJson)
+
+        val result = await(doSubscriptionRequest(subscriptionRequestJson))
+
+        result.status shouldBe 500
+
+        verify(1, getRequestedFor(urlEqualTo(s"/application/attempting_registration")))
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/02.00.00/organisation")))
+        verify(1, getRequestedFor(urlEqualTo(s"/application/registered")))
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/safeId/${safeId.value}")))
+        verify(0, getRequestedFor(urlEqualTo(s"/application/complete")))
+      }
+
+      "updating Complete overseas application status fails with 409" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenGetUpdateApplicationStatus(AttemptingRegistration, 204)
+        organisationRegistrationSucceeds
+        givenGetUpdateApplicationStatus(Registered, 204)
+        subscriptionSucceeds(safeId.value, subscriptionRequestJson)
+        givenGetUpdateApplicationStatus(Complete, 409)
+
+        val result = await(doSubscriptionRequest(subscriptionRequestJson))
+
+        result.status shouldBe 500
+
+        verify(1, getRequestedFor(urlEqualTo(s"/application/attempting_registration")))
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/02.00.00/organisation")))
+        verify(1, getRequestedFor(urlEqualTo(s"/application/registered")))
+        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/safeId/${safeId.value}")))
+        verify(1, getRequestedFor(urlEqualTo(s"/application/complete")))
       }
     }
   }
