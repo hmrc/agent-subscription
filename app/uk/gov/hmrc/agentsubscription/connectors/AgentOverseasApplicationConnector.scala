@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 HM Revenue & Customs
+ * Copyright 2019 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,14 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
-import javax.inject.{ Inject, Named, Singleton }
 
+import javax.inject.{ Inject, Named, Singleton }
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
+import play.api.libs.json.{ JsString, JsValue, Json }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
+import uk.gov.hmrc.agentsubscription.model.{ ApplicationStatus, SafeId }
 import uk.gov.hmrc.http._
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -30,16 +32,20 @@ import scala.concurrent.{ ExecutionContext, Future }
 @Singleton
 class AgentOverseasApplicationConnector @Inject() (
   @Named("agent-overseas-application-baseUrl") baseUrl: URL,
-  http: HttpGet,
+  http: HttpPut,
   metrics: Metrics) extends HttpAPIMonitor {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def updateApplicationStatus(status: ApplicationStatus, authId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  def updateApplicationStatus(status: ApplicationStatus, authId: String, safeId: Option[SafeId] = None)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
     val url: URL = new URL(baseUrl, s"/application/${status.key}")
+    val safeIdJson = if (status == Registered)
+      Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
+    else Json.obj()
+
     monitor(s"Agent-Overseas-Application-updateStatus-GET") {
-      http.GET(url.toString)
+      http.PUT[JsValue, HttpResponse](url.toString, safeIdJson)
         .map(_.status == 204)
         .recover {
           case e => throw new RuntimeException(s"Could not update overseas agent application status to ${status.key} for userId: $authId with ${e.getMessage}")
