@@ -66,8 +66,6 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
         sentEvent.auditSource shouldBe "agent-subscription"
         sentEvent.auditType shouldBe "AgentSubscription"
 
-        (sentEvent.detail \ "Authorization").as[String] shouldBe "dummy bearer token"
-
         (sentEvent.detail \ "agencyName").as[String] shouldBe "Test Agency"
         (sentEvent.detail \ "agencyAddress" \ "addressLine1").as[String] shouldBe "1 Test Street"
         (sentEvent.detail \ "agencyAddress" \ "addressLine2").as[String] shouldBe "Test village"

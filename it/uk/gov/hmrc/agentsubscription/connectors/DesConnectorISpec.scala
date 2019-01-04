@@ -2,7 +2,9 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
 
+import akka.actor.ActorSystem
 import com.kenshoo.play.metrics.Metrics
+import com.typesafe.config.Config
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
@@ -241,7 +243,9 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     val wsHttp = new HttpPost with HttpGet with WSPost with WSGet with HttpAuditing {
       val auditConnector = mockAuditConnector
       val appName = "agent-subscription"
+      val actorSystem = ActorSystem()
       override val hooks = Seq(AuditingHook)
+      override protected def configuration: Option[Config] = None
     }
 
     def capturedEvent(): MergedDataEvent = {

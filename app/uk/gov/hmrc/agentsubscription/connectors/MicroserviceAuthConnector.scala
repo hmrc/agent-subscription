@@ -16,20 +16,13 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
-import javax.inject.{ Inject, Named, Singleton }
-
-import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.http.HttpPost
-import uk.gov.hmrc.play.http.ws.WSPost
+import javax.inject.{ Inject, Singleton }
+import play.api.{ Configuration, Environment }
+import uk.gov.hmrc.play.bootstrap.auth.DefaultAuthConnector
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 @Singleton
-class MicroserviceAuthConnector @Inject() (@Named("auth-baseUrl") baseUrl: URL)
-  extends PlayAuthConnector {
-
-  override val serviceUrl = baseUrl.toString
-
-  override def http = new HttpPost with WSPost {
-    override val hooks = NoneRequired
-  }
-}
+class MicroserviceAuthConnector @Inject() (
+  val httpClient: HttpClient,
+  override val runModeConfiguration: Configuration,
+  override val environment: Environment) extends DefaultAuthConnector(httpClient, runModeConfiguration, environment)
