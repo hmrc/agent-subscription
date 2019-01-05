@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import akka.japi
 import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import play.api.libs.json._
