@@ -39,7 +39,7 @@ class AgentOverseasApplicationConnector @Inject() (
 
   def updateApplicationStatus(status: ApplicationStatus, authId: String, safeId: Option[SafeId] = None)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
-    val url: URL = new URL(baseUrl, s"/application/${status.key}")
+    val url: URL = new URL(baseUrl, s"/agent-overseas-application/application/${status.key}")
     val safeIdJson = if (status == Registered)
       Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
     else Json.obj()
@@ -55,7 +55,7 @@ class AgentOverseasApplicationConnector @Inject() (
 
   def currentApplicationStatus(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CurrentApplicationStatus] = {
     val activeStatuses = ApplicationStatus.ActiveStatuses.map(status => s"statusIdentifier=${status.key}").mkString("&")
-    val url = new URL(baseUrl, s"/application?$activeStatuses")
+    val url = new URL(baseUrl, s"/agent-overseas-application/application?$activeStatuses")
 
     monitor(s"Agent-Overseas-Application-application-GET") {
       http.GET(url.toString).map { response =>

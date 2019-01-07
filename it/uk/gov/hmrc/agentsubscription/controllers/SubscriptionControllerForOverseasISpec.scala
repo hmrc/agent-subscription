@@ -490,15 +490,15 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     enrol: Int = 0,
     complete: Int = 0) = {
     verify(1, getRequestedFor(urlEqualTo(getApplicationUrl)))
-    verify(attemptingRegistration, putRequestedFor(urlEqualTo(s"/application/attempting_registration")))
+    verify(attemptingRegistration, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/attempting_registration")))
     verify(etmpRegistration, postRequestedFor(urlEqualTo(s"/registration/02.00.00/organisation")))
-    verify(registered, putRequestedFor(urlEqualTo(s"/application/registered")))
+    verify(registered, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/registered")))
     verify(subscription, postRequestedFor(urlEqualTo(s"/registration/agents/safeId/${safeId.value}")))
     verifyAllocatedPrincipalEnrolmentCalled(allocatedPrincipalEnrolment)
     verifyDeleteKnownFactsCalled(deleteKnownFact)
     verifyCreateKnownFactsCalled(createKnownFact)
     verifyEnrolmentCalled(enrol)
-    verify(complete, putRequestedFor(urlEqualTo(s"/application/complete")))
+    verify(complete, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/complete")))
   }
 
 }
