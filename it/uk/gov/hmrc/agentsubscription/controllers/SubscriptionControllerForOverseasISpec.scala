@@ -22,6 +22,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     "return a response containing the ARN" when {
       "all fields are populated" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
@@ -38,6 +39,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "addressLine3 and addressLine4 are missing" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         val fields = Seq(address \ "addressLine3", address \ "addressLine4")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds
@@ -51,6 +53,21 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
 
         verifyApiCalls(1, 1, 1, 1, 1)
+      }
+
+      "do not call DES registration API when the current status is registered" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("registered", "XE0001234567890")
+        subscriptionSucceeds(safeId.value, subscriptionRequestJson)
+        givenUpdateApplicationStatus(Complete, 204)
+
+        val result = await(doSubscriptionRequest(subscriptionRequestJson))
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verifyApiCalls(0, 0, 0, 1, 1)
+
       }
     }
 
@@ -149,9 +166,22 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
       }
     }
 
+    "return Forbidden" when {
+      "current application status is attempting_registration" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("attempting_registration")
+
+        val result = await(doSubscriptionRequest(subscriptionRequestJson))
+
+        result.status shouldBe 403
+        verifyApiCalls(0, 0, 0, 0, 0)
+      }
+    }
+
     "return a 500 error if " when {
       "etmp registration fails" in {
         requestIsAuthenticated()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationFailsWithNotFound("{}")
 
@@ -164,6 +194,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "updating AttemptingRegistration overseas application status fails with 409" in {
         requestIsAuthenticated()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 409)
 
         val result = await(doSubscriptionRequest(subscriptionRequestJson))
@@ -175,6 +206,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "updating Registered overseas application status fails with 409" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds
         givenUpdateApplicationStatus(Registered, 409, safeIdJson)
@@ -188,6 +220,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "subscribe to etmp fails" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
@@ -202,6 +235,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "updating Complete overseas application status fails with 409" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
@@ -266,6 +300,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
   }
 
   private def verifyApiCalls(attemptingRegistration: Int, etmpRegistration: Int, registered: Int, subscription: Int, complete: Int) = {
+    verify(1, getRequestedFor(urlEqualTo(getApplicationUrl)))
     verify(attemptingRegistration, putRequestedFor(urlEqualTo(s"/application/attempting_registration")))
     verify(etmpRegistration, postRequestedFor(urlEqualTo(s"/registration/02.00.00/organisation")))
     verify(registered, putRequestedFor(urlEqualTo(s"/application/registered")))

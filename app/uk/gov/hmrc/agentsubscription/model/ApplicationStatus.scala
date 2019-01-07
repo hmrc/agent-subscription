@@ -73,4 +73,6 @@ object ApplicationStatus {
 
   implicit val applicationStatusFormat: Format[ApplicationStatus] =
     Json.format[ApplicationStatus]
+
+  val ActiveStatuses = Seq(Pending, Accepted, AttemptingRegistration, Registered, Complete)
 }
