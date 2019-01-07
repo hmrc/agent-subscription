@@ -34,6 +34,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       def aSuccessfulRegSubscribeAndEnrol(subscriptionRequestJson: String) = {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
@@ -62,22 +63,55 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
       }
     }
 
-    "return Conflict if there is an existing HMRC-AS-AGENT enrolment for their Arn allocated to some group" in {
-      pending // Todo when catering for re-attempts
+    "return Conflict if there is an existing HMRC-AS-AGENT enrolment for their Arn already allocated to some group" in {
+      requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+      givenValidApplication("registered", "XE0001234567890")
+      subscriptionSucceeds(safeId.value, subscriptionRequestJson)
+      allocatedPrincipalEnrolmentExists(arn, "someOtherGroupId")
+
+      val result = await(doSubscriptionRequest(subscriptionRequestJson))
+
+      result.status shouldBe 409
+
+      verifyApiCalls(
+        attemptingRegistration = 0,
+        etmpRegistration = 0,
+        registered = 0,
+        subscription = 1,
+        allocatedPrincipalEnrolment = 1,
+        deleteKnownFact = 0,
+        createKnownFact = 0,
+        enrol = 0,
+        complete = 0)
+
     }
 
     "return Forbidden" when {
+      "current application status is attempting_registration" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("attempting_registration")
+
+        val result = await(doSubscriptionRequest(subscriptionRequestJson))
+
+        result.status shouldBe 403
+        verifyApiCalls(0, 0, 0, 0, 0)
+      }
+
       "the user does not have Agent affinity" in {
         requestIsAuthenticatedWithNoEnrolments(affinityGroup = "Individual").andIsAnNotAgent().andHasNoEnrolments()
         await(doSubscriptionRequest(subscriptionRequestJson)).status shouldBe 403
 
-        verifyApiCalls()
+        verify(0, getRequestedFor(urlEqualTo(getApplicationUrl)))
       }
 
       "the user already has enrolments" in {
-        pending // Todo when catering for re-attempts
+        pending // TODO when working on the retries/re-attempts story
 
         requestIsAuthenticated().andIsAnAgent().andHasEnrolments()
+        givenValidApplication("registered", "XE0001234567890")
+        subscriptionSucceeds(safeId.value, subscriptionRequestJson)
+        allocatedPrincipalEnrolmentNotExists(arn)
+
         await(doSubscriptionRequest(subscriptionRequestJson)).status shouldBe 403
 
         verifyApiCalls(
@@ -90,6 +124,33 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           createKnownFact = 0,
           enrol = 0,
           complete = 0)
+      }
+
+      "do not call DES registration API when the current status is registered" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("registered", "XE0001234567890")
+        subscriptionSucceeds(safeId.value, subscriptionRequestJson)
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(stubbedGroupId, arn)
+        givenUpdateApplicationStatus(Complete, 204)
+
+        val result = await(doSubscriptionRequest(subscriptionRequestJson))
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verifyApiCalls(
+          attemptingRegistration = 0,
+          etmpRegistration = 0,
+          registered = 0,
+          subscription = 1,
+          allocatedPrincipalEnrolment = 1,
+          deleteKnownFact = 1,
+          createKnownFact = 1,
+          enrol = 1,
+          complete = 1)
       }
     }
 
@@ -191,6 +252,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     "return a 500 error if " when {
       "etmp registration fails" in {
         requestIsAuthenticated()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationFailsWithNotFound("{}")
 
@@ -203,6 +265,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "updating AttemptingRegistration overseas application status fails with 409" in {
         requestIsAuthenticated()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 409)
 
         val result = await(doSubscriptionRequest(subscriptionRequestJson))
@@ -214,6 +277,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "updating Registered overseas application status fails with 409" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 409, safeIdJson)
@@ -227,6 +291,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "subscribe to etmp fails" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
@@ -241,6 +306,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "query via EACD for the ARN already being allocated fails" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
@@ -261,6 +327,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "delete known facts via EACD fails" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
@@ -283,6 +350,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "create known facts via EACD fails" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
@@ -307,6 +375,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "enrolment via EACD fails" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
@@ -333,6 +402,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "updating Complete overseas application status fails with 409" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
@@ -419,6 +489,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     createKnownFact: Int = 0,
     enrol: Int = 0,
     complete: Int = 0) = {
+    verify(1, getRequestedFor(urlEqualTo(getApplicationUrl)))
     verify(attemptingRegistration, putRequestedFor(urlEqualTo(s"/application/attempting_registration")))
     verify(etmpRegistration, postRequestedFor(urlEqualTo(s"/registration/02.00.00/organisation")))
     verify(registered, putRequestedFor(urlEqualTo(s"/application/registered")))

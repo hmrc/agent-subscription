@@ -25,6 +25,7 @@ import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscriptionEvent, AuditService }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors._
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Registered }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
@@ -113,16 +114,28 @@ class SubscriptionService @Inject() (
       }
   }
 
-  def createOverseasSubscription(subscriptionRequest: OverseasSubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Arn] = {
+  def createOverseasSubscription(subscriptionRequest: OverseasSubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     val userId = authIds.userId
-    for {
-      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
-      safeId <- desConnector.createOverseasBusinessPartnerRecord(subscriptionRequest.toRegistrationRequest)
-      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Registered, userId, Some(safeId))
-      arn <- desConnector.subscribeToAgentServices(safeId, subscriptionRequest)
-      _ <- addKnownFactsAndEnrolOverseas(arn, subscriptionRequest, authIds)
-      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, userId)
-    } yield arn
+    def subscribeAndEnrol(safeId: SafeId) =
+      for {
+        arn <- desConnector.subscribeToAgentServices(safeId, subscriptionRequest)
+        _ <- addKnownFactsAndEnrolOverseas(arn, subscriptionRequest, authIds)
+        _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, userId)
+      } yield Some(arn)
+
+    agentOverseasApplicationConnector.currentApplicationStatus.flatMap {
+      case CurrentApplicationStatus(AttemptingRegistration, _) =>
+        Future.successful(None)
+      case CurrentApplicationStatus(Registered, Some(safeId)) =>
+        subscribeAndEnrol(safeId)
+      case _ =>
+        for {
+          _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
+          safeId <- desConnector.createOverseasBusinessPartnerRecord(subscriptionRequest.toRegistrationRequest)
+          _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Registered, userId, Some(safeId))
+          arnOpt <- subscribeAndEnrol(safeId)
+        } yield arnOpt
+    }
   }
 
   private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, updatedAmlsDetails: Option[AmlsDetails]) =
