@@ -5,6 +5,8 @@ import uk.gov.hmrc.agentsubscription.model.ApplicationStatus
 
 trait AgentOverseasApplicationStubs {
 
+  val getApplicationUrl = s"/application?statusIdentifier=pending&statusIdentifier=accepted&statusIdentifier=attempting_registration&statusIdentifier=registered&statusIdentifier=complete"
+
   def givenUpdateApplicationStatus(appStatus: ApplicationStatus, responseStatus: Int, requestBody: String = "{}"): Unit = {
     stubFor(put(urlEqualTo(s"/application/${appStatus.key}"))
       .withRequestBody(equalToJson(requestBody))
@@ -13,7 +15,7 @@ trait AgentOverseasApplicationStubs {
   }
 
   def givenValidApplication(status: String, safeId: String = "") = {
-    stubFor(get(urlEqualTo(s"/application?statusIdentifier=rejected"))
+    stubFor(get(urlEqualTo(getApplicationUrl))
       .willReturn(aResponse()
         .withStatus(200)
         .withBody(
@@ -77,7 +79,7 @@ trait AgentOverseasApplicationStubs {
   }
 
   def givenInvalidApplication =
-    stubFor(get(urlEqualTo(s"/application?statusIdentifier=rejected"))
+    stubFor(get(urlEqualTo(getApplicationUrl))
       .willReturn(aResponse()
         .withBody(s"""{}""")))
 

@@ -54,7 +54,8 @@ class AgentOverseasApplicationConnector @Inject() (
   }
 
   def currentApplicationStatus(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CurrentApplicationStatus] = {
-    val url = new URL(baseUrl, "/application?statusIdentifier=rejected")
+    val activeStatuses = ApplicationStatus.ActiveStatuses.map(status => s"statusIdentifier=${status.key}").mkString("&")
+    val url = new URL(baseUrl, s"/application?$activeStatuses")
 
     monitor(s"Agent-Overseas-Application-application-GET") {
       http.GET(url.toString).map { response =>
