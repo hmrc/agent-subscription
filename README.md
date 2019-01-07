@@ -189,12 +189,12 @@ Possible responses:
 Response 401 if there is no logged in user
 
 #### Forbidden
-Response 403 if the logged in user is any of the following:
-- not an Agent
-- already has any enrolment other than HMRC-AS-AGENT
+Response 403 if:
+- the logged in user is not an Agent
+- the application status is 'attempting_registration'
 
 #### Conflict
-Response 409 if the enrolment is already allocated to someone else
+Response 409 if the HMRC-AS-AGENT enrolment is already allocated to a group
 
 #### InternalServerError
 Response 500 if there is an illegal state

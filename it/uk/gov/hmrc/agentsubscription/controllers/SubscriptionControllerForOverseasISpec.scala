@@ -21,18 +21,26 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     val address = __ \ "agencyAddress"
     val invalidAddress = "Invalid road %@"
 
-    "return a response containing the ARN" when {
+    "return a successful response containing the ARN" when {
       "all fields are populated" in {
-        behave like aSuccessfulRegSubscribeAndEnrol(subscriptionRequestJson)
+        behave like aSuccessfulSubscriptionForAcceptedApplication(subscriptionRequestJson)
       }
 
       "addressLine3 and addressLine4 are missing" in {
         val fields = Seq(address \ "addressLine3", address \ "addressLine4")
 
-        behave like aSuccessfulRegSubscribeAndEnrol(removeFields(fields))
+        behave like aSuccessfulSubscriptionForAcceptedApplication(removeFields(fields))
       }
 
-      def aSuccessfulRegSubscribeAndEnrol(subscriptionRequestJson: String) = {
+      "the application is in the 'registered' state then the DES registration API is not called but the subscription/enrolment is re-attempted" in {
+        aSuccessfulSubscriptionForAlreadyRegisteredAcceptedApplication(subscriptionRequestJson, "registered")
+      }
+
+      "the application is in the 'complete' state and there is no enrolment currently allocated to any group (i.e. user de-enrolled) then the subscription/enrolment is re-attempted" in {
+        aSuccessfulSubscriptionForAlreadyRegisteredAcceptedApplication(subscriptionRequestJson, "registered")
+      }
+
+      def aSuccessfulSubscriptionForAcceptedApplication(subscriptionRequestJson: String) = {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
@@ -61,11 +69,38 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           enrol = 1,
           complete = 1)
       }
+
+      def aSuccessfulSubscriptionForAlreadyRegisteredAcceptedApplication(subscriptionRequestJson: String, applicationStatus: String) = {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication(applicationStatus, safeId.value)
+        subscriptionSucceeds(safeId.value, subscriptionRequestJson)
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(stubbedGroupId, arn)
+        givenUpdateApplicationStatus(Complete, 204)
+
+        val result = await(doSubscriptionRequest(subscriptionRequestJson))
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe arn
+
+        verifyApiCalls(
+          attemptingRegistration = 0,
+          etmpRegistration = 0,
+          registered = 0,
+          subscription = 1,
+          allocatedPrincipalEnrolment = 1,
+          deleteKnownFact = 1,
+          createKnownFact = 1,
+          enrol = 1,
+          complete = 1)
+      }
     }
 
     "return Conflict if there is an existing HMRC-AS-AGENT enrolment for their Arn already allocated to some group" in {
       requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-      givenValidApplication("registered", "XE0001234567890")
+      givenValidApplication("registered", safeId.value)
       subscriptionSucceeds(safeId.value, subscriptionRequestJson)
       allocatedPrincipalEnrolmentExists(arn, "someOtherGroupId")
 
@@ -102,55 +137,6 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         await(doSubscriptionRequest(subscriptionRequestJson)).status shouldBe 403
 
         verify(0, getRequestedFor(urlEqualTo(getApplicationUrl)))
-      }
-
-      "the user already has enrolments" in {
-        pending // TODO when working on the retries/re-attempts story
-
-        requestIsAuthenticated().andIsAnAgent().andHasEnrolments()
-        givenValidApplication("registered", "XE0001234567890")
-        subscriptionSucceeds(safeId.value, subscriptionRequestJson)
-        allocatedPrincipalEnrolmentNotExists(arn)
-
-        await(doSubscriptionRequest(subscriptionRequestJson)).status shouldBe 403
-
-        verifyApiCalls(
-          attemptingRegistration = 0,
-          etmpRegistration = 0,
-          registered = 0,
-          subscription = 1,
-          allocatedPrincipalEnrolment = 1,
-          deleteKnownFact = 0,
-          createKnownFact = 0,
-          enrol = 0,
-          complete = 0)
-      }
-
-      "do not call DES registration API when the current status is registered" in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
-        givenValidApplication("registered", "XE0001234567890")
-        subscriptionSucceeds(safeId.value, subscriptionRequestJson)
-        allocatedPrincipalEnrolmentNotExists(arn)
-        deleteKnownFactsSucceeds(arn)
-        createKnownFactsSucceeds(arn)
-        enrolmentSucceeds(stubbedGroupId, arn)
-        givenUpdateApplicationStatus(Complete, 204)
-
-        val result = await(doSubscriptionRequest(subscriptionRequestJson))
-
-        result.status shouldBe 201
-        (result.json \ "arn").as[String] shouldBe "TARN0000001"
-
-        verifyApiCalls(
-          attemptingRegistration = 0,
-          etmpRegistration = 0,
-          registered = 0,
-          subscription = 1,
-          allocatedPrincipalEnrolment = 1,
-          deleteKnownFact = 1,
-          createKnownFact = 1,
-          enrol = 1,
-          complete = 1)
       }
     }
 
