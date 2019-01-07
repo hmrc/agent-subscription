@@ -23,7 +23,7 @@ trait OverseasDesStubs {
            """.stripMargin)))
   }
 
-  def organisationRegistrationSucceeds: Unit = {
+  def organisationRegistrationSucceeds(): Unit = {
     stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/02.00.00/organisation")))
       .willReturn(aResponse()
         .withStatus(200)

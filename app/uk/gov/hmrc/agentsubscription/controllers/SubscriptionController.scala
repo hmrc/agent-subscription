@@ -61,7 +61,7 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
 
   def createOverseasSubscription: Action[JsValue] = authorisedWithAffinityGroup { implicit request => implicit authIds =>
     withJsonBody[OverseasSubscriptionRequest] { oSubRequest =>
-      subscriptionService.createOverseasSubscription(oSubRequest, authIds.userId)
+      subscriptionService.createOverseasSubscription(oSubRequest, authIds)
         .map(arn => Created(toJson(SubscriptionResponse(arn))))
         .recover {
           case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError

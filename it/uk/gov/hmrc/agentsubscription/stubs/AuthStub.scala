@@ -78,7 +78,7 @@ trait AuthStub {
     this
   }
 
-  def requestIsAuthenticatedWithNoEnrolments(): AuthStub = {
+  def requestIsAuthenticatedWithNoEnrolments(affinityGroup: String = "Agent"): AuthStub = {
     stubFor(post(urlEqualTo("/auth/authorise"))
       .willReturn(aResponse()
         .withStatus(200)
@@ -101,7 +101,7 @@ trait AuthStub {
                        |  "levelOfAssurance":"1",
                        |  "previouslyLoggedInAt":"2016-06-20T09:48:37.112Z",
                        |  "groupIdentifier": "groupId",
-                       |  "affinityGroup": "Agent",
+                       |  "affinityGroup": "$affinityGroup",
                        |  "allEnrolments": []
                        |}
        """.stripMargin)))

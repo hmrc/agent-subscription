@@ -58,8 +58,9 @@ class TaxEnrolmentsConnector @Inject() (
   metrics: Metrics) extends HttpAPIMonitor {
   override val kenshooRegistry = metrics.defaultRegistry
 
-  def sendKnownFacts(arn: String, postcode: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
-    val request = KnownFactsRequest(List(KnownFact("AgencyPostcode", postcode)), None)
+  // EACD's ES6 API
+  def addKnownFacts(arn: String, knownFactKey: String, knownFactValue: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
+    val request = KnownFactsRequest(List(KnownFact(knownFactKey, knownFactValue)), None)
 
     monitor("EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT") {
       http.PUT[JsValue, HttpResponse](s"""${teBaseUrl}/tax-enrolments/enrolments/${enrolmentKey(arn)}""", Json.toJson(request)) map {
@@ -68,6 +69,7 @@ class TaxEnrolmentsConnector @Inject() (
     }
   }
 
+  // EACD's ES7 API
   def deleteKnownFacts(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
     monitor("EMAC-DeleteKnownFacts-HMRC-AS-AGENT-DELETE") {
       http.DELETE[HttpResponse](s"""${espBaseUrl}/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(arn.value)}""")
@@ -75,6 +77,7 @@ class TaxEnrolmentsConnector @Inject() (
     }
   }
 
+  // EACD's ES8 API
   def enrol(groupId: String, arn: Arn, enrolmentRequest: EnrolmentRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
     val serviceUrl = s"""${teBaseUrl}/tax-enrolments/groups/$groupId/enrolments/${enrolmentKey(arn.value)}"""
 
@@ -85,7 +88,7 @@ class TaxEnrolmentsConnector @Inject() (
     }
   }
 
-  // ES1 - principal
+  // EACD's ES1 API (principal)
   def hasPrincipalGroupIds(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     val url = new URL(espBaseUrl, s"/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(arn.value)}/groups?type=principal")
 

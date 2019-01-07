@@ -154,6 +154,59 @@ Response: 200 OK
       "arn": <the Agency Registration Number for this agency, as returned to us by DES/ETMP>
     }
 
+### Register and Subscribe Overseas Agent to Agent Services
+
+    POST /agent-subscription/overseas-subscription
+
+This API will register an overseas agent organisation and subscribe them
+to Agent Services. The application details are retrieved for the logged
+in user.
+
+If the application is in the "accepted" state, the following main steps
+are followed and the ARN is returned in the response if successful:
+1. updates the application status to "attempting_registration"
+2. registers the organisation in ETMP (creates a Business Partner record)
+3. updates the application status to "registered"
+4. subscribes them to Agent Services in ETMP, obtaining a new Agent Reference Number
+5. enrols the currently logged in agent to HMRC-AS-AGENT with their new Agent Reference Number.
+6. updates the application status to "complete"
+
+If the application is in the "attempting_registration" state, no further
+progress will be made. It is assumed that the call to Register them in
+ETMP has previously failed and ETMP must be contacted to resolve the
+failure.
+
+If the application is in the "registered" state, then steps 4 through 6
+are re-attempted and the ARN is returned in the response if successful.
+
+If the application is in the "complete" state, then step 5 is
+re-attempted (which would fix any enrolment that may have been removed),
+and the ARN is returned in the response if successful.
+
+Possible responses:
+
+#### Unauthorized
+Response 401 if there is no logged in user
+
+#### Forbidden
+Response 403 if the logged in user is any of the following:
+- not an Agent
+- already has any enrolment other than HMRC-AS-AGENT
+
+#### Conflict
+Response 409 if the enrolment is already allocated to someone else
+
+#### InternalServerError
+Response 500 if there is an illegal state
+
+#### Ok
+Response: 201 Created with
+
+    Location: /agent-subscription/subscription/:arn
+    {
+      "arn": <the Agency Registration Number for this agency, as returned to us by DES/ETMP>
+    }
+
 ### License
 
 
