@@ -301,11 +301,11 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
   private def verifyApiCalls(attemptingRegistration: Int, etmpRegistration: Int, registered: Int, subscription: Int, complete: Int) = {
     verify(1, getRequestedFor(urlEqualTo(getApplicationUrl)))
-    verify(attemptingRegistration, putRequestedFor(urlEqualTo(s"/application/attempting_registration")))
+    verify(attemptingRegistration, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/attempting_registration")))
     verify(etmpRegistration, postRequestedFor(urlEqualTo(s"/registration/02.00.00/organisation")))
-    verify(registered, putRequestedFor(urlEqualTo(s"/application/registered")))
+    verify(registered, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/registered")))
     verify(subscription, postRequestedFor(urlEqualTo(s"/registration/agents/safeId/${safeId.value}")))
-    verify(complete, putRequestedFor(urlEqualTo(s"/application/complete")))
+    verify(complete, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/complete")))
   }
 
 }
