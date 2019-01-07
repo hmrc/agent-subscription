@@ -5,10 +5,10 @@ import uk.gov.hmrc.agentsubscription.model.ApplicationStatus
 
 trait AgentOverseasApplicationStubs {
 
-  val getApplicationUrl = s"/application?statusIdentifier=pending&statusIdentifier=accepted&statusIdentifier=attempting_registration&statusIdentifier=registered&statusIdentifier=complete"
+  val getApplicationUrl = s"/agent-overseas-application/application?statusIdentifier=pending&statusIdentifier=accepted&statusIdentifier=attempting_registration&statusIdentifier=registered&statusIdentifier=complete"
 
   def givenUpdateApplicationStatus(appStatus: ApplicationStatus, responseStatus: Int, requestBody: String = "{}"): Unit = {
-    stubFor(put(urlEqualTo(s"/application/${appStatus.key}"))
+    stubFor(put(urlEqualTo(s"/agent-overseas-application/application/${appStatus.key}"))
       .withRequestBody(equalToJson(requestBody))
       .willReturn(aResponse()
         .withStatus(responseStatus)))
