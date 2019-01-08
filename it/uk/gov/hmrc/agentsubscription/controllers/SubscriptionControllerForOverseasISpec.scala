@@ -4,6 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.{ verify, _ }
 import play.api.libs.json.Json.stringify
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Complete, Registered }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs._
@@ -16,6 +17,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
   implicit val ws = app.injector.instanceOf[WSClient]
   private val safeIdJson = s"""{ "safeId": "${safeId.value}"}"""
   private val eacdRetryCount = 3
+  private val amlsDetails = OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))
 
   "creating a subscription" should {
     val address = __ \ "agencyAddress"
@@ -51,6 +53,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(stubbedGroupId, arn)
+        createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
         givenUpdateApplicationStatus(Complete, 204)
 
         val result = await(doSubscriptionRequest(subscriptionRequestJson))
@@ -67,6 +70,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           deleteKnownFact = 1,
           createKnownFact = 1,
           enrol = 1,
+          amls = 1,
           complete = 1)
       }
 
@@ -78,6 +82,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(stubbedGroupId, arn)
+        createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
         givenUpdateApplicationStatus(Complete, 204)
 
         val result = await(doSubscriptionRequest(subscriptionRequestJson))
@@ -94,7 +99,38 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           deleteKnownFact = 1,
           createKnownFact = 1,
           enrol = 1,
+          amls = 1,
           complete = 1)
+      }
+
+      "creating amls record fails with 409 Conflict because a record already exists" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("registered", safeId.value)
+        subscriptionSucceeds(safeId.value, subscriptionRequestJson)
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(stubbedGroupId, arn)
+        createOverseasAmlsFailsWithStatus(409)
+        givenUpdateApplicationStatus(Complete, 204)
+
+        val result = await(doSubscriptionRequest(subscriptionRequestJson))
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe arn
+
+        verifyApiCalls(
+          attemptingRegistration = 0,
+          etmpRegistration = 0,
+          registered = 0,
+          subscription = 1,
+          allocatedPrincipalEnrolment = 1,
+          deleteKnownFact = 1,
+          createKnownFact = 1,
+          enrol = 1,
+          amls = 1,
+          complete = 1)
+
       }
     }
 
@@ -117,6 +153,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         deleteKnownFact = 0,
         createKnownFact = 0,
         enrol = 0,
+        amls = 0,
         complete = 0)
 
     }
@@ -386,6 +423,36 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           enrol = eacdRetryCount)
       }
 
+      "creating amls record fails with 500" in {
+        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        givenValidApplication("accepted")
+        givenUpdateApplicationStatus(AttemptingRegistration, 204)
+        organisationRegistrationSucceeds()
+        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        subscriptionSucceeds(safeId.value, subscriptionRequestJson)
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(stubbedGroupId, arn)
+        createOverseasAmlsFailsWithStatus(500)
+
+        val result = await(doSubscriptionRequest(subscriptionRequestJson))
+
+        result.status shouldBe 500
+
+        verifyApiCalls(
+          attemptingRegistration = 1,
+          etmpRegistration = 1,
+          registered = 1,
+          subscription = 1,
+          allocatedPrincipalEnrolment = 1,
+          deleteKnownFact = 1,
+          createKnownFact = 1,
+          enrol = 1,
+          amls = 1,
+          complete = 0)
+      }
+
       "updating Complete overseas application status fails with 409" in {
         requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
         givenValidApplication("accepted")
@@ -397,6 +464,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(stubbedGroupId, arn)
+        createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
         givenUpdateApplicationStatus(Complete, 409)
 
         val result = await(doSubscriptionRequest(subscriptionRequestJson))
@@ -412,6 +480,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           deleteKnownFact = 1,
           createKnownFact = 1,
           enrol = 1,
+          amls = 1,
           complete = 1)
       }
     }
@@ -474,6 +543,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     deleteKnownFact: Int = 0,
     createKnownFact: Int = 0,
     enrol: Int = 0,
+    amls: Int = 0,
     complete: Int = 0) = {
     verify(1, getRequestedFor(urlEqualTo(getApplicationUrl)))
     verify(attemptingRegistration, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/attempting_registration")))
@@ -484,6 +554,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     verifyDeleteKnownFactsCalled(deleteKnownFact)
     verifyCreateKnownFactsCalled(createKnownFact)
     verifyEnrolmentCalled(enrol)
+    verify(amls, postRequestedFor(urlEqualTo(s"/agent-assurance/overseas-agents/amls")))
     verify(complete, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/complete")))
   }
 

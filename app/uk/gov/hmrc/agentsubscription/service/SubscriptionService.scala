@@ -116,24 +116,25 @@ class SubscriptionService @Inject() (
 
   def createOverseasSubscription(subscriptionRequest: OverseasSubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     val userId = authIds.userId
-    def subscribeAndEnrol(safeId: SafeId) =
+    def subscribeAndEnrol(safeId: SafeId, amlsDetails: OverseasAmlsDetails) =
       for {
         arn <- desConnector.subscribeToAgentServices(safeId, subscriptionRequest)
         _ <- addKnownFactsAndEnrolOverseas(arn, subscriptionRequest, authIds)
+        _ <- agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
         _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, userId)
       } yield Some(arn)
 
-    agentOverseasApplicationConnector.currentApplicationStatus.flatMap {
-      case CurrentApplicationStatus(AttemptingRegistration, _) =>
+    agentOverseasApplicationConnector.currentApplication.flatMap {
+      case CurrentApplication(AttemptingRegistration, _, _) =>
         Future.successful(None)
-      case CurrentApplicationStatus(Registered, Some(safeId)) =>
-        subscribeAndEnrol(safeId)
-      case _ =>
+      case CurrentApplication(Registered, Some(safeId), amlsDetails) =>
+        subscribeAndEnrol(safeId, amlsDetails)
+      case application =>
         for {
           _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
           safeId <- desConnector.createOverseasBusinessPartnerRecord(subscriptionRequest.toRegistrationRequest)
           _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Registered, userId, Some(safeId))
-          arnOpt <- subscribeAndEnrol(safeId)
+          arnOpt <- subscribeAndEnrol(safeId, application.amlsDetails)
         } yield arnOpt
     }
   }

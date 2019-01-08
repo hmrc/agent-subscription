@@ -7,7 +7,7 @@ import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.model.AmlsDetails
+import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, OverseasAmlsDetails }
 import uk.gov.hmrc.agentsubscription.stubs.AgentAssuranceStub
 import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
 import uk.gov.hmrc.http.{ HttpPost, HttpPut }
@@ -27,6 +27,7 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
     new AgentAssuranceConnectorImpl(new URL(s"http://localhost:$wireMockPort"), http, metrics)
 
   val amlsDetails: AmlsDetails = AmlsDetails("supervisory", "12345", LocalDate.now())
+  val overseasAmlsDetails = OverseasAmlsDetails("supervisory", Some("12345"))
 
   "creating AMLS" should {
     "return a successful response" in {
@@ -71,4 +72,30 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
     }
   }
 
+  "creating Overseas AMLS" should {
+    "return a successful response" in {
+
+      createOverseasAmlsSucceeds(arn, overseasAmlsDetails)
+
+      val result = await(connector.createOverseasAmls(arn, overseasAmlsDetails))
+
+      result shouldBe ()
+    }
+
+    "handle conflict responses" in {
+
+      createOverseasAmlsFailsWithStatus(409)
+
+      val result = await(connector.createOverseasAmls(arn, overseasAmlsDetails))
+
+      result shouldBe ()
+    }
+
+    "handle failure responses" in {
+
+      createOverseasAmlsFailsWithStatus(500)
+
+      an[Exception] should be thrownBy (await(connector.createOverseasAmls(arn, overseasAmlsDetails)))
+    }
+  }
 }

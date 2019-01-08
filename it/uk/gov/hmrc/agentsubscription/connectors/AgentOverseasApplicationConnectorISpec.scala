@@ -6,7 +6,7 @@ import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ Accepted, AttemptingRegistration, Registered }
-import uk.gov.hmrc.agentsubscription.model.{ CurrentApplicationStatus, SafeId }
+import uk.gov.hmrc.agentsubscription.model.{ CurrentApplication, OverseasAmlsDetails, SafeId }
 import uk.gov.hmrc.agentsubscription.stubs.AgentOverseasApplicationStubs
 import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
 import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, HttpPut }
@@ -56,23 +56,23 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
     }
   }
 
-  "currentApplicationStatus" should {
-    "return a valid status and safeId" in {
+  "currentApplication" should {
+    "return a valid status, safeId and amls details" in {
       givenValidApplication("registered", "12345")
 
-      await(connector.currentApplicationStatus) shouldBe CurrentApplicationStatus(Registered, Some(SafeId("12345")))
+      await(connector.currentApplication) shouldBe CurrentApplication(Registered, Some(SafeId("12345")), OverseasAmlsDetails("supervisoryName", Some("supervisoryId")))
     }
 
     "return empty safeId for statuses other than registered" in {
       givenValidApplication("accepted")
 
-      await(connector.currentApplicationStatus) shouldBe CurrentApplicationStatus(Accepted, Some(SafeId("")))
+      await(connector.currentApplication) shouldBe CurrentApplication(Accepted, Some(SafeId("")), OverseasAmlsDetails("supervisoryName", Some("supervisoryId")))
     }
 
     "return exception for invalid API response" in {
       givenInvalidApplication
 
-      an[RuntimeException] shouldBe thrownBy(await(connector.currentApplicationStatus))
+      an[RuntimeException] shouldBe thrownBy(await(connector.currentApplication))
     }
 
   }
