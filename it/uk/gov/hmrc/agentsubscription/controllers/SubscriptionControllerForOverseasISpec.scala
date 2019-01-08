@@ -554,7 +554,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     verifyDeleteKnownFactsCalled(deleteKnownFact)
     verifyCreateKnownFactsCalled(createKnownFact)
     verifyEnrolmentCalled(enrol)
-    verify(amls, postRequestedFor(urlEqualTo(s"/agent-assurance/overseas-agents/amls")))
+    verifyCreateOverseasAmlsCall(amls)
     verify(complete, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/complete")))
   }
 

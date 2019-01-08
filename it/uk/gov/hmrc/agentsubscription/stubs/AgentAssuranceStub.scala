@@ -49,4 +49,7 @@ trait AgentAssuranceStub {
   def createOverseasAmlsFailsWithStatus(status: Int): StubMapping =
     stubFor(post(urlEqualTo(createOverseasAmlsUrl))
       .willReturn(aResponse().withStatus(status)))
+
+  def verifyCreateOverseasAmlsCall(times: Int = 0) =
+    verify(times, postRequestedFor(urlEqualTo(createOverseasAmlsUrl)))
 }
