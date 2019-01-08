@@ -24,7 +24,7 @@ import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.{ JsString, JsValue, Json }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
-import uk.gov.hmrc.agentsubscription.model.{ ApplicationStatus, CurrentApplicationStatus, SafeId }
+import uk.gov.hmrc.agentsubscription.model.{ ApplicationStatus, CurrentApplication, OverseasAmlsDetails, SafeId }
 import uk.gov.hmrc.http._
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -53,7 +53,7 @@ class AgentOverseasApplicationConnector @Inject() (
     }
   }
 
-  def currentApplicationStatus(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CurrentApplicationStatus] = {
+  def currentApplication(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CurrentApplication] = {
     val activeStatuses = ApplicationStatus.ActiveStatuses.map(status => s"statusIdentifier=${status.key}").mkString("&")
     val url = new URL(baseUrl, s"/agent-overseas-application/application?$activeStatuses")
 
@@ -62,7 +62,8 @@ class AgentOverseasApplicationConnector @Inject() (
         val json = response.json.head
         val status = (json \ "status" \ "typeIdentifier").as[String]
         val safeId = (json \ "safeId").asOpt[SafeId]
-        CurrentApplicationStatus(ApplicationStatus(status), safeId)
+        val amlsDetails = (json \ "application" \ "amls").as[OverseasAmlsDetails]
+        CurrentApplication(ApplicationStatus(status), safeId, amlsDetails)
       }.recover {
         case e => throw new RuntimeException(s"Could not retrieve overseas agent application status: ${e.getMessage}")
       }

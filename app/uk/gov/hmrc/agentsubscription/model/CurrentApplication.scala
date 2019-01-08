@@ -18,8 +18,8 @@ package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.Json
 
-case class CurrentApplicationStatus(status: ApplicationStatus, safeId: Option[SafeId])
+case class CurrentApplication(status: ApplicationStatus, safeId: Option[SafeId], amlsDetails: OverseasAmlsDetails)
 
-object CurrentApplicationStatus {
-  implicit val format = Json.format[CurrentApplicationStatus]
+object CurrentApplication {
+  implicit val format = Json.format[CurrentApplication]
 }

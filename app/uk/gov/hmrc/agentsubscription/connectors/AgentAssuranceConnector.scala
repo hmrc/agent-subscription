@@ -26,8 +26,8 @@ import play.api.libs.json.{ Format, JsObject, Json }
 import play.mvc.Http.Status.CREATED
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.connectors.AgentAssuranceConnector.CreateAmlsRequest
-import uk.gov.hmrc.agentsubscription.model.AmlsDetails
+import uk.gov.hmrc.agentsubscription.connectors.AgentAssuranceConnector.{ CreateAmlsRequest, CreateOverseasAmlsRequest }
+import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, OverseasAmlsDetails }
 import uk.gov.hmrc.http._
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -38,6 +38,8 @@ trait AgentAssuranceConnector {
   def createAmls(utr: Utr, amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean]
 
   def updateAmls(utr: Utr, arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AmlsDetails]]
+
+  def createOverseasAmls(arn: Arn, amlsDetails: OverseasAmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit]
 }
 
 @Singleton
@@ -75,6 +77,18 @@ class AgentAssuranceConnectorImpl @Inject() (
       case _: NotFoundException => None
     }
   }
+
+  override def createOverseasAmls(arn: Arn, amlsDetails: OverseasAmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+    val url = new URL(baseUrl, "/agent-assurance/overseas-agents/amls")
+
+    monitor("AgentAssurance-overseas-agents-amls-POST") {
+      http.POST(url.toString, CreateOverseasAmlsRequest(arn, amlsDetails))
+        .map(_ => ())
+        .recover {
+          case e: Upstream4xxResponse if e.upstreamResponseCode == 409 => ()
+        }
+    }
+  }
 }
 
 object AgentAssuranceConnector {
@@ -82,5 +96,11 @@ object AgentAssuranceConnector {
 
   object CreateAmlsRequest {
     implicit val format: Format[CreateAmlsRequest] = Json.format[CreateAmlsRequest]
+  }
+
+  case class CreateOverseasAmlsRequest(arn: Arn, amlsDetails: OverseasAmlsDetails)
+
+  object CreateOverseasAmlsRequest {
+    implicit val format: Format[CreateOverseasAmlsRequest] = Json.format[CreateOverseasAmlsRequest]
   }
 }
