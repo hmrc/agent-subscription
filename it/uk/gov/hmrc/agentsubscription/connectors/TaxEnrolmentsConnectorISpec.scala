@@ -23,6 +23,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
   private implicit val hc = HeaderCarrier()
   private val arn = Arn("AARN1234567")
   private val postcode = "SY12 8RN"
+  private val knownFactKey = "TestKnownFactKey"
 
   val groupId = "groupId"
 
@@ -30,16 +31,16 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
     "return status 200 after successfully creating known facts" in {
       givenCleanMetricRegistry()
       createKnownFactsSucceeds(arn.value)
-      val result = await(connector.sendKnownFacts(arn.value, postcode))
+      val result = await(connector.addKnownFacts(arn.value, knownFactKey, postcode))
       result shouldBe 200
       verifyTimerExistsAndBeenUpdated("EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT")
     }
 
-    "propogate an exception after failing to create known facts" in {
+    "propagate an exception after failing to create known facts" in {
       createKnownFactsFails(arn.value)
 
       val exception = intercept[Upstream5xxResponse] {
-        await(connector.sendKnownFacts(arn.value, postcode))
+        await(connector.addKnownFacts(arn.value, knownFactKey, postcode))
       }
       exception.upstreamResponseCode shouldBe 500
     }
@@ -54,7 +55,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       verifyTimerExistsAndBeenUpdated("EMAC-DeleteKnownFacts-HMRC-AS-AGENT-DELETE")
     }
 
-    "propogate an exception after failing to delete known facts" in {
+    "propagate an exception after failing to delete known facts" in {
       deleteKnownFactsFails(arn.value)
 
       val exception = intercept[Upstream5xxResponse] {

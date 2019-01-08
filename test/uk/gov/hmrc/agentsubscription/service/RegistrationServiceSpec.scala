@@ -464,5 +464,5 @@ class LoggerLikeStub extends LoggerLike {
 
   override def warn(msg: => String) = logMessages += msg
 
-  def clear = logMessages.clear()
+  def clear() = logMessages.clear()
 }

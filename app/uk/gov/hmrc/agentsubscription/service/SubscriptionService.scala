@@ -85,7 +85,7 @@ class SubscriptionService @Inject() (
             case _ => desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
           }
           updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
-          _ <- addKnownFactsAndEnrol(arn, subscriptionRequest, authIds)
+          _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
         } yield {
           auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
           Some(arn)
@@ -103,7 +103,7 @@ class SubscriptionService @Inject() (
           val subscriptionRequest = mergeSubscriptionRequest(updateSubscriptionRequest, agentRecord)
           for {
             updatedAmlsDetails <- agentAssuranceConnector.updateAmls(updateSubscriptionRequest.utr, arn)
-            _ <- addKnownFactsAndEnrol(arn, subscriptionRequest, authIds)
+            _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
           } yield {
             auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
             Some(arn)
@@ -114,11 +114,12 @@ class SubscriptionService @Inject() (
       }
   }
 
-  def createOverseasSubscription(subscriptionRequest: OverseasSubscriptionRequest, userId: String)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
-
-    def subscribeToDes(safeId: SafeId) =
+  def createOverseasSubscription(subscriptionRequest: OverseasSubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+    val userId = authIds.userId
+    def subscribeAndEnrol(safeId: SafeId) =
       for {
         arn <- desConnector.subscribeToAgentServices(safeId, subscriptionRequest)
+        _ <- addKnownFactsAndEnrolOverseas(arn, subscriptionRequest, authIds)
         _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, userId)
       } yield Some(arn)
 
@@ -126,13 +127,13 @@ class SubscriptionService @Inject() (
       case CurrentApplicationStatus(AttemptingRegistration, _) =>
         Future.successful(None)
       case CurrentApplicationStatus(Registered, Some(safeId)) =>
-        subscribeToDes(safeId)
+        subscribeAndEnrol(safeId)
       case _ =>
         for {
           _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
           safeId <- desConnector.createOverseasBusinessPartnerRecord(subscriptionRequest.toRegistrationRequest)
           _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Registered, userId, Some(safeId))
-          arnOpt <- subscribeToDes(safeId)
+          arnOpt <- subscribeAndEnrol(safeId)
         } yield arnOpt
     }
   }
@@ -149,16 +150,42 @@ class SubscriptionService @Inject() (
 
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
-  private def addKnownFactsAndEnrol(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+  private def addKnownFactsAndEnrolOverseas(arn: Arn, subscriptionRequest: OverseasSubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+    val knownFactKey = "CountryCode"
+    val knownFactValue = subscriptionRequest.agencyAddress.countryCode
+    val friendlyName = subscriptionRequest.agencyName
+
+    addKnownFactsAndEnrol(arn, knownFactKey, knownFactValue, friendlyName, authIds)
+  }
+
+  private def addKnownFactsAndEnrolUk(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+    val knownFactKey = "AgencyPostcode"
+    val knownFactValue = subscriptionRequest.agency.address.postcode
+    val friendlyName = subscriptionRequest.agency.name
+
+    addKnownFactsAndEnrol(arn, knownFactKey, knownFactValue, friendlyName, authIds)
+      .recover {
+        case e: EnrolmentAlreadyAllocated => throw e
+        case e: IllegalStateException =>
+          recoveryRepository.create(authIds, arn, subscriptionRequest, s"Failed to add known facts and enrol due to; ${e.getCause.getClass.getName}: ${e.getCause.getMessage}")
+          throw new IllegalStateException(s"Failed to add known facts and enrol in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}", e)
+      }
+  }
+
+  private def addKnownFactsAndEnrol(arn: Arn, knownFactKey: String, knownFactValue: String, friendlyName: String, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+    val enrolRequest = EnrolmentRequest(
+      userId = authIds.userId,
+      `type` = "principal",
+      friendlyName = friendlyName,
+      Seq(KnownFact(knownFactKey, knownFactValue)))
+
     val tries = 3
     Retry.retry(tries)(
       taxEnrolmentsConnector.hasPrincipalGroupIds(arn).flatMap { alreadyEnrolled =>
         if (!alreadyEnrolled) {
           for {
             _ <- taxEnrolmentsConnector.deleteKnownFacts(arn)
-            _ <- taxEnrolmentsConnector.sendKnownFacts(arn.value, subscriptionRequest.agency.address.postcode)
-            enrolRequest = EnrolmentRequest(authIds.userId, "principal", subscriptionRequest.agency.name,
-              Seq(KnownFact("AgencyPostcode", subscriptionRequest.agency.address.postcode)))
+            _ <- taxEnrolmentsConnector.addKnownFacts(arn.value, knownFactKey, knownFactValue)
             _ <- taxEnrolmentsConnector.enrol(authIds.groupId, arn, enrolRequest)
           } yield ()
         } else {
@@ -168,8 +195,7 @@ class SubscriptionService @Inject() (
         case e: EnrolmentAlreadyAllocated => throw e
         case e =>
           Logger.error(s"Failed to add known facts and enrol for: ${arn.value} after $tries attempts", e)
-          recoveryRepository.create(authIds, arn, subscriptionRequest, s"Failed to add known facts and enrol due to; ${e.getClass.getName}: ${e.getMessage}")
-          throw new IllegalStateException(s"Failed to add known facts and enrol in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}", e)
+          throw new IllegalStateException(s"Failed to add known facts and enrol in EMAC for arn: ${arn.value}", e)
       }
   }
 
