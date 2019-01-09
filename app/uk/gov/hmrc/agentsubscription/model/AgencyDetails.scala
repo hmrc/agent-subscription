@@ -19,21 +19,36 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads.email
 import play.api.libs.json.{ Json, Reads, Writes, _ }
 
-case class BusinessDetails(tradingName: String, businessAddress: OverseasAddress)
+case class BusinessDetails(tradingName: String, businessAddress: OverseasBusinessAddress)
 case class BusinessContactDetails(businessTelephone: String, businessEmail: String)
 
 case class AgencyDetails(
   agencyName: String,
   agencyEmail: String,
   telephoneNumber: String,
-  agencyAddress: OverseasAddress)
+  agencyAddress: OverseasAgencyAddress)
 
-case class OverseasAddress(
+case class OverseasBusinessAddress(
   addressLine1: String,
   addressLine2: String,
   addressLine3: Option[String],
   addressLine4: Option[String],
   countryCode: String)
+
+case class OverseasAgencyAddress(
+  addressLine1: String,
+  addressLine2: String,
+  addressLine3: Option[String],
+  addressLine4: Option[String],
+  countryCode: String)
+
+object OverseasAgencyAddress {
+  implicit val format = Json.format[OverseasAgencyAddress]
+}
+
+object OverseasBusinessAddress {
+  implicit val format = Json.format[OverseasBusinessAddress]
+}
 
 object BusinessDetails {
   implicit val format = Json.format[BusinessDetails]
@@ -50,16 +65,5 @@ object AgencyDetails {
     (__ \ "agencyName").read[String](nameValidation) and
     (__ \ "agencyEmail").read[String](email) and
     (__ \ "telephoneNumber").read[String](telephoneNumberValidation) and
-    (__ \ "agencyAddress").read[OverseasAddress])(AgencyDetails.apply _)
+    (__ \ "agencyAddress").read[OverseasAgencyAddress])(AgencyDetails.apply _)
 }
-
-object OverseasAddress {
-  implicit val writes: Writes[OverseasAddress] = Json.writes[OverseasAddress]
-  implicit val reads: Reads[OverseasAddress] = (
-    (__ \ "addressLine1").read[String](addressValidation) and
-    (__ \ "addressLine2").read[String](addressValidation) and
-    (__ \ "addressLine3").readNullable[String](addressValidation) and
-    (__ \ "addressLine4").readNullable[String](addressValidation) and
-    (__ \ "countryCode").read[String](overseasCountryCodeValidation))(OverseasAddress.apply _)
-}
-

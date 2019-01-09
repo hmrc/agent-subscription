@@ -28,7 +28,7 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
     "Agency name",
     "agencyemail@domain.com",
     "1234567",
-    OverseasAddress(
+    OverseasAgencyAddress(
       "Mandatory Address Line 1",
       "Mandatory Address Line 2",
       None,
@@ -37,7 +37,7 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
 
   private val businessDetails = BusinessDetails(
     "tradingName",
-    OverseasAddress(
+    OverseasBusinessAddress(
       "addressLine1",
       "addressLine2",
       None,
