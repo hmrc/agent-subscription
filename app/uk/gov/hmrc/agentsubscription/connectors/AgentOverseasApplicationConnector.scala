@@ -63,8 +63,11 @@ class AgentOverseasApplicationConnector @Inject() (
         val status = (json \ "status" \ "typeIdentifier").as[String]
         val safeId = (json \ "safeId").asOpt[SafeId]
         val amlsDetails = (json \ "application" \ "amls").as[OverseasAmlsDetails]
+        val businessDetails = (json \ "application" \ "businessDetail").as[BusinessDetails]
+        val businessContactDetails = (json \ "application" \ "contactDetails").as[BusinessContactDetails]
         val agencyDetails = (json \ "agencyDetails").as[AgencyDetails]
-        CurrentApplication(ApplicationStatus(status), safeId, amlsDetails, agencyDetails)
+
+        CurrentApplication(ApplicationStatus(status), safeId, amlsDetails, businessContactDetails, businessDetails, agencyDetails)
       }.recover {
         case e => throw new RuntimeException(s"Could not retrieve overseas agent application status: ${e.getMessage}")
       }

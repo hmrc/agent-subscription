@@ -79,7 +79,7 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
 
       val result = await(connector.createOverseasAmls(arn, overseasAmlsDetails))
 
-      result shouldBe(())
+      result shouldBe (())
     }
 
     "handle conflict responses" in {
@@ -88,7 +88,7 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
 
       val result = await(connector.createOverseasAmls(arn, overseasAmlsDetails))
 
-      result shouldBe(())
+      result shouldBe (())
     }
 
     "handle failure responses" in {

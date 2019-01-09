@@ -118,14 +118,14 @@ class SubscriptionService @Inject() (
     val userId = authIds.userId
 
     agentOverseasApplicationConnector.currentApplication.flatMap {
-      case CurrentApplication(AttemptingRegistration, _, _, _) =>
+      case CurrentApplication(AttemptingRegistration, _, _, _, _, _) =>
         Future.successful(None)
-      case CurrentApplication(Registered | Complete, Some(safeId), amlsDetails, agencyDetails) =>
+      case CurrentApplication(Registered | Complete, Some(safeId), amlsDetails, _, _, agencyDetails) =>
         subscribeAndEnrolOverseas(authIds, safeId, amlsDetails, agencyDetails)
       case application =>
         for {
           _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
-          safeId <- desConnector.createOverseasBusinessPartnerRecord(application.agencyDetails.toRegistrationRequest)
+          safeId <- desConnector.createOverseasBusinessPartnerRecord(OverseasRegistrationRequest(application))
           _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Registered, userId, Some(safeId))
           arnOpt <- subscribeAndEnrolOverseas(authIds, safeId, application.amlsDetails, application.agencyDetails)
         } yield arnOpt

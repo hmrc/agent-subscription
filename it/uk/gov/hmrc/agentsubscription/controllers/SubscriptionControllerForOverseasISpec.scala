@@ -115,7 +115,6 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           enrol = 1,
           amls = 1,
           complete = 1)
-
       }
     }
 

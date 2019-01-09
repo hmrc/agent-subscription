@@ -16,6 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
+import java.util.UUID
+
 import play.api.libs.json.Json
 
 case class ContactDetails(phoneNumber: String, emailAddress: String)
@@ -36,10 +38,23 @@ case class OverseasRegistrationRequest(
   isAnAgent: Boolean,
   isAGroup: Boolean,
   organisation: Organisation,
-  address: AgencyAddress,
+  address: OverseasAddress,
   contactDetails: ContactDetails)
 
 object OverseasRegistrationRequest {
   implicit val overseasRegistrationRequestFormat = Json.format[OverseasRegistrationRequest]
+
+  def apply(fromApplication: CurrentApplication): OverseasRegistrationRequest = {
+    OverseasRegistrationRequest(
+      regime = "AGSV",
+      acknowledgementReference = UUID.randomUUID.toString.replaceAll("-", ""),
+      isAnAgent = false,
+      isAGroup = false,
+      Organisation(organisationName = fromApplication.businessDetails.tradingName),
+      address = fromApplication.businessDetails.businessAddress,
+      contactDetails = ContactDetails(
+        phoneNumber = fromApplication.businessContactDetails.businessTelephone,
+        emailAddress = fromApplication.businessContactDetails.businessEmail))
+  }
 }
 
