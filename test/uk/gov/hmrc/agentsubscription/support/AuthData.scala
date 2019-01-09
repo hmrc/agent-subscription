@@ -27,7 +27,7 @@ trait AuthData {
   val arn = Arn("arn1")
 
   val agentEnrolment = Set(
-    Enrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)), state = "",
+    Enrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)), state = "Activated",
       delegatedAuthRule = None))
 
   val agentAffinityWithCredentialsAndGroupId: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]] = {
@@ -58,13 +58,5 @@ trait AuthData {
     Future successful new ~[Option[AffinityGroup], Credentials](Some(AffinityGroup.Individual), Credentials("credId", "credType"))
   val noAffinity: Future[~[Option[AffinityGroup], Credentials]] =
     Future successful new ~[Option[AffinityGroup], Credentials](None, Credentials("credId", "credType"))
-
-  /*val agentWithoutAffinityandEnrolments: Future[~[Enrolments, ~[Option[AffinityGroup], Credentials]]] = {
-    import uk.gov.hmrc.auth.core.syntax.retrieved._
-
-    val retrieved: Enrolments ~ Option[AffinityGroup] ~ Credentials = Enrolments(agentEnrolment) and None and Credentials("credId", "credType")
-
-    Future successful new ~(retrieved.a, )
-  }*/
 
 }

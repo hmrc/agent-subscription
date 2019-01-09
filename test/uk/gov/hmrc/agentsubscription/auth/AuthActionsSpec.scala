@@ -18,24 +18,24 @@ package uk.gov.hmrc.agentsubscription.auth
 
 import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{reset, when}
+import org.mockito.Mockito.{ reset, when }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import play.api.http.Status._
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.{ JsValue, Json }
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentsubscription.auth.AuthActions.{OverseasAuthAction, RegistrationAuthAction, SubscriptionAuthAction}
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.{ OverseasAuthAction, RegistrationAuthAction, SubscriptionAuthAction }
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.support.AuthData
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
-import uk.gov.hmrc.auth.core.{authorise, _}
+import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, ~ }
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.Future
 
 class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach with AuthData {
+  import uk.gov.hmrc.auth.core.{ Enrolment, authorise, _ }
 
   val mockMicroserviceAuthConnector: MicroserviceAuthConnector = mock[MicroserviceAuthConnector]
   val mockMetrics: Metrics = mock[Metrics]
@@ -134,31 +134,56 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
   "overseasAgentAuth" should {
     val fakeRequest = FakeRequest()
 
-   /* "return OK when we have the correct affinity group" in {
-      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Enrolments, ~[Option[AffinityGroup], Credentials]]]]())(any(), any()))
-        .thenReturn(validAgentAffinity)
+    "return OK when the user has Agent affinity and no enrolments" in {
+      mockAuthRetrieval(
+        affinityGroup = Some(AffinityGroup.Agent),
+        enrolments = Enrolments(Set.empty))
 
       val response: Result = await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
 
       status(response) shouldBe OK
-    }*/
+    }
 
-  /*  "return UNAUTHORISED when we have the wrong affinity group" in {
-      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Enrolments, ~[Option[AffinityGroup], Credentials]]]]())(any(), any()))
-        .thenReturn(agentWithoutAffinityandEnrolments)
+    "return UNAUTHORISED when user does not have Agent affinity" in {
+      mockAuthRetrieval(
+        affinityGroup = Some(AffinityGroup.Individual),
+        enrolments = Enrolments(Set.empty))
 
       val response: Result = await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
 
       status(response) shouldBe 403
-    }*/
+    }
 
-   /* "return UNAUTHORISED when we have no affinity group" in {
-      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
-        .thenReturn(noAffinity)
+    "return UNAUTHORISED when we have no affinity group" in {
+      mockAuthRetrieval(
+        affinityGroup = None,
+        enrolments = Enrolments(Set.empty))
 
       val response: Result = await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
 
       status(response) shouldBe UNAUTHORIZED
+    }
+
+    "return UNAUTHORISED when Agent has a HMRC-AS-AGENT enrolment already" in {
+      mockAuthRetrieval(
+        affinityGroup = Some(AffinityGroup.Agent),
+        enrolments = Enrolments(agentEnrolment))
+
+      val response: Result = await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
+
+      status(response) shouldBe FORBIDDEN
+    }
+
+    "return UNAUTHORISED when Agent has some other enrolment already" in {
+      val someOtherEnrolments = Set(Enrolment("SOME-ENROLMENT", Seq(EnrolmentIdentifier("SomeId", "SomeValue")), state = "Activated", delegatedAuthRule = None))
+
+      mockAuthRetrieval(
+        affinityGroup = Some(AffinityGroup.Agent),
+        enrolments = Enrolments(someOtherEnrolments))
+
+      val response: Result = await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
+
+      status(response) shouldBe FORBIDDEN
     }
 
     "return the same error when auth throws an error" in {
@@ -170,7 +195,20 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
       }
 
       thrown.getMessage shouldBe "unexpected error"
-    }*/
+    }
+
+    def mockAuthRetrieval(affinityGroup: Option[AffinityGroup], enrolments: Enrolments) = {
+      val retrievedCredentials = Credentials("credId", "credType")
+      val retrievedGroupId = Some("groupId")
+
+      type Retrievals = ~[~[~[Enrolments, Option[AffinityGroup]], Credentials], Option[String]]
+
+      val retrievalResponse: Future[Retrievals] =
+        Future successful new ~(new ~(new ~(enrolments, affinityGroup), retrievedCredentials), retrievedGroupId)
+
+      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[Retrievals]]())(any(), any()))
+        .thenReturn(retrievalResponse)
+    }
   }
 
 }

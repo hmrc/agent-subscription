@@ -40,7 +40,7 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
       writeAuditMergedSucceeds()
       writeAuditSucceeds()
 
-      requestIsAuthenticated()
+      requestIsAuthenticatedWithNoEnrolments()
       organisationRegistrationExists(utr, true, arn)
       allocatedPrincipalEnrolmentExists(arn, "groupId")
 

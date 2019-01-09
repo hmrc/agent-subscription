@@ -72,15 +72,14 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
         case enrolments ~ Some(affinityG) ~ Credentials(providerId, _) ~ Some(groupId) =>
           if (!isAgent(affinityG))
             NotAnAgent
-          else if (!isEnrolledForHmrcAsAgent(enrolments))
+          else if (enrolments.enrolments.nonEmpty)
             AgentCannotSubscribe
           else
             action(request)(AuthIds(providerId, groupId))
         case _ => GenericUnauthorized
-
       } recover {
-      handleFailure()
-    }
+        handleFailure()
+      }
   }
 
   def authorisedWithAffinityGroupAndCredentials(action: RegistrationAuthAction): Action[AnyContent] = Action.async { implicit request =>
@@ -106,9 +105,6 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
   }
 
   private def isAgent(group: AffinityGroup): Boolean = group.toString.contains("Agent")
-
-  private def isEnrolledForHmrcAsAgent(enrolments: Enrolments): Boolean =
-    enrolments.enrolments.find(_.key equals "HMRC-AS-AGENT").exists(_.isActivated)
 }
 
 object AuthActions {

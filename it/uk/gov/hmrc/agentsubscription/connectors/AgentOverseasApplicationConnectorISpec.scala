@@ -5,11 +5,11 @@ import java.net.URL
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{Accepted, AttemptingRegistration, Registered}
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ Accepted, AttemptingRegistration, Registered }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.AgentOverseasApplicationStubs
-import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpGet, HttpPut}
+import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, HttpPut }
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -24,8 +24,16 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
 
   private implicit val hc = HeaderCarrier()
 
-  private val agencyDetails  = AgencyDetails("agency name", "test@example.com", "1234455",
-    AgencyAddress("Some street", "street1", None, None, "IE"))
+  private val agencyDetails = AgencyDetails(
+    "Agency name",
+    "agencyemail@domain.com",
+    "1234567",
+    AgencyAddress(
+      "Mandatory Address Line 1",
+      "Mandatory Address Line 2",
+      None,
+      None,
+      "IE"))
 
   "updateApplicationStatus" should {
     val targetAppStatus = AttemptingRegistration
