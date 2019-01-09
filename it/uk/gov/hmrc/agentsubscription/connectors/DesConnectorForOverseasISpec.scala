@@ -38,12 +38,12 @@ class DesConnectorForOverseasISpec extends UnitSpec with OneAppPerSuite with Wir
     "AGSV",
     UUID.randomUUID.toString.replaceAll("-", ""), false, false,
     Organisation("Test Organisation Name"),
-    OverseasAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
+    AgencyAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
       Some("Optional Address Line 3"), Some("Optional Address Line 4"), "IE"), ContactDetails("00491234567890", "test@test.example"))
 
-  private val overseasSubscriptionRequest = OverseasSubscriptionRequest(
+  private val overseasSubscriptionRequest = AgencyDetails(
     "Test Organisation Name",
-    "test@test.example", "00491234567890", OverseasAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
+    "test@test.example", "00491234567890", AgencyAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
       Some("Optional Address Line 3"), Some("Optional Address Line 4"), "IE"))
 
   "subscribeToAgentServices" should {

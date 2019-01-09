@@ -54,6 +54,16 @@ trait AgentOverseasApplicationStubs {
              |         }
              |      }
              |   },
+             |   "agencyDetails" : {
+             |     "agencyName" : "Agency name",
+             |     "agencyEmail" : "agencyemail@domain.com",
+             |     "telephoneNumber" : "1234567",
+               |   "agencyAddress": {
+                 |    "addressLine1": "Mandatory Address Line 1",
+                 |    "addressLine2": "Mandatory Address Line 2",
+                 |    "countryCode": "IE"
+               |   }
+             |   },
              |   "status":{
              |      "typeIdentifier":"$status"
              |   },

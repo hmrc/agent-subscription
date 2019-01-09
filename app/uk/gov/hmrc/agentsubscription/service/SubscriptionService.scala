@@ -16,22 +16,22 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.Request
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription._
-import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscriptionEvent, AuditService }
+import uk.gov.hmrc.agentsubscription.audit.{AgentSubscriptionEvent, AuditService}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Registered }
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{AttemptingRegistration, Complete, Registered}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
-import uk.gov.hmrc.http.{ HeaderCarrier, NotFoundException }
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 private object SubscriptionAuditDetail {
   implicit val writes = Json.writes[SubscriptionAuditDetail]
@@ -114,27 +114,27 @@ class SubscriptionService @Inject() (
       }
   }
 
-  def createOverseasSubscription(subscriptionRequest: OverseasSubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+  def createOverseasSubscription(authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     val userId = authIds.userId
-    def subscribeAndEnrol(safeId: SafeId, amlsDetails: OverseasAmlsDetails) =
+    def subscribeAndEnrol(safeId: SafeId, amlsDetails: OverseasAmlsDetails, agencyDetails: AgencyDetails) =
       for {
-        arn <- desConnector.subscribeToAgentServices(safeId, subscriptionRequest)
-        _ <- addKnownFactsAndEnrolOverseas(arn, subscriptionRequest, authIds)
+        arn <- desConnector.subscribeToAgentServices(safeId, agencyDetails)
+        _ <- addKnownFactsAndEnrolOverseas(arn, agencyDetails, authIds)
         _ <- agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
         _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, userId)
       } yield Some(arn)
 
     agentOverseasApplicationConnector.currentApplication.flatMap {
-      case CurrentApplication(AttemptingRegistration, _, _) =>
+      case CurrentApplication(AttemptingRegistration, _, _, _) =>
         Future.successful(None)
-      case CurrentApplication(Registered, Some(safeId), amlsDetails) =>
-        subscribeAndEnrol(safeId, amlsDetails)
+      case CurrentApplication(Registered | Complete, Some(safeId), amlsDetails, agencyDetails) =>
+        subscribeAndEnrol(safeId, amlsDetails, agencyDetails)
       case application =>
         for {
           _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
-          safeId <- desConnector.createOverseasBusinessPartnerRecord(subscriptionRequest.toRegistrationRequest)
+          safeId <- desConnector.createOverseasBusinessPartnerRecord(application.agencyDetails.toRegistrationRequest)
           _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Registered, userId, Some(safeId))
-          arnOpt <- subscribeAndEnrol(safeId, application.amlsDetails)
+          arnOpt <- subscribeAndEnrol(safeId, application.amlsDetails, application.agencyDetails)
         } yield arnOpt
     }
   }
@@ -151,10 +151,10 @@ class SubscriptionService @Inject() (
 
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
-  private def addKnownFactsAndEnrolOverseas(arn: Arn, subscriptionRequest: OverseasSubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+  private def addKnownFactsAndEnrolOverseas(arn: Arn, agencyDetails: AgencyDetails, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
     val knownFactKey = "CountryCode"
-    val knownFactValue = subscriptionRequest.agencyAddress.countryCode
-    val friendlyName = subscriptionRequest.agencyName
+    val knownFactValue = agencyDetails.agencyAddress.countryCode
+    val friendlyName = agencyDetails.agencyName
 
     addKnownFactsAndEnrol(arn, knownFactKey, knownFactValue, friendlyName, authIds)
   }

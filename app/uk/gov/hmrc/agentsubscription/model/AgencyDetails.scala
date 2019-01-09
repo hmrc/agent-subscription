@@ -21,11 +21,11 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads.email
 import play.api.libs.json.{ Json, Reads, Writes, _ }
 
-case class OverseasSubscriptionRequest(
+case class AgencyDetails(
   agencyName: String,
   agencyEmail: String,
   telephoneNumber: String,
-  agencyAddress: OverseasAddress) {
+  agencyAddress: AgencyAddress) {
 
   def toRegistrationRequest: OverseasRegistrationRequest = OverseasRegistrationRequest(
     regime = "AGSV",
@@ -36,29 +36,29 @@ case class OverseasSubscriptionRequest(
     agencyAddress, ContactDetails(telephoneNumber, agencyEmail))
 }
 
-case class OverseasAddress(
+case class AgencyAddress(
   addressLine1: String,
   addressLine2: String,
   addressLine3: Option[String],
   addressLine4: Option[String],
   countryCode: String)
 
-object OverseasSubscriptionRequest {
-  implicit val writes = Json.writes[OverseasSubscriptionRequest]
+object AgencyDetails {
+  implicit val writes = Json.writes[AgencyDetails]
 
-  implicit val reads: Reads[OverseasSubscriptionRequest] = (
+  implicit val reads: Reads[AgencyDetails] = (
     (__ \ "agencyName").read[String](nameValidation) and
     (__ \ "agencyEmail").read[String](email) and
     (__ \ "telephoneNumber").read[String](telephoneNumberValidation) and
-    (__ \ "agencyAddress").read[OverseasAddress])(OverseasSubscriptionRequest.apply _)
+    (__ \ "agencyAddress").read[AgencyAddress])(AgencyDetails.apply _)
 }
 
-object OverseasAddress {
-  implicit val writes: Writes[OverseasAddress] = Json.writes[OverseasAddress]
-  implicit val reads: Reads[OverseasAddress] = (
+object AgencyAddress {
+  implicit val writes: Writes[AgencyAddress] = Json.writes[AgencyAddress]
+  implicit val reads: Reads[AgencyAddress] = (
     (__ \ "addressLine1").read[String](addressValidation) and
     (__ \ "addressLine2").read[String](addressValidation) and
     (__ \ "addressLine3").readNullable[String](addressValidation) and
     (__ \ "addressLine4").readNullable[String](addressValidation) and
-    (__ \ "countryCode").read[String](overseasCountryCodeValidation))(OverseasAddress.apply _)
+    (__ \ "countryCode").read[String](overseasCountryCodeValidation))(AgencyAddress.apply _)
 }

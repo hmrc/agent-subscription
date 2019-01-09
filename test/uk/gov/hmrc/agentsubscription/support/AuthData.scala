@@ -59,4 +59,12 @@ trait AuthData {
   val noAffinity: Future[~[Option[AffinityGroup], Credentials]] =
     Future successful new ~[Option[AffinityGroup], Credentials](None, Credentials("credId", "credType"))
 
+  /*val agentWithoutAffinityandEnrolments: Future[~[Enrolments, ~[Option[AffinityGroup], Credentials]]] = {
+    import uk.gov.hmrc.auth.core.syntax.retrieved._
+
+    val retrieved: Enrolments ~ Option[AffinityGroup] ~ Credentials = Enrolments(agentEnrolment) and None and Credentials("credId", "credType")
+
+    Future successful new ~(retrieved.a, )
+  }*/
+
 }

@@ -30,7 +30,7 @@ import uk.gov.hmrc.agentsubscription.utils.{ WithMdcExecutionContext, toFuture }
 import uk.gov.hmrc.auth.core
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.auth.core.retrieve.Retrievals.{ affinityGroup, credentials, groupIdentifier }
+import uk.gov.hmrc.auth.core.retrieve.Retrievals.{ affinityGroup, credentials, groupIdentifier, allEnrolments }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
@@ -56,7 +56,7 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
           if (isAgent(affinityG)) {
             action(request)(AuthIds(providerId, groupId))
           } else {
-            AgentNotSubscribed
+            NotAnAgent
           }
 
         case _ => GenericUnauthorized
@@ -66,6 +66,23 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
       }
   }
 
+  def overseasAgentAuth(action: OverseasAuthAction): Action[AnyContent] = Action.async { implicit request =>
+    authorised(AuthProvider)
+      .retrieve(allEnrolments and affinityGroup and credentials and groupIdentifier) {
+        case enrolments ~ Some(affinityG) ~ Credentials(providerId, _) ~ Some(groupId) =>
+          if (!isAgent(affinityG))
+            NotAnAgent
+          else if (!isEnrolledForHmrcAsAgent(enrolments))
+            AgentCannotSubscribe
+          else
+            action(request)(AuthIds(providerId, groupId))
+        case _ => GenericUnauthorized
+
+      } recover {
+      handleFailure()
+    }
+  }
+
   def authorisedWithAffinityGroupAndCredentials(action: RegistrationAuthAction): Action[AnyContent] = Action.async { implicit request =>
     authorised(AuthProvider)
       .retrieve(affinityGroup and credentials) {
@@ -73,7 +90,7 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
           if (isAgent(affinityG)) {
             action(request)(Provider(providerId, providerType))
           } else {
-            AgentNotSubscribed
+            NotAnAgent
           }
 
         case _ => GenericUnauthorized
@@ -89,11 +106,15 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
   }
 
   private def isAgent(group: AffinityGroup): Boolean = group.toString.contains("Agent")
+
+  private def isEnrolledForHmrcAsAgent(enrolments: Enrolments): Boolean =
+    enrolments.enrolments.find(_.key equals "HMRC-AS-AGENT").exists(_.isActivated)
 }
 
 object AuthActions {
 
   type SubscriptionAuthAction = Request[JsValue] => AuthIds => Future[Result]
+  type OverseasAuthAction = Request[AnyContent] => AuthIds => Future[Result]
   type RegistrationAuthAction = Request[AnyContent] => Provider => Future[Result]
 
   case class Provider(providerId: String, providerType: String)
@@ -112,5 +133,7 @@ object AuthActions {
 
   val GenericUnauthorized: Result = Unauthorized(toJson(ErrorBody("UNAUTHORIZED", "Bearer token is missing or not authorized.")))
 
-  val AgentNotSubscribed: Result = Forbidden(toJson(ErrorBody("AGENT_NOT_SUBSCRIBED", "The Agent is not subscribed to Agent Services.")))
+  val AgentCannotSubscribe: Result = Forbidden(toJson(ErrorBody("AGENT_CAN_NOT_SUBSCRIBE", "The user either is not an Agent or already has enrolments")))
+
+  val NotAnAgent: Result = Forbidden(toJson(ErrorBody("USER_NOT_AN_AGENT", "The user is not an Agent")))
 }

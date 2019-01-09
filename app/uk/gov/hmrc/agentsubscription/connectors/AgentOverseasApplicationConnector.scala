@@ -24,7 +24,7 @@ import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.{ JsString, JsValue, Json }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
-import uk.gov.hmrc.agentsubscription.model.{ ApplicationStatus, CurrentApplication, OverseasAmlsDetails, SafeId }
+import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.http._
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -63,7 +63,8 @@ class AgentOverseasApplicationConnector @Inject() (
         val status = (json \ "status" \ "typeIdentifier").as[String]
         val safeId = (json \ "safeId").asOpt[SafeId]
         val amlsDetails = (json \ "application" \ "amls").as[OverseasAmlsDetails]
-        CurrentApplication(ApplicationStatus(status), safeId, amlsDetails)
+        val agencyDetails = (json \ "agencyDetails").as[AgencyDetails]
+        CurrentApplication(ApplicationStatus(status), safeId, amlsDetails, agencyDetails)
       }.recover {
         case e => throw new RuntimeException(s"Could not retrieve overseas agent application status: ${e.getMessage}")
       }
