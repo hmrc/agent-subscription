@@ -42,7 +42,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     }
 
     "return 404 when no match is found in des" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
 
       registrationDoesNotExist(Utr("8000000007"))
       val response = await(new Resource("/agent-subscription/registration/8000000007/postcode/AA1%201AA", port).get)
@@ -50,7 +50,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     }
 
     "return 400 when the UTR is invalid" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       utrIsInvalid()
       val response = await(new Resource("/agent-subscription/registration/xyz/postcode/AA1%201AA", port).get)
       response.status shouldBe 400
@@ -58,41 +58,41 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     }
 
     "return 500 when agent-subscription considers a UTR valid but DES unexpectedly reports it as invalid" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       utrIsUnexpectedlyInvalid(Utr("7000000002"))
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 500
     }
 
     "return 404 when des returns a match for the utr but the post codes do not match" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       organisationRegistrationExists(Utr("7000000002"))
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/BB11BB", port).get)
       response.status shouldBe 404
     }
 
     "return 404 when des returns a response with no postcode" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       registrationExistsWithNoPostcode(Utr("7000000002"))
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 404
     }
 
     "return 400 when the post code is invalid" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/1A1%201AA", port).get)
       response.status shouldBe 400
     }
 
     "return 404 when DES response does not contain addressline1 mandatory field" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       registrationExistsWithNoAddress(Utr("7000000002"))
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 404
     }
 
     "return 500 when DES response does not contain isAnASAgent mandatory field" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       registrationExistsWithNoIsAnASAgent(Utr("7000000002"))
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 500
@@ -100,7 +100,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
 
     "return 200 when des returns an AS Agent for the utr and the postcodes match" when {
       "there is a group already allocated the HMRC-AS-AGENT enrolment with their AgentReferenceNumber" in {
-        requestIsAuthenticated().andIsAnAgent()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(Utr("7000000002"), true)
         allocatedPrincipalEnrolmentExists("TARN0000001", "SomeAllocatedGroupId")
         val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
@@ -113,7 +113,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       }
 
       "there is no group already allocated the HMRC-AS-AGENT enrolment with their AgentReferenceNumber" in {
-        requestIsAuthenticated().andIsAnAgent()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(Utr("7000000002"), true)
         allocatedPrincipalEnrolmentNotExists("TARN0000001")
         val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
@@ -127,7 +127,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     }
 
     "return 200 when des returns a non-AS Agent for the utr and the postcodes match" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       organisationRegistrationExists(Utr("7000000002"), false)
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
@@ -139,7 +139,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     }
 
     "return 200 when des returns an individual for the utr and the postcodes match" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       individualRegistrationExists(Utr("7000000002"), false)
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
@@ -151,7 +151,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     }
 
     "return 200 when des returns no organisation name" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       registrationExistsWithNoOrganisationName(Utr("7000000002"), false)
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 200
@@ -161,7 +161,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     }
 
     "return 200 when des returns no email address" in {
-      requestIsAuthenticated().andIsAnAgent()
+      requestIsAuthenticatedWithNoEnrolments()
       registrationExistsWithNoEmail(Utr("7000000002"))
       val response = await(new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get)
       response.status shouldBe 200

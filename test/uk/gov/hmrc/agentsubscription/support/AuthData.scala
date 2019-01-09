@@ -27,7 +27,7 @@ trait AuthData {
   val arn = Arn("arn1")
 
   val agentEnrolment = Set(
-    Enrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)), state = "",
+    Enrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)), state = "Activated",
       delegatedAuthRule = None))
 
   val agentAffinityWithCredentialsAndGroupId: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]] = {

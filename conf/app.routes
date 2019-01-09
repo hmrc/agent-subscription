@@ -5,4 +5,4 @@ GET     /registration/:utr/postcode/:postcode  @uk.gov.hmrc.agentsubscription.co
 POST    /subscription                          @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createSubscription()
 PUT     /subscription                          @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.updateSubscription()
 
-POST    /overseas-subscription                 @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createOverseasSubscription()
+PUT    /overseas-subscription                 @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createOverseasSubscription()

@@ -18,13 +18,12 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import com.kenshoo.play.metrics.Metrics
 import javax.inject._
-
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
-import play.api.mvc.Action
+import play.api.mvc.{ Action, AnyContent }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.model.{ OverseasSubscriptionRequest, SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest }
+import uk.gov.hmrc.agentsubscription.model.{ AgencyDetails, SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.service.{ EnrolmentAlreadyAllocated, SubscriptionService }
 import uk.gov.hmrc.http.Upstream5xxResponse
 import uk.gov.hmrc.play.microservice.controller.BaseController
@@ -59,15 +58,14 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
     }
   }
 
-  def createOverseasSubscription: Action[JsValue] = authorisedWithAffinityGroup { implicit request => implicit authIds =>
-    withJsonBody[OverseasSubscriptionRequest] { oSubRequest =>
-      subscriptionService.createOverseasSubscription(oSubRequest, authIds).map {
-        case Some(arn) => Created(toJson(SubscriptionResponse(arn)))
-        case None => Forbidden
-      }.recover {
-        case _: EnrolmentAlreadyAllocated => Conflict
-        case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
-      }
+  def createOverseasSubscription: Action[AnyContent] = overseasAgentAuth { implicit request => implicit authIds =>
+    subscriptionService.createOverseasSubscription(authIds).map {
+      case Some(arn) => Created(toJson(SubscriptionResponse(arn)))
+      case None => Forbidden
+    }.recover {
+      case _: EnrolmentAlreadyAllocated => Conflict
+      case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
     }
+
   }
 }

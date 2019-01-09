@@ -6,7 +6,7 @@ import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ Accepted, AttemptingRegistration, Registered }
-import uk.gov.hmrc.agentsubscription.model.{ CurrentApplication, OverseasAmlsDetails, SafeId }
+import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.AgentOverseasApplicationStubs
 import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
 import uk.gov.hmrc.http.{ HeaderCarrier, HttpGet, HttpPut }
@@ -23,6 +23,30 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
     new AgentOverseasApplicationConnector(new URL(s"http://localhost:$wireMockPort"), http, metrics)
 
   private implicit val hc = HeaderCarrier()
+
+  private val agencyDetails = AgencyDetails(
+    "Agency name",
+    "agencyemail@domain.com",
+    "1234567",
+    OverseasAgencyAddress(
+      "Mandatory Address Line 1",
+      "Mandatory Address Line 2",
+      None,
+      None,
+      "IE"))
+
+  private val businessDetails = BusinessDetails(
+    "tradingName",
+    OverseasBusinessAddress(
+      "addressLine1",
+      "addressLine2",
+      None,
+      None,
+      "CC"))
+
+  private val businessContactDetails = BusinessContactDetails(
+    businessTelephone = "BusinessTelephone123456789",
+    businessEmail = "email@domain.com")
 
   "updateApplicationStatus" should {
     val targetAppStatus = AttemptingRegistration
@@ -60,13 +84,25 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
     "return a valid status, safeId and amls details" in {
       givenValidApplication("registered", "12345")
 
-      await(connector.currentApplication) shouldBe CurrentApplication(Registered, Some(SafeId("12345")), OverseasAmlsDetails("supervisoryName", Some("supervisoryId")))
+      await(connector.currentApplication) shouldBe CurrentApplication(
+        Registered,
+        Some(SafeId("12345")),
+        OverseasAmlsDetails("supervisoryName", Some("supervisoryId")),
+        businessContactDetails,
+        businessDetails,
+        agencyDetails)
     }
 
     "return empty safeId for statuses other than registered" in {
       givenValidApplication("accepted")
 
-      await(connector.currentApplication) shouldBe CurrentApplication(Accepted, Some(SafeId("")), OverseasAmlsDetails("supervisoryName", Some("supervisoryId")))
+      await(connector.currentApplication) shouldBe CurrentApplication(
+        Accepted,
+        Some(SafeId("")),
+        OverseasAmlsDetails("supervisoryName", Some("supervisoryId")),
+        businessContactDetails,
+        businessDetails,
+        agencyDetails)
     }
 
     "return exception for invalid API response" in {

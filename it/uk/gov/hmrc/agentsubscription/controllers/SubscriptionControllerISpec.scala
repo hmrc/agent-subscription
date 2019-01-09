@@ -27,7 +27,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return a response containing the ARN" when {
       "all fields are populated" in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
@@ -47,7 +47,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "addressLine2, addressLine3 and addressLine4 are missing" in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         val fields = Seq(address \ "addressLine2", address \ "addressLine3", address \ "addressLine4")
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         createAmlsSucceeds(utr, amlsDetails)
@@ -68,7 +68,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "BPR has isAnAsAgent=true and there is no previous allocation for HMRC-AS-AGENT for the arn" in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
         createAmlsSucceeds(utr, amlsDetails)
         deleteKnownFactsSucceeds(arn)
@@ -87,7 +87,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "all fields except telephone number are populated" in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceedsWithoutTelephoneNo(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
@@ -108,7 +108,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
 
     "return Conflict if already subscribed (both ETMP has isAnAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in {
-      requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+      requestIsAuthenticatedWithNoEnrolments()
       organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
       allocatedPrincipalEnrolmentExists(arn, "someGroupId")
       createAmlsSucceeds(utr, amlsDetails)
@@ -125,7 +125,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return forbidden" when {
       "no registration exists" in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         registrationDoesNotExist(utr)
 
         val result = await(doSubscriptionRequest())
@@ -134,7 +134,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "postcodes don't match" in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr)
         val request = Json.parse(subscriptionRequest).as[SubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
 
@@ -144,7 +144,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "the user already has enrolments" in {
-        requestIsAuthenticated().andIsAnAgent().andHasEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest())
 
         result.status shouldBe 403
@@ -153,127 +153,127 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return Bad Request " when {
       "utr is missing" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "utr"))))
 
         result.status shouldBe 400
       }
 
       "utr contains non-numeric characters" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345")))))
 
         result.status shouldBe 400
       }
 
       "utr contains fewer than 10 digits" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345")))))
 
         result.status shouldBe 400
       }
 
       "utr contains more than 10 digits" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901")))))
 
         result.status shouldBe 400
       }
 
       "name contains invalid characters" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "InvalidAgencyName!@")))))
 
         result.status shouldBe 400
       }
 
       "address is missing" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(removeFields(Seq(address))))
 
         result.status shouldBe 400
       }
 
       "address line 1 contains invalid characters" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", invalidAddress)))))
 
         result.status shouldBe 400
       }
 
       "address line 2 contains invalid characters" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine2", invalidAddress)))))
         result.status shouldBe 400
       }
 
       "address line 3 contains invalid characters" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine3", invalidAddress)))))
         result.status shouldBe 400
       }
 
       "address line 4 contains invalid characters" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine4", invalidAddress)))))
         result.status shouldBe 400
       }
 
       "email is missing" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "email"))))
 
         result.status shouldBe 400
       }
       "email has no local part" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "@domain")))))
 
         result.status shouldBe 400
       }
       "email has no domain part" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "local@")))))
 
         result.status shouldBe 400
       }
       "email has no @" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "local")))))
 
         result.status shouldBe 400
       }
 
       "telephone number contains words" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "0123 456 78aa")))))
 
         result.status shouldBe 400
       }
 
       "telephone number is provided but empty" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "")))))
 
         result.status shouldBe 400
       }
 
       "postcode is missing" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(removeFields(Seq(address \ "postcode"))))
 
         result.status shouldBe 400
       }
 
       "known facts postcode is not valid" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567")))))
 
         result.status shouldBe 400
       }
 
       "countryCode is missing" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doSubscriptionRequest(removeFields(Seq(address \ "countryCode"))))
 
         result.status shouldBe 400
@@ -281,7 +281,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
       "store amls fails with 400 error from agent assurance" in {
 
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         createAmlsFailsWithStatus(400)
 
@@ -292,7 +292,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
       "create amls succeeds but update amls fails with 400 error from agent assurance" in {
 
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
@@ -306,7 +306,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "throw a 500 error if " when {
       "DES API #1173 Subscribe to Agent Services fails" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         registrationRequestFails()
 
         val result = await(doSubscriptionRequest())
@@ -315,7 +315,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "query allocated enrolment fails in EMAC " in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
@@ -328,7 +328,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "delete known facts fails in EMAC " in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
@@ -342,7 +342,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "create known facts fails in EMAC " in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
@@ -388,7 +388,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       def testPartialSubscriptionWith(givenAgentRecord: => Unit) = {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         givenAgentRecord
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
@@ -408,7 +408,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
 
     "return Conflict if already subscribed (both ETMP has isAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in {
-      requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+      requestIsAuthenticatedWithNoEnrolments()
       agentRecordExists(utr, true, arn)
       allocatedPrincipalEnrolmentExists(arn, "someGroupId")
       createAmlsSucceeds(utr, amlsDetails)
@@ -425,7 +425,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return forbidden" when {
       "no registration exists" in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         agentRecordDoesNotExist(utr)
 
         val result = await(doUpdateSubscriptionRequest())
@@ -434,7 +434,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "postcodes don't match" in {
-        requestIsAuthenticated().andIsAnAgent().andHasNoEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         agentRecordExists(utr)
         val request = Json.parse(updateSubscriptionRequest).as[UpdateSubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
 
@@ -444,7 +444,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "the user already has enrolments" in {
-        requestIsAuthenticated().andIsAnAgent().andHasEnrolments()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doUpdateSubscriptionRequest())
 
         result.status shouldBe 403
@@ -453,42 +453,42 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return Bad Request " when {
       "utr is missing" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doUpdateSubscriptionRequest(removeFields(Seq(__ \ "utr"))))
 
         result.status shouldBe 400
       }
 
       "utr contains non-numeric characters" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345")))))
 
         result.status shouldBe 400
       }
 
       "utr contains fewer than 10 digits" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345")))))
 
         result.status shouldBe 400
       }
 
       "utr contains more than 10 digits" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901")))))
 
         result.status shouldBe 400
       }
 
       "postcode is missing" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "")))))
 
         result.status shouldBe 400
       }
 
       "known facts postcode is not valid" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567")))))
 
         result.status shouldBe 400
@@ -497,7 +497,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "throw a 500 error if " when {
       "DES API #1170 Get Agent Record fails" in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         agentRecordFails()
 
         val result = await(doUpdateSubscriptionRequest())
@@ -506,7 +506,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "query allocated enrolment fails in EMAC " in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         agentRecordExists(utr, true, arn)
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
@@ -519,7 +519,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "delete known facts fails in EMAC " in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         agentRecordExists(utr, true, arn)
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
@@ -533,7 +533,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       }
 
       "create known facts fails in EMAC " in {
-        requestIsAuthenticated()
+        requestIsAuthenticatedWithNoEnrolments()
         agentRecordExists(utr, true, arn)
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])

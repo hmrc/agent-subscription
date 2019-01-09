@@ -21,13 +21,12 @@ import java.net.URL
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Named, Singleton }
-
 import play.api.http.Status
 import play.api.libs.json._
 import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.model.{ AgentRecord, OverseasRegistrationRequest, OverseasSubscriptionRequest, SafeId }
+import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
@@ -104,9 +103,9 @@ class DesConnector @Inject() (
     }
   }
 
-  def subscribeToAgentServices(safeId: SafeId, request: OverseasSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
+  def subscribeToAgentServices(safeId: SafeId, agencyDetails: AgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     monitor("DES-SubscribeOverseasAgent-POST") {
-      httpPost.POST[OverseasSubscriptionRequest, JsValue](desOverseasSubscribeUrl(safeId).toString, request)(implicitly[Writes[OverseasSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
+      httpPost.POST[AgencyDetails, JsValue](desOverseasSubscribeUrl(safeId).toString, agencyDetails)(implicitly[Writes[AgencyDetails]], implicitly[HttpReads[JsValue]], desHeaders, ec)
         .map(response => (response \ "agentRegistrationNumber").as[Arn])
         .recover {
           case e => throw new RuntimeException(s"Failed to create subscription in ETMP for safeId: $safeId ${e.getMessage}", e)
