@@ -81,7 +81,7 @@ class ValidatorSpec extends UnitSpec {
         validateOSNumber(telNum24Chars) shouldBe JsSuccess(telNum24Chars)
       }
 
-      "contains letters" in {
+      "contains uppercase letters" in {
         validateOSNumber("ABCDEFGHIJKLM") shouldBe JsSuccess("ABCDEFGHIJKLM")
         validateOSNumber("NOPQRSTUVWXYZ") shouldBe JsSuccess("NOPQRSTUVWXYZ")
       }
@@ -126,6 +126,11 @@ class ValidatorSpec extends UnitSpec {
 
       "input is whitespace only" in {
         validateOSNumber("   ") shouldBe whitespaceValidationError
+      }
+
+      "contains lowercase letters" in {
+        validateOSNumber("abcdefghijklm") shouldBe telephoneValidationError
+        validateOSNumber("nopqrstuvwxyz") shouldBe telephoneValidationError
       }
 
       "input contains more than 24 characters" in {
