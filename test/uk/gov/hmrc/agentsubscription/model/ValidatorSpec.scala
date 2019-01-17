@@ -440,7 +440,7 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "email is minimal" in {
-        validateOSEmail("a@b") shouldBe JsSuccess("a@b")
+        validateOSEmail("a@b.to") shouldBe JsSuccess("a@b.to")
       }
 
       "contains lowercase characters" in {
@@ -474,11 +474,11 @@ class ValidatorSpec extends UnitSpec {
 
     "reject name" when {
       "missing local-part" in {
-        validateOSEmail("@b") shouldBe emailValidationError
+        validateOSEmail("@b.com") shouldBe emailValidationError
       }
 
       "missing domain" in {
-        validateOSEmail("a@") shouldBe emailValidationError
+        validateOSEmail("a@.com") shouldBe emailValidationError
       }
 
       "longer than 132 characters" in {
