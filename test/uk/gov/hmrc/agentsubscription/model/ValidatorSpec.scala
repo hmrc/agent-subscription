@@ -537,7 +537,7 @@ class ValidatorSpec extends UnitSpec {
         }
       }
 
-      "6th through 15th character is not 0-9" in {
+      "one of the characters in the last numeric portion (i.e. the last 10 characters) is not numeric (0-9)" in {
         validateSafeId("XE000X234567890") shouldBe safeIdValidationError
         validateSafeId("XE0001X34567890") shouldBe safeIdValidationError
         validateSafeId("XE00012X4567890") shouldBe safeIdValidationError
