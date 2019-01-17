@@ -27,7 +27,9 @@ class ValidatorSpec extends UnitSpec {
 
     "accept input when" when {
       "there are at least 10 digits in the input" in {
-        validatePhoneNumber("12345678911") shouldBe JsSuccess("12345678911")
+        val telNum10Digits = "12345678911"
+        telNum10Digits.length shouldBe 11
+        validatePhoneNumber(telNum10Digits) shouldBe JsSuccess(telNum10Digits)
       }
 
       "there are valid symbols in the input" in {
@@ -59,7 +61,9 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "input contains more than 24 characters" in {
-        validatePhoneNumber("111111111111111111111111aaaaaaaaa") shouldBe telephoneValidationError
+        val telNum25Chars = "1111111111111111111111111"
+        telNum25Chars.length shouldBe 25
+        validatePhoneNumber(telNum25Chars) shouldBe telephoneValidationError
       }
     }
   }
@@ -72,7 +76,9 @@ class ValidatorSpec extends UnitSpec {
         validateOSNumber("4") shouldBe JsSuccess("4")
       }
       "input contains 24 or fewer digits" in {
-        validateOSNumber("123456789012345678901234") shouldBe JsSuccess("123456789012345678901234")
+        val telNum24Chars = "123456789012345678901234"
+        telNum24Chars.length shouldBe 24
+        validateOSNumber(telNum24Chars) shouldBe JsSuccess(telNum24Chars)
       }
 
       "contains letters" in {
@@ -123,7 +129,9 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "input contains more than 24 characters" in {
-        validateOSNumber("1234567890123456789012345") shouldBe telephoneValidationError
+        val telNum25Chars = "1234567890123456789012345"
+        telNum25Chars.length shouldBe 25
+        validateOSNumber(telNum25Chars) shouldBe telephoneValidationError
       }
 
       "input contains invalid symbols" in {
@@ -228,7 +236,9 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "there are more than 35 characters" in {
-        validateAddress("1234567891123456789212345678931234567") shouldBe addressValidationError
+        val address36Chars = "123456789112345678921234567893123456"
+        address36Chars.length shouldBe 36
+        validateAddress(address36Chars) shouldBe addressValidationError
       }
     }
   }
@@ -284,7 +294,9 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "there are 35 or fewer characters" in {
-        validateOSAddress("12345678901234567890123456789012345") shouldBe JsSuccess("12345678901234567890123456789012345")
+        val address35Chars = "12345678901234567890123456789012345"
+        address35Chars.length shouldBe 35
+        validateOSAddress(address35Chars) shouldBe JsSuccess(address35Chars)
       }
     }
 
@@ -302,7 +314,9 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "there are 36 or more characters" in {
-        validateOSAddress("123456789012345678901234567890123456") shouldBe osAddressValidationError
+        val address36Chars = "123456789012345678901234567890123456"
+        address36Chars.length shouldBe 36
+        validateOSAddress(address36Chars) shouldBe osAddressValidationError
       }
     }
   }
@@ -393,7 +407,9 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "40 or fewer characters" in {
-        validateOSName("1234567890123456789012345678901234567890") shouldBe JsSuccess("1234567890123456789012345678901234567890")
+        val name40Chars = "1234567890123456789012345678901234567890"
+        name40Chars.length shouldBe 40
+        validateOSName(name40Chars) shouldBe JsSuccess(name40Chars)
       }
     }
 
@@ -417,7 +433,9 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "more than 40 characters" in {
-        validateOSName("12345678901234567890123456789012345678901") shouldBe nameValidationError
+        val name41Chars = "12345678901234567890123456789012345678901"
+        name41Chars.length shouldBe 41
+        validateOSName(name41Chars) shouldBe nameValidationError
       }
 
       "contains only whitespace" in {
@@ -551,11 +569,15 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "length is less than 15" in {
-        validateSafeId("XE000123456789") shouldBe safeIdValidationError
+        val safeId14Chars = "XE000123456789"
+        safeId14Chars.length shouldBe 14
+        validateSafeId(safeId14Chars) shouldBe safeIdValidationError
       }
 
       "length is greater than 15" in {
-        validateSafeId("XE00012345678901") shouldBe safeIdValidationError
+        val safeId16Chars = "XE00012345678901"
+        safeId16Chars.length shouldBe 16
+        validateSafeId(safeId16Chars) shouldBe safeIdValidationError
       }
     }
   }
