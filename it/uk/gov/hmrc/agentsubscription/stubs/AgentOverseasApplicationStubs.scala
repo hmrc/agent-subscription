@@ -14,7 +14,12 @@ trait AgentOverseasApplicationStubs {
         .withStatus(responseStatus)))
   }
 
-  def givenValidApplication(status: String, safeId: String = "") = {
+  def givenValidApplication(
+    status: String,
+    safeId: Option[String] = None,
+    businessTradingName: String = "tradingName",
+    agencyName: String = "Agency name",
+    supervisoryBody: String = "supervisoryName") = {
     stubFor(get(urlEqualTo(getApplicationUrl))
       .willReturn(aResponse()
         .withStatus(200)
@@ -34,11 +39,11 @@ trait AgentOverseasApplicationStubs {
              |         "firstName":"firstName",
              |         "lastName":"lastName",
              |         "jobTitle":"jobTitle",
-             |         "businessTelephone":"BusinessTelephone123456789",
+             |         "businessTelephone":"BUSINESS PHONE 123456789",
              |         "businessEmail":"email@domain.com"
              |      },
              |      "businessDetail":{
-             |         "tradingName":"tradingName",
+             |         "tradingName":"$businessTradingName",
              |         "businessAddress":{
              |            "addressLine1":"addressLine1",
              |            "addressLine2":"addressLine2",
@@ -55,9 +60,9 @@ trait AgentOverseasApplicationStubs {
              |      }
              |   },
              |   "agencyDetails" : {
-             |     "agencyName" : "Agency name",
+             |     "agencyName" : "$agencyName",
              |     "agencyEmail" : "agencyemail@domain.com",
-             |     "telephoneNumber" : "1234567",
+             |     "telephoneNumber" : "AGENCY PHONE 1234567",
                |   "agencyAddress": {
                  |    "addressLine1": "Mandatory Address Line 1",
                  |    "addressLine2": "Mandatory Address Line 2",
@@ -81,8 +86,8 @@ trait AgentOverseasApplicationStubs {
              |      {
              |         "rejectReason":"second reason ..."
              |      }
-             |   ],
-             |   "safeId": "$safeId"
+             |   ]
+             |   ${safeId.map(id => s""", "safeId" : "$id" """).getOrElse("")}
              |}
              | ]
            """.stripMargin)))

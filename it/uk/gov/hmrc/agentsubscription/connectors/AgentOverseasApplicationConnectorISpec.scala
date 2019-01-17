@@ -5,6 +5,7 @@ import java.net.URL
 import com.kenshoo.play.metrics.Metrics
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
+import play.api.libs.json.JsResultException
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ Accepted, AttemptingRegistration, Registered }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.AgentOverseasApplicationStubs
@@ -27,7 +28,7 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
   private val agencyDetails = AgencyDetails(
     "Agency name",
     "agencyemail@domain.com",
-    "1234567",
+    "AGENCY PHONE 1234567",
     OverseasAgencyAddress(
       "Mandatory Address Line 1",
       "Mandatory Address Line 2",
@@ -45,7 +46,7 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
       "CC"))
 
   private val businessContactDetails = BusinessContactDetails(
-    businessTelephone = "BusinessTelephone123456789",
+    businessTelephone = "BUSINESS PHONE 123456789",
     businessEmail = "email@domain.com")
 
   "updateApplicationStatus" should {
@@ -82,33 +83,59 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
 
   "currentApplication" should {
     "return a valid status, safeId and amls details" in {
-      givenValidApplication("registered", "12345")
+      givenValidApplication("registered", safeId = Some("XE0001234567890"))
 
       await(connector.currentApplication) shouldBe CurrentApplication(
         Registered,
-        Some(SafeId("12345")),
+        Some(SafeId("XE0001234567890")),
         OverseasAmlsDetails("supervisoryName", Some("supervisoryId")),
         businessContactDetails,
         businessDetails,
         agencyDetails)
     }
 
-    "return empty safeId for statuses other than registered" in {
-      givenValidApplication("accepted")
+    "return no safeId for if application has not yet reached registered state" in {
+      givenValidApplication("accepted", safeId = None)
 
       await(connector.currentApplication) shouldBe CurrentApplication(
         Accepted,
-        Some(SafeId("")),
+        safeId = None,
         OverseasAmlsDetails("supervisoryName", Some("supervisoryId")),
         businessContactDetails,
         businessDetails,
         agencyDetails)
     }
 
-    "return exception for invalid API response" in {
-      givenInvalidApplication
+    "return exception for validation errors" when {
+      "API response is completely invalid" in {
+        givenInvalidApplication
 
-      an[RuntimeException] shouldBe thrownBy(await(connector.currentApplication))
+        an[RuntimeException] shouldBe thrownBy(await(connector.currentApplication))
+      }
+
+      "application contains invalid safeID" in {
+        givenValidApplication("accepted", safeId = Some("notValid"))
+
+        a[RuntimeException] shouldBe thrownBy(await(connector.currentApplication))
+      }
+
+      "application contains invalid status" in {
+        givenValidApplication("invalid")
+
+        a[RuntimeException] shouldBe thrownBy(await(connector.currentApplication))
+      }
+
+      "application contains invalid business details" in {
+        givenValidApplication("accepted", businessTradingName = "~tilde not allowed~")
+
+        a[RuntimeException] shouldBe thrownBy(await(connector.currentApplication))
+      }
+
+      "application contains invalid agency details" in {
+        givenValidApplication("accepted", agencyName = "~tilde not allowed~")
+
+        a[RuntimeException] shouldBe thrownBy(await(connector.currentApplication))
+      }
     }
 
   }

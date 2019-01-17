@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 import play.api.libs.functional.syntax._
-import play.api.libs.json.Reads.email
-import play.api.libs.json.{ Json, Reads, Writes, _ }
+import play.api.libs.json.{ Json, Reads, _ }
 
 case class BusinessDetails(tradingName: String, businessAddress: OverseasBusinessAddress)
 case class BusinessContactDetails(businessTelephone: String, businessEmail: String)
@@ -43,27 +42,47 @@ case class OverseasAgencyAddress(
   countryCode: String)
 
 object OverseasAgencyAddress {
-  implicit val format = Json.format[OverseasAgencyAddress]
+  implicit val writes = Json.writes[OverseasAgencyAddress]
+  implicit val reads: Reads[OverseasAgencyAddress] = (
+    (__ \ "addressLine1").read[String](overseasAddressValidation) and
+    (__ \ "addressLine2").read[String](overseasAddressValidation) and
+    (__ \ "addressLine3").readNullable[String](overseasAddressValidation) and
+    (__ \ "addressLine4").readNullable[String](overseasAddressValidation) and
+    (__ \ "countryCode").read[String](overseasCountryCodeValidation))(OverseasAgencyAddress.apply _)
 }
 
 object OverseasBusinessAddress {
-  implicit val format = Json.format[OverseasBusinessAddress]
+  implicit val writes = Json.writes[OverseasBusinessAddress]
+  implicit val reads: Reads[OverseasBusinessAddress] = (
+    (__ \ "addressLine1").read[String](overseasAddressValidation) and
+    (__ \ "addressLine2").read[String](overseasAddressValidation) and
+    (__ \ "addressLine3").readNullable[String](overseasAddressValidation) and
+    (__ \ "addressLine4").readNullable[String](overseasAddressValidation) and
+    (__ \ "countryCode").read[String](overseasCountryCodeValidation))(OverseasBusinessAddress.apply _)
 }
 
 object BusinessDetails {
-  implicit val format = Json.format[BusinessDetails]
+  implicit val writes = Json.writes[BusinessDetails]
+
+  implicit val reads: Reads[BusinessDetails] = (
+    (__ \ "tradingName").read[String](overseasNameValidation) and
+    (__ \ "businessAddress").read[OverseasBusinessAddress])(BusinessDetails.apply _)
 }
 
 object BusinessContactDetails {
-  implicit val format = Json.format[BusinessContactDetails]
+  implicit val writes = Json.writes[BusinessContactDetails]
+
+  implicit val reads: Reads[BusinessContactDetails] = (
+    (__ \ "businessTelephone").read[String](overseasTelephoneNumberValidation) and
+    (__ \ "businessEmail").read[String](overseasEmailValidation))(BusinessContactDetails.apply _)
 }
 
 object AgencyDetails {
   implicit val writes = Json.writes[AgencyDetails]
 
   implicit val reads: Reads[AgencyDetails] = (
-    (__ \ "agencyName").read[String](nameValidation) and
-    (__ \ "agencyEmail").read[String](email) and
-    (__ \ "telephoneNumber").read[String](telephoneNumberValidation) and
+    (__ \ "agencyName").read[String](overseasNameValidation) and
+    (__ \ "agencyEmail").read[String](overseasEmailValidation) and
+    (__ \ "telephoneNumber").read[String](overseasTelephoneNumberValidation) and
     (__ \ "agencyAddress").read[OverseasAgencyAddress])(AgencyDetails.apply _)
 }
