@@ -162,9 +162,11 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     }
 
     "return a 500 error if " when {
-      "the current application does not pass validation" in {
+      "the current application was subjected to validation and was found to have an invalid value (for example, an Agency Name that contains a disallowed character)" in {
         requestIsAuthenticatedWithNoEnrolments()
-        givenValidApplication("accepted", agencyName = "Acme & Sons")
+
+        val invalidAgencyName = "Acme & Sons" // Ampersands are not allowed for the agency name
+        givenValidApplication("accepted", agencyName = invalidAgencyName)
 
         val result = await(doSubscriptionRequest)
 
