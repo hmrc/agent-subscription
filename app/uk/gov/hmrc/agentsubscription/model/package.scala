@@ -47,12 +47,47 @@ package object model {
   private[model] val nameValidation = {
     filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
       filter[String](ValidationError("error.Ampersand"))(_.matches(noAmpersand)) andKeep
-      filter[String](ValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(nameMax)))
+      filter[String](ValidationError("error.name.invalid"))(_.matches(nameAndAddressRegex(nameMax)))
+  }
+
+  private[model] val overseasAddressValidation = {
+    val overseasAddressRegex = s"^[A-Za-z0-9 \\-,.&']{0,35}$$"
+
+    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](ValidationError("error.address.invalid"))(_.matches(overseasAddressRegex))
+  }
+
+  private[model] val overseasNameValidation = {
+    val overseasAgencyNameRegex = s"^[A-Za-z0-9 \\-,.\\/]{0,40}$$"
+
+    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](ValidationError("error.name.invalid"))(_.matches(overseasAgencyNameRegex))
   }
 
   private[model] val overseasCountryCodeValidation = {
+    val overseasCountryCodeRegex = "[A-Z]{2}"
+
+    filter[String](ValidationError("error.overseas.countryCode"))(_ != "GB") andKeep
+      filter[String](ValidationError("error.overseas.countryCode"))(_.matches(overseasCountryCodeRegex))
+  }
+  private[model] val overseasTelephoneNumberValidation = {
+    val overseasPhoneRegex = s"^[A-Z0-9 )\\/(\\-*#]{0,24}$$"
+
     filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
-      filter[String](ValidationError("error.overseas.countryCode"))(_ != "GB")
+      filter[String](ValidationError("error.telephone.invalid"))(_.matches(overseasPhoneRegex))
+  }
+
+  private[model] val overseasEmailValidation = {
+    val overseasEmailRegex = """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"""
+
+    filterNot[String](ValidationError("error.email.invalid"))(_.length > 132) andKeep
+      filter[String](ValidationError("error.email.invalid"))(_.matches(overseasEmailRegex))
+  }
+
+  private[model] val safeIdValidation = {
+    val safeIdRegex = """^X[A-Z]000[0-9]{10}$"""
+
+    filter[String](ValidationError("error.safeid.invalid"))(_.matches(safeIdRegex))
   }
 }
 

@@ -61,7 +61,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       def aSuccessfulSubscriptionForAlreadyRegisteredAcceptedApplication(applicationStatus: String) = {
         requestIsAuthenticatedWithNoEnrolments()
-        givenValidApplication(applicationStatus, safeId.value)
+        givenValidApplication(applicationStatus, Some(safeId.value))
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
@@ -90,7 +90,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "creating amls record fails with 409 Conflict because a record already exists" in {
         requestIsAuthenticatedWithNoEnrolments()
-        givenValidApplication("registered", safeId.value)
+        givenValidApplication("registered", Some(safeId.value))
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
@@ -120,7 +120,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
     "return Conflict if there is an existing HMRC-AS-AGENT enrolment for their Arn already allocated to some group" in {
       requestIsAuthenticatedWithNoEnrolments()
-      givenValidApplication("registered", safeId.value)
+      givenValidApplication("registered", Some(safeId.value))
       subscriptionSucceeds(safeId.value, agencyDetailsJson)
       allocatedPrincipalEnrolmentExists(arn, "someOtherGroupId")
 
@@ -162,6 +162,31 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     }
 
     "return a 500 error if " when {
+      "the current application was subjected to validation and was found to have an invalid value (for example, an Agency Name that contains a disallowed character)" in {
+        requestIsAuthenticatedWithNoEnrolments()
+
+        val invalidAgencyName = "Acme & Sons" // Ampersands are not allowed for the agency name
+        givenValidApplication("accepted", agencyName = invalidAgencyName)
+
+        val result = await(doSubscriptionRequest)
+
+        result.status shouldBe 500
+        (result.json \ "statusCode").as[Int] shouldBe 500
+        (result.json \ "message").as[String] shouldBe "The retrieved current application is invalid"
+
+        verifyApiCalls(
+          attemptingRegistration = 0,
+          etmpRegistration = 0,
+          registered = 0,
+          subscription = 0,
+          allocatedPrincipalEnrolment = 0,
+          deleteKnownFact = 0,
+          createKnownFact = 0,
+          enrol = 0,
+          amls = 0,
+          complete = 0)
+      }
+
       "etmp registration fails" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
@@ -382,7 +407,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
        |{
        |  "agencyName": "Agency name",
        |  "agencyEmail": "agencyemail@domain.com",
-       |  "telephoneNumber": "1234567",
+       |  "telephoneNumber": "AGENCY PHONE 1234567",
        |  "agencyAddress": {
        |    "addressLine1": "Mandatory Address Line 1",
        |    "addressLine2": "Mandatory Address Line 2",

@@ -23,9 +23,13 @@ import uk.gov.hmrc.play.test.UnitSpec
 class ValidatorSpec extends UnitSpec {
 
   "telephoneNumberValidation Reader" should {
+    def validatePhoneNumber(number: String) = telephoneNumberValidation.reads(JsString(number))
+
     "accept input when" when {
       "there are at least 10 digits in the input" in {
-        validatePhoneNumber("12345678911") shouldBe JsSuccess("12345678911")
+        val telNum10Digits = "12345678911"
+        telNum10Digits.length shouldBe 11
+        validatePhoneNumber(telNum10Digits) shouldBe JsSuccess(telNum10Digits)
       }
 
       "there are valid symbols in the input" in {
@@ -57,12 +61,93 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "input contains more than 24 characters" in {
-        validatePhoneNumber("111111111111111111111111aaaaaaaaa") shouldBe telephoneValidationError
+        val telNum25Chars = "1111111111111111111111111"
+        telNum25Chars.length shouldBe 25
+        validatePhoneNumber(telNum25Chars) shouldBe telephoneValidationError
+      }
+    }
+  }
+
+  "overseasTelephoneNumberValidation reader" should {
+    def validateOSNumber(number: String) = overseasTelephoneNumberValidation.reads(JsString(number))
+
+    "accept input" when {
+      "there is at least 1 digit in the input" in {
+        validateOSNumber("4") shouldBe JsSuccess("4")
+      }
+      "input contains 24 or fewer digits" in {
+        val telNum24Chars = "123456789012345678901234"
+        telNum24Chars.length shouldBe 24
+        validateOSNumber(telNum24Chars) shouldBe JsSuccess(telNum24Chars)
+      }
+
+      "contains uppercase letters" in {
+        validateOSNumber("ABCDEFGHIJKLM") shouldBe JsSuccess("ABCDEFGHIJKLM")
+        validateOSNumber("NOPQRSTUVWXYZ") shouldBe JsSuccess("NOPQRSTUVWXYZ")
+      }
+
+      "contains numbers" in {
+        validateOSNumber("0123456789") shouldBe JsSuccess("0123456789")
+      }
+
+      "contains opening ( bracket" in {
+        validateOSNumber("123(456") shouldBe JsSuccess("123(456")
+      }
+
+      "contains closing ) bracket" in {
+        validateOSNumber("123)456") shouldBe JsSuccess("123)456")
+      }
+
+      "contains forward slash /" in {
+        validateOSNumber("123/456") shouldBe JsSuccess("123/456")
+      }
+
+      "contains hyphen -" in {
+        validateOSNumber("123-456") shouldBe JsSuccess("123-456")
+      }
+
+      "contains hyphen *" in {
+        validateOSNumber("123*456") shouldBe JsSuccess("123*456")
+      }
+
+      "contains hash #" in {
+        validateOSNumber("123#456") shouldBe JsSuccess("123#456")
+      }
+
+      "there is whitespace in the field" in {
+        validateOSNumber("0123 456 7890") shouldBe JsSuccess("0123 456 7890")
+      }
+    }
+
+    "reject input" when {
+      "input is empty" in {
+        validateOSNumber("") shouldBe whitespaceValidationError
+      }
+
+      "input is whitespace only" in {
+        validateOSNumber("   ") shouldBe whitespaceValidationError
+      }
+
+      "contains lowercase letters" in {
+        validateOSNumber("abcdefghijklm") shouldBe telephoneValidationError
+        validateOSNumber("nopqrstuvwxyz") shouldBe telephoneValidationError
+      }
+
+      "input contains more than 24 characters" in {
+        val telNum25Chars = "1234567890123456789012345"
+        telNum25Chars.length shouldBe 25
+        validateOSNumber(telNum25Chars) shouldBe telephoneValidationError
+      }
+
+      "input contains invalid symbols" in {
+        validateOSNumber("+441234567890") shouldBe telephoneValidationError
       }
     }
   }
 
   "postcodeValidation" should {
+    def validatePostcode(input: String) = postcodeValidation.reads(JsString(input))
+
     "accept valid postcodes" in {
       validatePostcode("AA1 1AA") shouldBe JsSuccess("AA1 1AA")
       validatePostcode("AA1M 1AA") shouldBe JsSuccess("AA1M 1AA")
@@ -124,6 +209,8 @@ class ValidatorSpec extends UnitSpec {
   }
 
   "addressValidation" should {
+    def validateAddress(address: String) = addressValidation.reads(JsString(address))
+    def addressValidationError = JsError(ValidationError("error.address.invalid"))
 
     "accept address" when {
 
@@ -136,7 +223,7 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "there are valid characters" in {
-        validateAddress("Agency's Building/Castle")
+        validateAddress("Agency's Building/Castle") shouldBe JsSuccess("Agency's Building/Castle")
       }
 
     }
@@ -154,12 +241,94 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "there are more than 35 characters" in {
-        validateAddress("1234567891123456789212345678931234567") shouldBe addressValidationError
+        val address36Chars = "123456789112345678921234567893123456"
+        address36Chars.length shouldBe 36
+        validateAddress(address36Chars) shouldBe addressValidationError
+      }
+    }
+  }
+
+  "overseasAddressValidation" should {
+    def validateOSAddress(address: String) = overseasAddressValidation.reads(JsString(address))
+    def osAddressValidationError = JsError(ValidationError("error.address.invalid"))
+
+    "accept address" when {
+
+      "a valid address is provided" in {
+        validateOSAddress("Building and Street") shouldBe JsSuccess("Building and Street")
+      }
+
+      "contains uppercase letters" in {
+        validateOSAddress("ABCDEFGHIJKLMNOPQRSTUVWXYZ") shouldBe JsSuccess("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+      }
+
+      "contains lowercase letters" in {
+        validateOSAddress("abcdefghijklmnopqrstuvwxyz") shouldBe JsSuccess("abcdefghijklmnopqrstuvwxyz")
+      }
+
+      "contains numbers" in {
+        validateOSAddress("0123456789") shouldBe JsSuccess("0123456789")
+      }
+
+      "contains spaces" in {
+        validateOSAddress(" A B C ") shouldBe JsSuccess(" A B C ")
+      }
+
+      "contains hyphens -" in {
+        validateOSAddress("-") shouldBe JsSuccess("-")
+      }
+
+      "contains commas ," in {
+        validateOSAddress(",") shouldBe JsSuccess(",")
+      }
+
+      "contains full stops ." in {
+        validateOSAddress(".") shouldBe JsSuccess(".")
+      }
+
+      "contains ampersands &" in {
+        validateOSAddress("&") shouldBe JsSuccess("&")
+      }
+
+      "contains single quotes '" in {
+        validateOSAddress("'") shouldBe JsSuccess("'")
+      }
+
+      "there are 1 or more characters" in {
+        validateOSAddress("1") shouldBe JsSuccess("1")
+      }
+
+      "there are 35 or fewer characters" in {
+        val address35Chars = "12345678901234567890123456789012345"
+        address35Chars.length shouldBe 35
+        validateOSAddress(address35Chars) shouldBe JsSuccess(address35Chars)
+      }
+    }
+
+    "reject address" when {
+      "there is only whitespace" in {
+        validateOSAddress("   ") shouldBe whitespaceValidationError
+      }
+
+      "string is empty but field is present" in {
+        validateOSAddress("") shouldBe whitespaceValidationError
+      }
+
+      "invalid characters are present, such as a backspace" in {
+        validateOSAddress("Acme\\Agency") shouldBe osAddressValidationError
+      }
+
+      "there are 36 or more characters" in {
+        val address36Chars = "123456789012345678901234567890123456"
+        address36Chars.length shouldBe 36
+        validateOSAddress(address36Chars) shouldBe osAddressValidationError
       }
     }
   }
 
   "nameValidation" should {
+    def validateName(name: String) = nameValidation.reads(JsString(name))
+    def nameValidationError = JsError(ValidationError("error.name.invalid"))
 
     "accept name" when {
       "a valid name is provided" in {
@@ -188,29 +357,234 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "there is whitespace" in {
-        validateAddress("     ") shouldBe whitespaceValidationError
+        validateName("     ") shouldBe whitespaceValidationError
       }
 
       "string is empty but field is present" in {
-        validateAddress("") shouldBe whitespaceValidationError
+        validateName("") shouldBe whitespaceValidationError
       }
     }
   }
 
-  private def validatePostcode(input: String) = {
-    postcodeValidation.reads(JsString(input))
+  "overseasNameValidation" should {
+    def validateOSName(name: String) = overseasNameValidation.reads(JsString(name))
+    def nameValidationError = JsError(ValidationError("error.name.invalid"))
+
+    "accept name" when {
+      "a valid name is provided" in {
+        validateOSName("Number 1 Foo/Acme Test-Agency, Ltd.") shouldBe JsSuccess("Number 1 Foo/Acme Test-Agency, Ltd.")
+      }
+
+      "contains uppercase letters" in {
+        validateOSName("ABCDEFGHIJKLMNOPQRSTUVWXYZ") shouldBe JsSuccess("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+      }
+
+      "contains lowercase letters" in {
+        validateOSName("abcdefghijklmnopqrstuvwxyz") shouldBe JsSuccess("abcdefghijklmnopqrstuvwxyz")
+      }
+
+      "contains numbers" in {
+        validateOSName("0123456789") shouldBe JsSuccess("0123456789")
+      }
+
+      "contains spaces" in {
+        validateOSName(" A B C ") shouldBe JsSuccess(" A B C ")
+      }
+
+      "contains hyphens -" in {
+        validateOSName("-") shouldBe JsSuccess("-")
+      }
+
+      "contains commas ," in {
+        validateOSName(",") shouldBe JsSuccess(",")
+      }
+
+      "contains full stops ." in {
+        validateOSName(".") shouldBe JsSuccess(".")
+      }
+
+      "contains forward slashes /" in {
+        validateOSName("/") shouldBe JsSuccess("/")
+      }
+
+      "1 or more characters" in {
+        validateOSName("1") shouldBe JsSuccess("1")
+      }
+
+      "40 or fewer characters" in {
+        val name40Chars = "1234567890123456789012345678901234567890"
+        name40Chars.length shouldBe 40
+        validateOSName(name40Chars) shouldBe JsSuccess(name40Chars)
+      }
+    }
+
+    "reject name" when {
+      "contains ampersands &" in {
+        validateOSName("&") shouldBe nameValidationError
+      }
+
+      "contains single quotes '" in {
+        validateOSName("'") shouldBe nameValidationError
+      }
+
+      "contains backslashes \\" in {
+        validateOSName("\\") shouldBe nameValidationError
+      }
+
+      "contains other invalid symbols" in {
+        validateOSName("Agency;Co") shouldBe nameValidationError
+        validateOSName("#1 Agency Worldwide") shouldBe nameValidationError
+        validateOSName("|Agency|") shouldBe nameValidationError
+      }
+
+      "more than 40 characters" in {
+        val name41Chars = "12345678901234567890123456789012345678901"
+        name41Chars.length shouldBe 41
+        validateOSName(name41Chars) shouldBe nameValidationError
+      }
+
+      "contains only whitespace" in {
+        validateOSName("     ") shouldBe whitespaceValidationError
+      }
+
+      "string is empty but field is present" in {
+        validateOSName("") shouldBe whitespaceValidationError
+      }
+    }
   }
 
-  private def validatePhoneNumber(number: String) = {
-    telephoneNumberValidation.reads(JsString(number))
+  "overseasEmailValidation" should {
+    def validateOSEmail(email: String) = overseasEmailValidation.reads(JsString(email))
+    def emailValidationError = JsError(ValidationError("error.email.invalid"))
+
+    "accept name" when {
+      "simple email address" in {
+        validateOSEmail("test@example.com") shouldBe JsSuccess("test@example.com")
+      }
+
+      "email is minimal" in {
+        validateOSEmail("a@b.to") shouldBe JsSuccess("a@b.to")
+      }
+
+      "contains lowercase characters" in {
+        validateOSEmail("abcdefghijklmnopqrstuvwxyz@c.d") shouldBe JsSuccess("abcdefghijklmnopqrstuvwxyz@c.d")
+      }
+
+      "contains uppercase characters" in {
+        validateOSEmail("ABCDEFGHIJKLMNOPQRSTUVWXYZ@c.d") shouldBe JsSuccess("ABCDEFGHIJKLMNOPQRSTUVWXYZ@c.d")
+      }
+
+      "contains numbers" in {
+        validateOSEmail("123@c.d") shouldBe JsSuccess("123@c.d")
+      }
+
+      "local-part contains hyphens" in {
+        validateOSEmail("a-b@c.d") shouldBe JsSuccess("a-b@c.d")
+      }
+
+      "local-part contains full stops" in {
+        validateOSEmail("a.b@c.d") shouldBe JsSuccess("a.b@c.d")
+      }
+
+      "local-part contains +" in {
+        validateOSEmail("a+b@c.d") shouldBe JsSuccess("a+b@c.d")
+      }
+
+      "local-part contains #" in {
+        validateOSEmail("a#b@c.d") shouldBe JsSuccess("a#b@c.d")
+      }
+    }
+
+    "reject name" when {
+      "missing local-part" in {
+        validateOSEmail("@b.com") shouldBe emailValidationError
+      }
+
+      "missing domain" in {
+        validateOSEmail("a@.com") shouldBe emailValidationError
+      }
+
+      "longer than 132 characters" in {
+        val email133CharsLong = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@b.com"
+        email133CharsLong.length shouldBe 133
+
+        validateOSEmail(email133CharsLong) shouldBe emailValidationError
+      }
+    }
   }
 
-  private def validateAddress(address: String) = {
-    addressValidation.reads(JsString(address))
-  }
+  "safeIdValidation" should {
+    def validateSafeId(safeId: String) = safeIdValidation.reads(JsString(safeId))
+    def safeIdValidationError = JsError(ValidationError("error.safeid.invalid"))
 
-  private def validateName(name: String) = {
-    nameValidation.reads(JsString(name))
+    "accept SafeId" when {
+      "it's a perfectly normal SafeID" in {
+        val validSafeId = "XE0001234567890"
+        validateSafeId(validSafeId) shouldBe JsSuccess(validSafeId)
+      }
+
+      "second character is any uppercase letter" in {
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ".foreach { secondCharacter =>
+          val validSafeId = s"X${secondCharacter}0001234567890"
+          validateSafeId(validSafeId) shouldBe JsSuccess(validSafeId)
+        }
+      }
+    }
+
+    "reject SafeId" when {
+      "contains lowercase characters" in {
+        val invalidSafeId = "xe0001234567890"
+        validateSafeId(invalidSafeId) shouldBe safeIdValidationError
+      }
+
+      "first character is not 'X'" in {
+        val invalidSafeId = "YE0001234567890"
+        validateSafeId(invalidSafeId) shouldBe safeIdValidationError
+      }
+
+      "second character is not a letter" in {
+        val invalidSafeId = "X00001234567890"
+        validateSafeId(invalidSafeId) shouldBe safeIdValidationError
+      }
+
+      "3rd - 5th characters are not '000'" in {
+        val validSafeIds = for {
+          third <- 0 to 9
+          fourth <- 0 to 9
+          fifth <- 0 to 9
+          if (0 != (third + fourth + fifth))
+        } yield s"X$third$fourth${fifth}1234567890"
+
+        validSafeIds.foreach { validSafeId =>
+          validateSafeId(validSafeId) shouldBe safeIdValidationError
+        }
+      }
+
+      "one of the characters in the last numeric portion (i.e. the last 10 characters) is not numeric (0-9)" in {
+        validateSafeId("XE000X234567890") shouldBe safeIdValidationError
+        validateSafeId("XE0001X34567890") shouldBe safeIdValidationError
+        validateSafeId("XE00012X4567890") shouldBe safeIdValidationError
+        validateSafeId("XE000123X567890") shouldBe safeIdValidationError
+        validateSafeId("XE0001234X67890") shouldBe safeIdValidationError
+        validateSafeId("XE00012345X7890") shouldBe safeIdValidationError
+        validateSafeId("XE000123456X890") shouldBe safeIdValidationError
+        validateSafeId("XE0001234567X90") shouldBe safeIdValidationError
+        validateSafeId("XE00012345678X0") shouldBe safeIdValidationError
+        validateSafeId("XE000123456789X") shouldBe safeIdValidationError
+      }
+
+      "length is less than 15" in {
+        val safeId14Chars = "XE000123456789"
+        safeId14Chars.length shouldBe 14
+        validateSafeId(safeId14Chars) shouldBe safeIdValidationError
+      }
+
+      "length is greater than 15" in {
+        val safeId16Chars = "XE00012345678901"
+        safeId16Chars.length shouldBe 16
+        validateSafeId(safeId16Chars) shouldBe safeIdValidationError
+      }
+    }
   }
 
   private def whitespaceValidationError = {
@@ -222,13 +596,5 @@ class ValidatorSpec extends UnitSpec {
 
   private def telephoneValidationError = {
     JsError(ValidationError("error.telephone.invalid"))
-  }
-
-  private def addressValidationError = {
-    JsError(ValidationError("error.address.invalid"))
-  }
-
-  private def nameValidationError = {
-    JsError(ValidationError("error.address.invalid"))
   }
 }

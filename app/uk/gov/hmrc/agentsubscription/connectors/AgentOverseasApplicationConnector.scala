@@ -20,8 +20,9 @@ import java.net.URL
 
 import javax.inject.{ Inject, Named, Singleton }
 import com.codahale.metrics.MetricRegistry
+import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
-import play.api.libs.json.{ JsString, JsValue, Json }
+import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
 import uk.gov.hmrc.agentsubscription.model._
@@ -61,7 +62,12 @@ class AgentOverseasApplicationConnector @Inject() (
       http.GET(url.toString).map { response =>
         val json = response.json.head
         val status = (json \ "status" \ "typeIdentifier").as[String]
-        val safeId = (json \ "safeId").asOpt[SafeId]
+
+        val safeId = (json \ "safeId").validateOpt[SafeId] match {
+          case JsSuccess(validSafeId, _) => validSafeId
+          case JsError(errors) => throw new JsResultException(errors)
+        }
+
         val amlsDetails = (json \ "application" \ "amls").as[OverseasAmlsDetails]
         val businessDetails = (json \ "application" \ "businessDetail").as[BusinessDetails]
         val businessContactDetails = (json \ "application" \ "contactDetails").as[BusinessContactDetails]
@@ -69,7 +75,8 @@ class AgentOverseasApplicationConnector @Inject() (
 
         CurrentApplication(ApplicationStatus(status), safeId, amlsDetails, businessContactDetails, businessDetails, agencyDetails)
       }.recover {
-        case e => throw new RuntimeException(s"Could not retrieve overseas agent application status: ${e.getMessage}")
+        case e: JsResultException => throw new RuntimeException(s"The retrieved current application is invalid", e)
+        case e => throw new RuntimeException(s"Could not retrieve overseas agent application", e)
       }
     }
   }
