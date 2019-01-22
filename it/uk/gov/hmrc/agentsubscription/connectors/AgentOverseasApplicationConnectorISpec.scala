@@ -28,6 +28,7 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
   private val agencyDetails = AgencyDetails(
     "Agency name",
     "agencyemail@domain.com",
+    "AGENCY PHONE 1234567",
     OverseasAgencyAddress(
       "Mandatory Address Line 1",
       "Mandatory Address Line 2",

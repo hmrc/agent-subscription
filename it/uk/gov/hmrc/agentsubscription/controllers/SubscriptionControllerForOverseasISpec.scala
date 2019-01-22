@@ -191,7 +191,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
-        organisationRegistrationFailsWithNotFound()
+        organisationRegistrationFailsWithNotFound("{}")
 
         val result = await(doSubscriptionRequest)
 
@@ -407,6 +407,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
        |{
        |  "agencyName": "Agency name",
        |  "agencyEmail": "agencyemail@domain.com",
+       |  "telephoneNumber": "AGENCY PHONE 1234567",
        |  "agencyAddress": {
        |    "addressLine1": "Mandatory Address Line 1",
        |    "addressLine2": "Mandatory Address Line 2",

@@ -62,6 +62,7 @@ trait AgentOverseasApplicationStubs {
              |   "agencyDetails" : {
              |     "agencyName" : "$agencyName",
              |     "agencyEmail" : "agencyemail@domain.com",
+             |     "telephoneNumber" : "AGENCY PHONE 1234567",
                |   "agencyAddress": {
                  |    "addressLine1": "Mandatory Address Line 1",
                  |    "addressLine2": "Mandatory Address Line 2",
