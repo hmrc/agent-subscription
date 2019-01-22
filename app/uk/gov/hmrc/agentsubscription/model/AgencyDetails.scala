@@ -24,7 +24,6 @@ case class BusinessContactDetails(businessTelephone: String, businessEmail: Stri
 case class AgencyDetails(
   agencyName: String,
   agencyEmail: String,
-  telephoneNumber: String,
   agencyAddress: OverseasAgencyAddress)
 
 case class OverseasBusinessAddress(
@@ -83,6 +82,5 @@ object AgencyDetails {
   implicit val reads: Reads[AgencyDetails] = (
     (__ \ "agencyName").read[String](overseasNameValidation) and
     (__ \ "agencyEmail").read[String](overseasEmailValidation) and
-    (__ \ "telephoneNumber").read[String](overseasTelephoneNumberValidation) and
     (__ \ "agencyAddress").read[OverseasAgencyAddress])(AgencyDetails.apply _)
 }
