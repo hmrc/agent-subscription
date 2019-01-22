@@ -36,15 +36,15 @@ trait OverseasDesStubs {
              |}
            """.stripMargin)))
   }
-  def organisationRegistrationFailsWithNotFound(requestJson: String): Unit = {
-    stubFor(maybeWithDesHeaderCheck(registrationRequest(requestJson))
+  def organisationRegistrationFailsWithNotFound(): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/02.00.00/organisation")))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(notFoundResponse)))
   }
 
-  def organisationRegistrationFailsWithInvalidPayload(requestJson: String): Unit = {
-    stubFor(maybeWithDesHeaderCheck(registrationRequest(requestJson))
+  def organisationRegistrationFailsWithInvalidPayload(): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/02.00.00/organisation")))
       .willReturn(aResponse()
         .withStatus(400)
         .withBody(invalidPayloadResponse)))
