@@ -156,7 +156,7 @@ Response: 200 OK
 
 ### Register and Subscribe Overseas Agent to Agent Services
 
-    POST /agent-subscription/overseas-subscription
+    PUT /agent-subscription/overseas-subscription
 
 This API will register an overseas agent organisation and subscribe them
 to Agent Services. The application details are retrieved for the logged

@@ -43,7 +43,7 @@ class DesConnectorForOverseasISpec extends UnitSpec with OneAppPerSuite with Wir
 
   private val overseasSubscriptionRequest = AgencyDetails(
     "Test Organisation Name",
-    "test@test.example", "00491234567890", OverseasAgencyAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
+    "test@test.example", OverseasAgencyAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
       Some("Optional Address Line 3"), Some("Optional Address Line 4"), "IE"))
 
   "subscribeToAgentServices" should {
@@ -88,13 +88,13 @@ class DesConnectorForOverseasISpec extends UnitSpec with OneAppPerSuite with Wir
     }
 
     "return exception for when an overseas BPR creation fails with NOT_FOUND error" in {
-      organisationRegistrationFailsWithNotFound(Json.toJson(overseasRegistrationRequest).toString())
+      organisationRegistrationFailsWithNotFound()
 
       an[RuntimeException] should be thrownBy (await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequest)))
     }
 
     "return exception for when an overseas BPR creation fails for an invalid payload" in {
-      organisationRegistrationFailsWithInvalidPayload(Json.toJson(overseasRegistrationRequest.copy(regime = "")).toString())
+      organisationRegistrationFailsWithInvalidPayload()
 
       an[RuntimeException] should be thrownBy (await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequest.copy(regime = ""))))
     }
