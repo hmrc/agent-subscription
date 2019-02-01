@@ -52,7 +52,6 @@ package object model {
 
   private[model] val overseasAddressValidation = {
     val overseasAddressRegex = s"^[A-Za-z0-9 \\-,.&']{0,35}$$"
-
     filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
       filter[String](ValidationError("error.address.invalid"))(_.matches(overseasAddressRegex))
   }
