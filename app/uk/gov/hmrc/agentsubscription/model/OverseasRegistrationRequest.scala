@@ -50,8 +50,8 @@ object OverseasRegistrationRequest {
       acknowledgementReference = UUID.randomUUID.toString.replaceAll("-", ""),
       isAnAgent = false,
       isAGroup = false,
-      Organisation(organisationName = fromApplication.businessDetails.tradingName),
-      address = fromApplication.businessDetails.businessAddress,
+      Organisation(organisationName = fromApplication.tradingDetails.tradingName),
+      address = fromApplication.tradingDetails.tradingAddress,
       contactDetails = ContactDetails(
         phoneNumber = fromApplication.businessContactDetails.businessTelephone,
         emailAddress = fromApplication.businessContactDetails.businessEmail))

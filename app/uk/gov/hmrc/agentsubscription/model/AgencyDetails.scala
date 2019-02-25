@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentsubscription.model
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{ Json, Reads, _ }
 
-case class BusinessDetails(tradingName: String, businessAddress: OverseasBusinessAddress)
+case class TradingDetails(tradingName: String, tradingAddress: OverseasBusinessAddress)
 case class BusinessContactDetails(businessTelephone: String, businessEmail: String)
 
 case class AgencyDetails(
@@ -60,12 +60,12 @@ object OverseasBusinessAddress {
     (__ \ "countryCode").read[String](overseasCountryCodeValidation))(OverseasBusinessAddress.apply _)
 }
 
-object BusinessDetails {
-  implicit val writes = Json.writes[BusinessDetails]
+object TradingDetails {
+  implicit val writes = Json.writes[TradingDetails]
 
-  implicit val reads: Reads[BusinessDetails] = (
+  implicit val reads: Reads[TradingDetails] = (
     (__ \ "tradingName").read[String](overseasNameValidation) and
-    (__ \ "businessAddress").read[OverseasBusinessAddress])(BusinessDetails.apply _)
+    (__ \ "tradingAddress").read[OverseasBusinessAddress])(TradingDetails.apply _)
 }
 
 object BusinessContactDetails {

@@ -61,19 +61,19 @@ class AgentOverseasApplicationConnector @Inject() (
     monitor(s"Agent-Overseas-Application-application-GET") {
       http.GET(url.toString).map { response =>
         val json = response.json.head
-        val status = (json \ "status" \ "typeIdentifier").as[String]
+        val status = (json \ "status").as[ApplicationStatus]
 
         val safeId = (json \ "safeId").validateOpt[SafeId] match {
           case JsSuccess(validSafeId, _) => validSafeId
           case JsError(errors) => throw new JsResultException(errors)
         }
 
-        val amlsDetails = (json \ "application" \ "amls").as[OverseasAmlsDetails]
-        val businessDetails = (json \ "application" \ "businessDetail").as[BusinessDetails]
-        val businessContactDetails = (json \ "application" \ "contactDetails").as[BusinessContactDetails]
+        val amlsDetails = (json \ "amls").as[OverseasAmlsDetails]
+        val businessDetails = (json \ "tradingDetails").as[TradingDetails]
+        val businessContactDetails = (json \ "contactDetails").as[BusinessContactDetails]
         val agencyDetails = (json \ "agencyDetails").as[AgencyDetails]
 
-        CurrentApplication(ApplicationStatus(status), safeId, amlsDetails, businessContactDetails, businessDetails, agencyDetails)
+        CurrentApplication(status, safeId, amlsDetails, businessContactDetails, businessDetails, agencyDetails)
       }.recover {
         case e: JsResultException => throw new RuntimeException(s"The retrieved current application is invalid", e)
         case e => throw new RuntimeException(s"Could not retrieve overseas agent application", e)

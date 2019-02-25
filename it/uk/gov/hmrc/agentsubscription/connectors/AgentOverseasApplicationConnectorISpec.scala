@@ -35,7 +35,7 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
       None,
       "IE"))
 
-  private val businessDetails = BusinessDetails(
+  private val businessDetails = TradingDetails(
     "tradingName",
     OverseasBusinessAddress(
       "addressLine1",

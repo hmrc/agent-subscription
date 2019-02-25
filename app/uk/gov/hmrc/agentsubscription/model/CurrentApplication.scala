@@ -23,7 +23,7 @@ case class CurrentApplication(
   safeId: Option[SafeId],
   amlsDetails: OverseasAmlsDetails,
   businessContactDetails: BusinessContactDetails,
-  businessDetails: BusinessDetails,
+  tradingDetails: TradingDetails,
   agencyDetails: AgencyDetails)
 
 object CurrentApplication {
