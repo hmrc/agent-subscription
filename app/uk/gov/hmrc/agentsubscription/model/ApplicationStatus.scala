@@ -30,33 +30,21 @@ sealed trait ApplicationStatus extends Product with Serializable {
       case ApplicationStatus.Registered => "registered" //4
       case ApplicationStatus.Complete => "complete" //5
     }
-
-  val transitionFromStates: Seq[ApplicationStatus] = Seq.empty
 }
 
 object ApplicationStatus {
 
   case object Pending extends ApplicationStatus
 
-  case object Rejected extends ApplicationStatus {
-    override val transitionFromStates = Seq(Pending)
-  }
+  case object Rejected extends ApplicationStatus
 
-  case object Accepted extends ApplicationStatus {
-    override val transitionFromStates = Seq(Pending)
-  }
+  case object Accepted extends ApplicationStatus
 
-  case object AttemptingRegistration extends ApplicationStatus {
-    override val transitionFromStates = Seq(Accepted)
-  }
+  case object AttemptingRegistration extends ApplicationStatus
 
-  case object Registered extends ApplicationStatus {
-    override val transitionFromStates = Seq(AttemptingRegistration)
-  }
+  case object Registered extends ApplicationStatus
 
-  case object Complete extends ApplicationStatus {
-    override val transitionFromStates = Seq(Registered)
-  }
+  case object Complete extends ApplicationStatus
 
   def apply(typeIdentifier: String): ApplicationStatus = typeIdentifier match {
 

@@ -70,8 +70,8 @@ class AgentOverseasApplicationConnector @Inject() (
 
         val amlsDetails = (json \ "amls").as[OverseasAmlsDetails]
         val businessDetails = (json \ "tradingDetails").as[TradingDetails]
-        val businessContactDetails = (json \ "contactDetails").as[BusinessContactDetails]
-        val agencyDetails = (json \ "agencyDetails").as[AgencyDetails]
+        val businessContactDetails = (json \ "contactDetails").as[OverseasContactDetails]
+        val agencyDetails = (json \ "agencyDetails").as[OverseasAgencyDetails]
 
         CurrentApplication(status, safeId, amlsDetails, businessContactDetails, businessDetails, agencyDetails)
       }.recover {

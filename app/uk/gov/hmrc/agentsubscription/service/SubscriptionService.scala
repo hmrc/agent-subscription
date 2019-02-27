@@ -132,7 +132,7 @@ class SubscriptionService @Inject() (
     }
   }
 
-  private def subscribeAndEnrolOverseas(authIds: AuthIds, safeId: SafeId, amlsDetails: OverseasAmlsDetails, agencyDetails: AgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+  private def subscribeAndEnrolOverseas(authIds: AuthIds, safeId: SafeId, amlsDetails: OverseasAmlsDetails, agencyDetails: OverseasAgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
     for {
       arn <- desConnector.subscribeToAgentServices(safeId, agencyDetails)
       _ <- addKnownFactsAndEnrolOverseas(arn, agencyDetails, authIds)
@@ -152,7 +152,7 @@ class SubscriptionService @Inject() (
 
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
-  private def addKnownFactsAndEnrolOverseas(arn: Arn, agencyDetails: AgencyDetails, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+  private def addKnownFactsAndEnrolOverseas(arn: Arn, agencyDetails: OverseasAgencyDetails, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
     val knownFactKey = "CountryCode"
     val knownFactValue = agencyDetails.agencyAddress.countryCode
     val friendlyName = agencyDetails.agencyName
