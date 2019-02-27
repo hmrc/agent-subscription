@@ -18,10 +18,11 @@ package uk.gov.hmrc.agentsubscription.model
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{ Json, Reads, _ }
 
-case class BusinessDetails(tradingName: String, businessAddress: OverseasBusinessAddress)
-case class BusinessContactDetails(businessTelephone: String, businessEmail: String)
+case class TradingDetails(tradingName: String, tradingAddress: OverseasBusinessAddress)
 
-case class AgencyDetails(
+case class OverseasContactDetails(businessTelephone: String, businessEmail: String)
+
+case class OverseasAgencyDetails(
   agencyName: String,
   agencyEmail: String,
   agencyAddress: OverseasAgencyAddress)
@@ -60,27 +61,27 @@ object OverseasBusinessAddress {
     (__ \ "countryCode").read[String](overseasCountryCodeValidation))(OverseasBusinessAddress.apply _)
 }
 
-object BusinessDetails {
-  implicit val writes = Json.writes[BusinessDetails]
+object TradingDetails {
+  implicit val writes = Json.writes[TradingDetails]
 
-  implicit val reads: Reads[BusinessDetails] = (
+  implicit val reads: Reads[TradingDetails] = (
     (__ \ "tradingName").read[String](overseasNameValidation) and
-    (__ \ "businessAddress").read[OverseasBusinessAddress])(BusinessDetails.apply _)
+    (__ \ "tradingAddress").read[OverseasBusinessAddress])(TradingDetails.apply _)
 }
 
-object BusinessContactDetails {
-  implicit val writes = Json.writes[BusinessContactDetails]
+object OverseasContactDetails {
+  implicit val writes = Json.writes[OverseasContactDetails]
 
-  implicit val reads: Reads[BusinessContactDetails] = (
+  implicit val reads: Reads[OverseasContactDetails] = (
     (__ \ "businessTelephone").read[String](overseasTelephoneNumberValidation) and
-    (__ \ "businessEmail").read[String](overseasEmailValidation))(BusinessContactDetails.apply _)
+    (__ \ "businessEmail").read[String](overseasEmailValidation))(OverseasContactDetails.apply _)
 }
 
-object AgencyDetails {
-  implicit val writes = Json.writes[AgencyDetails]
+object OverseasAgencyDetails {
+  implicit val writes = Json.writes[OverseasAgencyDetails]
 
-  implicit val reads: Reads[AgencyDetails] = (
+  implicit val reads: Reads[OverseasAgencyDetails] = (
     (__ \ "agencyName").read[String](overseasNameValidation) and
     (__ \ "agencyEmail").read[String](overseasEmailValidation) and
-    (__ \ "agencyAddress").read[OverseasAgencyAddress])(AgencyDetails.apply _)
+    (__ \ "agencyAddress").read[OverseasAgencyAddress])(OverseasAgencyDetails.apply _)
 }

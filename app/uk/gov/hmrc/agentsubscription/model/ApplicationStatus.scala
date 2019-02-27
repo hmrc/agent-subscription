@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{ Format, Json }
+import play.api.libs.json._
 
 sealed trait ApplicationStatus extends Product with Serializable {
 
@@ -30,33 +30,21 @@ sealed trait ApplicationStatus extends Product with Serializable {
       case ApplicationStatus.Registered => "registered" //4
       case ApplicationStatus.Complete => "complete" //5
     }
-
-  val transitionFromStates: Seq[ApplicationStatus] = Seq.empty
 }
 
 object ApplicationStatus {
 
   case object Pending extends ApplicationStatus
 
-  case object Rejected extends ApplicationStatus {
-    override val transitionFromStates = Seq(Pending)
-  }
+  case object Rejected extends ApplicationStatus
 
-  case object Accepted extends ApplicationStatus {
-    override val transitionFromStates = Seq(Pending)
-  }
+  case object Accepted extends ApplicationStatus
 
-  case object AttemptingRegistration extends ApplicationStatus {
-    override val transitionFromStates = Seq(Accepted)
-  }
+  case object AttemptingRegistration extends ApplicationStatus
 
-  case object Registered extends ApplicationStatus {
-    override val transitionFromStates = Seq(AttemptingRegistration)
-  }
+  case object Registered extends ApplicationStatus
 
-  case object Complete extends ApplicationStatus {
-    override val transitionFromStates = Seq(Registered)
-  }
+  case object Complete extends ApplicationStatus
 
   def apply(typeIdentifier: String): ApplicationStatus = typeIdentifier match {
 
@@ -71,8 +59,22 @@ object ApplicationStatus {
 
   def unapply(arg: ApplicationStatus): Option[String] = Some(arg.key)
 
-  implicit val applicationStatusFormat: Format[ApplicationStatus] =
-    Json.format[ApplicationStatus]
+  implicit val reads: Reads[ApplicationStatus] = new Reads[ApplicationStatus] {
+    override def reads(json: JsValue): JsResult[ApplicationStatus] =
+      json match {
+        case JsString(ApplicationStatus.Pending.key) => JsSuccess(Pending)
+        case JsString(ApplicationStatus.Accepted.key) => JsSuccess(Accepted)
+        case JsString(ApplicationStatus.Rejected.key) => JsSuccess(Rejected)
+        case JsString(ApplicationStatus.AttemptingRegistration.key) => JsSuccess(AttemptingRegistration)
+        case JsString(ApplicationStatus.Registered.key) => JsSuccess(Registered)
+        case JsString(ApplicationStatus.Complete.key) => JsSuccess(Complete)
+        case invalid => JsError(s"Invalid ApplicationStatus found: $invalid")
+      }
+  }
+
+  implicit val writes: Writes[ApplicationStatus] = new Writes[ApplicationStatus] {
+    override def writes(o: ApplicationStatus): JsValue = JsString(o.key)
+  }
 
   val ActiveStatuses = Seq(Pending, Accepted, AttemptingRegistration, Registered, Complete)
 }

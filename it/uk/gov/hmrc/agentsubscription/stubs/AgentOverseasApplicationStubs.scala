@@ -25,70 +25,53 @@ trait AgentOverseasApplicationStubs {
         .withStatus(200)
         .withBody(
           s"""
-             |[
-             |{
-             |   "applicationReference":{
-             |      "value":"someValidAppReference"
-             |   },
-             |   "application":{
-             |      "amls":{
-             |         "supervisoryBody":"supervisoryName",
-             |         "supervisionMemberId":"supervisoryId"
+             [
+             |  {
+             |    "applicationReference": "someValidAppReference",
+             |    "amls": {
+             |      "supervisoryBody": "supervisoryName",
+             |      "membershipNumber": "supervisoryId"
+             |    },
+             |    "contactDetails": {
+             |      "firstName": "firstName",
+             |      "lastName": "lastName",
+             |      "jobTitle": "jobTitle",
+             |      "businessTelephone": "BUSINESS PHONE 123456789",
+             |      "businessEmail": "email@domain.com"
+             |    },
+             |    "tradingDetails": {
+             |      "tradingName": "$businessTradingName",
+             |      "tradingAddress": {
+             |        "addressLine1": "addressLine1",
+             |        "addressLine2": "addressLine2",
+             |        "countryCode": "CC"
              |      },
-             |      "contactDetails":{
-             |         "firstName":"firstName",
-             |         "lastName":"lastName",
-             |         "jobTitle":"jobTitle",
-             |         "businessTelephone":"BUSINESS PHONE 123456789",
-             |         "businessEmail":"email@domain.com"
-             |      },
-             |      "businessDetail":{
-             |         "tradingName":"$businessTradingName",
-             |         "businessAddress":{
-             |            "addressLine1":"addressLine1",
-             |            "addressLine2":"addressLine2",
-             |            "countryCode":"CC"
-             |         },
-             |         "extraInfo":{
-             |            "isUkRegisteredTaxOrNino":{
-             |               "str":"no"
-             |            },
-             |            "isHmrcAgentRegistered":{
-             |               "str":"no"
-             |            }
-             |         }
+             |      "isUkRegisteredTaxOrNino": "no",
+             |      "isHmrcAgentRegistered": "no"
+             |    },
+             |    "agencyDetails": {
+             |      "agencyName": "$agencyName",
+             |      "agencyEmail": "agencyemail@domain.com",
+             |      "agencyAddress": {
+             |        "addressLine1": "Mandatory Address Line 1",
+             |        "addressLine2": "Mandatory Address Line 2",
+             |        "countryCode": "IE"
              |      }
-             |   },
-             |   "agencyDetails" : {
-             |     "agencyName" : "$agencyName",
-             |     "agencyEmail" : "agencyemail@domain.com",
-               |   "agencyAddress": {
-                 |    "addressLine1": "Mandatory Address Line 1",
-                 |    "addressLine2": "Mandatory Address Line 2",
-                 |    "countryCode": "IE"
-               |   }
-             |   },
-             |   "status":{
-             |      "typeIdentifier":"$status"
-             |   },
-             |   "relatedAuthProviderIds":[
+             |    },
+             |    "status": "$status",
+             |    "authProviderIds": [
              |      "agentAuthProviderId"
-             |   ],
-             |   "maintainerReviewedOn":{
-             |      "date":1546616981996
-             |   },
-             |   "reviewerPid":"StrideUserId",
-             |   "rejectedBecause":[
-             |      {
-             |         "rejectReason":"application rejected because ..."
-             |      },
-             |      {
-             |         "rejectReason":"second reason ..."
-             |      }
-             |   ]
+             |    ],
+             |    "maintainerDetails": {
+             |      "reviewedDate": "2019-02-20T10:35:21.65",
+             |      "reviewerPid": "PID",
+             |      "rejectReasons": [
+             |        "rejected reason"
+             |      ]
+             |    }
              |   ${safeId.map(id => s""", "safeId" : "$id" """).getOrElse("")}
-             |}
-             | ]
+             |  }
+             |]
            """.stripMargin)))
   }
 

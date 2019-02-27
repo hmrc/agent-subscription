@@ -41,7 +41,7 @@ class DesConnectorForOverseasISpec extends UnitSpec with OneAppPerSuite with Wir
     OverseasBusinessAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
       Some("Optional Address Line 3"), Some("Optional Address Line 4"), "IE"), ContactDetails("00491234567890", "test@test.example"))
 
-  private val overseasSubscriptionRequest = AgencyDetails(
+  private val overseasSubscriptionRequest = OverseasAgencyDetails(
     "Test Organisation Name",
     "test@test.example", OverseasAgencyAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
       Some("Optional Address Line 3"), Some("Optional Address Line 4"), "IE"))

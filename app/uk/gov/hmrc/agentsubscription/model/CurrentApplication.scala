@@ -22,9 +22,9 @@ case class CurrentApplication(
   status: ApplicationStatus,
   safeId: Option[SafeId],
   amlsDetails: OverseasAmlsDetails,
-  businessContactDetails: BusinessContactDetails,
-  businessDetails: BusinessDetails,
-  agencyDetails: AgencyDetails)
+  businessContactDetails: OverseasContactDetails,
+  tradingDetails: TradingDetails,
+  agencyDetails: OverseasAgencyDetails)
 
 object CurrentApplication {
   implicit val format = Json.format[CurrentApplication]

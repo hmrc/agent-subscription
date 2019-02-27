@@ -25,7 +25,7 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
 
   private implicit val hc = HeaderCarrier()
 
-  private val agencyDetails = AgencyDetails(
+  private val agencyDetails = OverseasAgencyDetails(
     "Agency name",
     "agencyemail@domain.com",
     OverseasAgencyAddress(
@@ -35,7 +35,7 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
       None,
       "IE"))
 
-  private val businessDetails = BusinessDetails(
+  private val businessDetails = TradingDetails(
     "tradingName",
     OverseasBusinessAddress(
       "addressLine1",
@@ -44,7 +44,7 @@ class AgentOverseasApplicationConnectorISpec extends AgentOverseasApplicationStu
       None,
       "CC"))
 
-  private val businessContactDetails = BusinessContactDetails(
+  private val businessContactDetails = OverseasContactDetails(
     businessTelephone = "BUSINESS PHONE 123456789",
     businessEmail = "email@domain.com")
 
