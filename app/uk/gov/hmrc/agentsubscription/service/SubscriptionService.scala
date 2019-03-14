@@ -45,6 +45,18 @@ private case class SubscriptionAuditDetail(
   agencyEmail: String,
   amlsDetails: Option[AmlsDetails])
 
+case class OverseasSubscriptionAuditDetail(
+  agentReferenceNumber: Option[Arn],
+  safeId: SafeId,
+  agencyName: String,
+  agencyEmail: String,
+  agencyAddress: OverseasAgencyAddress,
+  amlsDetails: OverseasAmlsDetails)
+
+object OverseasSubscriptionAuditDetail {
+  implicit val format = Json.format[OverseasSubscriptionAuditDetail]
+}
+
 case class EnrolmentAlreadyAllocated(message: String) extends Exception(message)
 
 @Singleton
@@ -128,7 +140,15 @@ class SubscriptionService @Inject() (
           safeId <- desConnector.createOverseasBusinessPartnerRecord(OverseasRegistrationRequest(application))
           _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Registered, userId, Some(safeId))
           arnOpt <- subscribeAndEnrolOverseas(authIds, safeId, application.amlsDetails, application.agencyDetails)
-        } yield arnOpt
+        } yield {
+          val auditJson = Json.toJson(OverseasSubscriptionAuditDetail(
+            arnOpt,
+            safeId, application.agencyDetails.agencyName,
+            application.agencyDetails.agencyEmail, application.agencyDetails.agencyAddress, application.amlsDetails)).as[JsObject]
+
+          auditService.auditEvent(AgentSubscriptionEvent.OverseasAgentSubscription, "Overseas agent subscription", auditJson)
+          arnOpt
+        }
     }
   }
 

@@ -55,7 +55,7 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
 }
 
 object AgentSubscriptionEvent extends Enumeration {
-  val AgentSubscription, CheckAgencyStatus = Value
+  val AgentSubscription, CheckAgencyStatus, OverseasAgentSubscription = Value
 
   type AgentSubscriptionEvent = AgentSubscriptionEvent.Value
 }
