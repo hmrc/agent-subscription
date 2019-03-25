@@ -88,6 +88,14 @@ package object model {
 
     filter[String](ValidationError("error.safeid.invalid"))(_.matches(safeIdRegex))
   }
+
+  private[model] val crnValidation = {
+    val crnLength = 8
+    val crnRegex = "[A-Z]{2}[0-9]{6}|[0-9]{8}"
+
+    filterNot[String](ValidationError("error.crn.invalid"))(_.length == crnLength) andKeep
+      filter[String](ValidationError("error.crn.invalid"))(_.matches(crnRegex))
+  }
 }
 
 case class RequestWithAuthority[+A](authority: Authority, request: Request[A]) extends WrappedRequest[A](request)

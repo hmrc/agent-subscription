@@ -66,6 +66,19 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
       }
   }
 
+  def authorisedWithAgentAffinity(action: Request[AnyContent] => Future[Result]): Action[AnyContent] = Action.async { implicit request =>
+    authorised(AuthProvider).retrieve(affinityGroup) {
+      case Some(affinityG) =>
+        if (isAgent(affinityG))
+          action(request)
+        else
+          NotAnAgent
+      case _ => GenericUnauthorized
+    } recover {
+      handleFailure()
+    }
+  }
+
   def overseasAgentAuth(action: OverseasAuthAction): Action[AnyContent] = Action.async { implicit request =>
     authorised(AuthProvider)
       .retrieve(allEnrolments and affinityGroup and credentials and groupIdentifier) {

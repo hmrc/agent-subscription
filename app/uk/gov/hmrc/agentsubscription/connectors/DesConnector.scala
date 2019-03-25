@@ -156,6 +156,16 @@ class DesConnector @Inject() (
     getWithDesHeaders[AgentRecord]("GetAgentRecord", url)
   }
 
+  def getCorporationTaxUtr(crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Utr] = {
+    val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
+
+    val url = new URL(baseUrl, s"/corporation-tax/identifiers/crn/$encodedCrn")
+
+    getWithDesHeaders[JsValue]("GetCtUtr", url).map { response =>
+      (response \ "CTUTR").as[Utr]
+    }
+  }
+
   private def getRegistrationJson(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] =
     monitor("DES-GetAgentRegistration-POST") {
       httpPost.POST[DesRegistrationRequest, Option[JsValue]](
