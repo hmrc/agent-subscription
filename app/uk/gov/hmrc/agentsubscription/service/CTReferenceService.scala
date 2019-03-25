@@ -16,15 +16,15 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
 import uk.gov.hmrc.agentsubscription.model.Crn
 import uk.gov.hmrc.agentsubscription.service.CtUtrMatchResponse._
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, NotFoundException }
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 sealed trait CtUtrMatchResponse
 

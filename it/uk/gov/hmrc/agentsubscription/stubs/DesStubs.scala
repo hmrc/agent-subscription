@@ -4,7 +4,7 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesSubscriptionRequest
-import uk.gov.hmrc.agentsubscription.model.{Crn, SubscriptionRequest}
+import uk.gov.hmrc.agentsubscription.model.{ Crn, SubscriptionRequest }
 
 trait DesStubs {
 

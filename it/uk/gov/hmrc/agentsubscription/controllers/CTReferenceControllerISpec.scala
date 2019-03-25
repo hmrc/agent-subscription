@@ -3,8 +3,8 @@ package uk.gov.hmrc.agentsubscription.controllers
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.Crn
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs}
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs }
+import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 
 class CTReferenceControllerISpec extends BaseISpec with DesStubs with AuthStub {
   val utr = Utr("7000000002")
