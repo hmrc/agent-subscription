@@ -18,31 +18,31 @@ package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{ Inject, Singleton }
 import play.api.Logger
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
-import uk.gov.hmrc.agentsubscription.model.{ Crn, DesMatchResponse }
+import uk.gov.hmrc.agentsubscription.model.DesMatchResponse
 import uk.gov.hmrc.agentsubscription.model.DesMatchResponse._
+import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, NotFoundException }
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class CTReferenceService @Inject() (desConnector: DesConnector) {
+class VatKnownfactsService @Inject() (desConnector: DesConnector) {
 
-  def matchCorporationTaxUtrWithCrn(utr: Utr, crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesMatchResponse] = {
-    desConnector.getCorporationTaxUtr(crn).map { ctUtr =>
-      if (ctUtr == utr)
+  def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesMatchResponse] = {
+    desConnector.getVatKnownfacts(vrn).map { dateOfReg =>
+      if (dateOfReg == vatRegistrationDate)
         Match
       else {
-        Logger.warn("The supplied utr does not match with the utr from DES records")
+        Logger.warn("The supplied VAT registration date does not match with the date of registration from DES records")
         NoMatch
       }
     }.recover {
-      case _: NotFoundException =>
-        Logger.warn(s"No ct utr found for the crn ${crn.value}")
+      case ex: NotFoundException =>
+        Logger.warn(s"No records found for the vrn ${vrn.value}", ex)
         RecordNotFound
-      case _: BadRequestException =>
-        Logger.warn(s"The crn ${crn.value} supplied is invalid")
+      case ex: BadRequestException =>
+        Logger.warn(s"The vrn ${vrn.value} supplied is invalid", ex)
         InvalidIdentifier
       case ex =>
         Logger.warn(s"Some exception occured ${ex.getMessage}")

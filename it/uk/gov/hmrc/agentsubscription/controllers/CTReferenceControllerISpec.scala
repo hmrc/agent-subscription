@@ -46,8 +46,8 @@ class CTReferenceControllerISpec extends BaseISpec with DesStubs with AuthStub {
       response.status shouldBe 500
     }
 
-    "return 404 when des returns a match for the crn but the ct utr supplied do not match" in {
-      ctUtrRecordDoesNotExist(crn)
+    "return 404 when des returns a record for the crn but the ct utr supplied does not match" in {
+      ctUtrRecordExists(crn)
 
       val response = await(new Resource("/agent-subscription/corporation-tax-utr/8000000007/crn/SC123456", port).get)
       response.status shouldBe 404

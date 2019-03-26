@@ -19,20 +19,19 @@ package uk.gov.hmrc.agentsubscription.controllers
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
 import play.api.mvc.{ Action, AnyContent }
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.model.Crn
 import uk.gov.hmrc.agentsubscription.model.DesMatchResponse._
-import uk.gov.hmrc.agentsubscription.service.CTReferenceService
+import uk.gov.hmrc.agentsubscription.service.VatKnownfactsService
+import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.play.microservice.controller.BaseController
 
 @Singleton
-class CTReferenceController @Inject() (service: CTReferenceService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
+class VatKnownfactsController @Inject() (service: VatKnownfactsService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
-  def matchCorporationTaxUtr(ctUtr: Utr, crn: Crn): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
-    service.matchCorporationTaxUtrWithCrn(ctUtr, crn).map {
+  def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
+    service.matchVatKnownfacts(vrn, vatRegistrationDate).map {
       case Match => Ok
       case NoMatch | RecordNotFound => NotFound
       case InvalidIdentifier => BadRequest
@@ -40,3 +39,4 @@ class CTReferenceController @Inject() (service: CTReferenceService)(implicit met
     }
   }
 }
+

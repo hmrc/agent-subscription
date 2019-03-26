@@ -27,6 +27,7 @@ import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.model._
+import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
@@ -156,6 +157,7 @@ class DesConnector @Inject() (
     getWithDesHeaders[AgentRecord]("GetAgentRecord", url)
   }
 
+  /** This method uses DES API#1380 Get CT Reference */
   def getCorporationTaxUtr(crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Utr] = {
     val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
 
@@ -163,6 +165,17 @@ class DesConnector @Inject() (
 
     getWithDesHeaders[JsValue]("GetCtUtr", url).map { response =>
       (response \ "CTUTR").as[Utr]
+    }
+  }
+
+  /** This method uses DES API#1385 Get VAT Known Facts Control List */
+  def getVatKnownfacts(vrn: Vrn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[String] = {
+    val encodedVrn = UriEncoding.encodePathSegment(vrn.value, "UTF-8")
+
+    val url = new URL(baseUrl, s"/vat/known-facts/control-list/$encodedVrn")
+
+    getWithDesHeaders[JsValue]("GetVatKnownfacts", url).map { response =>
+      (response \ "dateOfReg").as[String]
     }
   }
 
