@@ -11,17 +11,18 @@ import org.mockito.Mockito.verify
 import org.scalatest.concurrent.Eventually
 import org.scalatest.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
-import play.api.libs.json.{ JsValue, Json }
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import play.api.libs.json.{JsValue, Json}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.model
-import uk.gov.hmrc.agentsubscription.model.{ AgentRecord, Crn }
+import uk.gov.hmrc.agentsubscription.model.{AgentRecord, Crn}
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
-import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
+import uk.gov.hmrc.agentsubscription.support.{MetricsTestSupport, WireMockSupport}
+import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.play.audit.http.HttpAuditing
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import uk.gov.hmrc.play.http.ws.{ WSGet, WSPost }
+import uk.gov.hmrc.play.http.ws.{WSGet, WSPost}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext
@@ -31,6 +32,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
   private implicit val hc = HeaderCarrier()
   val utr = Utr("1234567890")
   val crn = Crn("SC123456")
+  val vrn = Vrn("888913457")
 
   private val bearerToken = "auth-token"
   private val environment = "des-env"
@@ -257,6 +259,32 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       ctUtrRecordFails()
 
       an[Upstream5xxResponse] shouldBe thrownBy(await(connector.getCorporationTaxUtr(crn)))
+    }
+  }
+
+  "getVatKnownfacts" should {
+    "return VAT registration date for a VAT registration number that is known by DES" in {
+      vatKnownfactsRecordExists(vrn)
+
+      await(connector.getVatKnownfacts(vrn)) shouldBe "2010-03-31"
+    }
+
+    "not return a VAT registration date for a VAT registration number that is unknown to DES" in {
+      vatKnownfactsRecordDoesNotExist(vrn)
+
+      an[NotFoundException] shouldBe thrownBy(await(connector.getVatKnownfacts(vrn)))
+    }
+
+    "return BadRequestException for an invalid vrn" in {
+      vrnIsInvalid(Vrn("1234"))
+
+      an[BadRequestException] shouldBe thrownBy(await(connector.getVatKnownfacts(Vrn("1234"))))
+    }
+
+    "return 5xx exception if DES fails to respond" in {
+      vatKnownfactsRecordFails()
+
+      an[Upstream5xxResponse] shouldBe thrownBy(await(connector.getVatKnownfacts(vrn)))
     }
   }
 

@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.binders
+package uk.gov.hmrc.agentsubscription.model
 
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.Crn
-import uk.gov.hmrc.domain.Vrn
+sealed trait DesMatchResponse
 
-object UrlBinders {
-  implicit val utrBinder = new SimpleObjectBinder[Utr](Utr.apply, _.value)
-  implicit val crnBinder = new SimpleObjectBinder[Crn](Crn.apply, _.value)
-  implicit val vrnBinder = new SimpleObjectBinder[Vrn](Vrn.apply, _.value)
+object DesMatchResponse {
+  case object Match extends DesMatchResponse
+  case object NoMatch extends DesMatchResponse
+  case object RecordNotFound extends DesMatchResponse
+  case object InvalidIdentifier extends DesMatchResponse
+  case object UnknownError extends DesMatchResponse
 }

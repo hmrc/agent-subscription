@@ -4,7 +4,8 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesSubscriptionRequest
-import uk.gov.hmrc.agentsubscription.model.{ Crn, SubscriptionRequest }
+import uk.gov.hmrc.agentsubscription.model.{Crn, SubscriptionRequest}
+import uk.gov.hmrc.domain.Vrn
 
 trait DesStubs {
 
@@ -38,6 +39,10 @@ trait DesStubs {
   private val ctUtrNotFoundResponse = errorResponse("NOT_FOUND", "The back end has indicated that CT UTR cannot be returned.")
 
   private val invalidCrnResponse = errorResponse("INVALID_CRN", "Submission has not passed validation. Invalid idType/idValue.")
+
+  private val vatRecordNotFoundResponse = errorResponse("NOT_FOUND", "The back end has indicated that vat known facts cannot be returned")
+
+  private val invalidVrnResponse = errorResponse("INVALID_VRN", "Request has not passed validation. Invalid vrn")
 
   def utrIsUnexpectedlyInvalid(utr: Utr): Unit = utrIsInvalid(utr)
 
@@ -322,6 +327,38 @@ trait DesStubs {
         aResponse()
           .withStatus(400)
           .withBody(invalidCrnResponse)))
+  }
+
+  def vatKnownfactsRecordExists(vrn: Vrn): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/vat/known-facts/control-list/${vrn.value}"))).willReturn(aResponse()
+      .withStatus(200)
+      .withBody(
+        s"""
+           |{
+           |    "dateOfReg": "2010-03-31"
+           |}
+        """.stripMargin)))
+  }
+
+  def vatKnownfactsRecordDoesNotExist(vrn: Vrn): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/vat/known-facts/control-list/${vrn.value}")))
+      .willReturn(aResponse()
+        .withStatus(404)
+        .withBody(vatRecordNotFoundResponse)))
+  }
+
+  def vatKnownfactsRecordFails(): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlPathMatching(s"/vat/known-facts/control-list/.*")))
+      .willReturn(aResponse()
+        .withStatus(500)))
+  }
+
+  def vrnIsInvalid(vrn: Vrn): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/vat/known-facts/control-list/${vrn.value}")))
+      .willReturn(
+        aResponse()
+          .withStatus(400)
+          .withBody(invalidVrnResponse)))
   }
 
   private def registrationRequest(utr: Utr, isAnAgent: Boolean) =
