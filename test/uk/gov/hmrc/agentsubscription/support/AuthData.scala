@@ -40,6 +40,10 @@ trait AuthData {
     Future.successful(retrievals)
   }
 
+  val agentAffinity: Future[Option[AffinityGroup]] = Future.successful(Some(AffinityGroup.Agent))
+
+  val individualAffinity: Future[Option[AffinityGroup]] = Future.successful(Some(AffinityGroup.Individual))
+
   val agentIncorrectAffinity: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]] = {
     val retrievals = new ~(new ~(Some(AffinityGroup.Individual), Credentials("providerId", "providerType")), Some("groupId"))
     Future.successful(retrievals)

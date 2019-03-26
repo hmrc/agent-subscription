@@ -4,7 +4,7 @@ import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesSubscriptionRequest
-import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
+import uk.gov.hmrc.agentsubscription.model.{ Crn, SubscriptionRequest }
 
 trait DesStubs {
 
@@ -34,6 +34,10 @@ trait DesStubs {
   private val notFoundResponse = errorResponse("NOT_FOUND", "The remote endpoint has indicated that no data can be found.")
 
   private val invalidUtrResponse = errorResponse("INVALID_UTR", "Submission has not passed validation. Invalid parameter UTR.")
+
+  private val ctUtrNotFoundResponse = errorResponse("NOT_FOUND", "The back end has indicated that CT UTR cannot be returned.")
+
+  private val invalidCrnResponse = errorResponse("INVALID_CRN", "Submission has not passed validation. Invalid idType/idValue.")
 
   def utrIsUnexpectedlyInvalid(utr: Utr): Unit = utrIsInvalid(utr)
 
@@ -286,6 +290,38 @@ trait DesStubs {
     stubFor(maybeWithDesHeaderCheck(get(urlPathMatching(s"/registration/personal-details/utr/.*")))
       .willReturn(aResponse()
         .withStatus(500)))
+  }
+
+  def ctUtrRecordExists(crn: Crn): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/corporation-tax/identifiers/crn/${crn.value}"))).willReturn(aResponse()
+      .withStatus(200)
+      .withBody(
+        s"""
+           |{
+           |    "CTUTR": "1234567890"
+           |}
+        """.stripMargin)))
+  }
+
+  def ctUtrRecordDoesNotExist(crn: Crn): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/corporation-tax/identifiers/crn/${crn.value}")))
+      .willReturn(aResponse()
+        .withStatus(404)
+        .withBody(ctUtrNotFoundResponse)))
+  }
+
+  def ctUtrRecordFails(): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlPathMatching(s"/corporation-tax/identifiers/crn/.*")))
+      .willReturn(aResponse()
+        .withStatus(500)))
+  }
+
+  def crnIsInvalid(crn: Crn): Unit = {
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/corporation-tax/identifiers/crn/${crn.value}")))
+      .willReturn(
+        aResponse()
+          .withStatus(400)
+          .withBody(invalidCrnResponse)))
   }
 
   private def registrationRequest(utr: Utr, isAnAgent: Boolean) =

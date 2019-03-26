@@ -14,7 +14,7 @@ import org.scalatestplus.play.OneAppPerSuite
 import play.api.libs.json.{ JsValue, Json }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.model
-import uk.gov.hmrc.agentsubscription.model.AgentRecord
+import uk.gov.hmrc.agentsubscription.model.{ AgentRecord, Crn }
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
 import uk.gov.hmrc.http._
@@ -30,6 +30,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with DesStubs with MetricsTestSupport with MockitoSugar {
   private implicit val hc = HeaderCarrier()
   val utr = Utr("1234567890")
+  val crn = Crn("SC123456")
 
   private val bearerToken = "auth-token"
   private val environment = "des-env"
@@ -228,6 +229,34 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       (responseJson \ "agencyDetails" \ "agencyAddress" \ "postalCode").as[String] shouldBe "AA1 2AA"
       (responseJson \ "isAnASAgent").as[Boolean] shouldBe true
       verifyTimerExistsAndBeenUpdated("ConsumedAPI-DES-GetAgentRecord-GET")
+    }
+  }
+
+  "getCorporationTaxUtr" should {
+    "return CT UTR for a company registration number that is known by DES" in {
+      ctUtrRecordExists(crn)
+
+      val ctUtr = await(connector.getCorporationTaxUtr(crn))
+
+      ctUtr shouldBe utr
+    }
+
+    "not return a CT UTR for a a company registration number that is unknown to DES" in {
+      ctUtrRecordDoesNotExist(crn)
+
+      an[NotFoundException] shouldBe thrownBy(await(connector.getCorporationTaxUtr(crn)))
+    }
+
+    "return BadRequestException for an invalid crn" in {
+      crnIsInvalid(Crn("1234"))
+
+      an[BadRequestException] shouldBe thrownBy(await(connector.getCorporationTaxUtr(Crn("1234"))))
+    }
+
+    "return 5xx exception if DES fails to respond" in {
+      ctUtrRecordFails()
+
+      an[Upstream5xxResponse] shouldBe thrownBy(await(connector.getCorporationTaxUtr(crn)))
     }
   }
 

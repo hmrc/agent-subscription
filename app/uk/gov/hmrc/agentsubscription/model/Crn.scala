@@ -14,12 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.binders
+package uk.gov.hmrc.agentsubscription.model
 
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.Crn
+import play.api.libs.json.{ JsPath, Json, Reads }
+import uk.gov.hmrc.domain.{ SimpleObjectWrites, TaxIdentifier }
 
-object UrlBinders {
-  implicit val utrBinder = new SimpleObjectBinder[Utr](Utr.apply, _.value)
-  implicit val crnBinder = new SimpleObjectBinder[Crn](Crn.apply, _.value)
+case class Crn(value: String) extends TaxIdentifier
+
+object Crn {
+  implicit val writes = new SimpleObjectWrites[Crn](_.value)
+
+  implicit val reads: Reads[Crn] = {
+    JsPath.read[String](crnValidation).map(Crn.apply)
+  }
 }

@@ -23,7 +23,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.mockito.MockitoSugar
 import play.api.http.Status._
 import play.api.libs.json.{ JsValue, Json }
-import play.api.mvc.Result
+import play.api.mvc.{ AnyContent, Request, Result }
 import play.api.mvc.Results.Ok
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.{ OverseasAuthAction, RegistrationAuthAction, SubscriptionAuthAction }
@@ -44,9 +44,13 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
   val subscriptionAction: SubscriptionAuthAction = { implicit request => implicit authIds => Future successful Ok }
   val registrationAction: RegistrationAuthAction = { implicit request => implicit provider => Future successful Ok }
   val overseasAgentAction: OverseasAuthAction = { implicit request => implicit provider => Future successful Ok }
+  val agentAction: Request[AnyContent] => Future[Result] = { implicit request => Future successful Ok }
 
   private def agentAuthStub(returnValue: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]]) =
     when(mockMicroserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[~[~[Option[AffinityGroup], Credentials], Option[String]]]]())(any(), any())).thenReturn(returnValue)
+
+  private def agentAuthStubWithAffinity(returnValue: Future[Option[AffinityGroup]]) =
+    when(mockMicroserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[Option[AffinityGroup]]]())(any(), any())).thenReturn(returnValue)
 
   override def beforeEach(): Unit = reset(mockMicroserviceAuthConnector)
 
@@ -82,6 +86,42 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
 
       val thrown = intercept[Exception] {
         await(mockAuthConnector.authorisedWithAffinityGroup(subscriptionAction).apply(fakeRequest))
+      }
+
+      thrown.getMessage shouldBe "oh no !"
+    }
+  }
+
+  "authorisedWithAgentAffinity" should {
+    "return OK for an Agent with Agent affinity group" in {
+      agentAuthStubWithAffinity(agentAffinity)
+
+      val response: Result = await(mockAuthConnector.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
+
+      status(response) shouldBe OK
+    }
+
+    "return FORBIDDEN when the user does not belong to Agent affinity group" in {
+      agentAuthStubWithAffinity(individualAffinity)
+
+      val response: Result = await(mockAuthConnector.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
+
+      status(response) shouldBe 403
+    }
+
+    "return UNAUTHORISED when auth fails to return an AffinityGroup" in {
+      agentAuthStubWithAffinity(Future.successful(None))
+
+      val response: Result = await(mockAuthConnector.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
+
+      status(response) shouldBe UNAUTHORIZED
+    }
+
+    "return the same error when auth throws an error" in {
+      agentAuthStubWithAffinity(failedStubForAgent)
+
+      val thrown = intercept[Exception] {
+        await(mockAuthConnector.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
       }
 
       thrown.getMessage shouldBe "oh no !"
