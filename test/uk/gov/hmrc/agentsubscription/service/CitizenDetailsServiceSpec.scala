@@ -23,7 +23,7 @@ import org.mockito.ArgumentMatchers.{ any, eq => eqs }
 import org.mockito.Mockito.when
 import org.scalatest.concurrent.Eventually
 import uk.gov.hmrc.agentsubscription.connectors.CitizenDetailsConnector
-import uk.gov.hmrc.agentsubscription.model.CitizenDetailsMatchResponse._
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.model.{ CitizenDetailsRequest, DateOfBirth }
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.domain.Nino

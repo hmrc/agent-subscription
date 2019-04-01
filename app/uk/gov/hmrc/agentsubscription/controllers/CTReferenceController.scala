@@ -23,7 +23,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.Crn
-import uk.gov.hmrc.agentsubscription.model.DesMatchResponse._
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.service.CTReferenceService
 import uk.gov.hmrc.play.microservice.controller.BaseController
 

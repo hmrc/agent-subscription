@@ -21,7 +21,7 @@ import javax.inject.{ Inject, Singleton }
 import play.api.mvc.{ Action, AnyContent }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.model.DesMatchResponse._
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.service.VatKnownfactsService
 import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.play.microservice.controller.BaseController

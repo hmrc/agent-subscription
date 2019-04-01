@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-sealed trait DesMatchResponse
+sealed trait MatchDetailsResponse
 
-object DesMatchResponse {
-  case object Match extends DesMatchResponse
-  case object NoMatch extends DesMatchResponse
-  case object RecordNotFound extends DesMatchResponse
-  case object InvalidIdentifier extends DesMatchResponse
-  case object UnknownError extends DesMatchResponse
+object MatchDetailsResponse {
+  case object Match extends MatchDetailsResponse
+  case object NoMatch extends MatchDetailsResponse
+  case object RecordNotFound extends MatchDetailsResponse
+  case object InvalidIdentifier extends MatchDetailsResponse
+  case object UnknownError extends MatchDetailsResponse
 }

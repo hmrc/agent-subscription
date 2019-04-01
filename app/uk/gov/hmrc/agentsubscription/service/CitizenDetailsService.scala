@@ -19,8 +19,8 @@ package uk.gov.hmrc.agentsubscription.service
 import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import uk.gov.hmrc.agentsubscription.connectors.CitizenDetailsConnector
-import uk.gov.hmrc.agentsubscription.model.CitizenDetailsMatchResponse._
-import uk.gov.hmrc.agentsubscription.model.{ CitizenDetailsMatchResponse, CitizenDetailsRequest }
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
+import uk.gov.hmrc.agentsubscription.model.{ MatchDetailsResponse, CitizenDetailsRequest }
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -28,7 +28,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 @Singleton
 class CitizenDetailsService @Inject() (citizenDetailsConnector: CitizenDetailsConnector) {
 
-  def checkDetails(cd: CitizenDetailsRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CitizenDetailsMatchResponse] = {
+  def checkDetails(cd: CitizenDetailsRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[MatchDetailsResponse] = {
     citizenDetailsConnector.getDateOfBirth(cd.nino).map {
       case Some(dob) => if (dob.value equals cd.dateOfBirth.value) {
         Match

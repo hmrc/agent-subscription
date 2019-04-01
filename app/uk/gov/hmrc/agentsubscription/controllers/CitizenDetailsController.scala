@@ -22,7 +22,7 @@ import play.api.libs.json.{ JsError, JsSuccess }
 import play.api.mvc.{ Action, AnyContent }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.model.CitizenDetailsMatchResponse._
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.model.CitizenDetailsRequest
 import uk.gov.hmrc.agentsubscription.service.CitizenDetailsService
 import uk.gov.hmrc.play.microservice.controller.BaseController
