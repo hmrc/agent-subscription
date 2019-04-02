@@ -18,25 +18,29 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
+import play.api.libs.json.{ JsError, JsSuccess }
 import play.api.mvc.{ Action, AnyContent }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
-import uk.gov.hmrc.agentsubscription.service.VatKnownfactsService
-import uk.gov.hmrc.domain.Vrn
+import uk.gov.hmrc.agentsubscription.model.CitizenDetailsRequest
+import uk.gov.hmrc.agentsubscription.service.CitizenDetailsService
 import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.agentsubscription.utils._
 
 @Singleton
-class VatKnownfactsController @Inject() (service: VatKnownfactsService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
+class CitizenDetailsController @Inject() (service: CitizenDetailsService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
-  def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
-    service.matchVatKnownfacts(vrn, vatRegistrationDate).map {
-      case Match => Ok
-      case NoMatch | RecordNotFound => NotFound
-      case InvalidIdentifier => BadRequest
+  def checkCitizenDetails: Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
+    request.body.asJson.map(_.validate[CitizenDetailsRequest]) match {
+      case Some(JsSuccess(cd, _)) =>
+        service.checkDetails(cd).map {
+          case Match => Ok
+          case NoMatch | RecordNotFound => NotFound
+        }
+      case Some(JsError(_)) => BadRequest("could not parse nino and dob JSON request")
       case _ => InternalServerError
     }
   }
 }
-

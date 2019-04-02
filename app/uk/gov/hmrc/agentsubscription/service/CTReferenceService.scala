@@ -20,8 +20,8 @@ import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
-import uk.gov.hmrc.agentsubscription.model.{ Crn, DesMatchResponse }
-import uk.gov.hmrc.agentsubscription.model.DesMatchResponse._
+import uk.gov.hmrc.agentsubscription.model.{ Crn, MatchDetailsResponse }
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, NotFoundException }
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -29,7 +29,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 @Singleton
 class CTReferenceService @Inject() (desConnector: DesConnector) {
 
-  def matchCorporationTaxUtrWithCrn(utr: Utr, crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesMatchResponse] = {
+  def matchCorporationTaxUtrWithCrn(utr: Utr, crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[MatchDetailsResponse] = {
     desConnector.getCorporationTaxUtr(crn).map { ctUtr =>
       if (ctUtr == utr)
         Match

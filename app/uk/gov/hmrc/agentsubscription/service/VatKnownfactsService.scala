@@ -19,8 +19,8 @@ package uk.gov.hmrc.agentsubscription.service
 import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
-import uk.gov.hmrc.agentsubscription.model.DesMatchResponse
-import uk.gov.hmrc.agentsubscription.model.DesMatchResponse._
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, NotFoundException }
 
@@ -29,7 +29,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 @Singleton
 class VatKnownfactsService @Inject() (desConnector: DesConnector) {
 
-  def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesMatchResponse] = {
+  def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[MatchDetailsResponse] = {
     desConnector.getVatKnownfacts(vrn).map { dateOfReg =>
       if (dateOfReg == vatRegistrationDate)
         Match

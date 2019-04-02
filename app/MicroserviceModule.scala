@@ -54,6 +54,7 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
     bindBaseUrl("enrolment-store-proxy")
     bindBaseUrl("agent-assurance")
     bindBaseUrl("agent-overseas-application")
+    bindBaseUrl("citizen-details")
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
   }
