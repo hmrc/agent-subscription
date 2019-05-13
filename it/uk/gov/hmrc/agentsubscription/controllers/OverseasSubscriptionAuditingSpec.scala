@@ -39,7 +39,7 @@ class OverseasSubscriptionAuditingSpec extends BaseAuditSpec
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(stubbedGroupId, arn)
       createOverseasAmlsSucceeds(Arn(arn), overseasAmlsDetails)
-      givenUpdateApplicationStatus(Complete, 204)
+      givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
 
       val result = await(doOverseasSubscriptionRequest)
 
