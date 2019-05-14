@@ -20,11 +20,11 @@ import java.net.URL
 
 import javax.inject.{ Inject, Named, Singleton }
 import com.codahale.metrics.MetricRegistry
-import com.fasterxml.jackson.core.JsonParseException
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ Complete, Registered }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.http._
 
@@ -38,15 +38,18 @@ class AgentOverseasApplicationConnector @Inject() (
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def updateApplicationStatus(status: ApplicationStatus, authId: String, safeId: Option[SafeId] = None)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
+  def updateApplicationStatus(status: ApplicationStatus, authId: String, safeId: Option[SafeId] = None, arn: Option[Arn] = None)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
     val url: URL = new URL(baseUrl, s"/agent-overseas-application/application/${status.key}")
-    val safeIdJson = if (status == Registered)
-      Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
-    else Json.obj()
 
-    monitor(s"Agent-Overseas-Application-updateStatus-GET") {
-      http.PUT[JsValue, HttpResponse](url.toString, safeIdJson)
+    val body = status match {
+      case Registered => Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
+      case Complete => Json.obj("arn" -> JsString(arn.map(_.value).getOrElse("")))
+      case _ => Json.obj()
+    }
+
+    monitor(s"Agent-Overseas-Application-updateStatus-PUT") {
+      http.PUT[JsValue, HttpResponse](url.toString, body)
         .map(_.status == 204)
         .recover {
           case e => throw new RuntimeException(s"Could not update overseas agent application status to ${status.key} for userId: $authId with ${e.getMessage}")

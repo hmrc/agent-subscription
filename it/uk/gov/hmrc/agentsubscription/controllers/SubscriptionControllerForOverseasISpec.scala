@@ -31,7 +31,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(stubbedGroupId, arn)
         createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
-        givenUpdateApplicationStatus(Complete, 204)
+        givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
 
         val result = await(doSubscriptionRequest)
 
@@ -68,7 +68,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(stubbedGroupId, arn)
         createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
-        givenUpdateApplicationStatus(Complete, 204)
+        givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
 
         val result = await(doSubscriptionRequest)
 
@@ -97,7 +97,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(stubbedGroupId, arn)
         createOverseasAmlsFailsWithStatus(409)
-        givenUpdateApplicationStatus(Complete, 204)
+        givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
 
         val result = await(doSubscriptionRequest)
 

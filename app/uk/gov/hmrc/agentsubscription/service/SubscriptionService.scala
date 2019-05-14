@@ -157,7 +157,7 @@ class SubscriptionService @Inject() (
       arn <- desConnector.subscribeToAgentServices(safeId, agencyDetails)
       _ <- addKnownFactsAndEnrolOverseas(arn, agencyDetails, authIds)
       _ <- agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
-      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, authIds.userId)
+      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, authIds.userId, None, Some(arn))
     } yield Some(arn)
 
   private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, updatedAmlsDetails: Option[AmlsDetails]) =
