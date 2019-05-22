@@ -31,8 +31,7 @@ import uk.gov.hmrc.agentsubscription.connectors.{ EnrolmentRequest, Address => _
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.http.GatewayTimeoutException
+import uk.gov.hmrc.http.{ GatewayTimeoutException, HeaderCarrier }
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
