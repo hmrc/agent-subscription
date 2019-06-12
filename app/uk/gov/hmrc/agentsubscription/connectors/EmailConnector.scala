@@ -45,6 +45,6 @@ class EmailConnectorImpl @Inject() (@Named("email-baseUrl") baseUrl: URL, http: 
         .POST[EmailInformation, HttpResponse](new URL(s"$baseUrl/hmrc/email").toString, emailInformation)
         .map(_ => ())
     }.recover {
-      case e => throw new Exception(s"sending email failed: $e")
+      case e => Logger.error(s"sending email failed: $e")
     }
 }
