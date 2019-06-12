@@ -8,7 +8,7 @@ import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs._
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 
-class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesStubs with AuthStub with AgentOverseasApplicationStubs with AgentAssuranceStub with TaxEnrolmentsStubs {
+class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesStubs with AuthStub with AgentOverseasApplicationStubs with AgentAssuranceStub with TaxEnrolmentsStubs with EmailStub {
   private val arn = "TARN0000001"
   private val stubbedGroupId = "groupId"
   private val safeId = SafeId("XE0001234567890")
@@ -16,6 +16,10 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
   private val safeIdJson = s"""{ "safeId": "${safeId.value}"}"""
   private val eacdRetryCount = 3
   private val amlsDetails = OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))
+  val emailInfo = EmailInformation(
+    Seq("agencyemail@domain.com"),
+    "agent_services_account_created",
+    Map("agencyName" -> "Agency name", "arn" -> "TARN0000001"))
 
   "creating a subscription" should {
     "return a successful response containing the ARN" when {
@@ -32,6 +36,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         enrolmentSucceeds(stubbedGroupId, arn)
         createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
         givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
+        givenEmailSent(emailInfo)
 
         val result = await(doSubscriptionRequest)
 
@@ -69,6 +74,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         enrolmentSucceeds(stubbedGroupId, arn)
         createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
         givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
+        givenEmailSent(emailInfo)
 
         val result = await(doSubscriptionRequest)
 
@@ -98,6 +104,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         enrolmentSucceeds(stubbedGroupId, arn)
         createOverseasAmlsFailsWithStatus(409)
         givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
+        givenEmailSent(emailInfo)
 
         val result = await(doSubscriptionRequest)
 
