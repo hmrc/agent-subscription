@@ -5,13 +5,13 @@ import java.time.LocalDate
 import play.api.libs.json.Json.{ stringify, toJson }
 import play.api.libs.json._
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, KnownFacts, SubscriptionRequest, UpdateSubscriptionRequest }
-import uk.gov.hmrc.agentsubscription.stubs.{ AgentAssuranceStub, AuthStub, DesStubs, TaxEnrolmentsStubs }
+import uk.gov.hmrc.agentsubscription.model._
+import uk.gov.hmrc.agentsubscription.stubs._
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.ws.WSClient
 
-class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub {
+class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub with EmailStub {
   val utr = Utr("7000000002")
 
   val arn = "TARN0000001"
@@ -19,6 +19,10 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
   implicit val ws = app.injector.instanceOf[WSClient]
 
   val amlsDetails: AmlsDetails = AmlsDetails("supervisory", "12345", LocalDate.now())
+  val emailInfo = EmailInformation(
+    Seq("agency@example.com"),
+    "agent_services_account_created",
+    Map("agencyName" -> "My Agency", "arn" -> "TARN0000001"))
 
   "creating a subscription" should {
     val agency = __ \ "agency"
@@ -36,6 +40,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
         updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
+        givenEmailSent(emailInfo)
 
         val result = await(doSubscriptionRequest())
 
@@ -57,6 +62,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
         updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
+        givenEmailSent(emailInfo)
 
         val result = await(doSubscriptionRequest(removeFields(fields)))
 
@@ -76,6 +82,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         allocatedPrincipalEnrolmentNotExists(arn)
         enrolmentSucceeds(groupId, arn)
         updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
+        givenEmailSent(emailInfo)
 
         val result = await(doSubscriptionRequest())
 
@@ -96,6 +103,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
         updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
+        givenEmailSent(emailInfo)
 
         val result = await(doSubscriptionRequest(subscriptionRequestWithoutTelephoneNo))
 
@@ -113,6 +121,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       allocatedPrincipalEnrolmentExists(arn, "someGroupId")
       createAmlsSucceeds(utr, amlsDetails)
       updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
+      givenEmailSent(emailInfo)
 
       val result = await(doSubscriptionRequest())
 

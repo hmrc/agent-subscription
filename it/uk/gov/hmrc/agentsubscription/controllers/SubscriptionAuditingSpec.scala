@@ -6,13 +6,13 @@ import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, SubscriptionRequest }
+import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, EmailInformation, SubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
 import uk.gov.hmrc.agentsubscription.stubs._
 import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
 
-class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub {
+class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub with EmailStub {
   private val utr = Utr("7000000002")
 
   val arn = "TARN0000001"
@@ -20,6 +20,10 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
   implicit val ws = app.injector.instanceOf[WSClient]
 
   val amlsDetails: AmlsDetails = AmlsDetails("supervisory", "12345", LocalDate.now())
+  val emailInfo = EmailInformation(
+    Seq("agency@example.com"),
+    "agent_services_account_created",
+    Map("agencyName" -> "My Agency", "arn" -> "TARN0000001"))
 
   "creating a subscription" should {
     "audit an AgentSubscription event" in {
@@ -35,6 +39,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       enrolmentSucceeds(groupId, arn)
       createAmlsSucceeds(utr, amlsDetails)
       updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
+      givenEmailSent(emailInfo)
 
       val result = await(doSubscriptionRequest(subscriptionRequest(utr)))
 

@@ -66,7 +66,8 @@ class SubscriptionService @Inject() (
   auditService: AuditService,
   recoveryRepository: RecoveryRepository,
   agentAssuranceConnector: AgentAssuranceConnector,
-  agentOverseasApplicationConnector: AgentOverseasApplicationConnector) {
+  agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
+  emailConnector: EmailConnector) {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
     val address = subscriptionRequest.agency.address
@@ -98,6 +99,7 @@ class SubscriptionService @Inject() (
           }
           updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
           _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
+          _ <- emailConnector.sendEmail(EmailInformation(Seq(subscriptionRequest.agency.email), "agent_services_account_created", Map("agencyName" -> subscriptionRequest.agency.name, "arn" -> arn.value)))
         } yield {
           auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
           Some(arn)
