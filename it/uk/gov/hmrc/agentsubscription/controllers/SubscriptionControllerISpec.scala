@@ -2,14 +2,14 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import java.time.LocalDate
 
-import play.api.libs.json.Json.{ stringify, toJson }
-import play.api.libs.json._
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.model._
-import uk.gov.hmrc.agentsubscription.stubs._
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 import com.github.tomakehurst.wiremock.client.WireMock._
+import play.api.libs.json.Json.{stringify, toJson}
+import play.api.libs.json._
 import play.api.libs.ws.WSClient
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, KnownFacts, RegisteredDetails, SubscriptionRequest, UpdateSubscriptionRequest, _}
+import uk.gov.hmrc.agentsubscription.stubs.{AgentAssuranceStub, AuthStub, DesStubs, TaxEnrolmentsStubs, _}
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
 class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub with EmailStub {
   val utr = Utr("7000000002")
@@ -18,7 +18,8 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
   val groupId = "groupId"
   implicit val ws = app.injector.instanceOf[WSClient]
 
-  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", "12345", LocalDate.now())
+  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", LocalDate.now())))
+
   val emailInfo = EmailInformation(
     Seq("agency@example.com"),
     "agent_services_account_created",
