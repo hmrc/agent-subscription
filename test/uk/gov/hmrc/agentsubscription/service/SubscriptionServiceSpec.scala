@@ -45,10 +45,11 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private val recoveryRepository = resettingMock[RecoveryRepository]
   private val agentAssuranceConnector = resettingMock[AgentAssuranceConnector]
   private val agentOverseasAppConn = resettingMock[AgentOverseasApplicationConnector]
+  private val emailConnector = resettingMock[EmailConnector]
 
   private val authIds = AuthIds("userId", "groupId")
 
-  private val service = new SubscriptionService(desConnector, taxEnrolmentConnector, auditService, recoveryRepository, agentAssuranceConnector, agentOverseasAppConn)
+  private val service = new SubscriptionService(desConnector, taxEnrolmentConnector, auditService, recoveryRepository, agentAssuranceConnector, agentOverseasAppConn, emailConnector)
   private implicit val hc = HeaderCarrier()
 
   private implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
@@ -210,6 +211,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(amlsDetails))
+
+    when(emailConnector.sendEmail(any[EmailInformation])(any[HeaderCarrier], any[ExecutionContext]))
+      .thenReturn(Future successful ())
   }
 
   private def subscriptionHasPrincipalGroupIdsFailed(businessUtr: Utr, businessPostcode: String, arn: String, amlsDetails: AmlsDetails) = {
