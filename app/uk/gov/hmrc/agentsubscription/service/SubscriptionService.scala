@@ -84,6 +84,9 @@ class SubscriptionService @Inject() (
         address.countryCode))
   }
 
+  private def sendEmail(email: String, agencyName: String, arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] =
+    emailConnector.sendEmail(EmailInformation(Seq(email), "agent_services_account_created", Map("agencyName" -> agencyName, "arn" -> arn.value)))
+
   def createSubscription(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     val utr = subscriptionRequest.utr
     desConnector.getRegistration(utr) flatMap {
@@ -99,7 +102,7 @@ class SubscriptionService @Inject() (
           }
           updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
           _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
-          _ <- emailConnector.sendEmail(EmailInformation(Seq(subscriptionRequest.agency.email), "agent_services_account_created", Map("agencyName" -> subscriptionRequest.agency.name, "arn" -> arn.value)))
+          _ <- sendEmail(subscriptionRequest.agency.email, subscriptionRequest.agency.name, arn)
         } yield {
           auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
           Some(arn)
@@ -160,6 +163,7 @@ class SubscriptionService @Inject() (
       _ <- addKnownFactsAndEnrolOverseas(arn, agencyDetails, authIds)
       _ <- agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
       _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, authIds.userId, None, Some(arn))
+      _ <- sendEmail(agencyDetails.agencyEmail, agencyDetails.agencyName, arn)
     } yield Some(arn)
 
   private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, updatedAmlsDetails: Option[AmlsDetails]) =
