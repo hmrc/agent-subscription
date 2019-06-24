@@ -396,7 +396,19 @@ trait DesStubs {
              |  "agentReferenceNumber": "$arn",
              |  "contactDetails": {
              |        "emailAddress": "agent1@example.com"
-             |    }
+             |    },
+             |  "agencyDetails": {
+             |      "agencyName": "My Agency",
+             |      "agencyAddress": {
+             |          "addressLine1": "Flat 1",
+             |          "addressLine2": "1 Some Street",
+             |          "addressLine3": "Anytown",
+             |          "addressLine4": "County",
+             |          "postalCode": "AA1 2AA",
+             |          "countryCode": "GB"
+             |      },
+             |      "agencyEmail": "agency@example.com"
+             |  }
              |}
                """.stripMargin)))
   }

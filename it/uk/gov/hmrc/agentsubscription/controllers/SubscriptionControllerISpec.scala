@@ -3,13 +3,13 @@ package uk.gov.hmrc.agentsubscription.controllers
 import java.time.LocalDate
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import play.api.libs.json.Json.{stringify, toJson}
+import play.api.libs.json.Json.{ stringify, toJson }
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
-import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, KnownFacts, RegisteredDetails, SubscriptionRequest, UpdateSubscriptionRequest, _}
-import uk.gov.hmrc.agentsubscription.stubs.{AgentAssuranceStub, AuthStub, DesStubs, TaxEnrolmentsStubs, _}
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, KnownFacts, RegisteredDetails, SubscriptionRequest, UpdateSubscriptionRequest, _ }
+import uk.gov.hmrc.agentsubscription.stubs.{ AgentAssuranceStub, AuthStub, DesStubs, TaxEnrolmentsStubs, _ }
+import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 
 class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub with EmailStub {
   val utr = Utr("7000000002")
