@@ -109,7 +109,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
         (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe true
         (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
         testBusinessAddress(response.json)
-        (response.json \ "emailAddress").as[String] shouldBe "agent1@example.com"
+        (response.json \ "emailAddress").as[String] shouldBe "agency@example.com"
       }
 
       "there is no group already allocated the HMRC-AS-AGENT enrolment with their AgentReferenceNumber" in {
@@ -122,7 +122,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
         (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe true
         (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
         testBusinessAddress(response.json)
-        (response.json \ "emailAddress").as[String] shouldBe "agent1@example.com"
+        (response.json \ "emailAddress").as[String] shouldBe "agency@example.com"
       }
     }
 
@@ -135,7 +135,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
       (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
       testBusinessAddress(response.json)
-      (response.json \ "emailAddress").as[String] shouldBe "agent1@example.com"
+      (response.json \ "emailAddress").as[String] shouldBe "agency@example.com"
     }
 
     "return 200 when des returns an individual for the utr and the postcodes match" in {

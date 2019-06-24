@@ -122,7 +122,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, Some("My Agency"), None, Some(Arn("TARN0000001")), businessAddress, Some("agent1@example.com")))
+      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, Some("My Agency"), None, Some(Arn("TARN0000001")), businessAddress, Some("agency@example.com")))
     }
 
     "return registration details for an individual UTR that is known by DES" in {

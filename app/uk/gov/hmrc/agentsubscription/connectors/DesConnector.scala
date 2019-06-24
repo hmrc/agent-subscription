@@ -143,7 +143,7 @@ class DesConnector @Inject() (
           (r \ "individual").asOpt[DesIndividual],
           (r \ "agentReferenceNumber").asOpt[Arn],
           address,
-          (r \ "contactDetails" \ "emailAddress").asOpt[String]))
+          (r \ "agencyDetails" \ "agencyEmail").asOpt[String].orElse((r \ "contactDetails" \ "emailAddress").asOpt[String])))
       }
       case _ => None
     }
