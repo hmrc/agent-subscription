@@ -25,7 +25,7 @@ import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.Crn
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.service.CTReferenceService
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 @Singleton
 class CTReferenceController @Inject() (service: CTReferenceService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)

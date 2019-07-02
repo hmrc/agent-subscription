@@ -25,8 +25,8 @@ import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.model.CitizenDetailsRequest
 import uk.gov.hmrc.agentsubscription.service.CitizenDetailsService
-import uk.gov.hmrc.play.microservice.controller.BaseController
 import uk.gov.hmrc.agentsubscription.utils._
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 @Singleton
 class CitizenDetailsController @Inject() (service: CitizenDetailsService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)

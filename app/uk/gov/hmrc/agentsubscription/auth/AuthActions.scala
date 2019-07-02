@@ -30,9 +30,9 @@ import uk.gov.hmrc.agentsubscription.utils.{ WithMdcExecutionContext, toFuture }
 import uk.gov.hmrc.auth.core
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.auth.core.retrieve.Retrievals.{ affinityGroup, credentials, groupIdentifier, allEnrolments }
+import uk.gov.hmrc.auth.core.retrieve.Retrievals.{ affinityGroup, allEnrolments, credentials, groupIdentifier }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.Future
 
