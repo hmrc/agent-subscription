@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext.global
 trait MongoApp extends MongoSpecSupport with ResetMongoBeforeTest {
   me: Suite =>
 
-  protected def mongoConfiguration = Map("mongodb.uri" -> mongoUri)
+  protected def mongoConfiguration = Map("mongodb.uri" -> mongoUri, "mongodb.subscriptionjourney.ttl" -> 5)
 }
 
 trait ResetMongoBeforeTest extends BeforeAndAfterEach {
