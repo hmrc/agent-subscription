@@ -17,7 +17,6 @@ lazy val scoverageSettings = {
 
 lazy val compileDeps = Seq(
   ws,
-  "uk.gov.hmrc" %% "microservice-bootstrap" % "10.6.0",
   "uk.gov.hmrc" %% "bootstrap-play-25" % "4.12.0",
   "uk.gov.hmrc" %% "auth-client" % "2.21.0-play-25",
   "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.15.0-play-25",
