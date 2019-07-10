@@ -18,71 +18,62 @@ package uk.gov.hmrc.agentsubscription.model.subscriptionJourneyRepositoryModel
 
 import java.time.LocalDateTime
 
-import org.joda.time.{ DateTime, DateTimeZone }
-import play.api.libs.json.{ Json, OFormat }
+import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, DateOfBirth }
+import uk.gov.hmrc.agentsubscription.model.DateOfBirth
 import uk.gov.hmrc.domain.Nino
 
 final case class SubscriptionJourneyRecord(
-  internalId: String,
-  identifyBusinessTask: IdentifyBusinessTask,
-  amlsTask: AMLSTask,
-  copyTask: CopyTask,
-  createTask: CreateTask,
-  updatedDateTime: LocalDateTime)
+                                            internalId: String,
+                                            returnId: String,
+                                            businessDetails: BusinessDetails,
+                                            amlsDetails: AmlsDetails,
+                                            mappingDetails: MappingDetails,
+                                            cleanCredsCreated: Boolean,
+                                            updatedDateTime: LocalDateTime)
 
 object SubscriptionJourneyRecord {
   implicit val format: OFormat[SubscriptionJourneyRecord] = Json.format
 }
 
-case class IdentifyBusinessTask(
-  businessType: Option[BusinessType] = None,
-  utr: Option[Utr] = None,
-  postcode: Option[Postcode] = None,
-  registration: Option[Registration] = None,
-  nino: Option[Nino] = None,
-  companyRegistrationNumber: Option[CompanyRegistrationNumber] = None,
-  dateOfBirth: Option[DateOfBirth] = None,
-  registeredForVat: Option[String] = None,
-  vatDetails: Option[VatDetails] = None,
-  completed: Boolean = false)
+case class BusinessDetails(
+                            businessType: Option[BusinessType] = None,
+                            utr: Option[Utr] = None,
+                            postcode: Option[Postcode] = None,
+                            registration: Option[Registration] = None,
+                            nino: Option[Nino] = None,
+                            companyRegistrationNumber: Option[CompanyRegistrationNumber] = None,
+                            dateOfBirth: Option[DateOfBirth] = None,
+                            registeredForVat: Option[String] = None,
+                            vatDetails: Option[VatDetails] = None)
 
-object IdentifyBusinessTask {
-  implicit val format: OFormat[IdentifyBusinessTask] = Json.format
+object BusinessDetails {
+  implicit val format: OFormat[BusinessDetails] = Json.format
 }
 
-case class AMLSTask(
-  checkAmls: Option[String] = None,
-  amlsAppliedFor: Option[String] = None,
-  amlsDetails: Option[AmlsDetails] = None,
-  completed: Boolean = false)
+case class AmlsDetails(
+                        checkAmls: Option[String] = None,
+                        amlsAppliedFor: Option[String] = None,
+                        amlsDetails: Option[AmlsDetails] = None)
 
-object AMLSTask {
-  implicit val format: OFormat[AMLSTask] = Json.format
+object AmlsDetails {
+  implicit val format: OFormat[AmlsDetails] = Json.format
 }
 
-case class CopyTask(
-  toCopy: Seq[MappingUtrResult],
-  completed: Boolean = false)
+case class MappingDetails(
+                     toCopy: Seq[MappingUtrResult],
+                     completed: Boolean = false)
 
-object CopyTask {
-  implicit val format: OFormat[CopyTask] = Json.format
+object MappingDetails {
+  implicit val format: OFormat[MappingDetails] = Json.format
 }
 
 case class MappingUtrResult(
-  internalId: String,
-  utr: Utr,
-  createdDate: DateTime = DateTime.now(DateTimeZone.UTC),
-  cumulativeClientCount: List[Int] = List.empty)
+                             internalId: String,
+                             agentCodes: Seq[String] = Seq.empty,
+                             count: Int = 0
+                           )
+
 object MappingUtrResult {
   implicit val format: OFormat[MappingUtrResult] = Json.format
-}
-
-case class CreateTask(
-  internalId: String,
-  completed: Boolean = false)
-
-object CreateTask {
-  implicit val format: OFormat[CreateTask] = Json.format
 }

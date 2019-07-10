@@ -48,7 +48,11 @@ class SubscriptionJourneyRepository @Inject() (
         options = BSONDocument("expireAfterSeconds" -> ttl)))
 
   def find(internalId: String)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("internalId" -> internalId).map(_.headOption)
+    super.find("internalId" -> internalId).map(_.headOption).map {
+      case Some(record) => Some(record)
+      case None => //check if internalId is anywhere in the mapping details bit
+       ???
+    }
 
   def create(subscriptionJourney: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] =
     insert(subscriptionJourney).map(_ => ())

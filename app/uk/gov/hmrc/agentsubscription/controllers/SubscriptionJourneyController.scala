@@ -14,10 +14,10 @@ import scala.concurrent.Future
 import scala.util.{Failure, Success, Try}
 
 
-class TaskListController(implicit
-                         metrics: Metrics,
-                         microserviceAuthConnector: MicroserviceAuthConnector,
-                         subscriptionJourneyRepository: SubscriptionJourneyRepository)
+class SubscriptionJourneyController(implicit
+                                    metrics: Metrics,
+                                    microserviceAuthConnector: MicroserviceAuthConnector,
+                                    subscriptionJourneyRepository: SubscriptionJourneyRepository)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
   private def localWithJsonBody(f: SubscriptionJourneyRecord => Future[Result], request: JsValue): Future[Result] =
@@ -29,7 +29,10 @@ class TaskListController(implicit
 
   def getSubscriptionJourneyRecord(internalId: String): Action[AnyContent] = authorisedWithAgentAffinity {implicit request =>
     subscriptionJourneyRepository.find(internalId).map {
-      case Some(record) => Ok(toJson(record))
+      case Some(record) => {
+        record.mappingDetails.toCopy.map(_.internalId == internalId)
+        Ok(toJson(record))
+      }
       case None => NotFound("record not found for this internal id")
     }
   }

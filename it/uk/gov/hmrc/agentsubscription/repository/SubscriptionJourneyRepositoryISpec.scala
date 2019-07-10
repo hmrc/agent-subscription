@@ -34,7 +34,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
 
   val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("123456789", LocalDate.now())))
 
-  private val subscriptionJourneyRecord = SubscriptionJourneyRecord("internal-id", IdentifyBusinessTask(businessType = Some(BusinessType.SoleTrader), utr = Some(validUtr), postcode = Some(Postcode("bn12 1hn")), nino = Some(Nino("AE123456C"))), AMLSTask(), CopyTask(Seq.empty), CreateTask("internal-id"), LocalDateTime.now())
+  private val subscriptionJourneyRecord = SubscriptionJourneyRecord("internal-id", BusinessDetails(businessType = Some(BusinessType.SoleTrader), utr = Some(validUtr), postcode = Some(Postcode("bn12 1hn")), nino = Some(Nino("AE123456C"))), AmlsDetails(), MappingDetails(Seq.empty), CreateTask("internal-id"), LocalDateTime.now())
 
   override def beforeEach() {
     super.beforeEach()
@@ -69,7 +69,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
     }
 
     "update a SubscriptionJourney record using utr" in {
-      val updatedSubscriptionJourney = SubscriptionJourneyRecord("internal-id", IdentifyBusinessTask(businessType = Some(BusinessType.LimitedCompany), utr = Some(otherUtr), postcode = Some(Postcode("BN3 2TN")), nino = Some(Nino("AE123456D"))), AMLSTask(), CopyTask(Seq.empty), CreateTask("internal-id"), LocalDateTime.now())
+      val updatedSubscriptionJourney = SubscriptionJourneyRecord("internal-id", BusinessDetails(businessType = Some(BusinessType.LimitedCompany), utr = Some(otherUtr), postcode = Some(Postcode("BN3 2TN")), nino = Some(Nino("AE123456D"))), AmlsDetails(), MappingDetails(Seq.empty), CreateTask("internal-id"), LocalDateTime.now())
       await(repo.insert(subscriptionJourneyRecord))
       await(repo.update("internal-id", updatedSubscriptionJourney))
 
