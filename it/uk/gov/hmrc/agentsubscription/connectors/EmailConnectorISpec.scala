@@ -27,14 +27,14 @@ class EmailConnectorISpec extends BaseISpec with EmailStub {
 
       val result = await(connector.sendEmail(emailInfo))
 
-      result shouldBe ()
+      result shouldBe (())
     }
     "return Unit and log when the email service throws an Exception" in {
       givenEmailReturns500
 
       val result = await(connector.sendEmail(emailInfo))
 
-      result shouldBe ()
+      result shouldBe (())
     }
   }
 }

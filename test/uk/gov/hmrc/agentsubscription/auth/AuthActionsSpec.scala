@@ -19,8 +19,9 @@ package uk.gov.hmrc.agentsubscription.auth
 import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{ reset, when }
+import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status._
 import play.api.libs.json.{ JsValue, Json }
 import play.api.mvc.{ AnyContent, Request, Result }
@@ -29,12 +30,14 @@ import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.{ OverseasAuthAction, RegistrationAuthAction, SubscriptionAuthAction }
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.support.AuthData
+import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, ~ }
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
-class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach with AuthData {
+class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with MockitoSugar with BeforeAndAfterEach with AuthData {
   import uk.gov.hmrc.auth.core.{ Enrolment, authorise, _ }
 
   val mockMicroserviceAuthConnector: MicroserviceAuthConnector = mock[MicroserviceAuthConnector]
@@ -46,11 +49,21 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
   val overseasAgentAction: OverseasAuthAction = { implicit request => implicit provider => Future successful Ok }
   val agentAction: Request[AnyContent] => Future[Result] = { implicit request => Future successful Ok }
 
-  private def agentAuthStub(returnValue: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]]) =
-    when(mockMicroserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[~[~[Option[AffinityGroup], Credentials], Option[String]]]]())(any(), any())).thenReturn(returnValue)
+  private def agentAuthStub(returnValue: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]]): OngoingStubbing[Future[Option[AffinityGroup] ~ Option[Credentials] ~ Option[String]]] =
+    when(
+      mockMicroserviceAuthConnector
+        .authorise(
+          any[authorise.Predicate](),
+          any[Retrieval[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
+      .thenReturn(returnValue)
 
   private def agentAuthStubWithAffinity(returnValue: Future[Option[AffinityGroup]]) =
-    when(mockMicroserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[Option[AffinityGroup]]]())(any(), any())).thenReturn(returnValue)
+    when(
+      mockMicroserviceAuthConnector
+        .authorise(
+          any[authorise.Predicate](),
+          any[Retrieval[Option[AffinityGroup]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
+      .thenReturn(returnValue)
 
   override def beforeEach(): Unit = reset(mockMicroserviceAuthConnector)
 
@@ -133,7 +146,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
     val fakeRequest = FakeRequest()
 
     "return OK when we have the correct affinity group" in {
-      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
+      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(validAgentAffinity)
 
       val response: Result = await(mockAuthConnector.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
@@ -142,7 +155,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
     }
 
     "return UNAUTHORISED when we have the wrong affinity group" in {
-      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
+      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(invalidAgentAffinity)
 
       val response: Result = await(mockAuthConnector.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
@@ -151,7 +164,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
     }
 
     "return UNAUTHORISED when we have no affinity group" in {
-      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
+      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(noAffinity)
 
       val response: Result = await(mockAuthConnector.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
@@ -160,7 +173,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
     }
 
     "return the same error when auth throws an error" in {
-      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
+      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(Future.failed(new Exception("unexpected error")))
 
       val thrown = intercept[Exception] {
@@ -227,7 +240,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
     }
 
     "return the same error when auth throws an error" in {
-      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any()))
+      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(Future.failed(new Exception("unexpected error")))
 
       val thrown = intercept[Exception] {
@@ -246,7 +259,7 @@ class AuthActionsSpec extends UnitSpec with MockitoSugar with BeforeAndAfterEach
       val retrievalResponse: Future[Retrievals] =
         Future successful new ~(new ~(new ~(enrolments, affinityGroup), retrievedCredentials), retrievedGroupId)
 
-      when(mockMicroserviceAuthConnector.authorise(any(), any[Retrieval[Retrievals]]())(any(), any()))
+      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[Retrievals]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(retrievalResponse)
     }
   }

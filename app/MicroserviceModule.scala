@@ -58,6 +58,7 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
     bindBaseUrl("email")
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
+    ()
   }
 
   private def bindBaseUrl(serviceName: String) =

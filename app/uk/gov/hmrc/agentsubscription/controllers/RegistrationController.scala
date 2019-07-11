@@ -30,8 +30,11 @@ import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.agentsubscription.utils.toFuture
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
+import scala.concurrent.ExecutionContext
+
 @Singleton
-class RegistrationController @Inject() (service: RegistrationService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
+class RegistrationController @Inject() (service: RegistrationService)(implicit metrics: Metrics, ec: ExecutionContext,
+  microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
   def getRegistration(utr: Utr, postcode: String): Action[AnyContent] = authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider => {

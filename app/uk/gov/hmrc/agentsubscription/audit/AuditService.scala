@@ -22,11 +22,12 @@ import play.api.mvc.Request
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext.fromLoggingDetails
 import uk.gov.hmrc.http.HeaderCarrier
 
+import scala.concurrent.ExecutionContext
+
 @Singleton
-class AuditService @Inject() (auditConnector: AuditConnector) {
+class AuditService @Inject() (auditConnector: AuditConnector)(implicit val ec: ExecutionContext) {
 
   import AgentSubscriptionEvent.AgentSubscriptionEvent
 
@@ -49,9 +50,10 @@ class AuditService @Inject() (auditConnector: AuditConnector) {
   private[audit] def toJsObject(fields: Map[String, String]) =
     JsObject(fields.map { case (name, value) => (name, JsString(value)) })
 
-  private def send(event: ExtendedDataEvent)(implicit hc: HeaderCarrier): Unit =
+  private def send(event: ExtendedDataEvent)(implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
     auditConnector.sendExtendedEvent(event).map(_ => ())
-
+    ()
+  }
 }
 
 object AgentSubscriptionEvent extends Enumeration {

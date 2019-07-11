@@ -28,9 +28,12 @@ import uk.gov.hmrc.agentsubscription.service.{ EnrolmentAlreadyAllocated, Subscr
 import uk.gov.hmrc.http.Upstream5xxResponse
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
+import scala.concurrent.ExecutionContext
+
 @Singleton
 class SubscriptionController @Inject() (subscriptionService: SubscriptionService)(implicit
   metrics: Metrics,
+  ec: ExecutionContext,
   microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 

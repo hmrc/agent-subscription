@@ -43,6 +43,7 @@ trait MetricsTestSupport {
     val metrics = timers.get(s"Timer-$metric")
     if (metrics == null) throw new Exception(s"Metric [$metric] not found, try one of ${timers.keySet()}")
     metrics.getCount should be >= 1L
+    ()
   }
 
 }
