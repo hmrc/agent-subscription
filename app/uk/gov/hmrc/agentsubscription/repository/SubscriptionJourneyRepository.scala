@@ -16,13 +16,18 @@
 
 package uk.gov.hmrc.agentsubscription.repository
 
+import java.util.UUID
+
 import javax.inject.{ Inject, Named, Singleton }
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
+import reactivemongo.api.commands.WriteResult
 import reactivemongo.api.indexes.{ Index, IndexType }
 import reactivemongo.bson.{ BSONDocument, BSONObjectID }
 import reactivemongo.play.json.ImplicitBSONHandlers._
-import uk.gov.hmrc.agentsubscription.model.subscriptionJourneyRepositoryModel.SubscriptionJourneyRecord
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentsubscription.model.InternalId
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
@@ -38,6 +43,23 @@ class SubscriptionJourneyRepository @Inject() (
     SubscriptionJourneyRecord.format,
     ReactiveMongoFormats.objectIdFormats) {
 
+  def upsert(id: InternalId, record: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] = {
+    collection.update(ordered = false).one(
+      Json.obj("internalId" -> id.id),
+      record,
+      upsert = true).checkResult
+  }
+
+  private implicit class WriteResultChecker(future: Future[WriteResult]) {
+    def checkResult(implicit ec: ExecutionContext): Future[Unit] = future.map { writeResult =>
+      if (hasProblems(writeResult)) throw new RuntimeException(writeResult.toString)
+      else ()
+    }
+  }
+
+  private def hasProblems(writeResult: WriteResult): Boolean =
+    !writeResult.ok || writeResult.writeErrors.nonEmpty || writeResult.writeConcernError.isDefined
+
   override def indexes: Seq[Index] =
     Seq(
       Index(key = Seq("internalId" -> IndexType.Ascending), name = Some("internalIdUnique"), unique = true),
@@ -45,21 +67,22 @@ class SubscriptionJourneyRepository @Inject() (
         key = Seq("updatedDateTime" -> IndexType.Ascending),
         name = Some("updatedDateTime"),
         unique = false,
-        options = BSONDocument("expireAfterSeconds" -> ttl)))
+        options = BSONDocument("expireAfterSeconds" -> ttl))
+    // More indexes here!
+    )
 
-  def find(internalId: String)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("internalId" -> internalId).map(_.headOption).map {
-      case Some(record) => Some(record)
-      case None => //check if internalId is anywhere in the mapping details bit
-       ???
-    }
+  def findByPrimaryId(internalId: InternalId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
+    super.find("internalId" -> internalId).map(_.headOption)
 
-  def create(subscriptionJourney: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] =
-    insert(subscriptionJourney).map(_ => ())
+  def findByMappedId(internalId: InternalId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
+    super.find("internalId" -> internalId).map(_.headOption)
 
-  def update(internalId: String, subscriptionJourney: SubscriptionJourneyRecord)(implicit executionContext: ExecutionContext) =
-    collection.findAndUpdate(Json.obj("internalId" -> internalId), subscriptionJourney)
+  def findByContinueId(continueId: UUID)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
+    super.find("utr" -> continueId.toString).map(_.headOption)
 
-  def delete(internalId: String)(implicit ec: ExecutionContext): Future[Unit] =
-    remove("internalId" -> internalId).map(_ => ())
+  def findByUtr(utr: Utr)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
+    super.find("utr" -> utr.value).map(_.headOption)
+
+  def delete(primaryInternalId: InternalId)(implicit ec: ExecutionContext): Future[Unit] =
+    remove("internalId" -> primaryInternalId.id).map(_ => ())
 }

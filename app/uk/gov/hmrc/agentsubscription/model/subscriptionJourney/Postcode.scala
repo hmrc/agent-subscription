@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model.subscriptionJourneyRepositoryModel
+package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import java.time.LocalDate
+import uk.gov.hmrc.domain.{ SimpleObjectReads, SimpleObjectWrites }
 
-import play.api.libs.json.{ Format, Json }
-import uk.gov.hmrc.agentmtdidentifiers.model.Vrn
+case class Postcode(value: String)
 
-case class VatDetails(vrn: Vrn, regDate: LocalDate)
-
-object VatDetails {
-  implicit val format: Format[VatDetails] = Json.format[VatDetails]
+object Postcode {
+  implicit val utrReads = new SimpleObjectReads[Postcode]("value", Postcode.apply)
+  implicit val utrWrites = new SimpleObjectWrites[Postcode](_.value)
 }

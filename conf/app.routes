@@ -13,4 +13,15 @@ GET    /vat-known-facts/vrn/:vrn/dateOfRegistration/:dateOfReg     @uk.gov.hmrc.
 
 POST    /citizen-details                     @uk.gov.hmrc.agentsubscription.controllers.CitizenDetailsController.checkCitizenDetails()
 
-GET     /subscription/journey                @uk.gov.hmrc.agentsubscription.controllers.TaskListController
+
+GET     /subscription/journey/primaryId/:internalId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByPrimaryId(internalId: InternalId)
+
+GET     /subscription/journey/mappedId/:internalId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByMappedId(internalId: InternalId)
+
+GET     /subscription/journey/utr/:utr           @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByUtr(utr: Utr)
+
+GET     /subscription/journey/continueId/:uuid   @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByContinueId(uuid: UUID)
+
+POST /subscription/journey/primaryId/:internalId @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.createOrUpdate(internalId: InternalId)
+
+DELETE /subscription/journey/primaryId/:internalId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.delete(internalId: InternalId)

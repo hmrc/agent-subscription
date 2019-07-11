@@ -19,7 +19,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
   val groupId = "groupId"
   implicit val ws = app.injector.instanceOf[WSClient]
 
-  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", LocalDate.now())))
+  val amlsDetails: AmlsDetails = AmlsDetails(false, "supervisory", Right(RegisteredDetails("12345", LocalDate.now())))
   val emailInfo = EmailInformation(
     Seq("agency@example.com"),
     "agent_services_account_created",

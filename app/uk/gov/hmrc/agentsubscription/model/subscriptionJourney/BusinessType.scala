@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model.subscriptionJourneyRepositoryModel
+package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
 /*
  * Copyright 2019 HM Revenue & Customs

@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model.subscriptionJourneyRepositoryModel
+package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import uk.gov.hmrc.domain.{ SimpleObjectReads, SimpleObjectWrites }
+import play.api.libs.json.Json
 
-case class Postcode(value: String)
+case class TaskListFlags(
+  businessTaskComplete: Boolean = false,
+  amlsTaskComplete: Boolean = false,
+  isMAA: Boolean = false,
+  createTaskComplete: Boolean = false,
+  checkAnswersComplete: Boolean = false)
 
-object Postcode {
-  implicit val utrReads = new SimpleObjectReads[Postcode]("value", Postcode.apply)
-  implicit val utrWrites = new SimpleObjectWrites[Postcode](_.value)
+object TaskListFlags {
+  implicit val formats = Json.format[TaskListFlags]
 }

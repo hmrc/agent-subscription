@@ -14,17 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model.subscriptionJourneyRepositoryModel
+package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.Json
+import play.api.libs.json.Format
+import play.api.libs.functional.syntax._
 
-case class TaskListFlags(
-  businessTaskComplete: Boolean = false,
-  amlsTaskComplete: Boolean = false,
-  isMAA: Boolean = false,
-  createTaskComplete: Boolean = false,
-  checkAnswersComplete: Boolean = false)
+/**
+ * An internal id associated with a Government Gateway account.
+ *
+ * @param id
+ */
+final case class InternalId(id: String)
 
-object TaskListFlags {
-  implicit val formats = Json.format[TaskListFlags]
+object InternalId {
+  implicit val format: Format[InternalId] = implicitly[Format[String]].inmap(InternalId(_), _.id)
 }

@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model
+package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-import play.api.libs.json.{ Json, _ }
+import play.api.libs.json._
 
 case class RegisteredDetails(membershipNumber: String, membershipExpiresOn: LocalDate)
 
@@ -33,44 +33,39 @@ object PendingDetails {
   implicit val format = Json.format[PendingDetails]
 }
 
-case class AmlsDetails(
-  amlsAppliedFor: Boolean,
-  supervisoryBody: String,
-  details: Either[PendingDetails, RegisteredDetails])
+case class AMLSDetails(supervisoryBody: String, details: Either[PendingDetails, RegisteredDetails])
 
-object AmlsDetails {
+object AMLSDetails {
 
   val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-  implicit val format = new Format[AmlsDetails] {
-    override def reads(json: JsValue): JsResult[AmlsDetails] = {
-
-      val amlsAppliedFor = (json \ "amlsAppliedFor").as[Boolean]
+  implicit val format = new Format[AMLSDetails] {
+    override def reads(json: JsValue): JsResult[AMLSDetails] = {
       val supervisoryBody = (json \ "supervisoryBody").as[String]
+
       val mayBeMembershipNumber = (json \ "membershipNumber").asOpt[String]
 
       mayBeMembershipNumber match {
 
         case Some(membershipNumber) =>
           val membershipExpiresOn = LocalDate.parse((json \ "membershipExpiresOn").as[String], formatter)
-          JsSuccess(AmlsDetails(amlsAppliedFor, supervisoryBody, Right(RegisteredDetails(membershipNumber, membershipExpiresOn))))
+          JsSuccess(AMLSDetails(supervisoryBody, Right(RegisteredDetails(membershipNumber, membershipExpiresOn))))
 
         case None =>
           val appliedOn = LocalDate.parse((json \ "appliedOn").as[String], formatter)
-          JsSuccess(AmlsDetails(amlsAppliedFor, supervisoryBody, Left(PendingDetails(appliedOn))))
+          JsSuccess(AMLSDetails(supervisoryBody, Left(PendingDetails(appliedOn))))
       }
     }
 
-    override def writes(amlsDetails: AmlsDetails): JsValue = {
+    override def writes(amlsDetails: AMLSDetails): JsValue = {
 
       val detailsJson = amlsDetails.details match {
         case Right(registeredDetails) => Json.toJson(registeredDetails)
         case Left(pendingDetails) => Json.toJson(pendingDetails)
       }
 
-      Json.obj(
-        "supervisoryBody" -> amlsDetails.supervisoryBody,
-        "amlsAppliedFor" -> amlsDetails.amlsAppliedFor).deepMerge(detailsJson.as[JsObject])
+      Json.obj("supervisoryBody" -> amlsDetails.supervisoryBody).deepMerge(detailsJson.as[JsObject])
     }
   }
 }
+
