@@ -23,7 +23,7 @@ trait AuthStub {
                        |  "enrolments":"/auth/oid/$oid/enrolments",
                        |  "uri":"/auth/oid/$oid",
                        |  "loggedInAt":"2016-06-20T10:44:29.634Z",
-                       |  "credentials":{
+                       |  "optionalCredentials":{
                        |    "providerId": "12345",
                        |    "providerType": "GovernmentGateway"
                        |  },

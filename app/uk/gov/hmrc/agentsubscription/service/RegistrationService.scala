@@ -27,9 +27,8 @@ import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.agentsubscription.postcodesMatch
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.http.logging.MdcLoggingExecutionContext._
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 private object CheckAgencyStatusAuditDetail {
   implicit val writes = Json.writes[CheckAgencyStatusAuditDetail]
@@ -49,7 +48,11 @@ private case class CheckAgencyStatusAuditDetail(
 class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector, auditService: AuditService) {
   protected def getLogger: LoggerLike = Logger
 
-  def getRegistration(utr: Utr, postcode: String)(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Future[Option[RegistrationDetails]] = {
+  def getRegistration(utr: Utr, postcode: String)(implicit
+    hc: HeaderCarrier,
+    provider: Provider,
+    ec: ExecutionContext,
+    request: Request[AnyContent]): Future[Option[RegistrationDetails]] = {
     desConnector.getRegistration(utr) flatMap {
       case Some(DesRegistrationResponse(isAnASAgent, organisationName, None, agentReferenceNumber, businessAddress, email)) if businessAddress.postalCode.nonEmpty =>
         if (isAnASAgent) {
@@ -83,7 +86,11 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
     isAnASAgent: Boolean, taxpayerName: Option[String],
     maybeArn: Option[Arn],
     businessAddress: BusinessAddress,
-    emailAddress: Option[String])(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Future[Option[RegistrationDetails]] = {
+    emailAddress: Option[String])(implicit
+    hc: HeaderCarrier,
+    provider: Provider,
+    ec: ExecutionContext,
+    request: Request[AnyContent]): Future[Option[RegistrationDetails]] = {
     val knownFactsMatched = postcodesMatch(desPostcode, postcode)
 
     if (knownFactsMatched) {
@@ -103,7 +110,17 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
     }
   }
 
-  private def auditCheckAgencyStatus(utr: Utr, postcode: String, knownFactsMatched: Boolean, isSubscribedToAgentServices: Option[Boolean], isAnAsAgentInDes: Option[Boolean], agentReferenceNumber: Option[Arn])(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Unit =
+  private def auditCheckAgencyStatus(
+    utr: Utr,
+    postcode: String,
+    knownFactsMatched: Boolean,
+    isSubscribedToAgentServices: Option[Boolean],
+    isAnAsAgentInDes: Option[Boolean],
+    agentReferenceNumber: Option[Arn])(implicit
+    hc: HeaderCarrier,
+    provider: Provider,
+    ec: ExecutionContext,
+    request: Request[AnyContent]): Unit =
     auditService.auditEvent(
       AgentSubscriptionEvent.CheckAgencyStatus,
       "Check agency status",

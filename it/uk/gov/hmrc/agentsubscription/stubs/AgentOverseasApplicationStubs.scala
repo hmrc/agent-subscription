@@ -12,6 +12,7 @@ trait AgentOverseasApplicationStubs {
       .withRequestBody(equalToJson(requestBody))
       .willReturn(aResponse()
         .withStatus(responseStatus)))
+    ()
   }
 
   def givenValidApplication(

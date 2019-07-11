@@ -26,19 +26,19 @@ import play.api.mvc.{ AnyContent, Result, _ }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.auth.AuthActions._
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.utils.{ WithMdcExecutionContext, toFuture }
+import uk.gov.hmrc.agentsubscription.utils.toFuture
 import uk.gov.hmrc.auth.core
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.auth.core.retrieve.Retrievals.{ affinityGroup, allEnrolments, credentials, groupIdentifier }
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{ affinityGroup, allEnrolments, credentials, groupIdentifier }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
-  extends HttpAPIMonitor with AuthorisedFunctions with BaseController with WithMdcExecutionContext {
+class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)(implicit val ec: ExecutionContext)
+  extends HttpAPIMonitor with AuthorisedFunctions with BaseController {
 
   override def authConnector: core.AuthConnector = microserviceAuthConnector
 
@@ -52,7 +52,7 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
   def authorisedWithAffinityGroup(action: SubscriptionAuthAction): Action[JsValue] = Action.async(parse.json) { implicit request =>
     authorised(AuthProvider)
       .retrieve(affinityGroup and credentials and groupIdentifier) {
-        case Some(affinityG) ~ Credentials(providerId, _) ~ Some(groupId) =>
+        case Some(affinityG) ~ Some(Credentials(providerId, _)) ~ Some(groupId) =>
           if (isAgent(affinityG)) {
             action(request)(AuthIds(providerId, groupId))
           } else {
@@ -82,7 +82,7 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
   def overseasAgentAuth(action: OverseasAuthAction): Action[AnyContent] = Action.async { implicit request =>
     authorised(AuthProvider)
       .retrieve(allEnrolments and affinityGroup and credentials and groupIdentifier) {
-        case enrolments ~ Some(affinityG) ~ Credentials(providerId, _) ~ Some(groupId) =>
+        case enrolments ~ Some(affinityG) ~ Some(Credentials(providerId, _)) ~ Some(groupId) =>
           if (!isAgent(affinityG))
             NotAnAgent
           else if (enrolments.enrolments.nonEmpty)
@@ -98,7 +98,7 @@ class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: Micros
   def authorisedWithAffinityGroupAndCredentials(action: RegistrationAuthAction): Action[AnyContent] = Action.async { implicit request =>
     authorised(AuthProvider)
       .retrieve(affinityGroup and credentials) {
-        case Some(affinityG) ~ Credentials(providerId, providerType) =>
+        case Some(affinityG) ~ Some(Credentials(providerId, providerType)) =>
           if (isAgent(affinityG)) {
             action(request)(Provider(providerId, providerType))
           } else {
