@@ -43,12 +43,11 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
         utr = validUtr,
         postcode = Postcode("bn12 1hn"),
         nino = Some(Nino("AE123456C"))),
-      continueId = UUID.fromString("1234"),
+      continueId = "1234",
       amlsDetails = None,
       cleanCredsInternalId = None,
       mappingComplete = false,
-      userMappings = List(),
-      updatedDateTime = LocalDateTime.now())
+      userMappings = List())
 
   override def beforeEach() {
     super.beforeEach()

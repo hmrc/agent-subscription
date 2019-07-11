@@ -35,7 +35,6 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
 class SubscriptionJourneyRepository @Inject() (
-  @Named("mongodb.subscriptionjourney.ttl") ttl: Int,
   mongoComponent: ReactiveMongoComponent)
   extends ReactiveRepository[SubscriptionJourneyRecord, BSONObjectID](
     "subscription-journey",
@@ -67,7 +66,7 @@ class SubscriptionJourneyRepository @Inject() (
         key = Seq("updatedDateTime" -> IndexType.Ascending),
         name = Some("updatedDateTime"),
         unique = false,
-        options = BSONDocument("expireAfterSeconds" -> ttl))
+        options = BSONDocument("expireAfterSeconds" -> 10000000))
     // More indexes here!
     )
 
@@ -75,13 +74,13 @@ class SubscriptionJourneyRepository @Inject() (
     super.find("internalId" -> internalId).map(_.headOption)
 
   def findByMappedId(internalId: InternalId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("internalId" -> internalId).map(_.headOption)
+    super.find("userMappings.internalId" -> internalId).map(_.headOption)
 
-  def findByContinueId(continueId: UUID)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("utr" -> continueId.toString).map(_.headOption)
+  def findByContinueId(continueId: String)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
+    super.find("continueId" -> continueId).map(_.headOption)
 
   def findByUtr(utr: Utr)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("utr" -> utr.value).map(_.headOption)
+    super.find("businessDetails.utr" -> utr.value).map(_.headOption)
 
   def delete(primaryInternalId: InternalId)(implicit ec: ExecutionContext): Future[Unit] =
     remove("internalId" -> primaryInternalId.id).map(_ => ())

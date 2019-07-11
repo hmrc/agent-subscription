@@ -20,7 +20,7 @@ GET     /subscription/journey/mappedId/:internalId  @uk.gov.hmrc.agentsubscripti
 
 GET     /subscription/journey/utr/:utr           @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByUtr(utr: Utr)
 
-GET     /subscription/journey/continueId/:uuid   @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByContinueId(uuid: UUID)
+GET     /subscription/journey/continueId/:uuid   @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByContinueId(uuid: String)
 
 POST /subscription/journey/primaryId/:internalId @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.createOrUpdate(internalId: InternalId)
 
