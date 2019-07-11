@@ -397,7 +397,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         testPartialSubscriptionWith(agentRecordExistsWithoutContactDetails(utr, true, arn))
       }
 
-      def testPartialSubscriptionWith(givenAgentRecord: => Unit) = {
+      def testPartialSubscriptionWith[A](givenAgentRecord: => A) = {
         requestIsAuthenticatedWithNoEnrolments()
         givenAgentRecord
         allocatedPrincipalEnrolmentNotExists(arn)

@@ -2,6 +2,7 @@ package uk.gov.hmrc.agentsubscription.stubs
 
 import com.github.tomakehurst.wiremock.client.MappingBuilder
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.stubbing.StubMapping
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesSubscriptionRequest
 import uk.gov.hmrc.agentsubscription.model.{ Crn, SubscriptionRequest }
@@ -44,18 +45,17 @@ trait DesStubs {
 
   private val invalidVrnResponse = errorResponse("INVALID_VRN", "Request has not passed validation. Invalid vrn")
 
-  def utrIsUnexpectedlyInvalid(utr: Utr): Unit = utrIsInvalid(utr)
+  def utrIsUnexpectedlyInvalid(utr: Utr) = utrIsInvalid(utr)
 
-  def utrIsInvalid(utr: Utr = Utr("xyz")): Unit = {
+  def utrIsInvalid(utr: Utr = Utr("xyz")): StubMapping = {
     stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/individual/utr/${utr.value}")))
       .willReturn(
         aResponse()
           .withStatus(400)
           .withBody(invalidUtrResponse)))
-    ()
   }
 
-  def subscriptionSucceeds(utr: Utr, request: SubscriptionRequest): Unit = {
+  def subscriptionSucceeds(utr: Utr, request: SubscriptionRequest): StubMapping = {
     stubFor(post(urlEqualTo(s"/registration/agents/utr/${utr.value}"))
       .withRequestBody(equalToJson(
         s"""
@@ -81,10 +81,9 @@ trait DesStubs {
              |  "agentRegistrationNumber": "TARN0000001"
              |}
                """.stripMargin)))
-    ()
   }
 
-  def subscriptionSucceedsWithoutTelephoneNo(utr: Utr, request: SubscriptionRequest): Unit = {
+  def subscriptionSucceedsWithoutTelephoneNo(utr: Utr, request: SubscriptionRequest): StubMapping = {
     stubFor(post(urlEqualTo(s"/registration/agents/utr/${utr.value}"))
       .withRequestBody(equalToJson(
         s"""
@@ -109,10 +108,9 @@ trait DesStubs {
              |  "agentRegistrationNumber": "TARN0000001"
              |}
                """.stripMargin)))
-    ()
   }
 
-  def subscriptionSucceeds(utr: Utr, request: DesSubscriptionRequest): Unit = {
+  def subscriptionSucceeds(utr: Utr, request: DesSubscriptionRequest) = {
     stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
       .withRequestBody(equalToJson(
         s"""
@@ -136,10 +134,9 @@ trait DesStubs {
              |  "agentRegistrationNumber": "TARN0000001"
              |}
                """.stripMargin)))
-    ()
   }
 
-  def subscriptionSucceedsWithoutTelephoneNo(utr: Utr, request: DesSubscriptionRequest): Unit = {
+  def subscriptionSucceedsWithoutTelephoneNo(utr: Utr, request: DesSubscriptionRequest) = {
     stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
       .withRequestBody(equalToJson(
         s"""
@@ -162,24 +159,21 @@ trait DesStubs {
              |  "agentRegistrationNumber": "TARN0000001"
              |}
                """.stripMargin)))
-    ()
   }
 
-  def subscriptionAlreadyExists(utr: Utr): Unit = {
+  def subscriptionAlreadyExists(utr: Utr) = {
     stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
       .willReturn(aResponse()
         .withStatus(409)
         .withBody(errorResponse("CONFLICT", "Duplicate submission"))))
-    ()
   }
 
-  def agencyNotRegistered(utr: Utr): Unit = {
+  def agencyNotRegistered(utr: Utr) = {
     stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(
           errorResponse("NOT_FOUND", "The remote endpoint has indicated that no data can be found"))))
-    ()
   }
 
   private def errorResponse(code: String, reason: String) =
@@ -190,7 +184,7 @@ trait DesStubs {
        |}
      """.stripMargin
 
-  def agentRecordExists(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001"): Unit = {
+  def agentRecordExists(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001") = {
     stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/registration/personal-details/utr/${utr.value}"))).willReturn(aResponse()
       .withStatus(200)
       .withBody(
@@ -223,10 +217,9 @@ trait DesStubs {
           |    }
           |}
         """.stripMargin)))
-    ()
   }
 
-  def agentRecordExistsWithoutContactDetails(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001"): Unit = {
+  def agentRecordExistsWithoutContactDetails(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001") = {
     stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/registration/personal-details/utr/${utr.value}"))).willReturn(aResponse()
       .withStatus(200)
       .withBody(
@@ -256,10 +249,9 @@ trait DesStubs {
            |    }
            |}
         """.stripMargin)))
-    ()
   }
 
-  def agentRecordExistsWithoutPhoneNumber(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001"): Unit = {
+  def agentRecordExistsWithoutPhoneNumber(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001") = {
     stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/registration/personal-details/utr/${utr.value}"))).willReturn(aResponse()
       .withStatus(200)
       .withBody(
@@ -291,25 +283,23 @@ trait DesStubs {
            |    }
            |}
         """.stripMargin)))
-    ()
   }
 
-  def agentRecordDoesNotExist(utr: Utr): Unit = {
+  def agentRecordDoesNotExist(utr: Utr) = {
     stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/registration/personal-details/utr/${utr.value}")))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(notFoundResponse)))
-    ()
   }
 
-  def agentRecordFails(): Unit = {
+  def agentRecordFails() = {
     stubFor(maybeWithDesHeaderCheck(get(urlPathMatching(s"/registration/personal-details/utr/.*")))
       .willReturn(aResponse()
         .withStatus(500)))
-    ()
+
   }
 
-  def ctUtrRecordExists(crn: Crn): Unit = {
+  def ctUtrRecordExists(crn: Crn) = {
     stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/corporation-tax/identifiers/crn/${crn.value}"))).willReturn(aResponse()
       .withStatus(200)
       .withBody(
@@ -318,34 +308,30 @@ trait DesStubs {
            |    "CTUTR": "1234567890"
            |}
         """.stripMargin)))
-    ()
   }
 
-  def ctUtrRecordDoesNotExist(crn: Crn): Unit = {
+  def ctUtrRecordDoesNotExist(crn: Crn) = {
     stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/corporation-tax/identifiers/crn/${crn.value}")))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(ctUtrNotFoundResponse)))
-    ()
   }
 
-  def ctUtrRecordFails(): Unit = {
+  def ctUtrRecordFails() = {
     stubFor(maybeWithDesHeaderCheck(get(urlPathMatching(s"/corporation-tax/identifiers/crn/.*")))
       .willReturn(aResponse()
         .withStatus(500)))
-    ()
   }
 
-  def crnIsInvalid(crn: Crn): Unit = {
+  def crnIsInvalid(crn: Crn) = {
     stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/corporation-tax/identifiers/crn/${crn.value}")))
       .willReturn(
         aResponse()
           .withStatus(400)
           .withBody(invalidCrnResponse)))
-    ()
   }
 
-  def vatKnownfactsRecordExists(vrn: Vrn): Unit = {
+  def vatKnownfactsRecordExists(vrn: Vrn) = {
     stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/vat/known-facts/control-list/${vrn.value}"))).willReturn(aResponse()
       .withStatus(200)
       .withBody(
@@ -354,31 +340,27 @@ trait DesStubs {
            |    "dateOfReg": "2010-03-31"
            |}
         """.stripMargin)))
-    ()
   }
 
-  def vatKnownfactsRecordDoesNotExist(vrn: Vrn): Unit = {
+  def vatKnownfactsRecordDoesNotExist(vrn: Vrn) = {
     stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/vat/known-facts/control-list/${vrn.value}")))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(vatRecordNotFoundResponse)))
-    ()
   }
 
-  def vatKnownfactsRecordFails(): Unit = {
+  def vatKnownfactsRecordFails() = {
     stubFor(maybeWithDesHeaderCheck(get(urlPathMatching(s"/vat/known-facts/control-list/.*")))
       .willReturn(aResponse()
         .withStatus(500)))
-    ()
   }
 
-  def vrnIsInvalid(vrn: Vrn): Unit = {
+  def vrnIsInvalid(vrn: Vrn) = {
     stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/vat/known-facts/control-list/${vrn.value}")))
       .willReturn(
         aResponse()
           .withStatus(400)
           .withBody(invalidVrnResponse)))
-    ()
   }
 
   private def registrationRequest(utr: Utr, isAnAgent: Boolean) =
@@ -392,7 +374,7 @@ trait DesStubs {
            |}
               """.stripMargin))
 
-  def organisationRegistrationExists(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001"): Unit = {
+  def organisationRegistrationExists(utr: Utr, isAnASAgent: Boolean = true, arn: String = "TARN0000001") = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -431,10 +413,9 @@ trait DesStubs {
              |  }
              |}
                """.stripMargin)))
-    ()
   }
 
-  def individualRegistrationExists(utr: Utr, isAnASAgent: Boolean = true): Unit = {
+  def individualRegistrationExists(utr: Utr, isAnASAgent: Boolean = true) = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -462,10 +443,9 @@ trait DesStubs {
              |    }
              |}
                """.stripMargin)))
-    ()
   }
 
-  def registrationExistsWithNoOrganisationName(utr: Utr, isAnASAgent: Boolean = true): Unit = {
+  def registrationExistsWithNoOrganisationName(utr: Utr, isAnASAgent: Boolean = true) = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -487,10 +467,9 @@ trait DesStubs {
              |    }
              |}
                """.stripMargin)))
-    ()
   }
 
-  def registrationExistsWithNoPostcode(utr: Utr): Unit = {
+  def registrationExistsWithNoPostcode(utr: Utr) = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -508,10 +487,9 @@ trait DesStubs {
              |    }
              |}
                """.stripMargin)))
-    ()
   }
 
-  def registrationExistsWithNoAddress(utr: Utr): Unit = {
+  def registrationExistsWithNoAddress(utr: Utr) = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -528,10 +506,9 @@ trait DesStubs {
              |    }
              |}
                """.stripMargin)))
-    ()
   }
 
-  def registrationExistsWithNoIsAnASAgent(utr: Utr): Unit = {
+  def registrationExistsWithNoIsAnASAgent(utr: Utr) = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -548,10 +525,9 @@ trait DesStubs {
              |    }
              |}
                """.stripMargin)))
-    ()
   }
 
-  def registrationExistsWithNoEmail(utr: Utr): Unit = {
+  def registrationExistsWithNoEmail(utr: Utr) = {
     stubFor(maybeWithDesHeaderCheck(registrationRequest(utr, isAnAgent = false))
       .willReturn(aResponse()
         .withStatus(200)
@@ -569,10 +545,9 @@ trait DesStubs {
              |    }
              |}
                """.stripMargin)))
-    ()
   }
 
-  def registrationDoesNotExist(utr: Utr): Unit = {
+  def registrationDoesNotExist(utr: Utr) = {
     stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/individual/utr/${utr.value}")))
       .withRequestBody(equalToJson(
         s"""
@@ -585,14 +560,13 @@ trait DesStubs {
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(notFoundResponse)))
-    ()
   }
 
-  def registrationRequestFails(): Unit = {
+  def registrationRequestFails() = {
     stubFor(maybeWithDesHeaderCheck(post(urlPathMatching(s"/registration/(individual|organisation)/utr/.*")))
       .willReturn(aResponse()
         .withStatus(500)))
-    ()
+
   }
 
   private def maybeWithDesHeaderCheck(mappingBuilder: MappingBuilder): MappingBuilder =
