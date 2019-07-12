@@ -16,6 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
+import java.time.{ LocalDateTime, ZoneId, ZoneOffset }
+import java.util.UUID
+
 import com.google.inject.Inject
 import com.kenshoo.play.metrics.Metrics
 import play.api.libs.json.Json.toJson
@@ -75,9 +78,19 @@ class SubscriptionJourneyController @Inject() (implicit
   }
 
   def createOrUpdate(internalId: InternalId): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    localWithJsonBody(subscriptionJourneyRecord =>
-      subscriptionJourneyRepository.upsert(internalId, subscriptionJourneyRecord)
-        .map(_ => NoContent), request.body)
+    localWithJsonBody(
+      journeyRecord => {
+        val mappedInternalIds = journeyRecord.userMappings.map(_.internalId)
+        if (journeyRecord.internalId != internalId) {
+          Future.successful(BadRequest("Internal ids in request URL and body do not match"))
+        } else if (mappedInternalIds.distinct.size != mappedInternalIds.size) {
+          Future.successful(BadRequest("Duplicate mapped internal ids in request body"))
+        } else {
+          val updatedRecord = journeyRecord.copy(lastModifiedDate = LocalDateTime.now(ZoneOffset.UTC))
+          subscriptionJourneyRepository.upsert(internalId, updatedRecord).map(_ => NoContent)
+        }
+      },
+      request.body)
   }
 
   def delete(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>

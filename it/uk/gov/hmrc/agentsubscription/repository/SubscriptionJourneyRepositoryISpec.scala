@@ -1,6 +1,6 @@
 package uk.gov.hmrc.agentsubscription.repository
 
-import java.time.{ LocalDate, LocalDateTime }
+import java.time.{ LocalDate, LocalDateTime, ZoneOffset }
 import java.util.UUID
 
 import org.scalatest.concurrent.Eventually
@@ -43,11 +43,12 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
         utr = validUtr,
         postcode = Postcode("bn12 1hn"),
         nino = Some(Nino("AE123456C"))),
-      continueId = "1234",
-      amlsDetails = None,
+      continueId = "XXX",
+      amlsData = None,
       cleanCredsInternalId = None,
       mappingComplete = false,
-      userMappings = List())
+      userMappings = List(),
+      lastModifiedDate = LocalDateTime.now(ZoneOffset.UTC))
 
   override def beforeEach() {
     super.beforeEach()

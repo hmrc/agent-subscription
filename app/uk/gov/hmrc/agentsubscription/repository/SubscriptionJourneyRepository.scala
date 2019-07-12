@@ -64,7 +64,7 @@ class SubscriptionJourneyRepository @Inject() (
   override def indexes: Seq[Index] =
     Seq(
       Index(key = Seq("internalId" -> IndexType.Ascending), name = Some("primaryInternalId"), unique = true),
-      Index(key = Seq("userMappings.internalId" -> IndexType.Ascending), name = Some("mappedInternalId"), unique = false),
+      Index(key = Seq("userMappings.internalId" -> IndexType.Ascending), name = Some("mappedInternalId"), unique = true),
       Index(key = Seq("businessDetails.utr" -> IndexType.Ascending), name = Some("utr"), unique = true),
       Index(key = Seq("continueId" -> IndexType.Ascending), name = Some("continueId"), unique = true),
       Index(
