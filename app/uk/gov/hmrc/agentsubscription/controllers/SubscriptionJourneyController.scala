@@ -27,15 +27,16 @@ import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.InternalId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 import scala.util.{ Failure, Success, Try }
 
 class SubscriptionJourneyController @Inject() (implicit
   metrics: Metrics,
   microserviceAuthConnector: MicroserviceAuthConnector,
-  subscriptionJourneyRepository: SubscriptionJourneyRepository)
+  subscriptionJourneyRepository: SubscriptionJourneyRepository,
+  ec: ExecutionContext)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
   private def localWithJsonBody(f: SubscriptionJourneyRecord => Future[Result], request: JsValue): Future[Result] =
@@ -48,39 +49,39 @@ class SubscriptionJourneyController @Inject() (implicit
   def findByPrimaryId(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
     subscriptionJourneyRepository.findByPrimaryId(internalId).map {
       case Some(record) => Ok(toJson(record))
-      case None => NotFound("journey record not found for this primary internal id")
+      case None => NoContent
     }
   }
 
   def findByMappedId(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
     subscriptionJourneyRepository.findByMappedId(internalId).map {
       case Some(record) => Ok(toJson(record))
-      case None => NotFound("journey record not found for this mapped internal id")
+      case None => NoContent
     }
   }
 
   def findByUtr(utr: Utr): Action[AnyContent] = Action.async { implicit request =>
     subscriptionJourneyRepository.findByUtr(utr).map {
       case Some(record) => Ok(toJson(record))
-      case None => NotFound("journey record not found for this utr")
+      case None => NoContent
     }
   }
 
   def findByContinueId(continueId: String): Action[AnyContent] = Action.async { implicit request =>
     subscriptionJourneyRepository.findByContinueId(continueId).map {
       case Some(record) => Ok(toJson(record))
-      case None => NotFound("journey record not found for this continue id")
+      case None => NoContent
     }
   }
 
   def createOrUpdate(internalId: InternalId): Action[JsValue] = Action.async(parse.json) { implicit request =>
     localWithJsonBody(subscriptionJourneyRecord =>
       subscriptionJourneyRepository.upsert(internalId, subscriptionJourneyRecord)
-        .map(_ => Ok), request.body)
+        .map(_ => NoContent), request.body)
   }
 
   def delete(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
-    subscriptionJourneyRepository.delete(internalId).map(_ => Ok)
+    subscriptionJourneyRepository.delete(internalId).map(_ => NoContent)
   }
 
 }

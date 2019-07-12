@@ -33,10 +33,7 @@ object PendingDetails {
   implicit val format = Json.format[PendingDetails]
 }
 
-case class AmlsDetails(
-  amlsAppliedFor: Boolean,
-  supervisoryBody: String,
-  details: Either[PendingDetails, RegisteredDetails])
+case class AmlsDetails(supervisoryBody: String, details: Either[PendingDetails, RegisteredDetails])
 
 object AmlsDetails {
 
@@ -44,20 +41,19 @@ object AmlsDetails {
 
   implicit val format = new Format[AmlsDetails] {
     override def reads(json: JsValue): JsResult[AmlsDetails] = {
-
-      val amlsAppliedFor = (json \ "amlsAppliedFor").as[Boolean]
       val supervisoryBody = (json \ "supervisoryBody").as[String]
+
       val mayBeMembershipNumber = (json \ "membershipNumber").asOpt[String]
 
       mayBeMembershipNumber match {
 
         case Some(membershipNumber) =>
           val membershipExpiresOn = LocalDate.parse((json \ "membershipExpiresOn").as[String], formatter)
-          JsSuccess(AmlsDetails(amlsAppliedFor, supervisoryBody, Right(RegisteredDetails(membershipNumber, membershipExpiresOn))))
+          JsSuccess(AmlsDetails(supervisoryBody, Right(RegisteredDetails(membershipNumber, membershipExpiresOn))))
 
         case None =>
           val appliedOn = LocalDate.parse((json \ "appliedOn").as[String], formatter)
-          JsSuccess(AmlsDetails(amlsAppliedFor, supervisoryBody, Left(PendingDetails(appliedOn))))
+          JsSuccess(AmlsDetails(supervisoryBody, Left(PendingDetails(appliedOn))))
       }
     }
 
@@ -68,9 +64,7 @@ object AmlsDetails {
         case Left(pendingDetails) => Json.toJson(pendingDetails)
       }
 
-      Json.obj(
-        "supervisoryBody" -> amlsDetails.supervisoryBody,
-        "amlsAppliedFor" -> amlsDetails.amlsAppliedFor).deepMerge(detailsJson.as[JsObject])
+      Json.obj("supervisoryBody" -> amlsDetails.supervisoryBody).deepMerge(detailsJson.as[JsObject])
     }
   }
 }

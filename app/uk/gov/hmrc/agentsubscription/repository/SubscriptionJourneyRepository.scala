@@ -42,6 +42,8 @@ class SubscriptionJourneyRepository @Inject() (
     SubscriptionJourneyRecord.format,
     ReactiveMongoFormats.objectIdFormats) {
 
+  private final val EXPIRE_AFTER_SECONDS: Long = 30 * 24 * 60 * 60 // 30 days
+
   def upsert(id: InternalId, record: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] = {
     collection.update(ordered = false).one(
       Json.obj("internalId" -> id.id),
@@ -61,14 +63,15 @@ class SubscriptionJourneyRepository @Inject() (
 
   override def indexes: Seq[Index] =
     Seq(
-      Index(key = Seq("internalId" -> IndexType.Ascending), name = Some("internalIdUnique"), unique = true),
+      Index(key = Seq("internalId" -> IndexType.Ascending), name = Some("primaryInternalId"), unique = true),
+      Index(key = Seq("userMappings.internalId" -> IndexType.Ascending), name = Some("mappedInternalId"), unique = false),
+      Index(key = Seq("businessDetails.utr" -> IndexType.Ascending), name = Some("utr"), unique = true),
+      Index(key = Seq("continueId" -> IndexType.Ascending), name = Some("continueId"), unique = true),
       Index(
-        key = Seq("updatedDateTime" -> IndexType.Ascending),
-        name = Some("updatedDateTime"),
+        key = Seq("lastModifiedDate" -> IndexType.Ascending),
+        name = Some("lastModifiedDate"),
         unique = false,
-        options = BSONDocument("expireAfterSeconds" -> 10000000))
-    // More indexes here!
-    )
+        options = BSONDocument("expireAfterSeconds" -> EXPIRE_AFTER_SECONDS)))
 
   def findByPrimaryId(internalId: InternalId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
     super.find("internalId" -> internalId).map(_.headOption)

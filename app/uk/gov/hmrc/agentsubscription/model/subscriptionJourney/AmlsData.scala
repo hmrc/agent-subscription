@@ -33,38 +33,44 @@ object PendingDetails {
   implicit val format = Json.format[PendingDetails]
 }
 
-case class AMLSDetails(supervisoryBody: String, details: Either[PendingDetails, RegisteredDetails])
+case class AmlsData(
+  amlsAppliedFor: Boolean,
+  supervisoryBody: String,
+  details: Either[PendingDetails, RegisteredDetails])
 
-object AMLSDetails {
+object AmlsData {
 
   val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-  implicit val format = new Format[AMLSDetails] {
-    override def reads(json: JsValue): JsResult[AMLSDetails] = {
-      val supervisoryBody = (json \ "supervisoryBody").as[String]
+  implicit val format = new Format[AmlsData] {
+    override def reads(json: JsValue): JsResult[AmlsData] = {
 
+      val amlsAppliedFor = (json \ "amlsAppliedFor").as[Boolean]
+      val supervisoryBody = (json \ "supervisoryBody").as[String]
       val mayBeMembershipNumber = (json \ "membershipNumber").asOpt[String]
 
       mayBeMembershipNumber match {
 
         case Some(membershipNumber) =>
           val membershipExpiresOn = LocalDate.parse((json \ "membershipExpiresOn").as[String], formatter)
-          JsSuccess(AMLSDetails(supervisoryBody, Right(RegisteredDetails(membershipNumber, membershipExpiresOn))))
+          JsSuccess(AmlsData(amlsAppliedFor, supervisoryBody, Right(RegisteredDetails(membershipNumber, membershipExpiresOn))))
 
         case None =>
           val appliedOn = LocalDate.parse((json \ "appliedOn").as[String], formatter)
-          JsSuccess(AMLSDetails(supervisoryBody, Left(PendingDetails(appliedOn))))
+          JsSuccess(AmlsData(amlsAppliedFor, supervisoryBody, Left(PendingDetails(appliedOn))))
       }
     }
 
-    override def writes(amlsDetails: AMLSDetails): JsValue = {
+    override def writes(amlsDetails: AmlsData): JsValue = {
 
       val detailsJson = amlsDetails.details match {
         case Right(registeredDetails) => Json.toJson(registeredDetails)
         case Left(pendingDetails) => Json.toJson(pendingDetails)
       }
 
-      Json.obj("supervisoryBody" -> amlsDetails.supervisoryBody).deepMerge(detailsJson.as[JsObject])
+      Json.obj(
+        "supervisoryBody" -> amlsDetails.supervisoryBody,
+        "amlsAppliedFor" -> amlsDetails.amlsAppliedFor).deepMerge(detailsJson.as[JsObject])
     }
   }
 }

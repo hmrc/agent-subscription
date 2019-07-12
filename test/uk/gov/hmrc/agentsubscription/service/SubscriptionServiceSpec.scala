@@ -58,7 +58,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     val businessUtr = Utr("4000000009")
     val businessPostcode = "AA1 1AA"
     val arn = "ARN0001"
-    val amlsDetails = AmlsDetails(amlsAppliedFor = false, "supervisory", Right(RegisteredDetails("12345", LocalDate.now())))
+    val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", LocalDate.now())))
 
     "audit appropriate values" in {
 

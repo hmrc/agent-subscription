@@ -16,12 +16,11 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import java.time.{ Clock, LocalDateTime }
-import java.util.UUID
+import java.time.LocalDateTime
 
 import play.api.libs.json.{ Json, OFormat }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, DateOfBirth, InternalId }
+import uk.gov.hmrc.agentsubscription.model.{ DateOfBirth, InternalId }
 import uk.gov.hmrc.domain.{ AgentCode, Nino }
 
 /**
@@ -34,10 +33,11 @@ final case class SubscriptionJourneyRecord(
   internalId: InternalId,
   continueId: String,
   businessDetails: BusinessDetails,
-  amlsDetails: Option[AmlsDetails],
+  amlsDetails: Option[AmlsData],
   userMappings: List[UserMapping],
   mappingComplete: Boolean,
-  cleanCredsInternalId: Option[InternalId])
+  cleanCredsInternalId: Option[InternalId],
+  lastModifiedDate: LocalDateTime = LocalDateTime.now)
 
 object SubscriptionJourneyRecord {
   implicit val format: OFormat[SubscriptionJourneyRecord] = Json.format
@@ -55,7 +55,7 @@ case class BusinessDetails(
   businessType: BusinessType,
   utr: Utr, // CT or SA
   postcode: Postcode,
-  registration: Option[Registration] = None, //???
+  registration: Option[Registration] = None,
   nino: Option[Nino] = None,
   companyRegistrationNumber: Option[CompanyRegistrationNumber] = None,
   dateOfBirth: Option[DateOfBirth] = None, // if NINO required

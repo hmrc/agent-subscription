@@ -26,7 +26,7 @@ class AgentAssuranceConnectorISpec extends AgentAssuranceStub with UnitSpec with
   private lazy val connector: AgentAssuranceConnector =
     new AgentAssuranceConnectorImpl(new URL(s"http://localhost:$wireMockPort"), http, metrics)
 
-  val amlsDetails: AmlsDetails = AmlsDetails(false, "supervisory", Right(RegisteredDetails("12345", LocalDate.now())))
+  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", LocalDate.now())))
   val overseasAmlsDetails = OverseasAmlsDetails("supervisory", Some("12345"))
 
   "creating AMLS" should {

@@ -33,7 +33,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
 
   private lazy val repo = app.injector.instanceOf[SubscriptionJourneyRepository]
 
-  val amlsDetails = AmlsDetails(false, "supervisory", Right(RegisteredDetails("123456789", LocalDate.now())))
+  val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("123456789", LocalDate.now())))
 
   private val subscriptionJourneyRecord =
     SubscriptionJourneyRecord(
@@ -52,6 +52,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
   override def beforeEach() {
     super.beforeEach()
     await(repo.drop)
+    ()
   }
 
   "SubscriptionJourneyRepository" should {
