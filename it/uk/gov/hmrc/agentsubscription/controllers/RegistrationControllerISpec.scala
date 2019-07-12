@@ -178,5 +178,6 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     (json \ "address" \ "addressLine4").as[String] shouldBe "AddressLine4 A"
     (json \ "address" \ "postalCode").as[String] shouldBe "AA1 1AA"
     (json \ "address" \ "countryCode").as[String] shouldBe "GB"
+    ()
   }
 }

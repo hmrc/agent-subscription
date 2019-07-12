@@ -4,7 +4,7 @@ import java.net.URL
 import java.time.LocalDate
 
 import com.kenshoo.play.metrics.Metrics
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 import org.scalatestplus.play.OneAppPerSuite
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, OverseasAmlsDetails, RegisteredDetails }

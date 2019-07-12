@@ -25,11 +25,16 @@ import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.model.CitizenDetailsRequest
 import uk.gov.hmrc.agentsubscription.service.CitizenDetailsService
-import uk.gov.hmrc.play.microservice.controller.BaseController
 import uk.gov.hmrc.agentsubscription.utils._
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
+
+import scala.concurrent.ExecutionContext
 
 @Singleton
-class CitizenDetailsController @Inject() (service: CitizenDetailsService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
+class CitizenDetailsController @Inject() (service: CitizenDetailsService)(implicit
+  metrics: Metrics,
+  ec: ExecutionContext,
+  microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
   def checkCitizenDetails: Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
@@ -38,6 +43,8 @@ class CitizenDetailsController @Inject() (service: CitizenDetailsService)(implic
         service.checkDetails(cd).map {
           case Match => Ok
           case NoMatch | RecordNotFound => NotFound
+          case InvalidIdentifier => BadRequest
+          case UnknownError => InternalServerError
         }
       case Some(JsError(_)) => BadRequest("could not parse nino and dob JSON request")
       case _ => InternalServerError

@@ -33,6 +33,9 @@ trait AkkaMaterializerSpec extends UnitSpec with BeforeAndAfterAll { this: Suite
 
   override protected def afterAll(): Unit = {
     super.afterAll()
-    await(actorSystem.terminate())
+    await({
+      actorSystem.terminate()
+      ()
+    })
   }
 }

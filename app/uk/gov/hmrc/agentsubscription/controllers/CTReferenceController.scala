@@ -25,10 +25,13 @@ import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.Crn
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.service.CTReferenceService
-import uk.gov.hmrc.play.microservice.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BaseController
+
+import scala.concurrent.ExecutionContext
 
 @Singleton
-class CTReferenceController @Inject() (service: CTReferenceService)(implicit metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)
+class CTReferenceController @Inject() (service: CTReferenceService)(implicit metrics: Metrics, ec: ExecutionContext,
+  microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
   def matchCorporationTaxUtr(ctUtr: Utr, crn: Crn): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>

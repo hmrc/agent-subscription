@@ -21,6 +21,7 @@ trait OverseasDesStubs {
              |  "safeId": "XE0001234567890"
              |}
            """.stripMargin)))
+    ()
   }
 
   def organisationRegistrationSucceeds(): Unit = {
@@ -35,12 +36,14 @@ trait OverseasDesStubs {
              |  "safeId": "XE0001234567890"
              |}
            """.stripMargin)))
+    ()
   }
   def organisationRegistrationFailsWithNotFound(): Unit = {
     stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/02.00.00/organisation")))
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(notFoundResponse)))
+    ()
   }
 
   def organisationRegistrationFailsWithInvalidPayload(): Unit = {
@@ -48,6 +51,7 @@ trait OverseasDesStubs {
       .willReturn(aResponse()
         .withStatus(400)
         .withBody(invalidPayloadResponse)))
+    ()
   }
 
   def subscriptionSucceeds(safeId: String, requestJson: String): Unit = {
@@ -60,6 +64,7 @@ trait OverseasDesStubs {
              |  "agentRegistrationNumber": "TARN0000001"
              |}
                """.stripMargin)))
+    ()
   }
 
   def subscriptionAlreadyExists(safeId: String, requestJson: String): Unit = {
@@ -67,6 +72,7 @@ trait OverseasDesStubs {
       .willReturn(aResponse()
         .withStatus(409)
         .withBody(conflictResponse)))
+    ()
   }
 
   def agencyNotRegistered(safeId: String, requestJson: String): Unit = {
@@ -74,6 +80,7 @@ trait OverseasDesStubs {
       .willReturn(aResponse()
         .withStatus(404)
         .withBody(notFoundResponse)))
+    ()
   }
 
   private def registrationRequest(json: String) =

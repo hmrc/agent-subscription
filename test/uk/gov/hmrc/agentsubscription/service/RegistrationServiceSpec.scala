@@ -34,6 +34,7 @@ import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.play.test.UnitSpec
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import scala.concurrent.{ ExecutionContext, Future }
 import uk.gov.hmrc.http.HeaderCarrier
@@ -51,6 +52,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
   private val authorityUrl = new URL("http://localhost/auth/authority")
   private val hc = HeaderCarrier()
+  private val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private val provider = Provider("provId", "provType")
   private val request = RequestWithAuthority(Authority(authorityUrl, authProviderId = Some(provider.providerId), authProviderType = Some(provider.providerType), "", ""), FakeRequest())
   private val requestWithoutAuthProvider = RequestWithAuthority(Authority(authorityUrl, authProviderId = None, authProviderType = None, "", ""), FakeRequest())
@@ -79,7 +81,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful true)
 
-      await(service.getRegistration(utr, postcode)(hc, provider, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -119,7 +121,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful false)
 
-      await(service.getRegistration(utr, postcode)(hc, provider, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -155,7 +157,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None)))
 
-      await(service.getRegistration(utr, postcode)(hc, provider, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -189,7 +191,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("XX9 9XX"), "GB"), None)))
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, request))
+      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -226,7 +228,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful true)
 
-      await(service.getRegistration(utr, postcode)(hc, provider, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -266,7 +268,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful false)
 
-      await(service.getRegistration(utr, postcode)(hc, provider, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -302,7 +304,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None)))
 
-      await(service.getRegistration(utr, postcode)(hc, provider, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -336,7 +338,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("XX9 9XX"), "GB"), None)))
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, request))
+      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -369,7 +371,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), None, "GB"), None)))
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, requestWithoutAuthProvider))
+      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, requestWithoutAuthProvider))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -403,7 +405,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), None, "GB"), None)))
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, requestWithoutAuthProvider))
+      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, requestWithoutAuthProvider))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -431,7 +433,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val postcode = "AA1 1AA"
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext])).thenReturn(Future successful None)
-      await(service.getRegistration(utr, postcode)(hc, provider, request))
+      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
       val expectedExtraDetail = Json.parse(
         s"""
@@ -462,7 +464,13 @@ class LoggerLikeStub extends LoggerLike {
 
   override val logger: Logger = null
 
-  override def warn(msg: => String) = logMessages += msg
+  override def warn(msg: => String): Unit = {
+    logMessages += msg
+    ()
+  }
 
-  def clear() = logMessages.clear()
+  def clear(): Unit = {
+    logMessages.clear()
+    ()
+  }
 }

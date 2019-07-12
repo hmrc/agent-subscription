@@ -59,6 +59,7 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
     bindIntegerProperty("mongodb.subscriptionjourney.ttl")
+    ()
   }
 
   private def bindBaseUrl(serviceName: String) =

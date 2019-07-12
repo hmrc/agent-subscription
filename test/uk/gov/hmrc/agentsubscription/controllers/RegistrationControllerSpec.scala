@@ -25,22 +25,22 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
-import uk.gov.hmrc.agentsubscription.support.{ AkkaMaterializerSpec, ResettingMockitoSugar, AuthData }
+import uk.gov.hmrc.agentsubscription.support.{ AkkaMaterializerSpec, AuthData, ResettingMockitoSugar }
 import uk.gov.hmrc.auth.core.{ AffinityGroup, AuthConnector, authorise }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, ~ }
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, Future }
 
-class RegistrationControllerSpec extends UnitSpec with AkkaMaterializerSpec with ResettingMockitoSugar with AuthData {
+class RegistrationControllerSpec(implicit val ec: ExecutionContext) extends UnitSpec with AkkaMaterializerSpec with ResettingMockitoSugar with AuthData {
 
   private val metrics: Metrics = resettingMock[Metrics]
   private val microserviceAuthConnector: MicroserviceAuthConnector = resettingMock[MicroserviceAuthConnector]
   private val registrationService = resettingMock[RegistrationService]
   private val authConnector = resettingMock[AuthConnector]
 
-  private val controller = new RegistrationController(registrationService)(metrics, microserviceAuthConnector)
+  private val controller = new RegistrationController(registrationService)(metrics, ec, microserviceAuthConnector)
 
   private val validUtr = Utr("2000000000")
   private val validPostcode = "AA1 1AA"
@@ -51,8 +51,15 @@ class RegistrationControllerSpec extends UnitSpec with AkkaMaterializerSpec with
   val hc: HeaderCarrier = new HeaderCarrier
   val provider = Provider("provId", "provType")
 
-  private def agentAuthStub(returnValue: Future[~[Option[AffinityGroup], Credentials]]) =
-    when(microserviceAuthConnector.authorise(any[authorise.Predicate](), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any(), any())).thenReturn(returnValue)
+  private def agentAuthStub(returnValue: Future[~[Option[AffinityGroup], Option[Credentials]]]) =
+    when(
+      microserviceAuthConnector
+        .authorise(
+          any[authorise.Predicate](),
+          any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(
+            any[HeaderCarrier](),
+            any[ExecutionContext]()))
+      .thenReturn(returnValue)
 
   "register" should {
     "return 400 INVALID_UTR if the UTR is invalid " in {

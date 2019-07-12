@@ -9,12 +9,14 @@ object DataStreamStub {
     stubFor(post(urlEqualTo(auditUrl))
       .willReturn(aResponse()
         .withStatus(204)))
+    ()
   }
 
   def writeAuditMergedSucceeds(): Unit = {
     stubFor(post(urlEqualTo(auditUrl + "/merged"))
       .willReturn(aResponse()
         .withStatus(204)))
+    ()
   }
 
   def verifyAuditRequestSent(event: AgentSubscriptionEvent, tags: JsObject, detail: JsObject) = {

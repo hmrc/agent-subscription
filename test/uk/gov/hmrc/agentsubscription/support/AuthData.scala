@@ -30,13 +30,13 @@ trait AuthData {
     Enrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)), state = "Activated",
       delegatedAuthRule = None))
 
-  val agentAffinityWithCredentialsAndGroupId: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]] = {
-    val retrievals = new ~(new ~(Some(AffinityGroup.Agent), Credentials("providerId", "providerType")), Some("groupId"))
+  val agentAffinityWithCredentialsAndGroupId: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
+    val retrievals = new ~(new ~(Some(AffinityGroup.Agent), Some(Credentials("providerId", "providerType"))), Some("groupId"))
     Future.successful(retrievals)
   }
 
-  val agentAffinityWithCredentials: Future[~[Option[AffinityGroup], Credentials]] = {
-    val retrievals = new ~(Some(AffinityGroup.Agent), Credentials("providerId", "providerType"))
+  val agentAffinityWithCredentials: Future[~[Option[AffinityGroup], Option[Credentials]]] = {
+    val retrievals = new ~(Some(AffinityGroup.Agent), Some(Credentials("providerId", "providerType")))
     Future.successful(retrievals)
   }
 
@@ -44,23 +44,23 @@ trait AuthData {
 
   val individualAffinity: Future[Option[AffinityGroup]] = Future.successful(Some(AffinityGroup.Individual))
 
-  val agentIncorrectAffinity: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]] = {
-    val retrievals = new ~(new ~(Some(AffinityGroup.Individual), Credentials("providerId", "providerType")), Some("groupId"))
+  val agentIncorrectAffinity: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
+    val retrievals = new ~(new ~(Some(AffinityGroup.Individual), Some(Credentials("providerId", "providerType"))), Some("groupId"))
     Future.successful(retrievals)
   }
 
-  val neitherHaveAffinityOrEnrolment: Future[~[~[Option[AffinityGroup], Credentials], Option[String]]] = {
-    val retrievals = new ~(new ~(None, Credentials("providerId", "providerType")), Some("groupId"))
+  val neitherHaveAffinityOrEnrolment: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
+    val retrievals = new ~(new ~(None, Some(Credentials("providerId", "providerType"))), Some("groupId"))
     Future.successful(retrievals)
   }
 
   val failedStubForAgent = Future.failed(new Exception("oh no !"))
 
-  val validAgentAffinity: Future[~[Option[AffinityGroup], Credentials]] =
-    Future successful new ~[Option[AffinityGroup], Credentials](Some(AffinityGroup.Agent), Credentials("credId", "credType"))
-  val invalidAgentAffinity: Future[~[Option[AffinityGroup], Credentials]] =
-    Future successful new ~[Option[AffinityGroup], Credentials](Some(AffinityGroup.Individual), Credentials("credId", "credType"))
-  val noAffinity: Future[~[Option[AffinityGroup], Credentials]] =
-    Future successful new ~[Option[AffinityGroup], Credentials](None, Credentials("credId", "credType"))
+  val validAgentAffinity: Future[~[Option[AffinityGroup], Option[Credentials]]] =
+    Future successful new ~[Option[AffinityGroup], Option[Credentials]](Some(AffinityGroup.Agent), Some(Credentials("credId", "credType")))
+  val invalidAgentAffinity: Future[~[Option[AffinityGroup], Option[Credentials]]] =
+    Future successful new ~[Option[AffinityGroup], Option[Credentials]](Some(AffinityGroup.Individual), Some(Credentials("credId", "credType")))
+  val noAffinity: Future[~[Option[AffinityGroup], Option[Credentials]]] =
+    Future successful new ~[Option[AffinityGroup], Option[Credentials]](None, Some(Credentials("credId", "credType")))
 
 }
