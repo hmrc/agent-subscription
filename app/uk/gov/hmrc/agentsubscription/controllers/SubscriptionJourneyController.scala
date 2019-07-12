@@ -86,7 +86,7 @@ class SubscriptionJourneyController @Inject() (implicit
         } else if (mappedInternalIds.distinct.size != mappedInternalIds.size) {
           Future.successful(BadRequest("Duplicate mapped internal ids in request body"))
         } else {
-          val updatedRecord = journeyRecord.copy(lastModifiedDate = LocalDateTime.now(ZoneOffset.UTC))
+          val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
           subscriptionJourneyRepository.upsert(internalId, updatedRecord).map(_ => NoContent)
         }
       },

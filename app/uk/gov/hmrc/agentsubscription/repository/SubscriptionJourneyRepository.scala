@@ -16,9 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.repository
 
-import java.util.UUID
-
-import javax.inject.{ Inject, Named, Singleton }
+import javax.inject.{ Inject, Singleton }
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
@@ -39,10 +37,10 @@ class SubscriptionJourneyRepository @Inject() (
   extends ReactiveRepository[SubscriptionJourneyRecord, BSONObjectID](
     "subscription-journey",
     mongoComponent.mongoConnector.db,
-    SubscriptionJourneyRecord.format,
+    SubscriptionJourneyRecord.subscriptionJourneyFormat,
     ReactiveMongoFormats.objectIdFormats) {
 
-  private final val EXPIRE_AFTER_SECONDS: Long = 30 * 24 * 60 * 60 // 30 days
+  private def expireRecordAfterSeconds: Long = 2592000 // 30 days
 
   def upsert(id: InternalId, record: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] = {
     collection.update(ordered = false).one(
@@ -69,9 +67,9 @@ class SubscriptionJourneyRepository @Inject() (
       Index(key = Seq("continueId" -> IndexType.Ascending), name = Some("continueId"), unique = true),
       Index(
         key = Seq("lastModifiedDate" -> IndexType.Ascending),
-        name = Some("lastModifiedDate"),
+        name = Some("lastModifiedDateTtl"),
         unique = false,
-        options = BSONDocument("expireAfterSeconds" -> EXPIRE_AFTER_SECONDS)))
+        options = BSONDocument("expireAfterSeconds" -> expireRecordAfterSeconds)))
 
   def findByPrimaryId(internalId: InternalId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
     super.find("internalId" -> internalId).map(_.headOption)

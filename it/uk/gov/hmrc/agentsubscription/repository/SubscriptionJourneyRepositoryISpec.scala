@@ -48,7 +48,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
       cleanCredsInternalId = None,
       mappingComplete = false,
       userMappings = List(),
-      lastModifiedDate = LocalDateTime.now(ZoneOffset.UTC))
+      lastModifiedDate = None)
 
   override def beforeEach() {
     super.beforeEach()

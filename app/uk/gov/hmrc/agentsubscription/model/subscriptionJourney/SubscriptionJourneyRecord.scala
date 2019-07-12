@@ -16,10 +16,10 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import java.time.{ LocalDateTime, ZoneOffset }
-import java.util.UUID
+import java.time.LocalDateTime
 
-import play.api.libs.json.{ Json, OFormat }
+import play.api.libs.functional.syntax._
+import play.api.libs.json.{ JsPath, Json, OFormat }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.{ DateOfBirth, InternalId }
 import uk.gov.hmrc.domain.{ AgentCode, Nino }
@@ -38,10 +38,22 @@ final case class SubscriptionJourneyRecord(
   userMappings: List[UserMapping],
   mappingComplete: Boolean,
   cleanCredsInternalId: Option[InternalId],
-  lastModifiedDate: LocalDateTime)
+  lastModifiedDate: Option[LocalDateTime])
 
 object SubscriptionJourneyRecord {
-  implicit val format: OFormat[SubscriptionJourneyRecord] = Json.format
+
+  import MongoLocalDateTimeFormat._
+
+  implicit val subscriptionJourneyFormat: OFormat[SubscriptionJourneyRecord] = (
+    (JsPath \ "internalId").format[InternalId] and
+    (JsPath \ "continueId").format[String] and
+    (JsPath \ "businessDetails").format[BusinessDetails] and
+    (JsPath \ "amlsData").formatNullable[AmlsData] and
+    (JsPath \ "userMappings").format[List[UserMapping]] and
+    (JsPath \ "mappingComplete").format[Boolean] and
+    (JsPath \ "cleanCredsInternalId").formatNullable[InternalId] and
+    (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime])(SubscriptionJourneyRecord.apply, unlift(SubscriptionJourneyRecord.unapply))
+
 }
 
 /**
