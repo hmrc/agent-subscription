@@ -14,15 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.binders
+package uk.gov.hmrc.agentsubscription.model
 
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{ Crn, InternalId }
-import uk.gov.hmrc.domain.Vrn
+import play.api.libs.json.Format
+import play.api.libs.functional.syntax._
 
-object UrlBinders {
-  implicit val utrBinder = new SimpleObjectBinder[Utr](Utr.apply, _.value)
-  implicit val crnBinder = new SimpleObjectBinder[Crn](Crn.apply, _.value)
-  implicit val vrnBinder = new SimpleObjectBinder[Vrn](Vrn.apply, _.value)
-  implicit val internalIdBinder = new SimpleObjectBinder[InternalId](InternalId.apply, _.id)
+/**
+ * An internal id associated with a Government Gateway account.
+ *
+ * @param id
+ */
+final case class InternalId(id: String)
+
+object InternalId {
+  implicit val format: Format[InternalId] = implicitly[Format[String]].inmap(InternalId(_), _.id)
 }

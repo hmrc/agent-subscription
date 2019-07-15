@@ -23,7 +23,7 @@ import play.api.libs.json.Json.toJson
 import play.api.mvc.{ Action, AnyContent }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.model.{ OverseasAgencyDetails, SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest }
+import uk.gov.hmrc.agentsubscription.model.{ SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.service.{ EnrolmentAlreadyAllocated, SubscriptionService }
 import uk.gov.hmrc.http.Upstream5xxResponse
 import uk.gov.hmrc.play.bootstrap.controller.BaseController

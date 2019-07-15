@@ -14,15 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.binders
+package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{ Crn, InternalId }
-import uk.gov.hmrc.domain.Vrn
+import uk.gov.hmrc.domain.{ SimpleObjectReads, SimpleObjectWrites }
 
-object UrlBinders {
-  implicit val utrBinder = new SimpleObjectBinder[Utr](Utr.apply, _.value)
-  implicit val crnBinder = new SimpleObjectBinder[Crn](Crn.apply, _.value)
-  implicit val vrnBinder = new SimpleObjectBinder[Vrn](Vrn.apply, _.value)
-  implicit val internalIdBinder = new SimpleObjectBinder[InternalId](InternalId.apply, _.id)
+case class Postcode(value: String)
+
+object Postcode {
+  implicit val utrReads = new SimpleObjectReads[Postcode]("value", Postcode.apply)
+  implicit val utrWrites = new SimpleObjectWrites[Postcode](_.value)
 }

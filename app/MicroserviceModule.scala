@@ -58,6 +58,7 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
     bindBaseUrl("email")
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
+    bindIntegerProperty("mongodb.subscriptionjourney.ttl")
     ()
   }
 
@@ -73,6 +74,17 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
 
   private class PropertyProvider(confKey: String) extends Provider[String] {
     override lazy val get = configuration.getString(confKey)
+      .getOrElse(throw new IllegalStateException(s"No value found for configuration property $confKey"))
+  }
+
+  private def bindIntegerProperty(propertyName: String) =
+    bind(classOf[Int])
+      .annotatedWith(Names.named(propertyName))
+      .toProvider(new IntegerPropertyProvider(propertyName))
+
+  private class IntegerPropertyProvider(confKey: String) extends Provider[Int] {
+    override lazy val get: Int = configuration
+      .getInt(confKey)
       .getOrElse(throw new IllegalStateException(s"No value found for configuration property $confKey"))
   }
 
