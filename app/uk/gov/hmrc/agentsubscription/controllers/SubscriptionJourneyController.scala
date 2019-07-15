@@ -16,38 +16,24 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import java.time.{ LocalDateTime, ZoneId, ZoneOffset }
-import java.util.UUID
+import java.time.{ LocalDateTime, ZoneOffset }
 
 import com.google.inject.Inject
-import com.kenshoo.play.metrics.Metrics
+import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
-import play.api.libs.json.{ JsError, JsSuccess, JsValue }
-import play.api.mvc.{ Action, AnyContent, Result }
+import play.api.mvc.{ Action, AnyContent }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.auth.AuthActions
-import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.InternalId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success, Try }
 
 class SubscriptionJourneyController @Inject() (implicit
-  metrics: Metrics,
-  microserviceAuthConnector: MicroserviceAuthConnector,
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   ec: ExecutionContext)
-  extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
-
-  private def localWithJsonBody(f: SubscriptionJourneyRecord => Future[Result], request: JsValue): Future[Result] =
-    Try(request.validate[SubscriptionJourneyRecord]) match {
-      case Success(JsSuccess(payload, _)) => f(payload)
-      case Success(JsError(errs)) => Future successful BadRequest(s"Invalid payload: $errs")
-      case Failure(e) => Future successful BadRequest(s"could not parse body due to ${e.getMessage}")
-    }
+  extends BaseController {
 
   def findByPrimaryId(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
     subscriptionJourneyRepository.findByPrimaryId(internalId).map {
@@ -78,19 +64,20 @@ class SubscriptionJourneyController @Inject() (implicit
   }
 
   def createOrUpdate(internalId: InternalId): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    localWithJsonBody(
-      journeyRecord => {
-        val mappedInternalIds = journeyRecord.userMappings.map(_.internalId)
-        if (journeyRecord.internalId != internalId) {
-          Future.successful(BadRequest("Internal ids in request URL and body do not match"))
-        } else if (mappedInternalIds.distinct.size != mappedInternalIds.size) {
-          Future.successful(BadRequest("Duplicate mapped internal ids in request body"))
-        } else {
-          val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
-          subscriptionJourneyRepository.upsert(internalId, updatedRecord).map(_ => NoContent)
+    withJsonBody[SubscriptionJourneyRecord] {
+      journeyRecord =>
+        {
+          val mappedInternalIds = journeyRecord.userMappings.map(_.internalId)
+          if (journeyRecord.internalId != internalId) {
+            Future.successful(BadRequest("Internal ids in request URL and body do not match"))
+          } else if (mappedInternalIds.distinct.size != mappedInternalIds.size) {
+            Future.successful(BadRequest("Duplicate mapped internal ids in request body"))
+          } else {
+            val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
+            subscriptionJourneyRepository.upsert(internalId, updatedRecord).map(_ => NoContent)
+          }
         }
-      },
-      request.body)
+    }
   }
 
   def delete(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
