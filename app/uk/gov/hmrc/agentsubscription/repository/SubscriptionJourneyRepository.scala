@@ -71,6 +71,12 @@ class SubscriptionJourneyRepository @Inject() (
         unique = false,
         options = BSONDocument("expireAfterSeconds" -> expireRecordAfterSeconds)))
 
+  def findByAuthId(internalId: InternalId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
+    super.find(
+      query = "$or" -> Json.arr(
+        Json.obj(fields = "internalId" -> internalId),
+        Json.obj(fields = "userMappings.internalId" -> internalId))).map(_.headOption)
+
   def findByPrimaryId(internalId: InternalId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
     super.find("internalId" -> internalId).map(_.headOption)
 

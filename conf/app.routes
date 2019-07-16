@@ -14,6 +14,9 @@ GET    /vat-known-facts/vrn/:vrn/dateOfRegistration/:dateOfReg     @uk.gov.hmrc.
 POST    /citizen-details                     @uk.gov.hmrc.agentsubscription.controllers.CitizenDetailsController.checkCitizenDetails()
 
 
+# Find journey record by either primary or mapped auth id
+GET     /subscription/journey/id/:internalId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByAuthId(internalId: InternalId)
+
 GET     /subscription/journey/primaryId/:internalId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByPrimaryId(internalId: InternalId)
 
 GET     /subscription/journey/mappedId/:internalId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByMappedId(internalId: InternalId)

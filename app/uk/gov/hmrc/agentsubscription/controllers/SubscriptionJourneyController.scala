@@ -35,6 +35,13 @@ class SubscriptionJourneyController @Inject() (implicit
   ec: ExecutionContext)
   extends BaseController {
 
+  def findByAuthId(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
+    subscriptionJourneyRepository.findByAuthId(internalId).map {
+      case Some(record) => Ok(toJson(record))
+      case None => NoContent
+    }
+  }
+
   def findByPrimaryId(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
     subscriptionJourneyRepository.findByPrimaryId(internalId).map {
       case Some(record) => Ok(toJson(record))
