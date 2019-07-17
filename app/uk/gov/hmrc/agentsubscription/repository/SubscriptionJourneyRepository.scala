@@ -24,7 +24,7 @@ import reactivemongo.api.indexes.{ Index, IndexType }
 import reactivemongo.bson.{ BSONDocument, BSONObjectID }
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.InternalId
+import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
@@ -42,9 +42,9 @@ class SubscriptionJourneyRepository @Inject() (
 
   private def expireRecordAfterSeconds: Long = 2592000 // 30 days
 
-  def upsert(id: InternalId, record: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] = {
+  def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] = {
     collection.update(ordered = false).one(
-      Json.obj("internalId" -> id.id),
+      Json.obj("authProviderId" -> authProviderId.id),
       record,
       upsert = true).checkResult
   }
@@ -61,8 +61,8 @@ class SubscriptionJourneyRepository @Inject() (
 
   override def indexes: Seq[Index] =
     Seq(
-      Index(key = Seq("internalId" -> IndexType.Ascending), name = Some("primaryInternalId"), unique = true),
-      Index(key = Seq("userMappings.internalId" -> IndexType.Ascending), name = Some("mappedInternalId"), unique = true),
+      Index(key = Seq("authProviderId" -> IndexType.Ascending), name = Some("primaryAuthId"), unique = true),
+      Index(key = Seq("userMappings.authProviderId" -> IndexType.Ascending), name = Some("mappedAuthId"), unique = true),
       Index(key = Seq("businessDetails.utr" -> IndexType.Ascending), name = Some("utr"), unique = true),
       Index(key = Seq("continueId" -> IndexType.Ascending), name = Some("continueId"), unique = true),
       Index(
@@ -71,17 +71,17 @@ class SubscriptionJourneyRepository @Inject() (
         unique = false,
         options = BSONDocument("expireAfterSeconds" -> expireRecordAfterSeconds)))
 
-  def findByAuthId(internalId: InternalId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
+  def findByAuthId(authProviderId: AuthProviderId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
     super.find(
       query = "$or" -> Json.arr(
-        Json.obj(fields = "internalId" -> internalId),
-        Json.obj(fields = "userMappings.internalId" -> internalId))).map(_.headOption)
+        Json.obj(fields = "authProviderId" -> authProviderId),
+        Json.obj(fields = "userMappings.authProviderId" -> authProviderId))).map(_.headOption)
 
-  def findByPrimaryId(internalId: InternalId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("internalId" -> internalId).map(_.headOption)
+  def findByPrimaryId(authProviderId: AuthProviderId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
+    super.find("authProviderId" -> authProviderId).map(_.headOption)
 
-  def findByMappedId(internalId: InternalId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("userMappings.internalId" -> internalId).map(_.headOption)
+  def findByMappedId(authProviderId: AuthProviderId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
+    super.find("userMappings.authProviderId" -> authProviderId).map(_.headOption)
 
   def findByContinueId(continueId: String)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
     super.find("continueId" -> continueId).map(_.headOption)
@@ -89,6 +89,6 @@ class SubscriptionJourneyRepository @Inject() (
   def findByUtr(utr: Utr)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
     super.find("businessDetails.utr" -> utr.value).map(_.headOption)
 
-  def delete(primaryInternalId: InternalId)(implicit ec: ExecutionContext): Future[Unit] =
-    remove("internalId" -> primaryInternalId.id).map(_ => ())
+  def delete(primaryAuthId: AuthProviderId)(implicit ec: ExecutionContext): Future[Unit] =
+    remove("authProviderId" -> primaryAuthId.id).map(_ => ())
 }

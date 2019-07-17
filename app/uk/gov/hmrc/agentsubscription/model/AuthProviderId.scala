@@ -20,12 +20,12 @@ import play.api.libs.json.Format
 import play.api.libs.functional.syntax._
 
 /**
- * An internal id associated with a Government Gateway account.
+ * Auth provider id (credential id) associated with a Government Gateway account.
  *
  * @param id
  */
-final case class InternalId(id: String)
+final case class AuthProviderId(id: String)
 
-object InternalId {
-  implicit val format: Format[InternalId] = implicitly[Format[String]].inmap(InternalId(_), _.id)
+object AuthProviderId {
+  implicit val format: Format[AuthProviderId] = implicitly[Format[String]].inmap(AuthProviderId(_), _.id)
 }

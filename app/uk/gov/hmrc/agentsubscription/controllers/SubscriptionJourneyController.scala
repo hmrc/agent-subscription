@@ -23,7 +23,7 @@ import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
 import play.api.mvc.{ Action, AnyContent }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.InternalId
+import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
@@ -35,22 +35,22 @@ class SubscriptionJourneyController @Inject() (implicit
   ec: ExecutionContext)
   extends BaseController {
 
-  def findByAuthId(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
-    subscriptionJourneyRepository.findByAuthId(internalId).map {
+  def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
+    subscriptionJourneyRepository.findByAuthId(authProviderId).map {
       case Some(record) => Ok(toJson(record))
       case None => NoContent
     }
   }
 
-  def findByPrimaryId(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
-    subscriptionJourneyRepository.findByPrimaryId(internalId).map {
+  def findByPrimaryId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
+    subscriptionJourneyRepository.findByPrimaryId(authProviderId).map {
       case Some(record) => Ok(toJson(record))
       case None => NoContent
     }
   }
 
-  def findByMappedId(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
-    subscriptionJourneyRepository.findByMappedId(internalId).map {
+  def findByMappedId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
+    subscriptionJourneyRepository.findByMappedId(authProviderId).map {
       case Some(record) => Ok(toJson(record))
       case None => NoContent
     }
@@ -70,25 +70,25 @@ class SubscriptionJourneyController @Inject() (implicit
     }
   }
 
-  def createOrUpdate(internalId: InternalId): Action[JsValue] = Action.async(parse.json) { implicit request =>
+  def createOrUpdate(authProviderId: AuthProviderId): Action[JsValue] = Action.async(parse.json) { implicit request =>
     withJsonBody[SubscriptionJourneyRecord] {
       journeyRecord =>
         {
-          val mappedInternalIds = journeyRecord.userMappings.map(_.internalId)
-          if (journeyRecord.internalId != internalId) {
+          val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
+          if (journeyRecord.authProviderId != authProviderId) {
             Future.successful(BadRequest("Internal ids in request URL and body do not match"))
-          } else if (mappedInternalIds.distinct.size != mappedInternalIds.size) {
+          } else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
             Future.successful(BadRequest("Duplicate mapped internal ids in request body"))
           } else {
             val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
-            subscriptionJourneyRepository.upsert(internalId, updatedRecord).map(_ => NoContent)
+            subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent)
           }
         }
     }
   }
 
-  def delete(internalId: InternalId): Action[AnyContent] = Action.async { implicit request =>
-    subscriptionJourneyRepository.delete(internalId).map(_ => NoContent)
+  def delete(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
+    subscriptionJourneyRepository.delete(authProviderId).map(_ => NoContent)
   }
 
 }

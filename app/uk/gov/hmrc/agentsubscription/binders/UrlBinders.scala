@@ -17,12 +17,12 @@
 package uk.gov.hmrc.agentsubscription.binders
 
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{ Crn, InternalId }
+import uk.gov.hmrc.agentsubscription.model.{ Crn, AuthProviderId }
 import uk.gov.hmrc.domain.Vrn
 
 object UrlBinders {
   implicit val utrBinder = new SimpleObjectBinder[Utr](Utr.apply, _.value)
   implicit val crnBinder = new SimpleObjectBinder[Crn](Crn.apply, _.value)
   implicit val vrnBinder = new SimpleObjectBinder[Vrn](Vrn.apply, _.value)
-  implicit val internalIdBinder = new SimpleObjectBinder[InternalId](InternalId.apply, _.id)
+  implicit val authProviderIdBinder = new SimpleObjectBinder[AuthProviderId](AuthProviderId.apply, _.id)
 }

@@ -14,17 +14,17 @@ GET    /vat-known-facts/vrn/:vrn/dateOfRegistration/:dateOfReg     @uk.gov.hmrc.
 POST    /citizen-details                     @uk.gov.hmrc.agentsubscription.controllers.CitizenDetailsController.checkCitizenDetails()
 
 
-# Find journey record by either primary or mapped auth id
-GET     /subscription/journey/id/:internalId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByAuthId(internalId: InternalId)
+# Find journey record by either primary or mapped auth provider id
+GET     /subscription/journey/id/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByAuthId(authProviderId: AuthProviderId)
 
-GET     /subscription/journey/primaryId/:internalId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByPrimaryId(internalId: InternalId)
+GET     /subscription/journey/primaryId/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByPrimaryId(authProviderId: AuthProviderId)
 
-GET     /subscription/journey/mappedId/:internalId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByMappedId(internalId: InternalId)
+GET     /subscription/journey/mappedId/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByMappedId(authProviderId: AuthProviderId)
 
 GET     /subscription/journey/utr/:utr           @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByUtr(utr: Utr)
 
 GET     /subscription/journey/continueId/:uuid   @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByContinueId(uuid: String)
 
-POST /subscription/journey/primaryId/:internalId @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.createOrUpdate(internalId: InternalId)
+POST /subscription/journey/primaryId/:authProviderId @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.createOrUpdate(authProviderId: AuthProviderId)
 
-DELETE /subscription/journey/primaryId/:internalId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.delete(internalId: InternalId)
+DELETE /subscription/journey/primaryId/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.delete(authProviderId: AuthProviderId)
