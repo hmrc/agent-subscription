@@ -21,7 +21,7 @@ import java.time.LocalDateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{ JsPath, Json, OFormat }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{ DateOfBirth, InternalId }
+import uk.gov.hmrc.agentsubscription.model.{ DateOfBirth, AuthProviderId }
 import uk.gov.hmrc.domain.{ AgentCode, Nino }
 
 /**
@@ -31,13 +31,13 @@ import uk.gov.hmrc.domain.{ AgentCode, Nino }
  */
 
 final case class SubscriptionJourneyRecord(
-  internalId: InternalId,
+  authProviderId: AuthProviderId,
   continueId: String, // once allocated, should not be changed?
   businessDetails: BusinessDetails,
   amlsData: Option[AmlsData],
   userMappings: List[UserMapping],
   mappingComplete: Boolean,
-  cleanCredsInternalId: Option[InternalId],
+  cleanCredsAuthProviderId: Option[AuthProviderId],
   lastModifiedDate: Option[LocalDateTime])
 
 object SubscriptionJourneyRecord {
@@ -45,13 +45,13 @@ object SubscriptionJourneyRecord {
   import MongoLocalDateTimeFormat._
 
   implicit val subscriptionJourneyFormat: OFormat[SubscriptionJourneyRecord] = (
-    (JsPath \ "internalId").format[InternalId] and
+    (JsPath \ "authProviderId").format[AuthProviderId] and
     (JsPath \ "continueId").format[String] and
     (JsPath \ "businessDetails").format[BusinessDetails] and
     (JsPath \ "amlsData").formatNullable[AmlsData] and
     (JsPath \ "userMappings").format[List[UserMapping]] and
     (JsPath \ "mappingComplete").format[Boolean] and
-    (JsPath \ "cleanCredsInternalId").formatNullable[InternalId] and
+    (JsPath \ "cleanCredsAuthProviderId").formatNullable[AuthProviderId] and
     (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime])(SubscriptionJourneyRecord.apply, unlift(SubscriptionJourneyRecord.unapply))
 
 }
@@ -80,7 +80,7 @@ object BusinessDetails {
 }
 
 case class UserMapping(
-  internalId: InternalId,
+  authProviderId: AuthProviderId,
   agentCodes: Seq[AgentCode] = Seq.empty,
   count: Int = 0)
 

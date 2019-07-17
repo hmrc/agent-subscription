@@ -69,7 +69,7 @@ lazy val root = Project("agent-subscription", file("."))
     scoverageSettings,
     unmanagedResourceDirectories in Compile += baseDirectory.value / "resources",
     routesImport ++= Seq(
-      "uk.gov.hmrc.agentsubscription.model.InternalId",
+      "uk.gov.hmrc.agentsubscription.model.AuthProviderId",
       "java.util.UUID",
       "uk.gov.hmrc.agentmtdidentifiers.model.Utr",
       "uk.gov.hmrc.agentsubscription.binders.UrlBinders._"

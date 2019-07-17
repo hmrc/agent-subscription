@@ -10,7 +10,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
-import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, InternalId, RegisteredDetails }
+import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, AuthProviderId, RegisteredDetails }
 import uk.gov.hmrc.agentsubscription.support.MongoApp
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.test.UnitSpec
@@ -37,7 +37,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
 
   private val subscriptionJourneyRecord =
     SubscriptionJourneyRecord(
-      InternalId("internal-id"),
+      AuthProviderId("auth-id"),
       businessDetails = BusinessDetails(
         businessType = BusinessType.SoleTrader,
         utr = validUtr,
@@ -45,7 +45,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
         nino = Some(Nino("AE123456C"))),
       continueId = "XXX",
       amlsData = None,
-      cleanCredsInternalId = None,
+      cleanCredsAuthProviderId = None,
       mappingComplete = false,
       userMappings = List(),
       lastModifiedDate = None)
@@ -59,9 +59,9 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
   "SubscriptionJourneyRepository" should {
 
     "create a SubscriptionJourney record" in {
-      await(repo.upsert(subscriptionJourneyRecord.internalId, subscriptionJourneyRecord))
+      await(repo.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
 
-      await(repo.findByPrimaryId(InternalId("internal-id"))).head shouldBe subscriptionJourneyRecord
+      await(repo.findByPrimaryId(AuthProviderId("auth-id"))).head shouldBe subscriptionJourneyRecord
     }
 
     "find a SubscriptionJourney by Utr" in {
@@ -78,8 +78,8 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
 
     "delete a SubscriptionJourney record by Utr" in {
       await(repo.insert(subscriptionJourneyRecord))
-      await(repo.delete(InternalId("internal-id")))
-      await(repo.findByPrimaryId(InternalId("internal-id"))) shouldBe empty
+      await(repo.delete(AuthProviderId("auth-id")))
+      await(repo.findByPrimaryId(AuthProviderId("auth-id"))) shouldBe empty
     }
 
     "update a SubscriptionJourney record" in {
@@ -88,9 +88,9 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
           businessDetails = subscriptionJourneyRecord.businessDetails.copy(postcode = Postcode("AAABBB")))
 
       await(repo.insert(subscriptionJourneyRecord))
-      await(repo.upsert(InternalId("internal-id"), updatedSubscriptionJourney))
+      await(repo.upsert(AuthProviderId("auth-id"), updatedSubscriptionJourney))
 
-      await(repo.findByPrimaryId(InternalId("internal-id"))) shouldBe Some(updatedSubscriptionJourney)
+      await(repo.findByPrimaryId(AuthProviderId("auth-id"))) shouldBe Some(updatedSubscriptionJourney)
     }
   }
 }
