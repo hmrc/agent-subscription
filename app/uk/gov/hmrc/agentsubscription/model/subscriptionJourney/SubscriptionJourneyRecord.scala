@@ -32,7 +32,7 @@ import uk.gov.hmrc.domain.{ AgentCode, Nino }
 
 final case class SubscriptionJourneyRecord(
   authProviderId: AuthProviderId,
-  continueId: String, // once allocated, should not be changed?
+  continueId: Option[String], // once allocated, should not be changed?
   businessDetails: BusinessDetails,
   amlsData: Option[AmlsData],
   userMappings: List[UserMapping],
@@ -46,7 +46,7 @@ object SubscriptionJourneyRecord {
 
   implicit val subscriptionJourneyFormat: OFormat[SubscriptionJourneyRecord] = (
     (JsPath \ "authProviderId").format[AuthProviderId] and
-    (JsPath \ "continueId").format[String] and
+    (JsPath \ "continueId").formatNullable[String] and
     (JsPath \ "businessDetails").format[BusinessDetails] and
     (JsPath \ "amlsData").formatNullable[AmlsData] and
     (JsPath \ "userMappings").format[List[UserMapping]] and

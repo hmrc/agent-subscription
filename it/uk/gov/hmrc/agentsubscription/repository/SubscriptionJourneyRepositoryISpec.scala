@@ -43,7 +43,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
         utr = validUtr,
         postcode = Postcode("bn12 1hn"),
         nino = Some(Nino("AE123456C"))),
-      continueId = "XXX",
+      continueId = Some("XXX"),
       amlsData = None,
       cleanCredsAuthProviderId = None,
       mappingComplete = false,
