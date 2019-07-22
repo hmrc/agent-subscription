@@ -38,6 +38,7 @@ final case class SubscriptionJourneyRecord(
   userMappings: List[UserMapping],
   mappingComplete: Boolean,
   cleanCredsAuthProviderId: Option[AuthProviderId],
+  subscriptionCreated: Boolean = false,
   lastModifiedDate: Option[LocalDateTime])
 
 object SubscriptionJourneyRecord {
@@ -52,6 +53,7 @@ object SubscriptionJourneyRecord {
     (JsPath \ "userMappings").format[List[UserMapping]] and
     (JsPath \ "mappingComplete").format[Boolean] and
     (JsPath \ "cleanCredsAuthProviderId").formatNullable[AuthProviderId] and
+    (JsPath \ "subscriptionCreated").format[Boolean] and
     (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime])(SubscriptionJourneyRecord.apply, unlift(SubscriptionJourneyRecord.unapply))
 
 }
