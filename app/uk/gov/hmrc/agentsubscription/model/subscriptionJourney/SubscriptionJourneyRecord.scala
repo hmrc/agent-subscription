@@ -21,7 +21,8 @@ import java.time.LocalDateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{ JsPath, Json, OFormat }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.{ DateOfBirth, AuthProviderId }
+import uk.gov.hmrc.agentsubscription.model.{ AuthProviderId, DateOfBirth }
+import uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney.AmlsData
 import uk.gov.hmrc.domain.{ AgentCode, Nino }
 
 /**
@@ -38,7 +39,7 @@ final case class SubscriptionJourneyRecord(
   userMappings: List[UserMapping],
   mappingComplete: Boolean,
   cleanCredsAuthProviderId: Option[AuthProviderId],
-  subscriptionCreated: Boolean = false,
+  subscriptionCreated: Boolean,
   lastModifiedDate: Option[LocalDateTime])
 
 object SubscriptionJourneyRecord {
