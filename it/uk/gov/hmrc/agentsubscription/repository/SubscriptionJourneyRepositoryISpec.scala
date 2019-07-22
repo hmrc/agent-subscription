@@ -48,6 +48,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
       cleanCredsAuthProviderId = None,
       mappingComplete = false,
       userMappings = List(),
+      subscriptionCreated = false,
       lastModifiedDate = None)
 
   override def beforeEach() {
