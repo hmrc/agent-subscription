@@ -37,25 +37,29 @@ import java.time.format.DateTimeFormatter
 
 import play.api.libs.json._
 
-case class RegisteredDetails(supervisoryBody: String, membershipNumber: String, membershipExpiresOn: LocalDate)
+case class RegDetails(membershipNumber: String, membershipExpiresOn: LocalDate)
 
-object RegisteredDetails {
-  implicit val format: OFormat[RegisteredDetails] = Json.format[RegisteredDetails]
+object RegDetails {
+  implicit val format: OFormat[RegDetails] = Json.format[RegDetails]
 }
 
-case class PendingDetails(appliedOn: LocalDate)
+case class PendingDate(appliedOn: LocalDate)
 
-object PendingDetails {
-  implicit val format: OFormat[PendingDetails] = Json.format[PendingDetails]
+object PendingDate {
+  implicit val format: OFormat[PendingDate] = Json.format[PendingDate]
 }
 
 case class AmlsData(
   amlsRegistered: Boolean,
   amlsAppliedFor: Option[Boolean],
-  pendingDetails: Option[PendingDetails],
-  registeredDetails: Option[RegisteredDetails])
+  supervisoryBody: Option[String],
+  pendingDetails: Option[PendingDate],
+  registeredDetails: Option[RegDetails])
 
 object AmlsData {
+
+  val registeredUserNoDataEntered = AmlsData(amlsRegistered = true, None, None, None, None)
+  val nonRegisteredUserNoDataEntered = AmlsData(amlsRegistered = false, None, None, None, None)
 
   implicit val localDateFormat = new Format[LocalDate] {
     override def reads(json: JsValue): JsResult[LocalDate] =
