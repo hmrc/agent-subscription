@@ -63,6 +63,7 @@ class SubscriptionJourneyRepository @Inject() (
     Seq(
       Index(key = Seq("authProviderId" -> IndexType.Ascending), name = Some("primaryAuthId"), unique = true),
       Index(key = Seq("userMappings.authProviderId" -> IndexType.Ascending), name = Some("mappedAuthId"), unique = true, sparse = true),
+      Index(key = Seq("cleanCredsAuthProviderId" -> IndexType.Ascending), name = Some("cleanCredsAuthProviderId"), unique = true, sparse = true),
       Index(key = Seq("businessDetails.utr" -> IndexType.Ascending), name = Some("utr"), unique = true),
       Index(key = Seq("continueId" -> IndexType.Ascending), name = Some("continueId"), unique = true, sparse = true),
       Index(
@@ -75,6 +76,7 @@ class SubscriptionJourneyRepository @Inject() (
     super.find(
       query = "$or" -> Json.arr(
         Json.obj(fields = "authProviderId" -> authProviderId),
+        Json.obj(fields = "cleanCredsAuthProviderId" -> authProviderId),
         Json.obj(fields = "userMappings.authProviderId" -> authProviderId))).map(_.headOption)
 
   def findByPrimaryId(authProviderId: AuthProviderId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
