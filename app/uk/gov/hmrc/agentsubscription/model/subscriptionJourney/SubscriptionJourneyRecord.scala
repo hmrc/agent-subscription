@@ -82,11 +82,3 @@ object BusinessDetails {
   implicit val format: OFormat[BusinessDetails] = Json.format
 }
 
-case class UserMapping(
-  authProviderId: AuthProviderId,
-  agentCodes: Seq[AgentCode] = Seq.empty,
-  count: Int = 0)
-
-object UserMapping {
-  implicit val format: OFormat[UserMapping] = Json.format
-}
