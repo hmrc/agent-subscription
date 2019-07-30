@@ -133,7 +133,7 @@ class DesConnector @Inject() (
         }
 
         def isAnASAgent = (r \ "isAnASAgent").validate[Boolean] match {
-          case JsSuccess(value, _) => true
+          case JsSuccess(value, _) => value
           case JsError(_) => throw InvalidIsAnASAgentException
         }
 
