@@ -35,33 +35,14 @@ package uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney
 import java.time.LocalDate
 
 import play.api.libs.json._
+import uk.gov.hmrc.agentsubscription.model.AmlsDetails
 
-case class RegDetails(membershipNumber: String, membershipExpiresOn: LocalDate)
-
-object RegDetails {
-  implicit val format: OFormat[RegDetails] = Json.format[RegDetails]
-}
-
-case class PendingDate(appliedOn: LocalDate)
-
-object PendingDate {
-  implicit val format: OFormat[PendingDate] = Json.format[PendingDate]
-}
-
-case class AmlsData(
-  amlsRegistered: Boolean,
-  amlsAppliedFor: Option[Boolean],
-  supervisoryBody: Option[String],
-  pendingDetails: Option[PendingDate],
-  registeredDetails: Option[RegDetails])
+case class AmlsData(amlsRegistered: Boolean, amlsAppliedFor: Option[Boolean], amlsDetails: Option[AmlsDetails])
 
 object AmlsData {
 
-  implicit val localDateFormat: Format[LocalDate] = new Format[LocalDate] {
-    override def reads(json: JsValue): JsResult[LocalDate] =
-      json.validate[String].map(LocalDate.parse)
-    override def writes(o: LocalDate): JsValue = Json.toJson(o.toString)
-  }
+  val registeredUserNoDataEntered = AmlsData(amlsRegistered = true, None, None)
+  val nonRegisteredUserNoDataEntered = AmlsData(amlsRegistered = false, None, None)
 
-  implicit val format: Format[AmlsData] = Json.format
+  implicit val format: Format[AmlsData] = Json.format[AmlsData]
 }
