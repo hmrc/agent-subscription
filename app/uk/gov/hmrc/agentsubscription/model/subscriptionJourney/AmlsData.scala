@@ -44,11 +44,5 @@ object AmlsData {
   val registeredUserNoDataEntered = AmlsData(amlsRegistered = true, None, None)
   val nonRegisteredUserNoDataEntered = AmlsData(amlsRegistered = false, None, None)
 
-  implicit val localDateFormat: Format[LocalDate] = new Format[LocalDate] {
-    override def reads(json: JsValue): JsResult[LocalDate] =
-      json.validate[String].map(LocalDate.parse)
-    override def writes(o: LocalDate): JsValue = Json.toJson(o.toString)
-  }
-
   implicit val format: Format[AmlsData] = Json.format[AmlsData]
 }
