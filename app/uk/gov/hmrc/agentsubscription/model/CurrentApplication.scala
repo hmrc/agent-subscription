@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.Json
+import play.api.libs.json.{ Json, OFormat }
 
 case class CurrentApplication(
   status: ApplicationStatus,
@@ -27,5 +27,5 @@ case class CurrentApplication(
   agencyDetails: OverseasAgencyDetails)
 
 object CurrentApplication {
-  implicit val format = Json.format[CurrentApplication]
+  implicit val format: OFormat[CurrentApplication] = Json.format
 }

@@ -21,6 +21,6 @@ import uk.gov.hmrc.domain.{ SimpleObjectReads, SimpleObjectWrites }
 case class Postcode(value: String)
 
 object Postcode {
-  implicit val utrReads = new SimpleObjectReads[Postcode]("value", Postcode.apply)
-  implicit val utrWrites = new SimpleObjectWrites[Postcode](_.value)
+  implicit val utrReads: SimpleObjectReads[Postcode] = new SimpleObjectReads[Postcode]("value", Postcode.apply)
+  implicit val utrWrites: SimpleObjectWrites[Postcode] = new SimpleObjectWrites[Postcode](_.value)
 }

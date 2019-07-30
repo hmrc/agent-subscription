@@ -1,9 +1,10 @@
 package uk.gov.hmrc.agentsubscription.stubs
 
+import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
+
 object DataStreamStub {
   import com.github.tomakehurst.wiremock.client.WireMock._
   import play.api.libs.json.JsObject
-  import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscriptionEvent
 
   def writeAuditSucceeds(): Unit = {
     stubFor(post(urlEqualTo(auditUrl))

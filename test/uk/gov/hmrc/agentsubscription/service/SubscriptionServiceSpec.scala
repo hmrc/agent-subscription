@@ -18,24 +18,24 @@ package uk.gov.hmrc.agentsubscription.service
 
 import java.time.LocalDate
 
-import org.mockito.ArgumentMatchers.{ any, anyString, contains, eq => eqs }
-import org.mockito.Mockito.{ verify, when }
+import org.mockito.ArgumentMatchers.{any, anyString, contains, eq => eqs}
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
-import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.json.{JsObject, Json}
+import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
-import uk.gov.hmrc.agentsubscription.audit.AuditService
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentsubscription.audit.{AgentSubscription, AuditService}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
-import uk.gov.hmrc.agentsubscription.connectors.{ EnrolmentRequest, Address => _, _ }
+import uk.gov.hmrc.agentsubscription.connectors.{EnrolmentRequest, Address => _, _}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
-import uk.gov.hmrc.http.{ GatewayTimeoutException, HeaderCarrier }
+import uk.gov.hmrc.http.{GatewayTimeoutException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
@@ -50,9 +50,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private val authIds = AuthIds("userId", "groupId")
 
   private val service = new SubscriptionService(desConnector, taxEnrolmentConnector, auditService, recoveryRepository, agentAssuranceConnector, agentOverseasAppConn, emailConnector)
-  private implicit val hc = HeaderCarrier()
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
-  private implicit val fakeRequest = FakeRequest("POST", "/agent-subscription/subscription")
+  private implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("POST", "/agent-subscription/subscription")
 
   "CreateSubscription" should {
     val businessUtr = Utr("4000000009")

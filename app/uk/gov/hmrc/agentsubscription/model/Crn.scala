@@ -16,13 +16,13 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{ JsPath, Json, Reads }
+import play.api.libs.json.{ JsPath, Reads }
 import uk.gov.hmrc.domain.{ SimpleObjectWrites, TaxIdentifier }
 
 case class Crn(value: String) extends TaxIdentifier
 
 object Crn {
-  implicit val writes = new SimpleObjectWrites[Crn](_.value)
+  implicit val writes: SimpleObjectWrites[Crn] = new SimpleObjectWrites[Crn](_.value)
 
   implicit val reads: Reads[Crn] = {
     JsPath.read[String](crnValidation).map(Crn.apply)

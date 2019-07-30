@@ -29,8 +29,6 @@ import scala.concurrent.ExecutionContext
 @Singleton
 class AuditService @Inject() (auditConnector: AuditConnector)(implicit val ec: ExecutionContext) {
 
-  import AgentSubscriptionEvent.AgentSubscriptionEvent
-
   def auditEvent(
     event: AgentSubscriptionEvent,
     transactionName: String,
@@ -56,8 +54,8 @@ class AuditService @Inject() (auditConnector: AuditConnector)(implicit val ec: E
   }
 }
 
-object AgentSubscriptionEvent extends Enumeration {
-  val AgentSubscription, CheckAgencyStatus, OverseasAgentSubscription = Value
+sealed abstract class AgentSubscriptionEvent
+case object AgentSubscription extends AgentSubscriptionEvent
+case object CheckAgencyStatus extends AgentSubscriptionEvent
+case object OverseasAgentSubscription extends AgentSubscriptionEvent
 
-  type AgentSubscriptionEvent = AgentSubscriptionEvent.Value
-}

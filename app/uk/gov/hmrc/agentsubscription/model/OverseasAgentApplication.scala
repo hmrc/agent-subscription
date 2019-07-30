@@ -42,7 +42,7 @@ case class OverseasAgencyAddress(
   countryCode: String)
 
 object OverseasAgencyAddress {
-  implicit val writes = Json.writes[OverseasAgencyAddress]
+  implicit val writes: OWrites[OverseasAgencyAddress] = Json.writes[OverseasAgencyAddress]
   implicit val reads: Reads[OverseasAgencyAddress] = (
     (__ \ "addressLine1").read[String](overseasAddressValidation) and
     (__ \ "addressLine2").read[String](overseasAddressValidation) and
@@ -52,7 +52,7 @@ object OverseasAgencyAddress {
 }
 
 object OverseasBusinessAddress {
-  implicit val writes = Json.writes[OverseasBusinessAddress]
+  implicit val writes: OWrites[OverseasBusinessAddress] = Json.writes[OverseasBusinessAddress]
   implicit val reads: Reads[OverseasBusinessAddress] = (
     (__ \ "addressLine1").read[String](overseasAddressValidation) and
     (__ \ "addressLine2").read[String](overseasAddressValidation) and
@@ -62,7 +62,7 @@ object OverseasBusinessAddress {
 }
 
 object TradingDetails {
-  implicit val writes = Json.writes[TradingDetails]
+  implicit val writes: OWrites[TradingDetails] = Json.writes[TradingDetails]
 
   implicit val reads: Reads[TradingDetails] = (
     (__ \ "tradingName").read[String](overseasNameValidation) and
@@ -70,7 +70,7 @@ object TradingDetails {
 }
 
 object OverseasContactDetails {
-  implicit val writes = Json.writes[OverseasContactDetails]
+  implicit val writes: OWrites[OverseasContactDetails] = Json.writes[OverseasContactDetails]
 
   implicit val reads: Reads[OverseasContactDetails] = (
     (__ \ "businessTelephone").read[String](overseasTelephoneNumberValidation) and
@@ -78,7 +78,7 @@ object OverseasContactDetails {
 }
 
 object OverseasAgencyDetails {
-  implicit val writes = Json.writes[OverseasAgencyDetails]
+  implicit val writes: OWrites[OverseasAgencyDetails] = Json.writes[OverseasAgencyDetails]
 
   implicit val reads: Reads[OverseasAgencyDetails] = (
     (__ \ "agencyName").read[String](overseasNameValidation) and

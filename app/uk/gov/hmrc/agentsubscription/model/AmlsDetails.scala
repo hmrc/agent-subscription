@@ -24,13 +24,13 @@ import play.api.libs.json.{ Json, _ }
 case class RegisteredDetails(membershipNumber: String, membershipExpiresOn: LocalDate)
 
 object RegisteredDetails {
-  implicit val format = Json.format[RegisteredDetails]
+  implicit val format: OFormat[RegisteredDetails] = Json.format
 }
 
 case class PendingDetails(appliedOn: LocalDate)
 
 object PendingDetails {
-  implicit val format = Json.format[PendingDetails]
+  implicit val format: OFormat[PendingDetails] = Json.format
 }
 
 case class AmlsDetails(supervisoryBody: String, details: Either[PendingDetails, RegisteredDetails])
@@ -39,7 +39,7 @@ object AmlsDetails {
 
   val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
-  implicit val format = new Format[AmlsDetails] {
+  implicit val format: Format[AmlsDetails] = new Format[AmlsDetails] {
     override def reads(json: JsValue): JsResult[AmlsDetails] = {
       val supervisoryBody = (json \ "supervisoryBody").as[String]
 

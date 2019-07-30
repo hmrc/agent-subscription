@@ -21,7 +21,7 @@ import play.api.libs.json.{ Json, _ }
 import play.api.mvc.{ AnyContent, Request }
 import play.api.{ Logger, LoggerLike }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscriptionEvent, AuditService }
+import uk.gov.hmrc.agentsubscription.audit.{ AuditService, CheckAgencyStatus }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
@@ -31,7 +31,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import scala.concurrent.{ ExecutionContext, Future }
 
 private object CheckAgencyStatusAuditDetail {
-  implicit val writes = Json.writes[CheckAgencyStatusAuditDetail]
+  implicit val writes: OWrites[CheckAgencyStatusAuditDetail] = Json.writes[CheckAgencyStatusAuditDetail]
 }
 
 private case class CheckAgencyStatusAuditDetail(
@@ -59,13 +59,13 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
           getLogger.warn(s"The business partner record of type organisation associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned")
         }
 
-        checkRegistrationAndEnrolment(utr, postcode, businessAddress.postalCode.get, isAnASAgent, organisationName, agentReferenceNumber, businessAddress, email)
+        checkRegistrationAndEnrolment(utr, postcode, businessAddress.postalCode, isAnASAgent, organisationName, agentReferenceNumber, businessAddress, email)
       case Some(DesRegistrationResponse(isAnASAgent, _, Some(DesIndividual(first, last)), agentReferenceNumber, businessAddress, email)) if businessAddress.postalCode.nonEmpty =>
         if (isAnASAgent) {
           getLogger.warn(s"The business partner record of type individual associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned")
         }
 
-        checkRegistrationAndEnrolment(utr, postcode, businessAddress.postalCode.get, isAnASAgent, Some(s"$first $last"), agentReferenceNumber, businessAddress, email)
+        checkRegistrationAndEnrolment(utr, postcode, businessAddress.postalCode, isAnASAgent, Some(s"$first $last"), agentReferenceNumber, businessAddress, email)
       case Some(DesRegistrationResponse(isAnASAgent, _, _, agentReferenceNumber, address, _)) =>
         if (isAnASAgent) {
           getLogger.warn(s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${address.postalCode.nonEmpty}")
@@ -82,7 +82,7 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
     }
   }
 
-  private def checkRegistrationAndEnrolment(utr: Utr, postcode: String, desPostcode: String,
+  private def checkRegistrationAndEnrolment(utr: Utr, postcode: String, desPostcode: Option[String],
     isAnASAgent: Boolean, taxpayerName: Option[String],
     maybeArn: Option[Arn],
     businessAddress: BusinessAddress,
@@ -91,7 +91,7 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
     provider: Provider,
     ec: ExecutionContext,
     request: Request[AnyContent]): Future[Option[RegistrationDetails]] = {
-    val knownFactsMatched = postcodesMatch(desPostcode, postcode)
+    val knownFactsMatched = desPostcode.exists(postcodesMatch(_, postcode))
 
     if (knownFactsMatched) {
       val isSubscribedToAgentServices = maybeArn match {
@@ -122,7 +122,7 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
     ec: ExecutionContext,
     request: Request[AnyContent]): Unit =
     auditService.auditEvent(
-      AgentSubscriptionEvent.CheckAgencyStatus,
+      CheckAgencyStatus,
       "Check agency status",
       toJsObject(CheckAgencyStatusAuditDetail(
         Some(provider.providerId),

@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.Json.format
+import play.api.libs.json.OFormat
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 
 case class RegistrationDetails(
@@ -27,5 +28,5 @@ case class RegistrationDetails(
   emailAddress: Option[String])
 
 object RegistrationDetails {
-  implicit val registrationDetailsObjectFormat = format[RegistrationDetails]
+  implicit val registrationDetailsObjectFormat: OFormat[RegistrationDetails] = format
 }

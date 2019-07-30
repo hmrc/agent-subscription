@@ -15,6 +15,56 @@ lazy val scoverageSettings = {
   )
 }
 
+lazy val wartRemoverSettings = {
+  val wartRemoverWarning = {
+    val warningWarts = Seq(
+      Wart.JavaSerializable,
+      Wart.StringPlusAny,
+      Wart.AsInstanceOf,
+      Wart.IsInstanceOf,
+      Wart.Any
+    )
+    wartremoverWarnings in (Compile, compile) ++= warningWarts
+  }
+
+  val wartRemoverError = {
+    // Error
+    val errorWarts = Seq(
+      Wart.ArrayEquals,
+      Wart.AnyVal,
+      Wart.EitherProjectionPartial,
+      Wart.Enumeration,
+      Wart.ExplicitImplicitTypes,
+      Wart.FinalVal,
+      Wart.JavaConversions,
+      Wart.JavaSerializable,
+      Wart.LeakingSealed,
+      Wart.MutableDataStructures,
+      Wart.Null,
+      Wart.OptionPartial,
+      Wart.Recursion,
+      Wart.Return,
+      Wart.TraversableOps,
+      Wart.TryPartial,
+      Wart.Var,
+      Wart.While)
+
+    wartremoverErrors in (Compile, compile) ++= errorWarts
+  }
+
+  Seq(
+    wartRemoverError,
+    wartRemoverWarning,
+    wartremoverErrors in (Test, compile) --= Seq(Wart.Any, Wart.Equals, Wart.Null, Wart.NonUnitStatements, Wart.PublicInference),
+    wartremoverExcluded ++=
+    routes.in(Compile).value ++
+    (baseDirectory.value / "it").get ++
+    (baseDirectory.value / "test").get ++
+    Seq(sourceManaged.value / "main" / "sbt-buildinfo" / "BuildInfo.scala")
+  )
+}
+
+
 lazy val compileDeps = Seq(
   ws,
   "uk.gov.hmrc" %% "bootstrap-play-25" % "4.12.0",
@@ -85,6 +135,7 @@ lazy val root = Project("agent-subscription", file("."))
     testGrouping in IntegrationTest := oneForkedJvmPerTest((definedTests in IntegrationTest).value)
   )
   .settings(scalariformItSettings)
+  .settings(wartRemoverSettings: _*)
   .enablePlugins(PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin, SbtArtifactory)
 
 def oneForkedJvmPerTest(tests: Seq[TestDefinition]) = {

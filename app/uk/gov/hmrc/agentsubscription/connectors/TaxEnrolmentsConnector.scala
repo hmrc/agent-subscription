@@ -17,12 +17,12 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
-import javax.inject.{ Inject, Named, Singleton }
 
+import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
-import play.api.Logger
-import play.api.libs.json.{ JsObject, JsValue, Json }
-import play.api.libs.json.Json.{ format, toJson }
+import javax.inject.{ Inject, Named, Singleton }
+import play.api.libs.json.Json.format
+import play.api.libs.json.{ JsValue, Json, OFormat }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.http._
@@ -34,20 +34,20 @@ case class Legacy(previousVerifiers: Seq[KnownFact])
 case class KnownFactsRequest(verifiers: Seq[KnownFact], legacy: Option[Legacy])
 
 object KnownFact {
-  implicit val formatKf = format[KnownFact]
+  implicit val formatKf: OFormat[KnownFact] = format
 }
 
 object Legacy {
-  implicit val formatL = format[Legacy]
+  implicit val formatL: OFormat[Legacy] = format
 }
 
 object KnownFactsRequest {
-  implicit val formatKFR = format[KnownFactsRequest]
+  implicit val formatKFR: OFormat[KnownFactsRequest] = format
 }
 case class EnrolmentRequest(userId: String, `type`: String, friendlyName: String, verifiers: Seq[KnownFact])
 
 object EnrolmentRequest {
-  implicit val formats = format[EnrolmentRequest]
+  implicit val formats: OFormat[EnrolmentRequest] = format
 }
 
 @Singleton
@@ -56,7 +56,7 @@ class TaxEnrolmentsConnector @Inject() (
   @Named("enrolment-store-proxy-baseUrl") espBaseUrl: URL,
   http: HttpPut with HttpPost with HttpGet with HttpDelete,
   metrics: Metrics) extends HttpAPIMonitor {
-  override val kenshooRegistry = metrics.defaultRegistry
+  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   // EACD's ES6 API
   def addKnownFacts(arn: String, knownFactKey: String, knownFactValue: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {

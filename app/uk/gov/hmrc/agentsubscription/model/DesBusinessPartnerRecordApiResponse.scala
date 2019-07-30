@@ -17,5 +17,5 @@
 package uk.gov.hmrc.agentsubscription.model
 
 sealed trait DesBusinessPartnerRecordApiResponse
-case class BusinessPartnerRecordFound(postalCode: String, isSubscribedToAgentServices: Boolean) extends DesBusinessPartnerRecordApiResponse
+final case class BusinessPartnerRecordFound(postalCode: String, isSubscribedToAgentServices: Boolean) extends DesBusinessPartnerRecordApiResponse
 object BusinessPartnerRecordNotFound extends DesBusinessPartnerRecordApiResponse

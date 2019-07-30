@@ -23,6 +23,8 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 object Retry {
 
+  // TODO replace this with exponential backoff retries (from "com.softwaremill.retry" %% "retry" % "0.3.0")
+  @SuppressWarnings(Array("org.wartremover.warts.Recursion"))
   def retry[A](n: Int)(f: => Future[A])(implicit ec: ExecutionContext): Future[A] = {
     f.recoverWith {
       case ShouldRetryAfter(e) if n > 1 =>

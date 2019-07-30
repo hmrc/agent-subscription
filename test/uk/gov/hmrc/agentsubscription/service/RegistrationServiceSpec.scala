@@ -27,17 +27,16 @@ import play.api.libs.json.{ JsObject, Json }
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
-import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.CheckAgencyStatus
-import uk.gov.hmrc.agentsubscription.audit.AuditService
+import uk.gov.hmrc.agentsubscription.audit.{ AuditService, CheckAgencyStatus }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
-import uk.gov.hmrc.play.test.UnitSpec
-import scala.concurrent.ExecutionContext.Implicits.global
-
-import scala.concurrent.{ ExecutionContext, Future }
 import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.test.UnitSpec
+
+import scala.collection.mutable
+import scala.concurrent.{ ExecutionContext, Future }
 
 class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
@@ -46,8 +45,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private val auditService = resettingMock[AuditService]
 
   val stubbedLogger = new LoggerLikeStub()
-  val service = new RegistrationService(desConnector, teConnector, auditService) {
-    override def getLogger = stubbedLogger
+  val service: RegistrationService = new RegistrationService(desConnector, teConnector, auditService) {
+    override def getLogger: LoggerLikeStub = stubbedLogger
   }
 
   private val authorityUrl = new URL("http://localhost/auth/authority")
@@ -59,7 +58,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
   override def beforeEach(): Unit = {
     super.beforeEach()
-    stubbedLogger.clear
+    stubbedLogger.clear()
   }
 
   "getRegistration" should {
@@ -458,9 +457,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 }
 
 class LoggerLikeStub extends LoggerLike {
-  import scala.collection.mutable.Buffer
 
-  val logMessages: Buffer[String] = Buffer()
+  val logMessages: mutable.Buffer[String] = mutable.Buffer()
 
   override val logger: Logger = null
 

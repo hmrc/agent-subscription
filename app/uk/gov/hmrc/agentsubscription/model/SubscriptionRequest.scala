@@ -42,7 +42,7 @@ object Agency {
 }
 
 object KnownFacts {
-  implicit val writes = Json.writes[KnownFacts]
+  implicit val writes: OWrites[KnownFacts] = Json.writes[KnownFacts]
   implicit val reads: Reads[KnownFacts] = (__ \ "postcode").read(postcodeValidation).map(KnownFacts.apply)
 }
 
@@ -79,7 +79,7 @@ case class SubscriptionRequest(
 
 case class SubscriptionResponse(arn: Arn)
 object SubscriptionResponse {
-  implicit val format = Json.format[SubscriptionResponse]
+  implicit val format: OFormat[SubscriptionResponse] = Json.format
 }
 
 case class UpdateSubscriptionRequest(utr: Utr, knownFacts: KnownFacts)

@@ -4,7 +4,7 @@ import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
+import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscriptionEvent, OverseasAgentSubscription }
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Complete, Registered }
 import uk.gov.hmrc.agentsubscription.model.{ EmailInformation, OverseasAmlsDetails, SafeId }
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
@@ -51,13 +51,13 @@ class OverseasSubscriptionAuditingSpec extends BaseAuditSpec
       result.status shouldBe 201
 
       DataStreamStub.verifyAuditRequestSent(
-        AgentSubscriptionEvent.OverseasAgentSubscription,
+        OverseasAgentSubscription,
         expectedTags,
         expectedDetails)
     }
   }
 
-  private def doOverseasSubscriptionRequest = new Resource(s"/agent-subscription/overseas-subscription", port).putEmpty()
+  private def doOverseasSubscriptionRequest() = new Resource(s"/agent-subscription/overseas-subscription", port).putEmpty()
 
   private def expectedDetails: JsObject =
     Json.parse(

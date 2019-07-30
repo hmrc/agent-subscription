@@ -21,8 +21,8 @@ import uk.gov.hmrc.agentsubscription.model.{ Crn, AuthProviderId }
 import uk.gov.hmrc.domain.Vrn
 
 object UrlBinders {
-  implicit val utrBinder = new SimpleObjectBinder[Utr](Utr.apply, _.value)
-  implicit val crnBinder = new SimpleObjectBinder[Crn](Crn.apply, _.value)
-  implicit val vrnBinder = new SimpleObjectBinder[Vrn](Vrn.apply, _.value)
-  implicit val authProviderIdBinder = new SimpleObjectBinder[AuthProviderId](AuthProviderId.apply, _.id)
+  implicit val utrBinder: SimpleObjectBinder[Utr] = new SimpleObjectBinder[Utr](Utr.apply, _.value)
+  implicit val crnBinder: SimpleObjectBinder[Crn] = new SimpleObjectBinder[Crn](Crn.apply, _.value)
+  implicit val vrnBinder: SimpleObjectBinder[Vrn] = new SimpleObjectBinder[Vrn](Vrn.apply, _.value)
+  implicit val authProviderIdBinder: SimpleObjectBinder[AuthProviderId] = new SimpleObjectBinder[AuthProviderId](AuthProviderId.apply, _.id)
 }

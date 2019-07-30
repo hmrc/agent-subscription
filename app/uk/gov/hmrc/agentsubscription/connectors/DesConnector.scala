@@ -57,7 +57,7 @@ case class BusinessAddress(
   countryCode: String)
 
 object BusinessAddress {
-  implicit val format = Json.format[BusinessAddress]
+  implicit val format: OFormat[BusinessAddress] = Json.format
 }
 
 case class DesRegistrationResponse(
