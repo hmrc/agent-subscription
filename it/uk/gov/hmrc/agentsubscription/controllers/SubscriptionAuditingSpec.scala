@@ -6,7 +6,7 @@ import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent
+import uk.gov.hmrc.agentsubscription.audit.AgentSubscription
 import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, EmailInformation, RegisteredDetails, SubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
 import uk.gov.hmrc.agentsubscription.stubs._
@@ -46,7 +46,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       result.status shouldBe 201
 
       DataStreamStub.verifyAuditRequestSent(
-        AgentSubscriptionEvent.AgentSubscription,
+        AgentSubscription,
         expectedTags,
         expectedDetails(utr))
     }
@@ -72,7 +72,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
 
       eventually {
         DataStreamStub.verifyAuditRequestSent(
-          AgentSubscriptionEvent.AgentSubscription,
+          AgentSubscription,
           expectedTags,
           expectedDetailsForUpdateSubscription(utr))
       }

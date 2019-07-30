@@ -18,18 +18,18 @@ package uk.gov.hmrc.agentsubscription.model
 
 import java.util.UUID
 
-import play.api.libs.json.Json
+import play.api.libs.json.{ Json, OFormat }
 
 case class ContactDetails(phoneNumber: String, emailAddress: String)
 
 object ContactDetails {
-  implicit val contactDetailsFormat = Json.format[ContactDetails]
+  implicit val contactDetailsFormat: OFormat[ContactDetails] = Json.format
 }
 
 case class Organisation(organisationName: String)
 
 object Organisation {
-  implicit val organisationFormat = Json.format[Organisation]
+  implicit val organisationFormat: OFormat[Organisation] = Json.format
 }
 
 case class OverseasRegistrationRequest(
@@ -42,7 +42,7 @@ case class OverseasRegistrationRequest(
   contactDetails: ContactDetails)
 
 object OverseasRegistrationRequest {
-  implicit val overseasRegistrationRequestFormat = Json.format[OverseasRegistrationRequest]
+  implicit val overseasRegistrationRequestFormat: OFormat[OverseasRegistrationRequest] = Json.format
 
   def apply(fromApplication: CurrentApplication): OverseasRegistrationRequest = {
     OverseasRegistrationRequest(

@@ -22,7 +22,7 @@ import play.api.libs.json._
 import play.api.mvc.{ AnyContent, Request }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription._
-import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscriptionEvent, AuditService }
+import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscription, AuditService, OverseasAgentSubscription }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Complete, Registered }
@@ -34,7 +34,7 @@ import uk.gov.hmrc.http.{ HeaderCarrier, NotFoundException }
 import scala.concurrent.{ ExecutionContext, Future }
 
 private object SubscriptionAuditDetail {
-  implicit val writes = Json.writes[SubscriptionAuditDetail]
+  implicit val writes: OWrites[SubscriptionAuditDetail] = Json.writes[SubscriptionAuditDetail]
 }
 
 private case class SubscriptionAuditDetail(
@@ -54,7 +54,7 @@ case class OverseasSubscriptionAuditDetail(
   amlsDetails: OverseasAmlsDetails)
 
 object OverseasSubscriptionAuditDetail {
-  implicit val format = Json.format[OverseasSubscriptionAuditDetail]
+  implicit val format: OFormat[OverseasSubscriptionAuditDetail] = Json.format[OverseasSubscriptionAuditDetail]
 }
 
 case class EnrolmentAlreadyAllocated(message: String) extends Exception(message)
@@ -104,7 +104,7 @@ class SubscriptionService @Inject() (
           _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
           _ <- sendEmail(subscriptionRequest.agency.email, subscriptionRequest.agency.name, arn)
         } yield {
-          auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
+          auditService.auditEvent(AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
           Some(arn)
         }
       case _ => Future successful None
@@ -122,7 +122,7 @@ class SubscriptionService @Inject() (
             updatedAmlsDetails <- agentAssuranceConnector.updateAmls(updateSubscriptionRequest.utr, arn)
             _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
           } yield {
-            auditService.auditEvent(AgentSubscriptionEvent.AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
+            auditService.auditEvent(AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
             Some(arn)
           }
         } else Future.successful(None)
@@ -151,7 +151,7 @@ class SubscriptionService @Inject() (
             safeId, application.agencyDetails.agencyName,
             application.agencyDetails.agencyEmail, application.agencyDetails.agencyAddress, application.amlsDetails)).as[JsObject]
 
-          auditService.auditEvent(AgentSubscriptionEvent.OverseasAgentSubscription, "Overseas agent subscription", auditJson)
+          auditService.auditEvent(OverseasAgentSubscription, "Overseas agent subscription", auditJson)
           arnOpt
         }
     }

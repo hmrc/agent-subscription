@@ -100,9 +100,6 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
 
   import scala.reflect.ClassTag
 
-  private def bindServiceConfigProperty[A](propertyName: String)(implicit classTag: ClassTag[A], ct: ServiceConfigPropertyType[A]): ScopedBindingBuilder =
-    ct.bindServiceConfigProperty(classTag.runtimeClass.asInstanceOf[Class[A]])(propertyName)
-
   sealed trait ServiceConfigPropertyType[A] {
     def bindServiceConfigProperty(clazz: Class[A])(propertyName: String): ScopedBindingBuilder
   }

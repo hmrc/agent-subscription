@@ -23,14 +23,13 @@ import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
-import uk.gov.hmrc.agentsubscription.audit.AgentSubscriptionEvent.AgentSubscription
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.logging.{ Authorization, RequestId, SessionId }
 import uk.gov.hmrc.play.audit.http.connector.{ AuditConnector, AuditResult }
 import uk.gov.hmrc.play.audit.model.{ DataEvent, ExtendedDataEvent }
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ ExecutionContext, Future }
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.logging.{ Authorization, RequestId, SessionId }
 
 class AuditServiceSpec(implicit val ec: ExecutionContext) extends UnitSpec with MockitoSugar with Eventually {
   "auditEvent" should {

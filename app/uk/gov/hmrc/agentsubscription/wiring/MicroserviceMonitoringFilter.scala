@@ -86,7 +86,7 @@ abstract class MonitoringFilter(kenshooRegistry: MetricRegistry)(implicit ec: Ex
       case Success(result) =>
         val status = result.header.status
         val timerName = s"Timer-$serviceName"
-        val counterName = timerName + "." + status
+        val counterName = timerName + "." + status.toString
         kenshooRegistry.getTimers.getOrDefault(timerName, kenshooRegistry.timer(timerName)).update(System.nanoTime() - start, NANOSECONDS)
         kenshooRegistry.getCounters.getOrDefault(counterName, kenshooRegistry.counter(counterName)).inc()
 
@@ -115,7 +115,8 @@ trait MonitoringKeyMatcher {
     .map { case (k, p) => (k, preparePatternAndVariables(p)) }
     .map { case (k, (p, vs)) => (k, (Pattern.compile(p), vs)) }
 
-  def preparePatternAndVariables(p: String): (String, Seq[String]) = {
+  @SuppressWarnings(Array("org.wartremover.warts.While", "org.wartremover.warts.Var"))
+  private def preparePatternAndVariables(p: String): (String, Seq[String]) = {
     var pattern = p
     val m = placeholderPattern.matcher(pattern)
     var variables = Seq[String]()
