@@ -36,3 +36,5 @@ tags
 ensime.sbt
 
 /git_stats/
+/classes/*
+
