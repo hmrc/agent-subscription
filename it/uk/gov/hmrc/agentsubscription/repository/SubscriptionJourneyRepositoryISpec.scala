@@ -62,7 +62,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
     "create a SubscriptionJourney record" in {
       await(repo.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
 
-      await(repo.findByPrimaryId(AuthProviderId("auth-id"))).head shouldBe subscriptionJourneyRecord
+      await(repo.findByAuthId(AuthProviderId("auth-id"))).head shouldBe subscriptionJourneyRecord
     }
 
     "find a SubscriptionJourney by Utr" in {
@@ -80,7 +80,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
     "delete a SubscriptionJourney record by Utr" in {
       await(repo.insert(subscriptionJourneyRecord))
       await(repo.delete(AuthProviderId("auth-id")))
-      await(repo.findByPrimaryId(AuthProviderId("auth-id"))) shouldBe empty
+      await(repo.findByAuthId(AuthProviderId("auth-id"))) shouldBe empty
     }
 
     "update a SubscriptionJourney record" in {
@@ -91,7 +91,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
       await(repo.insert(subscriptionJourneyRecord))
       await(repo.upsert(AuthProviderId("auth-id"), updatedSubscriptionJourney))
 
-      await(repo.findByPrimaryId(AuthProviderId("auth-id"))) shouldBe Some(updatedSubscriptionJourney)
+      await(repo.findByAuthId(AuthProviderId("auth-id"))) shouldBe Some(updatedSubscriptionJourney)
     }
   }
 }

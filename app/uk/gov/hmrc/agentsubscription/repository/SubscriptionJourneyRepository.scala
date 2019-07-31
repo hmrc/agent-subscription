@@ -79,12 +79,6 @@ class SubscriptionJourneyRepository @Inject() (
         Json.obj(fields = "cleanCredsAuthProviderId" -> authProviderId),
         Json.obj(fields = "userMappings.authProviderId" -> authProviderId))).map(_.headOption)
 
-  def findByPrimaryId(authProviderId: AuthProviderId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("authProviderId" -> authProviderId).map(_.headOption)
-
-  def findByMappedId(authProviderId: AuthProviderId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("userMappings.authProviderId" -> authProviderId).map(_.headOption)
-
   def findByContinueId(continueId: String)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
     super.find("continueId" -> continueId).map(_.headOption)
 
