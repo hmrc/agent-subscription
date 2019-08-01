@@ -17,10 +17,6 @@ POST    /citizen-details                     @uk.gov.hmrc.agentsubscription.cont
 # Find journey record by either primary or mapped auth provider id
 GET     /subscription/journey/id/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByAuthId(authProviderId: AuthProviderId)
 
-GET     /subscription/journey/primaryId/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByPrimaryId(authProviderId: AuthProviderId)
-
-GET     /subscription/journey/mappedId/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByMappedId(authProviderId: AuthProviderId)
-
 GET     /subscription/journey/utr/:utr           @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByUtr(utr: Utr)
 
 GET     /subscription/journey/continueId/:uuid   @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByContinueId(uuid: String)

@@ -42,20 +42,6 @@ class SubscriptionJourneyController @Inject() (implicit
     }
   }
 
-  def findByPrimaryId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
-    subscriptionJourneyRepository.findByPrimaryId(authProviderId).map {
-      case Some(record) => Ok(toJson(record))
-      case None => NoContent
-    }
-  }
-
-  def findByMappedId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
-    subscriptionJourneyRepository.findByMappedId(authProviderId).map {
-      case Some(record) => Ok(toJson(record))
-      case None => NoContent
-    }
-  }
-
   def findByUtr(utr: Utr): Action[AnyContent] = Action.async { implicit request =>
     subscriptionJourneyRepository.findByUtr(utr).map {
       case Some(record) => Ok(toJson(record))
@@ -76,9 +62,9 @@ class SubscriptionJourneyController @Inject() (implicit
         {
           val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
           if (journeyRecord.authProviderId != authProviderId) {
-            Future.successful(BadRequest("Internal ids in request URL and body do not match"))
+            Future.successful(BadRequest("Auth ids in request URL and body do not match"))
           } else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
-            Future.successful(BadRequest("Duplicate mapped internal ids in request body"))
+            Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
           } else {
             val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
             subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent)
