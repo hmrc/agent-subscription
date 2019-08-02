@@ -42,11 +42,25 @@ class SubscriptionJourneyRepository @Inject() (
 
   private def expireRecordAfterSeconds: Long = 2592000 // 30 days
 
+  /**
+   * Create new record or update existing record for primary auth id
+   */
   def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] = {
     collection.update(ordered = false).one(
       Json.obj("authProviderId" -> authProviderId.id),
       record,
       upsert = true).checkResult
+  }
+
+  /**
+   * Replace (overwrite) original record with provided record data
+   * Prefer upsert() unless you want to change the primary key of the record
+   */
+  def update(originalId: AuthProviderId, record: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] = {
+    collection.update(ordered = false).one(
+      Json.obj("authProviderId" -> originalId.id),
+      record,
+      upsert = false).checkResult
   }
 
   private implicit class WriteResultChecker(future: Future[WriteResult]) {

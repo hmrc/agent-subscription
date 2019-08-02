@@ -21,6 +21,10 @@ GET     /subscription/journey/utr/:utr           @uk.gov.hmrc.agentsubscription.
 
 GET     /subscription/journey/continueId/:uuid   @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByContinueId(uuid: String)
 
+# endpoint for updating or creating new records (same primary id)
 POST /subscription/journey/primaryId/:authProviderId @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.createOrUpdate(authProviderId: AuthProviderId)
+
+# endpoint for replacing the whole record (found by original auth id)
+PUT /subscription/journey/primaryId/:originalId @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.update(originalId: AuthProviderId)
 
 DELETE /subscription/journey/primaryId/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.delete(authProviderId: AuthProviderId)

@@ -73,6 +73,22 @@ class SubscriptionJourneyController @Inject() (implicit
     }
   }
 
+  def update(originalId: AuthProviderId): Action[JsValue] = Action.async(parse.json) { implicit request =>
+    withJsonBody[SubscriptionJourneyRecord] {
+      journeyRecord =>
+        {
+          val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
+          // find by originalId but update (not insert) with whatever we are given
+          if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
+            Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
+          } else {
+            val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
+            subscriptionJourneyRepository.update(originalId, updatedRecord).map(_ => NoContent)
+          }
+        }
+    }
+  }
+
   def delete(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
     subscriptionJourneyRepository.delete(authProviderId).map(_ => NoContent)
   }
