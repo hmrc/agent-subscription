@@ -29,7 +29,7 @@ import uk.gov.hmrc.agentsubscription.audit.{AgentSubscription, AuditService}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors.{EnrolmentRequest, Address => _, _}
 import uk.gov.hmrc.agentsubscription.model._
-import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
+import uk.gov.hmrc.agentsubscription.repository.{RecoveryRepository, SubscriptionJourneyRepository}
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.http.{GatewayTimeoutException, HeaderCarrier}
 import uk.gov.hmrc.play.test.UnitSpec
@@ -43,13 +43,14 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private val taxEnrolmentConnector = resettingMock[TaxEnrolmentsConnector]
   private val auditService = resettingMock[AuditService]
   private val recoveryRepository = resettingMock[RecoveryRepository]
+  private val subscriptionJourneyRepository = resettingMock[SubscriptionJourneyRepository]
   private val agentAssuranceConnector = resettingMock[AgentAssuranceConnector]
   private val agentOverseasAppConn = resettingMock[AgentOverseasApplicationConnector]
   private val emailConnector = resettingMock[EmailConnector]
 
   private val authIds = AuthIds("userId", "groupId")
 
-  private val service = new SubscriptionService(desConnector, taxEnrolmentConnector, auditService, recoveryRepository, agentAssuranceConnector, agentOverseasAppConn, emailConnector)
+  private val service = new SubscriptionService(desConnector, taxEnrolmentConnector, auditService, recoveryRepository, subscriptionJourneyRepository, agentAssuranceConnector, agentOverseasAppConn, emailConnector)
   private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("POST", "/agent-subscription/subscription")
@@ -202,6 +203,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
+    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
+        .thenReturn(Future successful[Unit](()))
+
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)
 
@@ -233,6 +237,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
+    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
+      .thenReturn(Future successful[Unit](()))
+
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES1"))
 
@@ -254,6 +261,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
+
+    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
+      .thenReturn(Future successful[Unit](()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)
@@ -279,6 +289,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
+
+    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
+      .thenReturn(Future successful[Unit](()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)
@@ -307,6 +320,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
+
+    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
+      .thenReturn(Future successful[Unit](()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)

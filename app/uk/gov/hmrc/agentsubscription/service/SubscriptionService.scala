@@ -27,7 +27,7 @@ import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Complete, Registered }
 import uk.gov.hmrc.agentsubscription.model._
-import uk.gov.hmrc.agentsubscription.repository.RecoveryRepository
+import uk.gov.hmrc.agentsubscription.repository.{ RecoveryRepository, SubscriptionJourneyRepository }
 import uk.gov.hmrc.agentsubscription.utils.Retry
 import uk.gov.hmrc.http.{ HeaderCarrier, NotFoundException }
 
@@ -65,6 +65,7 @@ class SubscriptionService @Inject() (
   taxEnrolmentsConnector: TaxEnrolmentsConnector,
   auditService: AuditService,
   recoveryRepository: RecoveryRepository,
+  subscriptionJourneyRepository: SubscriptionJourneyRepository,
   agentAssuranceConnector: AgentAssuranceConnector,
   agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
   emailConnector: EmailConnector) {
@@ -98,7 +99,10 @@ class SubscriptionService @Inject() (
           }
           arn <- maybeArn match {
             case Some(arn) if isAnAsAgent => Future.successful(arn)
-            case _ => desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
+            case _ => for {
+              arn <- desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
+              _ <- subscriptionJourneyRepository.delete(utr)
+            } yield arn
           }
           updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
           _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
