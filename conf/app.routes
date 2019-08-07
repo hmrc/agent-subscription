@@ -22,5 +22,3 @@ GET     /subscription/journey/utr/:utr           @uk.gov.hmrc.agentsubscription.
 GET     /subscription/journey/continueId/:uuid   @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByContinueId(uuid: String)
 
 POST /subscription/journey/primaryId/:authProviderId @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.createOrUpdate(authProviderId: AuthProviderId)
-
-DELETE /subscription/journey/primaryId/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.delete(authProviderId: AuthProviderId)

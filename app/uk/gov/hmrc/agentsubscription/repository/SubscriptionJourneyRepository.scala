@@ -85,6 +85,6 @@ class SubscriptionJourneyRepository @Inject() (
   def findByUtr(utr: Utr)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
     super.find("businessDetails.utr" -> utr.value).map(_.headOption)
 
-  def delete(primaryAuthId: AuthProviderId)(implicit ec: ExecutionContext): Future[Unit] =
-    remove("authProviderId" -> primaryAuthId.id).map(_ => ())
+  def delete(utr: Utr)(implicit ec: ExecutionContext): Future[Unit] =
+    remove("businessDetails.utr" -> utr.value).map(_ => ())
 }

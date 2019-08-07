@@ -79,7 +79,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
 
     "delete a SubscriptionJourney record by Utr" in {
       await(repo.insert(subscriptionJourneyRecord))
-      await(repo.delete(AuthProviderId("auth-id")))
+      await(repo.delete(validUtr))
       await(repo.findByAuthId(AuthProviderId("auth-id"))) shouldBe empty
     }
 

@@ -73,8 +73,8 @@ class SubscriptionJourneyController @Inject() (implicit
     }
   }
 
-  def delete(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
-    subscriptionJourneyRepository.delete(authProviderId).map(_ => NoContent)
-  }
+  //  def delete(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
+  //    subscriptionJourneyRepository.delete(authProviderId).map(_ => NoContent)
+  //  }
 
 }
