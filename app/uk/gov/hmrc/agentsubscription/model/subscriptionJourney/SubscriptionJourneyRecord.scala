@@ -23,7 +23,7 @@ import play.api.libs.json.{ JsPath, Json, OFormat }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.{ AuthProviderId, DateOfBirth }
 import uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney.AmlsData
-import uk.gov.hmrc.domain.{ AgentCode, Nino }
+import uk.gov.hmrc.domain.Nino
 
 /**
  * A Mongo record which represents the user's current journey in setting up a new
@@ -39,7 +39,6 @@ final case class SubscriptionJourneyRecord(
   userMappings: List[UserMapping],
   mappingComplete: Boolean,
   cleanCredsAuthProviderId: Option[AuthProviderId],
-  subscriptionCreated: Boolean,
   lastModifiedDate: Option[LocalDateTime])
 
 object SubscriptionJourneyRecord {
@@ -54,7 +53,6 @@ object SubscriptionJourneyRecord {
     (JsPath \ "userMappings").format[List[UserMapping]] and
     (JsPath \ "mappingComplete").format[Boolean] and
     (JsPath \ "cleanCredsAuthProviderId").formatNullable[AuthProviderId] and
-    (JsPath \ "subscriptionCreated").format[Boolean] and
     (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime])(SubscriptionJourneyRecord.apply, unlift(SubscriptionJourneyRecord.unapply))
 
 }
