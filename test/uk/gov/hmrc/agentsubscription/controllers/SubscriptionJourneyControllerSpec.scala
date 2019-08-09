@@ -42,7 +42,6 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     List.empty,
     mappingComplete = false,
     None,
-    subscriptionCreated = false,
     None)
 
   val mockRepo: SubscriptionJourneyRepository = mock[SubscriptionJourneyRepository]
@@ -127,8 +126,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
 
       val recordWithDupes = minimalRecord.copy(
         userMappings = List(
-          UserMapping(AuthProviderId("xxx"), List.empty, 0, ""),
-          UserMapping(AuthProviderId("xxx"), List.empty, 0, "")))
+          UserMapping(AuthProviderId("xxx"), None, List.empty, 0, ""),
+          UserMapping(AuthProviderId("xxx"), None, List.empty, 0, "")))
 
       val request = FakeRequest().withBody[JsValue](Json.toJson(recordWithDupes))
 

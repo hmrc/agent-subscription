@@ -1,7 +1,6 @@
 package uk.gov.hmrc.agentsubscription.repository
 
-import java.time.{ LocalDate, LocalDateTime, ZoneOffset }
-import java.util.UUID
+import java.time.LocalDate
 
 import org.scalatest.concurrent.Eventually
 import org.scalatestplus.play.OneAppPerSuite
@@ -27,7 +26,11 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
   val registrationName = "My Agency"
   val businessAddress =
     BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("AA11AA"), "GB")
-  val registration = Registration(Some(registrationName), false, false, businessAddress, Some("test@gmail.com"))
+  val registration = Registration(
+    Some(registrationName),
+    isSubscribedToAgentServices = false,
+    isSubscribedToETMP = false,
+    businessAddress, Some("test@gmail.com"))
 
   override implicit lazy val app: Application = appBuilder.build()
 
@@ -48,7 +51,6 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite wi
       cleanCredsAuthProviderId = None,
       mappingComplete = false,
       userMappings = List(),
-      subscriptionCreated = false,
       lastModifiedDate = None)
 
   override def beforeEach() {

@@ -24,16 +24,24 @@ import uk.gov.hmrc.domain.AgentCode
  * A single GG user (agent login) which is being consolidated into a new ASA account
  *
  * @param authProviderId identifies the GG user being mapped
- * @param agentCodes the agent codes that this GG user has - part of auth details
+ * @param agentCode the main agent code that this GG user has - part of auth details
+ * @param legacyEnrolments the applicable enrolments for this agent
  * @param count the number of active client relationships - from EACD
  * @param ggTag the user's label for this GG user, generally the last 4 digits of the GG ID
  */
-case class UserMapping(
+final case class UserMapping(
   authProviderId: AuthProviderId,
-  agentCodes: Seq[AgentCode] = Seq.empty,
+  agentCode: Option[AgentCode],
+  legacyEnrolments: Seq[AgentEnrolment],
   count: Int = 0,
   ggTag: String)
 
 object UserMapping {
   implicit val format: OFormat[UserMapping] = Json.format
+}
+
+final case class AgentEnrolment(enrolmentType: LegacyAgentEnrolmentType, agentCode: AgentCode)
+
+object AgentEnrolment {
+  implicit val format: OFormat[AgentEnrolment] = Json.format
 }
