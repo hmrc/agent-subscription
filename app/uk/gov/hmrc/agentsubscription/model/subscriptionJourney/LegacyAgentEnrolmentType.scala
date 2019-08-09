@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.{ Format, JsError, JsResult, JsString, JsSuccess, JsValue, Json, OFormat }
+import play.api.libs.json._
 
 /**
  * A comprehensive list of all the old (pre-MTD) agent enrolment types
@@ -25,7 +25,7 @@ import play.api.libs.json.{ Format, JsError, JsResult, JsString, JsSuccess, JsVa
  */
 sealed abstract class LegacyAgentEnrolmentType {
   val key: String = this match {
-    case IRAgentReference => " IR-SA-AGENT"
+    case IRAgentReference => "IR-SA-AGENT"
     case AgentRefNo => "HMCE-VAT-AGNT"
     case AgentCharId => "HMRC-CHAR-AGENT"
     case HmrcGtsAgentRef => "HMRC-GTS-AGNT"
@@ -54,7 +54,7 @@ object LegacyAgentEnrolmentType {
 
   def find(key: String): Option[LegacyAgentEnrolmentType] = {
     key match {
-      case " IR-SA-AGENT" => Some(IRAgentReference)
+      case "IR-SA-AGENT" => Some(IRAgentReference)
       case "HMCE-VAT-AGNT" => Some(AgentRefNo)
       case "HMRC-CHAR-AGENT" => Some(AgentCharId)
       case "HMRC-GTS-AGNT" => Some(HmrcGtsAgentRef)
