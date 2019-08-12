@@ -56,6 +56,7 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
     bindBaseUrl("agent-overseas-application")
     bindBaseUrl("citizen-details")
     bindBaseUrl("email")
+    bindBaseUrl("agent-mapping")
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
     bindIntegerProperty("mongodb.subscriptionjourney.ttl")
