@@ -40,7 +40,7 @@ object UserMapping {
   implicit val format: OFormat[UserMapping] = Json.format
 }
 
-final case class AgentEnrolment(enrolmentType: LegacyAgentEnrolmentType, agentCode: AgentCode)
+final case class AgentEnrolment(enrolmentType: LegacyAgentEnrolmentType, identifierValue: IdentifierValue)
 
 object AgentEnrolment {
   implicit val format: OFormat[AgentEnrolment] = Json.format
