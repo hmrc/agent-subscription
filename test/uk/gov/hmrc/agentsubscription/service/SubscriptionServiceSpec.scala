@@ -225,7 +225,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .thenReturn(Future successful[Unit](()))
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful(201))
+        .thenReturn(Future successful(()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)
@@ -299,7 +299,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       .thenReturn(Future successful[Unit](()))
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful(201))
+      .thenReturn(Future successful(()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES1"))
@@ -327,7 +327,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       .thenReturn(Future successful[Unit](()))
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful(201))
+      .thenReturn(Future successful(()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)
@@ -358,7 +358,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       .thenReturn(Future successful[Unit](()))
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful(201))
+      .thenReturn(Future successful(()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)
@@ -392,7 +392,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       .thenReturn(Future successful[Unit](()))
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful(201))
+      .thenReturn(Future successful(()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)

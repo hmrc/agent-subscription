@@ -9,35 +9,35 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class MappingConnectorISpec extends BaseISpec with MappingStubs {
 
-  val connector = app.injector.instanceOf[MappingConnector]
+  val connector: MappingConnector = app.injector.instanceOf[MappingConnector]
 
   val arn = Arn("TARN0000001")
 
   private implicit val hc = HeaderCarrier()
 
   "createMappings" should {
-    "return the status code created when mapping is successfully created" in {
+    "return unit when mapping is successfully created" in {
       givenMappingCreationWithStatus(arn, 201)
 
       val result = await(connector.createMappings(arn))
 
-      result shouldBe 201
+      result shouldBe (())
     }
 
-    "return status code conflict when the mappings are already mapped" in {
+    "return unit when the mappings are already mapped" in {
       givenMappingCreationWithStatus(arn, 409)
 
       val result = await(connector.createMappings(arn))
 
-      result shouldBe 409
+      result shouldBe (())
     }
 
-    "return status code forbidden when the user is not allowed to map" in {
+    "return unit when the user is not allowed to map" in {
       givenMappingCreationWithStatus(arn, 403)
 
       val result = await(connector.createMappings(arn))
 
-      result shouldBe 403
+      result shouldBe (())
     }
   }
 

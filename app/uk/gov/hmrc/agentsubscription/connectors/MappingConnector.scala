@@ -21,6 +21,7 @@ import java.net.URL
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Named, Singleton }
+import play.api.Logger
 import play.api.http.Status
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
@@ -37,21 +38,24 @@ class MappingConnector @Inject() (
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   //valid status can be CREATED or CONFLICT
-  def createMappings(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Int] =
+  def createMappings(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+    val createUrl = new URL(baseUrl, s"/agent-mapping/mappings/task-list/arn/${arn.value}").toString
     monitor(s"ConsumedAPI-Mapping-CreateMappings-PUT") {
       httpPut
-        .PUT(createUrl(arn), "")
-        .map { r =>
-          r.status
-        }
-        .recover {
-          case e: Upstream4xxResponse if Status.FORBIDDEN.equals(e.upstreamResponseCode) => Status.FORBIDDEN
-          case e: Upstream4xxResponse if Status.CONFLICT.equals(e.upstreamResponseCode) => Status.CONFLICT
-          case e => throw e
+        .PUT(createUrl, "")
+        .map { _ => Logger.info("mapping is successful"); ()
+        }.recover {
+          case e: Upstream4xxResponse if Status.FORBIDDEN.equals(e.upstreamResponseCode) =>
+            Logger.error("user is forbidden to perform mapping"); ()
+
+          case e: Upstream4xxResponse if Status.CONFLICT.equals(e.upstreamResponseCode) =>
+            Logger.error("user has already mapped"); ()
+
+          case _ =>
+            Logger.error("mapping has failed for unknown reason"); ()
         }
     }
+  }
 
-  private def createUrl(arn: Arn): String =
-    new URL(baseUrl, s"/agent-mapping/mappings/task-list/arn/${arn.value}").toString
 }
 
