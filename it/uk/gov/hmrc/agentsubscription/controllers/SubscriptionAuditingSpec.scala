@@ -12,7 +12,7 @@ import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucc
 import uk.gov.hmrc.agentsubscription.stubs._
 import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
 
-class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub with EmailStub {
+class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub with EmailStub with MappingStubs {
   private val utr = Utr("7000000002")
 
   val arn = "TARN0000001"
@@ -40,6 +40,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       createAmlsSucceeds(utr, amlsDetails)
       updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
       givenEmailSent(emailInfo)
+      givenMappingCreationWithStatus(Arn(arn), 201)
 
       val result = await(doSubscriptionRequest(subscriptionRequest(utr)))
 

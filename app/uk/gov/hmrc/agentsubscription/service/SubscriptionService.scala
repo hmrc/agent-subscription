@@ -68,7 +68,8 @@ class SubscriptionService @Inject() (
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   agentAssuranceConnector: AgentAssuranceConnector,
   agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
-  emailConnector: EmailConnector) {
+  emailConnector: EmailConnector,
+  mappingConnector: MappingConnector) {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
     val address = subscriptionRequest.agency.address
@@ -101,6 +102,7 @@ class SubscriptionService @Inject() (
             case Some(arn) if isAnAsAgent => Future.successful(arn)
             case _ => for {
               arn <- desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
+              _ <- mappingConnector.createMappings(arn)
               _ <- subscriptionJourneyRepository.delete(utr)
             } yield arn
           }
