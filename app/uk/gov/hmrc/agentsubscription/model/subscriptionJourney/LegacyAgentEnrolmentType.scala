@@ -24,7 +24,7 @@ import play.api.libs.json._
  * others are captured for future use
  */
 sealed abstract class LegacyAgentEnrolmentType {
-  val key: String = this match {
+  def key: String = this match {
     case IRAgentReference => "IR-SA-AGENT"
     case AgentRefNo => "HMCE-VAT-AGNT"
     case AgentCharId => "HMRC-CHAR-AGENT"
