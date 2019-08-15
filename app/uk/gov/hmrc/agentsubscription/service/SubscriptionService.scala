@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{ Inject, Singleton }
-import play.api.Logger
+import play.api.{ Logger, LoggerLike }
 import play.api.libs.json._
 import play.api.mvc.{ AnyContent, Request }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
@@ -113,7 +113,9 @@ class SubscriptionService @Inject() (
           auditService.auditEvent(AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
           Some(arn)
         }
-      case _ => Future successful None
+      case _ =>
+        Logger.warn(s"No business partner record was associated with $utr")
+        Future successful None
     }
   }
 
