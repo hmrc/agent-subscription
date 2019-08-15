@@ -41,7 +41,7 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
     withJsonBody[SubscriptionRequest] { subscriptionRequest =>
       subscriptionService.createSubscription(subscriptionRequest, authIds).map {
         case Some(a) => Created(toJson(SubscriptionResponse(a)))
-        case None => Forbidden
+        case None => Forbidden(s"No business partner record found for ${subscriptionRequest.utr}")
       }.recover {
         case _: EnrolmentAlreadyAllocated => Conflict
         case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
@@ -53,7 +53,7 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
     withJsonBody[UpdateSubscriptionRequest] { updateSubscriptionRequest =>
       subscriptionService.updateSubscription(updateSubscriptionRequest, authIds).map {
         case Some(arn) => Ok(toJson(SubscriptionResponse(arn)))
-        case None => Forbidden
+        case None => Forbidden("No business partner record found for ${subscriptionRequest.utr}")
       }.recover {
         case _: EnrolmentAlreadyAllocated => Conflict
         case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
