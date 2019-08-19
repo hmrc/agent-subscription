@@ -23,8 +23,11 @@ import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Named, Singleton }
 import play.api.Logger
 import play.api.http.Status
+import play.api.libs.json.Json.format
+import play.api.libs.json.OFormat
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.http._
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -43,7 +46,7 @@ class MappingConnector @Inject() (
     monitor(s"ConsumedAPI-Mapping-CreateMappings-PUT") {
       httpPut
         .PUT(createUrl, "")
-        .map { _ => Logger.info("mapping is successful"); ()
+        .map { _ => Logger.info("mapping was successful"); ()
         }.recover {
           case e: Upstream4xxResponse if Status.FORBIDDEN.equals(e.upstreamResponseCode) =>
             Logger.error("user is forbidden to perform mapping"); ()
@@ -52,10 +55,24 @@ class MappingConnector @Inject() (
             Logger.error("user has already mapped"); ()
 
           case _ =>
-            Logger.error("mapping has failed for unknown reason"); ()
+            Logger.error("mapping failed for unknown reason"); ()
         }
     }
   }
 
+  def createMappingDetails(arn: Arn)(
+    implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext): Future[Unit] = {
+    val url = new URL(baseUrl, s"/agent-mapping/mappings/task-list/details/arn/${arn.value}").toString
+    monitor("ConsumedAPI-Mapping-createOrUpdateMappingDetails-POST") {
+      httpPut.PUT(url, "").map { _ =>
+        Logger.info("creating mapping details from subscription journey record was successful"); ()
+      }.recover {
+        case ex =>
+          Logger.error(s"creating or updating mapping details failed for some reason: $ex"); ()
+      }
+    }
+  }
 }
 

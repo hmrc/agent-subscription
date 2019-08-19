@@ -162,26 +162,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
             eqs(arn),
             eqs(subscriptionRequest),
             contains(recoveryMsgContains))(any[ExecutionContext]())
-
         ()
-
-      }
-
-      "create mappings fails" in {
-        subscriptionCreateMappingsFailed(utr, businessPostcode, arn.value, amlsDetails)
-        val subscriptionRequest = SubscriptionRequest(
-          utr,
-          KnownFacts(businessPostcode),
-          Agency(
-            "Test Agency",
-            Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = agencyPostcode, countryCode = "GB"),
-            Some("01234 567890"),
-            "testagency@example.com"),
-          Some(amlsDetails))
-
-        intercept[RuntimeException] {
-          await(service.createSubscription(subscriptionRequest, authIds))
-        }.getMessage shouldBe "service down"
       }
 
       "the query for existing allocated enrolments fails more than 3 times" in {
@@ -227,42 +208,8 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful(()))
 
-    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful false)
-
-    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful new Integer(204))
-
-    when(taxEnrolmentConnector.addKnownFacts(eqs(arn), anyString, anyString)(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful new Integer(200))
-
-    when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful new Integer(200))
-
-    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful true)
-
-    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful Some(amlsDetails))
-
-    when(emailConnector.sendEmail(any[EmailInformation])(any[HeaderCarrier], any[ExecutionContext]))
-      .thenReturn(Future successful[Unit](()))
-  }
-
-  private def subscriptionCreateMappingsFailed(businessUtr: Utr, businessPostcode: String, arn: String, amlsDetails: AmlsDetails) = {
-    when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful Some(DesRegistrationResponse(
-        isAnASAgent = false, organisationName = Some("Test Business"), None, None,
-        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None)))
-
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future successful Arn(arn))
-
-    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
-      .thenReturn(Future successful[Unit](()))
-
-    when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
-      .thenReturn(Future failed new RuntimeException("service down"))
+    when(mappingConnector.createMappingDetails(any[Arn])(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful[Unit](()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)
@@ -301,6 +248,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful(()))
 
+    when(mappingConnector.createMappingDetails(any[Arn])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful[Unit](()))
+
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES1"))
 
@@ -328,6 +278,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful(()))
+
+    when(mappingConnector.createMappingDetails(any[Arn])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful[Unit](()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)
@@ -359,6 +312,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful(()))
+
+    when(mappingConnector.createMappingDetails(any[Arn])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful[Unit](()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)
@@ -393,6 +349,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful(()))
+
+    when(mappingConnector.createMappingDetails(any[Arn])(eqs(hc), any[ExecutionContext]))
+      .thenReturn(Future successful[Unit](()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful false)

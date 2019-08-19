@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{ Inject, Singleton }
-import play.api.{ Logger, LoggerLike }
+import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc.{ AnyContent, Request }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
@@ -103,6 +103,7 @@ class SubscriptionService @Inject() (
             case _ => for {
               arn <- desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
               _ <- mappingConnector.createMappings(arn)
+              _ <- mappingConnector.createMappingDetails(arn)
               _ <- subscriptionJourneyRepository.delete(utr)
             } yield arn
           }
