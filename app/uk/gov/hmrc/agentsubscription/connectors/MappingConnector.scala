@@ -76,9 +76,3 @@ class MappingConnector @Inject() (
   }
 }
 
-final case class MappingDetailsRequest(authProviderId: AuthProviderId, ggTag: String, count: Int)
-
-object MappingDetailsRequest {
-  implicit val mappingDisplayRequestFormat: OFormat[MappingDetailsRequest] = format
-}
-
