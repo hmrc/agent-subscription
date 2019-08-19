@@ -41,4 +41,22 @@ class MappingConnectorISpec extends BaseISpec with MappingStubs {
     }
   }
 
+  "createMappingDetails" should {
+    "return unit when the mapping is successful" in {
+      givenMappingDetailsCreatedWithStatus(arn, 201)
+
+      val result = await(connector.createMappingDetails(arn))
+
+      result shouldBe (())
+    }
+
+    "return unit when the mapping is unsuccessful because we don't want to stop subscription" in {
+      givenMappingDetailsCreatedWithStatus(arn, 500)
+
+      val result = await(connector.createMappingDetails(arn))
+
+      result shouldBe (())
+    }
+  }
+
 }
