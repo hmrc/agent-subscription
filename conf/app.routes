@@ -11,7 +11,7 @@ GET    /corporation-tax-utr/:utr/crn/:crn     @uk.gov.hmrc.agentsubscription.con
 
 GET    /vat-known-facts/vrn/:vrn/dateOfRegistration/:dateOfReg     @uk.gov.hmrc.agentsubscription.controllers.VatKnownfactsController.matchVatKnownfacts(vrn:uk.gov.hmrc.domain.Vrn, dateOfReg:String)
 
-POST    /citizen-details                     @uk.gov.hmrc.agentsubscription.controllers.CitizenDetailsController.checkCitizenDetails()
+GET    /citizen-details/:nino/designatory-details     @uk.gov.hmrc.agentsubscription.controllers.CitizenDetailsController.getDesignatoryDetails(nino: uk.gov.hmrc.domain.Nino)
 
 
 # Find journey record by either primary or mapped auth provider id

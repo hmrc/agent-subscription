@@ -18,36 +18,23 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
-import play.api.libs.json.{ JsError, JsSuccess }
+import play.api.libs.json.Json
 import play.api.mvc.{ Action, AnyContent }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
-import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
-import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
-import uk.gov.hmrc.agentsubscription.model.CitizenDetailsRequest
-import uk.gov.hmrc.agentsubscription.service.CitizenDetailsService
-import uk.gov.hmrc.agentsubscription.utils._
+import uk.gov.hmrc.agentsubscription.connectors.{ CitizenDetailsConnector, MicroserviceAuthConnector }
+import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.bootstrap.controller.BaseController
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class CitizenDetailsController @Inject() (service: CitizenDetailsService)(implicit
+class CitizenDetailsController @Inject() (citizenDetailsConnector: CitizenDetailsConnector)(implicit
   metrics: Metrics,
   ec: ExecutionContext,
   microserviceAuthConnector: MicroserviceAuthConnector)
   extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
 
-  def checkCitizenDetails: Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
-    request.body.asJson.map(_.validate[CitizenDetailsRequest]) match {
-      case Some(JsSuccess(cd, _)) =>
-        service.checkDetails(cd).map {
-          case Match => Ok
-          case NoMatch | RecordNotFound => NotFound
-          case InvalidIdentifier => BadRequest
-          case UnknownError => InternalServerError
-        }
-      case Some(JsError(_)) => BadRequest("could not parse nino and dob JSON request")
-      case _ => InternalServerError
-    }
+  def getDesignatoryDetails(nino: Nino): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
+    citizenDetailsConnector.getDesignatoryDetails(nino).map(dd => Ok(Json.toJson(dd)))
   }
 }
