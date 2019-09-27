@@ -3,10 +3,10 @@ package uk.gov.hmrc.agentsubscription.controllers
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import play.api.test.Helpers.CONTENT_TYPE
-import uk.gov.hmrc.agentsubscription.model.{ CitizenDetailsRequest, DateOfBirth }
+import uk.gov.hmrc.agentsubscription.model.{ DateOfBirth, DesignatoryDetails }
+import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails.Person
 import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, CitizenDetailsStubs }
 import uk.gov.hmrc.agentsubscription.support.BaseISpec
 import uk.gov.hmrc.domain.Nino
@@ -20,42 +20,34 @@ class CitizenDetailsControllerISpec extends BaseISpec with CitizenDetailsStubs w
 
   val duration = Duration(5, SECONDS)
 
-  val checkCitizenDetailsUrl = s"http://localhost:$port/agent-subscription/citizen-details"
-
   val nino = Nino("XX121212B")
-  val dobString = "12121900"
-  val dtf = DateTimeFormatter.ofPattern("ddMMyyyy")
+  val dobString = "1900-01-01"
+  val dtf = DateTimeFormatter.ofPattern("yyyy-MM-DD")
   val dob = DateOfBirth(LocalDate.parse(dobString, dtf))
-  val citizenDetailsRequest = CitizenDetailsRequest(nino, dob)
 
-  def doRequest(request: CitizenDetailsRequest) =
+  def doRequest(nino: Nino) =
     Await.result(
-      ws.url(checkCitizenDetailsUrl)
+      ws.url(s"http://localhost:$port/agent-subscription/citizen-details/${nino.value}/designatory-details")
         .withHeaders(CONTENT_TYPE -> "application/json")
-        .post(Json.toJson(request)), duration)
+        .get(),
+      duration)
 
-  "POST /citizen-details" should {
+  "GET /citizen-details/${nino}/designatory-details" should {
     "return 200 when nino is found in Citizen details and the dob returned matches" in {
       requestIsAuthenticatedWithNoEnrolments()
       givencitizenDetailsFoundForNino(nino.value, dobString)
 
-      val response = doRequest(citizenDetailsRequest)
+      val response = doRequest(nino)
       response.status shouldBe 200
+
+      response.json.as[DesignatoryDetails] shouldBe DesignatoryDetails(Some(Person(Some(dob))))
     }
 
-    "return 404 when nino is found in citizen details but the dob returned does not match" in {
-      requestIsAuthenticatedWithNoEnrolments()
-      givencitizenDetailsFoundForNino(nino.value, dobString)
-
-      val response = doRequest(citizenDetailsRequest.copy(dateOfBirth = DateOfBirth(LocalDate.now)))
-      response.status shouldBe 404
-    }
-
-    "return 404 when nino was not found in citizen details" in {
+    "return 404 when DesignatoryDetails are not found for a passed in nino" in {
       requestIsAuthenticatedWithNoEnrolments()
       givenCitizenDetailsNotFoundForNino(nino.value)
 
-      val response = doRequest(citizenDetailsRequest)
+      val response = doRequest(nino)
       response.status shouldBe 404
     }
 

@@ -17,45 +17,36 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import java.net.URL
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Named, Singleton }
-import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.agentsubscription.model.DateOfBirth
+import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, HttpGet }
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @ImplementedBy(classOf[CitizenDetailsConnectorImpl])
 trait CitizenDetailsConnector {
-  def getDateOfBirth(nino: Nino)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DateOfBirth]]
+  def getDesignatoryDetails(nino: Nino)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesignatoryDetails]
 }
 
 @Singleton
 class CitizenDetailsConnectorImpl @Inject() (
   @Named("citizen-details-baseUrl") baseUrl: URL,
-  httpGet: HttpGet,
-  metrics: Metrics) extends CitizenDetailsConnector with HttpAPIMonitor {
+  httpClient: HttpClient,
+  metrics: Metrics)
+  extends CitizenDetailsConnector with HttpAPIMonitor {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def getDateOfBirth(nino: Nino)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DateOfBirth]] = {
-    monitor(s"CITIZEN-DETAILS-getCitizenDetails-GET") {
-      val url = new URL(baseUrl, s"/citizen-details/nino/${nino.value}")
-      httpGet.GET[JsValue](url.toString).map {
-        json =>
-          val dateString: JsResult[String] = (json \ "dateOfBirth").validate[String]
-          dateString match {
-            case JsSuccess(date, _) => Some(DateOfBirth(LocalDate.parse(date, DateTimeFormatter.ofPattern("ddMMyyyy"))))
-            case e: JsError => None
-          }
-      }
+  def getDesignatoryDetails(nino: Nino)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesignatoryDetails] =
+    monitor(s"CITIZEN-DETAILS-getDesignatoryDetails-GET") {
+      val url = new URL(baseUrl, s"/citizen-details/${nino.value}/designatory-details")
+      httpClient.GET[DesignatoryDetails](url.toString)
     }
-  }
 }

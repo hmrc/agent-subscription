@@ -16,13 +16,19 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{ Json, OFormat }
-import uk.gov.hmrc.domain.Nino
+import play.api.libs.json.{ Format, Json }
+import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails.Person
 
-case class CitizenDetailsRequest(nino: Nino, dateOfBirth: DateOfBirth)
+//Add more fields as required: https://github.com/hmrc/citizen-details
+case class DesignatoryDetails(person: Option[Person] = None)
 
-object CitizenDetailsRequest {
+object DesignatoryDetails {
 
-  implicit val format: OFormat[CitizenDetailsRequest] = Json.format[CitizenDetailsRequest]
+  case class Person(dateOfBirth: Option[DateOfBirth] = None)
+
+  object Person {
+    implicit val format: Format[Person] = Json.format[Person]
+  }
+
+  implicit val format: Format[DesignatoryDetails] = Json.format[DesignatoryDetails]
 }
-
