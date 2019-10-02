@@ -60,6 +60,7 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
     bindConfigProperty("des.authorization-token")
     bindConfigProperty("des.environment")
     bindIntegerProperty("mongodb.subscriptionjourney.ttl")
+    bindBooleanProperty("indexes.background-build", false)
     ()
   }
 
@@ -78,6 +79,11 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
       .getOrElse(throw new IllegalStateException(s"No value found for configuration property $confKey"))
   }
 
+  private def bindBooleanProperty(propertyName: String, default: Boolean) =
+    bind(classOf[Boolean])
+      .annotatedWith(Names.named(propertyName))
+      .toProvider(new BooleanPropertyProvider(propertyName, default))
+
   private def bindIntegerProperty(propertyName: String) =
     bind(classOf[Int])
       .annotatedWith(Names.named(propertyName))
@@ -87,6 +93,12 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
     override lazy val get: Int = configuration
       .getInt(confKey)
       .getOrElse(throw new IllegalStateException(s"No value found for configuration property $confKey"))
+  }
+
+  private class BooleanPropertyProvider(confKey: String, default: Boolean) extends Provider[Boolean] {
+    override lazy val get: Boolean = configuration
+      .getBoolean(confKey)
+      .getOrElse(default)
   }
 
   private def bindConfigProperty(propertyName: String) =
