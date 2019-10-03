@@ -16,8 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.repository
 
-import javax.inject.{ Inject, Named, Singleton }
-import play.api.Logger
+import javax.inject.{ Inject, Singleton }
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
@@ -34,15 +33,12 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
 class SubscriptionJourneyRepository @Inject() (
-  mongoComponent: ReactiveMongoComponent,
-  @Named("indexes.background-build") indexInBackground: Boolean)
+  mongoComponent: ReactiveMongoComponent)
   extends ReactiveRepository[SubscriptionJourneyRecord, BSONObjectID](
     "subscription-journey",
     mongoComponent.mongoConnector.db,
     SubscriptionJourneyRecord.subscriptionJourneyFormat,
     ReactiveMongoFormats.objectIdFormats) {
-
-  Logger.logger.warn(s"Index in Background set to: $indexInBackground")
 
   private def expireRecordAfterSeconds: Long = 2592000 // 30 days
 
@@ -65,16 +61,15 @@ class SubscriptionJourneyRepository @Inject() (
 
   override def indexes: Seq[Index] =
     Seq(
-      Index(key = Seq("authProviderId" -> IndexType.Ascending), name = Some("primaryAuthId"), unique = true, background = indexInBackground),
-      Index(key = Seq("userMappings.authProviderId" -> IndexType.Ascending), name = Some("mappedAuthId"), unique = true, sparse = true, background = indexInBackground),
-      Index(key = Seq("cleanCredsAuthProviderId" -> IndexType.Ascending), name = Some("cleanCredsAuthProviderId"), unique = true, sparse = true, background = indexInBackground),
-      Index(key = Seq("businessDetails.utr" -> IndexType.Ascending), name = Some("utr"), unique = true, background = indexInBackground),
-      Index(key = Seq("continueId" -> IndexType.Ascending), name = Some("continueId"), unique = true, sparse = true, background = indexInBackground),
+      Index(key = Seq("authProviderId" -> IndexType.Ascending), name = Some("primaryAuthId"), unique = true),
+      Index(key = Seq("userMappings.authProviderId" -> IndexType.Ascending), name = Some("mappedAuthId"), unique = true, sparse = true),
+      Index(key = Seq("cleanCredsAuthProviderId" -> IndexType.Ascending), name = Some("cleanCredsAuthProviderId"), unique = true, sparse = true),
+      Index(key = Seq("businessDetails.utr" -> IndexType.Ascending), name = Some("utr"), unique = true),
+      Index(key = Seq("continueId" -> IndexType.Ascending), name = Some("continueId"), unique = true, sparse = true),
       Index(
         key = Seq("lastModifiedDate" -> IndexType.Ascending),
         name = Some("lastModifiedDateTtl"),
         unique = false,
-        background = indexInBackground,
         options = BSONDocument("expireAfterSeconds" -> expireRecordAfterSeconds)))
 
   def findByAuthId(authProviderId: AuthProviderId)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =

@@ -16,9 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.repository
 
-import java.net.URL
-
-import javax.inject.{ Inject, Named, Singleton }
+import javax.inject.{ Inject, Singleton }
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
@@ -34,29 +32,22 @@ import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class RecoveryRepository @Inject() (
-  mongoComponent: ReactiveMongoComponent,
-  @Named("indexes.background-build") indexInBackground: Boolean)
+class RecoveryRepository @Inject() (mongoComponent: ReactiveMongoComponent)
   extends ReactiveRepository[RecoveryData, BSONObjectID](
     "agent-recovery-store",
     mongoComponent.mongoConnector.db,
     RecoveryData.recoveryDataFormat,
     ReactiveMongoFormats.objectIdFormats) with StrictlyEnsureIndexes[RecoveryData, BSONObjectID] {
 
-  Logger.logger.warn(s"Index in Background set to: $indexInBackground")
-
-  override def indexes: Seq[Index] =
-    Seq(
-      Index(
-        key = Seq("arn" -> IndexType.Ascending),
-        name = Some("Arn"),
-        unique = false,
-        background = indexInBackground),
-      Index(
-        key = Seq("createdDate" -> IndexType.Ascending),
-        name = Some("createDate"),
-        unique = false,
-        background = indexInBackground))
+  override def indexes: Seq[Index] = Seq(
+    Index(
+      key = Seq("arn" -> IndexType.Ascending),
+      name = Some("Arn"),
+      unique = false),
+    Index(
+      key = Seq("createdDate" -> IndexType.Ascending),
+      name = Some("createDate"),
+      unique = false))
 
   def create(authIds: AuthIds, arn: Arn, subscriptionRequest: SubscriptionRequest, errorMessage: String)(implicit ec: ExecutionContext): Future[Unit] = {
     insert(RecoveryData(authIds, arn, subscriptionRequest, errorMessage)).map(_ => ())
