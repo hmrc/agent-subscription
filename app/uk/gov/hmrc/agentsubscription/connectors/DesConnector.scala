@@ -92,7 +92,7 @@ class DesConnector @Inject() (
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   def createOverseasBusinessPartnerRecord(request: OverseasRegistrationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SafeId] = {
-    monitor("DES-Overseas-CreateRegistration-POST") {
+    monitor("ConsumedAPI-DES-Overseas-CreateRegistration-POST") {
       val url = new URL(baseUrl, "/registration/02.00.00/organisation")
 
       httpPost.POST[OverseasRegistrationRequest, JsValue](url.toString, request)(implicitly[Writes[OverseasRegistrationRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
@@ -105,7 +105,7 @@ class DesConnector @Inject() (
   }
 
   def subscribeToAgentServices(safeId: SafeId, agencyDetails: OverseasAgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
-    monitor("DES-SubscribeOverseasAgent-POST") {
+    monitor("ConsumedAPI-DES-SubscribeOverseasAgent-POST") {
       httpPost.POST[OverseasAgencyDetails, JsValue](desOverseasSubscribeUrl(safeId).toString, agencyDetails)(implicitly[Writes[OverseasAgencyDetails]], implicitly[HttpReads[JsValue]], desHeaders, ec)
         .map(response => (response \ "agentRegistrationNumber").as[Arn])
         .recover {
@@ -115,7 +115,7 @@ class DesConnector @Inject() (
   }
 
   def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
-    monitor("DES-SubscribeAgent-POST") {
+    monitor("ConsumedAPI-DES-SubscribeAgent-POST") {
       httpPost.POST[DesSubscriptionRequest, JsValue](desSubscribeUrl(utr).toString, request)(implicitly[Writes[DesSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
     } map {
       r => (r \ "agentRegistrationNumber").as[Arn]

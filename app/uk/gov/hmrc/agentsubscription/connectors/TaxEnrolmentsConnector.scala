@@ -71,7 +71,7 @@ class TaxEnrolmentsConnector @Inject() (
 
   // EACD's ES7 API
   def deleteKnownFacts(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
-    monitor("EMAC-DeleteKnownFacts-HMRC-AS-AGENT-DELETE") {
+    monitor("ConsumedAPI-EMAC-DeleteKnownFacts-HMRC-AS-AGENT-DELETE") {
       http.DELETE[HttpResponse](s"""${espBaseUrl}/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(arn.value)}""")
         .map(_.status)
     }
@@ -81,7 +81,7 @@ class TaxEnrolmentsConnector @Inject() (
   def enrol(groupId: String, arn: Arn, enrolmentRequest: EnrolmentRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
     val serviceUrl = s"""${teBaseUrl}/tax-enrolments/groups/$groupId/enrolments/${enrolmentKey(arn.value)}"""
 
-    monitor("EMAC-Enrol-HMRC-AS-AGENT-POST") {
+    monitor("ConsumedAPI-EMAC-Enrol-HMRC-AS-AGENT-POST") {
       http.POST[JsValue, HttpResponse](serviceUrl, Json.toJson(enrolmentRequest)) map {
         response => response.status
       }
@@ -92,7 +92,7 @@ class TaxEnrolmentsConnector @Inject() (
   def hasPrincipalGroupIds(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
     val url = new URL(espBaseUrl, s"/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(arn.value)}/groups?type=principal")
 
-    monitor("EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET") {
+    monitor("ConsumedAPI-EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET") {
       http.GET[HttpResponse](url.toString)
     }.map(response => response.status match {
       case 200 => (response.json \ "principalGroupIds").as[Seq[String]].nonEmpty

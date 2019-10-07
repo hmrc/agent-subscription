@@ -45,7 +45,7 @@ class CitizenDetailsConnectorImpl @Inject() (
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   def getDesignatoryDetails(nino: Nino)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesignatoryDetails] =
-    monitor(s"CITIZEN-DETAILS-getDesignatoryDetails-GET") {
+    monitor("ConsumedAPI-getDesignatoryDetails-GET") {
       val url = new URL(baseUrl, s"/citizen-details/${nino.value}/designatory-details")
       httpClient.GET[DesignatoryDetails](url.toString)
     }
