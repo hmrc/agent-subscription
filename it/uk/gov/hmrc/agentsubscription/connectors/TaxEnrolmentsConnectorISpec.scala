@@ -16,7 +16,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with TaxEnrolmentsStubs with MetricsTestSupport with MockitoSugar {
   private lazy val wiremockUrl = new URL(s"http://localhost:$wireMockPort")
-  private lazy val auditConnector = mock[AuditConnector]
   private lazy val httpVerbs = app.injector.instanceOf[HttpPut with HttpPost with HttpGet with HttpDelete]
   private lazy val connector = new TaxEnrolmentsConnector(wiremockUrl, wiremockUrl, httpVerbs, app.injector.instanceOf[Metrics])
 
@@ -33,7 +32,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       createKnownFactsSucceeds(arn.value)
       val result = await(connector.addKnownFacts(arn.value, knownFactKey, postcode))
       result shouldBe 200
-      verifyTimerExistsAndBeenUpdated("EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT")
+      verifyTimerExistsAndBeenUpdated("ConsumedAPI-EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT")
     }
 
     "propagate an exception after failing to create known facts" in {
