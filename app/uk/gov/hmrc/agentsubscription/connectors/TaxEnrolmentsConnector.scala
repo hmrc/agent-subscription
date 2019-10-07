@@ -62,7 +62,7 @@ class TaxEnrolmentsConnector @Inject() (
   def addKnownFacts(arn: String, knownFactKey: String, knownFactValue: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
     val request = KnownFactsRequest(List(KnownFact(knownFactKey, knownFactValue)), None)
 
-    monitor("EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT") {
+    monitor("ConsumedAPI-EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT") {
       http.PUT[JsValue, HttpResponse](s"""${teBaseUrl}/tax-enrolments/enrolments/${enrolmentKey(arn)}""", Json.toJson(request)) map {
         response => response.status
       }
