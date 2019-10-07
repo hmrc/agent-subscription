@@ -108,7 +108,7 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
 
       val responseJson: JsValue = Json.parse(auditEvent.response.detail("responseMessage"))
       (responseJson \ "agentRegistrationNumber").as[String] shouldBe "TARN0000001"
-      verifyTimerExistsAndBeenUpdated("DES-SubscribeAgent-POST")
+      verifyTimerExistsAndBeenUpdated("ConsumedAPI-DES-SubscribeAgent-POST")
     }
 
   }
