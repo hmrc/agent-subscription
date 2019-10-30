@@ -56,6 +56,37 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           complete = 1)
       }
 
+      "there are no amls details" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        givenValidApplicationWithoutAmls("accepted")
+        givenUpdateApplicationStatus(AttemptingRegistration, 204)
+        organisationRegistrationSucceeds()
+        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(stubbedGroupId, arn)
+        givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
+        givenEmailSent(emailInfo)
+
+        val result = await(doSubscriptionRequest)
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe arn
+
+        verifyApiCalls(
+          attemptingRegistration = 1,
+          etmpRegistration = 1,
+          registered = 1,
+          subscription = 1,
+          allocatedPrincipalEnrolment = 1,
+          deleteKnownFact = 1,
+          createKnownFact = 1,
+          enrol = 1,
+          complete = 1)
+      }
+
       "the application is in the 'registered' state then the DES registration API is not called but the subscription/enrolment is re-attempted" in {
         aSuccessfulSubscriptionForAlreadyRegisteredAcceptedApplication("registered")
       }
@@ -179,7 +210,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
         result.status shouldBe 500
         (result.json \ "statusCode").as[Int] shouldBe 500
-        (result.json \ "message").as[String] shouldBe "The retrieved current application is invalid"
+        (result.json \ "message").as[String] shouldBe "JsResultException(errors:List((/agencyName,List(ValidationError(List(error.name.invalid),WrappedArray())))))"
 
         verifyApiCalls(
           attemptingRegistration = 0,

@@ -51,7 +51,7 @@ case class OverseasSubscriptionAuditDetail(
   agencyName: String,
   agencyEmail: String,
   agencyAddress: OverseasAgencyAddress,
-  amlsDetails: OverseasAmlsDetails)
+  amlsDetails: Option[OverseasAmlsDetails])
 
 object OverseasSubscriptionAuditDetail {
   implicit val format: OFormat[OverseasSubscriptionAuditDetail] = Json.format[OverseasSubscriptionAuditDetail]
@@ -166,11 +166,14 @@ class SubscriptionService @Inject() (
     }
   }
 
-  private def subscribeAndEnrolOverseas(authIds: AuthIds, safeId: SafeId, amlsDetails: OverseasAmlsDetails, agencyDetails: OverseasAgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+  private def subscribeAndEnrolOverseas(authIds: AuthIds, safeId: SafeId, amlsDetailsOpt: Option[OverseasAmlsDetails], agencyDetails: OverseasAgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
     for {
       arn <- desConnector.subscribeToAgentServices(safeId, agencyDetails)
       _ <- addKnownFactsAndEnrolOverseas(arn, agencyDetails, authIds)
-      _ <- agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
+      _ <- amlsDetailsOpt match {
+        case Some(amlsDetails) => agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
+        case None => Future(())
+      }
       _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, authIds.userId, None, Some(arn))
       _ <- sendEmail(agencyDetails.agencyEmail, agencyDetails.agencyName, arn)
     } yield Some(arn)
