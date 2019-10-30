@@ -21,7 +21,7 @@ import play.api.libs.json.{ Json, OFormat }
 case class CurrentApplication(
   status: ApplicationStatus,
   safeId: Option[SafeId],
-  amlsDetails: OverseasAmlsDetails,
+  amlsDetails: Option[OverseasAmlsDetails],
   businessContactDetails: OverseasContactDetails,
   tradingDetails: TradingDetails,
   agencyDetails: OverseasAgencyDetails)
