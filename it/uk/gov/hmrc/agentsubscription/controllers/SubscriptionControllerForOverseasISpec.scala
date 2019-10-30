@@ -58,7 +58,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "there are no amls details" in {
         requestIsAuthenticatedWithNoEnrolments()
-        givenValidApplicationWithoutAmls("accepted")
+        givenValidApplication("accepted", hasAmls = false)
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
