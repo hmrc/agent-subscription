@@ -1,52 +1,49 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
-
-import akka.actor.ActorSystem
 import com.kenshoo.play.metrics.Metrics
-import com.typesafe.config.Config
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.verify
 import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.OneAppPerSuite
 import play.api.libs.json.{ JsValue, Json }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model
 import uk.gov.hmrc.agentsubscription.model.{ AgentRecord, Crn }
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
-import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
+import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.audit.http.HttpAuditing
+import uk.gov.hmrc.play.audit.http.config.AuditingConfig
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import uk.gov.hmrc.play.http.ws.{ WSGet, WSPost }
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with DesStubs with MetricsTestSupport with MockitoSugar {
+class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport with MockitoSugar {
   private implicit val hc = HeaderCarrier()
   val utr = Utr("1234567890")
   val crn = Crn("SC123456")
   val vrn = Vrn("888913457")
 
-  private val bearerToken = "auth-token"
-  private val environment = "des-env"
+  private val bearerToken = "secret"
+  private val environment = "test"
 
   override protected def expectedBearerToken = Some(bearerToken)
 
   override protected def expectedEnvironment = Some(environment)
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
-  private lazy val httpPost: HttpPost = app.injector.instanceOf[HttpPost]
-  private lazy val httpGet: HttpGet = app.injector.instanceOf[HttpGet]
+  private lazy val http: HttpClient = app.injector.instanceOf[HttpClient]
+  private lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   private lazy val connector: DesConnector =
-    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), httpPost, httpGet, metrics)
+    new DesConnector(appConfig, http, metrics)
+
+  private lazy val mockAuditConnector = mock[AuditConnector]
 
   "subscribeToAgentServices" should {
     "return an ARN when subscription is successful" in {
@@ -84,31 +81,6 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       }
 
       exception.getMessage.contains(utr.value) shouldBe true
-    }
-
-    "audit the request and response" in new MockAuditingContext {
-      givenCleanMetricRegistry()
-      val connector: DesConnector =
-        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, wsHttp, metrics)
-      subscriptionSucceeds(utr, request)
-
-      await(connector.subscribeToAgentServices(utr, request))
-
-      val auditEvent: MergedDataEvent = capturedEvent()
-      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/agents/utr/${utr.value}"
-      auditEvent.auditType shouldBe "OutboundCall"
-      val requestJson: JsValue = Json.parse(auditEvent.request.detail("requestBody"))
-      (requestJson \ "agencyName").as[String] shouldBe "My Agency"
-      (requestJson \ "telephoneNumber").as[String] shouldBe "0123 456 7890"
-      (requestJson \ "agencyEmail").as[String] shouldBe "agency@example.com"
-      (requestJson \ "agencyAddress" \ "addressLine1").as[String] shouldBe "1 Some Street"
-      (requestJson \ "agencyAddress" \ "addressLine2").as[String] shouldBe "MyTown"
-      (requestJson \ "agencyAddress" \ "postalCode").as[String] shouldBe "AA1 1AA"
-      (requestJson \ "agencyAddress" \ "countryCode").as[String] shouldBe "GB"
-
-      val responseJson: JsValue = Json.parse(auditEvent.response.detail("responseMessage"))
-      (responseJson \ "agentRegistrationNumber").as[String] shouldBe "TARN0000001"
-      verifyTimerExistsAndBeenUpdated("DES-SubscribeAgent-POST")
     }
 
   }
@@ -167,24 +139,6 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       registration shouldBe None
     }
 
-    "audit the request and response" in new MockAuditingContext {
-      givenCleanMetricRegistry()
-      val connector: DesConnector =
-        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, wsHttp, metrics)
-      organisationRegistrationExists(utr)
-
-      await(connector.getRegistration(utr))
-
-      val auditEvent = capturedEvent()
-      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/individual/utr/${utr.value}"
-      auditEvent.auditType shouldBe "OutboundCall"
-
-      val responseJson = Json.parse(auditEvent.response.detail("responseMessage"))
-      (responseJson \ "address" \ "postalCode").as[String] shouldBe "AA1 1AA"
-      (responseJson \ "isAnASAgent").as[Boolean] shouldBe true
-      (responseJson \ "organisation" \ "organisationName").as[String] shouldBe "My Agency"
-      verifyTimerExistsAndBeenUpdated("DES-GetAgentRegistration-POST")
-    }
   }
 
   "getAgentRecord" should {
@@ -215,23 +169,6 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
       an[NotFoundException] shouldBe thrownBy(await(connector.getAgentRecordDetails(utr)))
     }
 
-    "audit the request and response" in new MockAuditingContext {
-      givenCleanMetricRegistry()
-      val connector: DesConnector =
-        new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), wsHttp, wsHttp, metrics)
-      agentRecordExists(utr)
-
-      await(connector.getAgentRecordDetails(utr))
-
-      val auditEvent = capturedEvent()
-      auditEvent.request.tags("path") shouldBe s"$wireMockBaseUrl/registration/personal-details/utr/${utr.value}"
-      auditEvent.auditType shouldBe "OutboundCall"
-
-      val responseJson = Json.parse(auditEvent.response.detail("responseMessage"))
-      (responseJson \ "agencyDetails" \ "agencyAddress" \ "postalCode").as[String] shouldBe "AA1 2AA"
-      (responseJson \ "isAnASAgent").as[Boolean] shouldBe true
-      verifyTimerExistsAndBeenUpdated("ConsumedAPI-DES-GetAgentRecord-GET")
-    }
   }
 
   "getCorporationTaxUtr" should {
@@ -293,25 +230,5 @@ class DesConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSuppor
     agencyAddress = Address(addressLine1 = "1 Some Street", addressLine2 = Some("MyTown"), postalCode = "AA1 1AA", countryCode = "GB"),
     agencyEmail = "agency@example.com",
     telephoneNumber = Some("0123 456 7890"))
-
-  trait MockAuditingContext extends MockitoSugar with Eventually {
-    private val mockAuditConnector = mock[AuditConnector]
-
-    val wsHttp = new HttpPost with HttpGet with WSPost with WSGet with HttpAuditing {
-      val auditConnector = mockAuditConnector
-      val appName = "agent-subscription"
-      val actorSystem = ActorSystem()
-      override val hooks = Seq(AuditingHook)
-      override protected def configuration: Option[Config] = None
-    }
-
-    def capturedEvent(): MergedDataEvent = {
-      eventually[MergedDataEvent]({
-        val captor = ArgumentCaptor.forClass(classOf[MergedDataEvent])
-        verify(mockAuditConnector).sendMergedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
-        captor.getValue
-      })
-    }
-  }
 
 }

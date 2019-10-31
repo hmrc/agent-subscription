@@ -28,7 +28,7 @@ class CitizenDetailsControllerISpec extends BaseISpec with CitizenDetailsStubs w
   def doRequest(nino: Nino) =
     Await.result(
       ws.url(s"http://localhost:$port/agent-subscription/citizen-details/${nino.value}/designatory-details")
-        .withHeaders(CONTENT_TYPE -> "application/json")
+        .withHttpHeaders(CONTENT_TYPE -> "application/json")
         .get(),
       duration)
 

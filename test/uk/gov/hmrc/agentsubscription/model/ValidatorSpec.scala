@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.data.validation.ValidationError
+import play.api.libs.json.JsonValidationError
 import play.api.libs.json.{ JsError, JsString, JsSuccess }
 import uk.gov.hmrc.play.test.UnitSpec
 
@@ -210,7 +210,7 @@ class ValidatorSpec extends UnitSpec {
 
   "addressValidation" should {
     def validateAddress(address: String) = addressValidation.reads(JsString(address))
-    def addressValidationError = JsError(ValidationError("error.address.invalid"))
+    def addressValidationError = JsError(JsonValidationError("error.address.invalid"))
 
     "accept address" when {
 
@@ -250,7 +250,7 @@ class ValidatorSpec extends UnitSpec {
 
   "overseasAddressValidation" should {
     def validateOSAddress(address: String) = overseasAddressValidation.reads(JsString(address))
-    def osAddressValidationError = JsError(ValidationError("error.address.invalid"))
+    def osAddressValidationError = JsError(JsonValidationError("error.address.invalid"))
 
     "accept address" when {
 
@@ -328,7 +328,7 @@ class ValidatorSpec extends UnitSpec {
 
   "nameValidation" should {
     def validateName(name: String) = nameValidation.reads(JsString(name))
-    def nameValidationError = JsError(ValidationError("error.name.invalid"))
+    def nameValidationError = JsError(JsonValidationError("error.name.invalid"))
 
     "accept name" when {
       "a valid name is provided" in {
@@ -349,7 +349,7 @@ class ValidatorSpec extends UnitSpec {
         validateName("|Agency|") shouldBe nameValidationError
       }
       "an ampersand is provided" in {
-        validateName("Agency & Co") shouldBe JsError(ValidationError("error.Ampersand"))
+        validateName("Agency & Co") shouldBe JsError(JsonValidationError("error.Ampersand"))
       }
 
       "name is too long" in {
@@ -368,7 +368,7 @@ class ValidatorSpec extends UnitSpec {
 
   "overseasNameValidation" should {
     def validateOSName(name: String) = overseasNameValidation.reads(JsString(name))
-    def nameValidationError = JsError(ValidationError("error.name.invalid"))
+    def nameValidationError = JsError(JsonValidationError("error.name.invalid"))
 
     "accept name" when {
       "a valid name is provided" in {
@@ -455,7 +455,7 @@ class ValidatorSpec extends UnitSpec {
 
   "overseasEmailValidation" should {
     def validateOSEmail(email: String) = overseasEmailValidation.reads(JsString(email))
-    def emailValidationError = JsError(ValidationError("error.email.invalid"))
+    def emailValidationError = JsError(JsonValidationError("error.email.invalid"))
 
     "accept name" when {
       "simple email address" in {
@@ -515,7 +515,7 @@ class ValidatorSpec extends UnitSpec {
 
   "safeIdValidation" should {
     def validateSafeId(safeId: String) = safeIdValidation.reads(JsString(safeId))
-    def safeIdValidationError = JsError(ValidationError("error.safeid.invalid"))
+    def safeIdValidationError = JsError(JsonValidationError("error.safeid.invalid"))
 
     "accept SafeId" when {
       "it's a perfectly normal SafeID" in {
@@ -588,13 +588,13 @@ class ValidatorSpec extends UnitSpec {
   }
 
   private def whitespaceValidationError = {
-    JsError(ValidationError("error.whitespace.or.empty"))
+    JsError(JsonValidationError("error.whitespace.or.empty"))
   }
   private def postcodeValidationError = {
-    JsError(ValidationError("error.postcode.invalid"))
+    JsError(JsonValidationError("error.postcode.invalid"))
   }
 
   private def telephoneValidationError = {
-    JsError(ValidationError("error.telephone.invalid"))
+    JsError(JsonValidationError("error.telephone.invalid"))
   }
 }

@@ -21,19 +21,18 @@ import java.time.{ LocalDateTime, ZoneOffset }
 import com.google.inject.Inject
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{ Action, AnyContent }
+import play.api.mvc.{ Action, AnyContent, ControllerComponents }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-class SubscriptionJourneyController @Inject() (implicit
+class SubscriptionJourneyController @Inject() (
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
-  ec: ExecutionContext)
-  extends BaseController {
+  cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
 
   def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
     subscriptionJourneyRepository.findByAuthId(authProviderId).map {

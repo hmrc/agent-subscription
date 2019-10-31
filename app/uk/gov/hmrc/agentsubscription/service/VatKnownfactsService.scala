@@ -27,9 +27,9 @@ import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, NotFoundException 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class VatKnownfactsService @Inject() (desConnector: DesConnector) {
+class VatKnownfactsService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext) {
 
-  def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[MatchDetailsResponse] = {
+  def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String)(implicit hc: HeaderCarrier): Future[MatchDetailsResponse] = {
     desConnector.getVatKnownfacts(vrn).map { dateOfReg =>
       if (dateOfReg == vatRegistrationDate)
         Match

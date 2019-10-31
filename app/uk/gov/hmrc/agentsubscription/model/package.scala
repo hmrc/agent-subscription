@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription
 
-import play.api.data.validation.ValidationError
 import play.api.libs.functional.syntax._
+import play.api.libs.json.JsonValidationError
 import play.api.libs.json.Reads._
 import play.api.mvc.{ Request, WrappedRequest }
 import uk.gov.hmrc.agentsubscription.auth.{ Authority, Enrolment }
@@ -31,70 +31,70 @@ package object model {
   def nameAndAddressRegex(max: Int) = s"^[A-Za-z0-9 \\-,.&'\\/]{0,$max}$$"
 
   private[model] val telephoneNumberValidation = {
-    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
-      filter[String](ValidationError("error.telephone.invalid"))(_.matches(telephoneRegex))
+    filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](JsonValidationError("error.telephone.invalid"))(_.matches(telephoneRegex))
   }
 
   private[model] val postcodeValidation = {
-    filter[String](ValidationError("error.postcode.invalid"))(_.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex))
+    filter[String](JsonValidationError("error.postcode.invalid"))(_.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex))
   }
 
   private[model] val addressValidation = {
-    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
-      filter[String](ValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(addressMax)))
+    filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](JsonValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(addressMax)))
   }
 
   private[model] val nameValidation = {
-    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
-      filter[String](ValidationError("error.Ampersand"))(_.matches(noAmpersand)) andKeep
-      filter[String](ValidationError("error.name.invalid"))(_.matches(nameAndAddressRegex(nameMax)))
+    filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](JsonValidationError("error.Ampersand"))(_.matches(noAmpersand)) andKeep
+      filter[String](JsonValidationError("error.name.invalid"))(_.matches(nameAndAddressRegex(nameMax)))
   }
 
   private[model] val overseasAddressValidation = {
     val overseasAddressRegex = s"^[A-Za-z0-9 \\-,.&']{0,35}$$"
-    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
-      filter[String](ValidationError("error.address.invalid"))(_.matches(overseasAddressRegex))
+    filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](JsonValidationError("error.address.invalid"))(_.matches(overseasAddressRegex))
   }
 
   private[model] val overseasNameValidation = {
     val overseasAgencyNameRegex = s"^[A-Za-z0-9 \\-,.\\/]{0,40}$$"
 
-    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
-      filter[String](ValidationError("error.name.invalid"))(_.matches(overseasAgencyNameRegex))
+    filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](JsonValidationError("error.name.invalid"))(_.matches(overseasAgencyNameRegex))
   }
 
   private[model] val overseasCountryCodeValidation = {
     val overseasCountryCodeRegex = "[A-Z]{2}"
 
-    filter[String](ValidationError("error.overseas.countryCode"))(_ != "GB") andKeep
-      filter[String](ValidationError("error.overseas.countryCode"))(_.matches(overseasCountryCodeRegex))
+    filter[String](JsonValidationError("error.overseas.countryCode"))(_ != "GB") andKeep
+      filter[String](JsonValidationError("error.overseas.countryCode"))(_.matches(overseasCountryCodeRegex))
   }
   private[model] val overseasTelephoneNumberValidation = {
     val overseasPhoneRegex = s"^[A-Z0-9 )\\/(\\-*#]{0,24}$$"
 
-    filterNot[String](ValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
-      filter[String](ValidationError("error.telephone.invalid"))(_.matches(overseasPhoneRegex))
+    filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](JsonValidationError("error.telephone.invalid"))(_.matches(overseasPhoneRegex))
   }
 
   private[model] val overseasEmailValidation = {
     val overseasEmailRegex = """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"""
 
-    filterNot[String](ValidationError("error.email.invalid"))(_.length > 132) andKeep
-      filter[String](ValidationError("error.email.invalid"))(_.matches(overseasEmailRegex))
+    filterNot[String](JsonValidationError("error.email.invalid"))(_.length > 132) andKeep
+      filter[String](JsonValidationError("error.email.invalid"))(_.matches(overseasEmailRegex))
   }
 
   private[model] val safeIdValidation = {
     val safeIdRegex = """^X[A-Z]000[0-9]{10}$"""
 
-    filter[String](ValidationError("error.safeid.invalid"))(_.matches(safeIdRegex))
+    filter[String](JsonValidationError("error.safeid.invalid"))(_.matches(safeIdRegex))
   }
 
   private[model] val crnValidation = {
     val crnLength = 8
     val crnRegex = "[A-Z]{2}[0-9]{6}|[0-9]{8}"
 
-    filterNot[String](ValidationError("error.crn.invalid"))(_.length == crnLength) andKeep
-      filter[String](ValidationError("error.crn.invalid"))(_.matches(crnRegex))
+    filterNot[String](JsonValidationError("error.crn.invalid"))(_.length == crnLength) andKeep
+      filter[String](JsonValidationError("error.crn.invalid"))(_.matches(crnRegex))
   }
 }
 

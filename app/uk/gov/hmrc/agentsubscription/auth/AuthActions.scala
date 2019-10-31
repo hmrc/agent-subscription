@@ -16,33 +16,24 @@
 
 package uk.gov.hmrc.agentsubscription.auth
 
-import com.codahale.metrics.MetricRegistry
-import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.{ JsValue, Json, OFormat, Writes }
 import play.api.mvc.Results.{ Forbidden, Unauthorized }
 import play.api.mvc.{ AnyContent, Result, _ }
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.auth.AuthActions._
-import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.utils.toFuture
-import uk.gov.hmrc.auth.core
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{ affinityGroup, allEnrolments, credentials, groupIdentifier }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class AuthActions @Inject() (metrics: Metrics, microserviceAuthConnector: MicroserviceAuthConnector)(implicit val ec: ExecutionContext)
-  extends HttpAPIMonitor with AuthorisedFunctions with BaseController {
-
-  override def authConnector: core.AuthConnector = microserviceAuthConnector
-
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthConnector)(implicit ec: ExecutionContext)
+  extends BackendController(cc) with AuthorisedFunctions {
 
   private val AuthProvider: AuthProviders = AuthProviders(GovernmentGateway)
   private val agentEnrol = "HMRC-AS-AGENT"

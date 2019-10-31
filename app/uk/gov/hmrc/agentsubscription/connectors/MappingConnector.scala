@@ -16,35 +16,34 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
-
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{ Inject, Named, Singleton }
+import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import play.api.http.Status
-import play.api.libs.json.Json.format
-import play.api.libs.json.OFormat
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.agentsubscription.model.AuthProviderId
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
 class MappingConnector @Inject() (
-  @Named("agent-mapping-baseUrl") baseUrl: URL,
-  httpPut: HttpPut,
+  appConfig: AppConfig,
+  http: HttpClient,
   metrics: Metrics) extends HttpAPIMonitor {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
+  val baseUrl = appConfig.agentMappingBaseUrl
+
   //valid status can be CREATED or CONFLICT
   def createMappings(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
-    val createUrl = new URL(baseUrl, s"/agent-mapping/mappings/task-list/arn/${arn.value}").toString
-    monitor(s"ConsumedAPI-Mapping-CreateMappings-PUT") {
-      httpPut
+    val createUrl = s"$baseUrl/agent-mapping/mappings/task-list/arn/${arn.value}"
+    monitor("ConsumedAPI-Mapping-CreateMappings-PUT") {
+      http
         .PUT(createUrl, "")
         .map { _ => Logger.info("mapping was successful"); ()
         }.recover {
@@ -64,9 +63,11 @@ class MappingConnector @Inject() (
     implicit
     hc: HeaderCarrier,
     ec: ExecutionContext): Future[Unit] = {
-    val url = new URL(baseUrl, s"/agent-mapping/mappings/task-list/details/arn/${arn.value}").toString
+
+    val createMappingDetailsUrl = s"$baseUrl/agent-mapping/mappings/task-list/details/arn/${arn.value}"
+
     monitor("ConsumedAPI-Mapping-createOrUpdateMappingDetails-POST") {
-      httpPut.PUT(url, "").map { _ =>
+      http.PUT(createMappingDetailsUrl, "").map { _ =>
         Logger.info("creating mapping details from subscription journey record was successful"); ()
       }.recover {
         case ex =>

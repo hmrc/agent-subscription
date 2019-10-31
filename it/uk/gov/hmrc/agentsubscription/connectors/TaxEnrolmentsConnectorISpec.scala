@@ -1,24 +1,24 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
-
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.OneAppPerSuite
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
-import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
+import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport, WireMockSupport }
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with TaxEnrolmentsStubs with MetricsTestSupport with MockitoSugar {
-  private lazy val wiremockUrl = new URL(s"http://localhost:$wireMockPort")
-  private lazy val auditConnector = mock[AuditConnector]
-  private lazy val httpVerbs = app.injector.instanceOf[HttpPut with HttpPost with HttpGet with HttpDelete]
-  private lazy val connector = new TaxEnrolmentsConnector(wiremockUrl, wiremockUrl, httpVerbs, app.injector.instanceOf[Metrics])
+class TaxEnrolmentsConnectorISpec extends BaseISpec with TaxEnrolmentsStubs with MetricsTestSupport with MockitoSugar {
+
+  private lazy val http = app.injector.instanceOf[HttpClient]
+  private lazy val metrics = app.injector.instanceOf[Metrics]
+  private lazy val appConfig = app.injector.instanceOf[AppConfig]
+  private lazy val connector = new TaxEnrolmentsConnector(appConfig, http, metrics)
 
   private implicit val hc = HeaderCarrier()
   private val arn = Arn("AARN1234567")

@@ -27,7 +27,7 @@ import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, NotFoundException 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class CTReferenceService @Inject() (desConnector: DesConnector) {
+class CTReferenceService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext) {
 
   def matchCorporationTaxUtrWithCrn(utr: Utr, crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[MatchDetailsResponse] = {
     desConnector.getCorporationTaxUtr(crn).map { ctUtr =>

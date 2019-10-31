@@ -3,7 +3,7 @@ package uk.gov.hmrc.agentsubscription.repository
 import java.time.LocalDate
 
 import org.scalatest.concurrent.Eventually
-import org.scalatestplus.play.OneAppPerSuite
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
@@ -16,7 +16,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class SubscriptionJourneyRepositoryISpec extends UnitSpec with OneAppPerSuite with MongoApp with Eventually {
+class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSuite with MongoApp with Eventually {
 
   protected def appBuilder: GuiceApplicationBuilder = new GuiceApplicationBuilder()
     .configure(mongoConfiguration)

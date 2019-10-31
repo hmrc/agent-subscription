@@ -16,24 +16,26 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
-
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{ Inject, Named, Singleton }
+import javax.inject.{ Inject, Singleton }
 import play.api.libs.json.{ Format, JsObject, Json }
 import play.mvc.Http.Status.CREATED
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.AgentAssuranceConnector.{ CreateAmlsRequest, CreateOverseasAmlsRequest }
 import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, OverseasAmlsDetails }
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @ImplementedBy(classOf[AgentAssuranceConnectorImpl])
 trait AgentAssuranceConnector {
+
+  def appConfig: AppConfig
 
   def createAmls(utr: Utr, amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean]
 
@@ -44,19 +46,22 @@ trait AgentAssuranceConnector {
 
 @Singleton
 class AgentAssuranceConnectorImpl @Inject() (
-  @Named("agent-assurance-baseUrl") baseUrl: URL,
-  http: HttpPut with HttpPost,
+  val appConfig: AppConfig,
+  http: HttpClient,
   metrics: Metrics)
   extends AgentAssuranceConnector with HttpAPIMonitor {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  val createAmlsUrl: String = new URL(baseUrl, "/agent-assurance/amls").toString
+  val baseUrl = appConfig.agentAssuranceBaseUrl
 
   override def createAmls(utr: Utr, amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
-    monitor(s"AgentAssurance-amls-POST") {
+
+    val url: String = s"$baseUrl/agent-assurance/amls"
+
+    monitor("AgentAssurance-amls-POST") {
       http
-        .POST(createAmlsUrl, CreateAmlsRequest(utr, amlsDetails))
+        .POST(url, CreateAmlsRequest(utr, amlsDetails))
         .map(_.status == CREATED)
         .recover {
           //403 -> There is an existing AMLS record for the Utr with Arn set
@@ -67,10 +72,10 @@ class AgentAssuranceConnectorImpl @Inject() (
 
   def updateAmls(utr: Utr, arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AmlsDetails]] = {
 
-    val url = new URL(baseUrl, s"/agent-assurance/amls/utr/${utr.value}")
+    val url = s"$baseUrl/agent-assurance/amls/utr/${utr.value}"
 
     monitor(s"AgentAssurance-amls-PUT") {
-      http.PUT[JsObject, HttpResponse](url.toString, Json.obj("value" -> arn.value))
+      http.PUT[JsObject, HttpResponse](url, Json.obj("value" -> arn.value))
         .map[Option[AmlsDetails]](r => Some(r.json.as[AmlsDetails]))
     }.recover {
       //404 -> Partially subscribed agents may not have any stored amls details, then updating fails with 404
@@ -79,10 +84,11 @@ class AgentAssuranceConnectorImpl @Inject() (
   }
 
   override def createOverseasAmls(arn: Arn, amlsDetails: OverseasAmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
-    val url = new URL(baseUrl, "/agent-assurance/overseas-agents/amls")
+
+    val url = s"$baseUrl/agent-assurance/overseas-agents/amls"
 
     monitor("AgentAssurance-overseas-agents-amls-POST") {
-      http.POST(url.toString, CreateOverseasAmlsRequest(arn, amlsDetails))
+      http.POST(url, CreateOverseasAmlsRequest(arn, amlsDetails))
         .map(_ => ())
         .recover {
           case e: Upstream4xxResponse if e.upstreamResponseCode == 409 => ()

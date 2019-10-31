@@ -407,7 +407,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     }
   }
 
-  private def doSubscriptionRequest = new Resource(s"/agent-subscription/overseas-subscription", port).putEmpty()
+  private def doSubscriptionRequest = new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
 
   private val agencyDetailsJson =
     s"""
