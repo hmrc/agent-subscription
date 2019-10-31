@@ -19,6 +19,7 @@ package uk.gov.hmrc.agentsubscription.connectors
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
+import play.api.Logger
 import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
@@ -73,14 +74,18 @@ class AgentOverseasApplicationConnector @Inject() (
           case JsError(errors) => throw new JsResultException(errors)
         }
 
-        val amlsDetails = (json \ "amls").as[OverseasAmlsDetails]
+        val amlsDetails = (json \ "amls").asOpt[OverseasAmlsDetails]
         val businessDetails = (json \ "tradingDetails").as[TradingDetails]
         val businessContactDetails = (json \ "contactDetails").as[OverseasContactDetails]
         val agencyDetails = (json \ "agencyDetails").as[OverseasAgencyDetails]
 
         CurrentApplication(status, safeId, amlsDetails, businessContactDetails, businessDetails, agencyDetails)
       }.recover {
-        case e: JsResultException => throw new RuntimeException(s"The retrieved current application is invalid", e)
+        case e: JsResultException =>
+          val errors: Seq[String] = e.errors.flatMap(_._2.map(_.message))
+          Logger.error(s"The retrieved current application is invalid: $errors")
+          throw e
+
         case e => throw new RuntimeException(s"Could not retrieve overseas agent application", e)
       }
     }

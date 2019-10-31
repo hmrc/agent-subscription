@@ -20,7 +20,8 @@ trait AgentOverseasApplicationStubs {
     safeId: Option[String] = None,
     businessTradingName: String = "tradingName",
     agencyName: String = "Agency name",
-    supervisoryBody: String = "supervisoryName") = {
+    supervisoryBody: String = "supervisoryName",
+    hasAmls: Boolean = true) = {
     stubFor(get(urlEqualTo(getApplicationUrl))
       .willReturn(aResponse()
         .withStatus(200)
@@ -29,10 +30,12 @@ trait AgentOverseasApplicationStubs {
              [
              |  {
              |    "applicationReference": "someValidAppReference",
-             |    "amls": {
-             |      "supervisoryBody": "supervisoryName",
-             |      "membershipNumber": "supervisoryId"
-             |    },
+             |    ${
+            if (hasAmls) """"amls": {
+             |    "supervisoryBody": "supervisoryName",
+             |    "membershipNumber": "supervisoryId"},"""
+            else ""
+          }
              |    "contactDetails": {
              |      "firstName": "firstName",
              |      "lastName": "lastName",

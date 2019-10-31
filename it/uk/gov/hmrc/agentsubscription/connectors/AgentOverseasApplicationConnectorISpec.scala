@@ -85,7 +85,7 @@ class AgentOverseasApplicationConnectorISpec extends BaseISpec with AgentOversea
       await(connector.currentApplication) shouldBe CurrentApplication(
         Registered,
         Some(SafeId("XE0001234567890")),
-        OverseasAmlsDetails("supervisoryName", Some("supervisoryId")),
+        Some(OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))),
         businessContactDetails,
         businessDetails,
         agencyDetails)
@@ -97,7 +97,7 @@ class AgentOverseasApplicationConnectorISpec extends BaseISpec with AgentOversea
       await(connector.currentApplication) shouldBe CurrentApplication(
         Accepted,
         safeId = None,
-        OverseasAmlsDetails("supervisoryName", Some("supervisoryId")),
+        Some(OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))),
         businessContactDetails,
         businessDetails,
         agencyDetails)
