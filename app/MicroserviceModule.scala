@@ -28,20 +28,12 @@ class MicroserviceModule(val environment: Environment, val configuration: Config
   protected def mode = environment.mode
 
   def configure(): Unit = {
-    val appName = "agent-subscription"
-
-    //    val loggerDateFormat: Option[String] = configuration.get[Option[String]]("logger.json.dateformat")
-    //    Logger.info(s"Starting microservice : $appName : in mode : ${environment.mode}")
-    //    MDC.put("appName", appName)
-    //    loggerDateFormat.foreach(str => MDC.put("logger.json.dateformat", str))
 
     bind(classOf[HttpClient]).to(classOf[DefaultHttpClient])
     bind(classOf[HttpGet]).to(classOf[DefaultHttpClient])
     bind(classOf[HttpPost]).to(classOf[DefaultHttpClient])
     bind(classOf[HttpPut]).to(classOf[DefaultHttpClient])
     bind(classOf[HttpDelete]).to(classOf[DefaultHttpClient])
-    bind(classOf[DesConnector])
-
     ()
   }
 }
