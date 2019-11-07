@@ -16,24 +16,23 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
-import play.api.mvc.{ Action, AnyContent }
+import play.api.mvc.{ Action, AnyContent, ControllerComponents }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
-import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.service.VatKnownfactsService
 import uk.gov.hmrc.domain.Vrn
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class VatKnownfactsController @Inject() (service: VatKnownfactsService)(implicit
-  metrics: Metrics,
-  ec: ExecutionContext,
-  microserviceAuthConnector: MicroserviceAuthConnector)
-  extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
+class VatKnownfactsController @Inject() (
+  service: VatKnownfactsService,
+  authActions: AuthActions,
+  cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
+
+  import authActions._
 
   def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
     service.matchVatKnownfacts(vrn, vatRegistrationDate).map {

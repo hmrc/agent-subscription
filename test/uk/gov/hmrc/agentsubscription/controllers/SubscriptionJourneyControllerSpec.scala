@@ -20,7 +20,7 @@ import org.mockito.ArgumentMatchers.{ any, eq => eqs }
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{ JsValue, Json }
-import play.api.mvc.{ Result, Results }
+import play.api.mvc.{ ControllerComponents, Result, Results }
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
@@ -28,9 +28,9 @@ import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.{ BusinessDetails
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ ExecutionContext, Future }
 import play.api.test.Helpers._
+import uk.gov.hmrc.http.HeaderCarrier
 
 class SubscriptionJourneyControllerSpec extends UnitSpec with Results with MockitoSugar {
 
@@ -45,16 +45,24 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     None)
 
   val mockRepo: SubscriptionJourneyRepository = mock[SubscriptionJourneyRepository]
+  import play.api.test.Helpers.stubControllerComponents
 
-  val controller = new SubscriptionJourneyController()(mockRepo, global)
+  val cc = stubControllerComponents()
+
+  val hc = HeaderCarrier()
+
+  implicit val ec = ExecutionContext.Implicits.global
+
+  val controller = new SubscriptionJourneyController(mockRepo, cc)
 
   "Subscription Journey Controller" should {
 
     "return OK with record body when record found by auth id" in {
       when(
-        mockRepo.findByAuthId(eqs(AuthProviderId("minimal")))(any[ExecutionContext]))
+        mockRepo.findByAuthId(eqs[AuthProviderId](AuthProviderId("minimal")))(any[ExecutionContext]))
         .thenReturn(Future.successful(Some(minimalRecord)))
 
+      //println(s"controller is ${controller.findByAuthId(AuthProviderId(""))(ec)}")
       val result: Result = await(controller.findByAuthId(AuthProviderId("minimal")).apply(FakeRequest()))
       result.header.status shouldBe 200
     }

@@ -19,14 +19,15 @@ package uk.gov.hmrc.agentsubscription.controllers
 import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
+import play.api.mvc.ControllerComponents
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
-import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.agentsubscription.support.{ AkkaMaterializerSpec, AuthData, ResettingMockitoSugar }
-import uk.gov.hmrc.auth.core.{ AffinityGroup, AuthConnector, authorise }
+import uk.gov.hmrc.auth.core.{ AffinityGroup, AuthConnector, PlayAuthConnector, authorise }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, ~ }
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
@@ -35,12 +36,12 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 class RegistrationControllerSpec(implicit val ec: ExecutionContext) extends UnitSpec with AkkaMaterializerSpec with ResettingMockitoSugar with AuthData {
 
-  private val metrics: Metrics = resettingMock[Metrics]
-  private val microserviceAuthConnector: MicroserviceAuthConnector = resettingMock[MicroserviceAuthConnector]
   private val registrationService = resettingMock[RegistrationService]
-  private val authConnector = resettingMock[AuthConnector]
+  private val authActions = resettingMock[AuthActions]
+  private val cc = resettingMock[ControllerComponents]
+  private val mockPlayAuthConnector = resettingMock[PlayAuthConnector]
 
-  private val controller = new RegistrationController(registrationService)(metrics, ec, microserviceAuthConnector)
+  private val controller = new RegistrationController(registrationService, authActions, cc)(ec)
 
   private val validUtr = Utr("2000000000")
   private val validPostcode = "AA1 1AA"
@@ -53,7 +54,7 @@ class RegistrationControllerSpec(implicit val ec: ExecutionContext) extends Unit
 
   private def agentAuthStub(returnValue: Future[~[Option[AffinityGroup], Option[Credentials]]]) =
     when(
-      microserviceAuthConnector
+      mockPlayAuthConnector
         .authorise(
           any[authorise.Predicate](),
           any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(

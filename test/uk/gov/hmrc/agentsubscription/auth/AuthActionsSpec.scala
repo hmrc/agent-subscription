@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentsubscription.auth
 
-import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{ reset, when }
 import org.mockito.stubbing.OngoingStubbing
@@ -24,11 +23,10 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.http.Status._
 import play.api.libs.json.{ JsValue, Json }
-import play.api.mvc.{ AnyContent, Request, Result }
 import play.api.mvc.Results.Ok
+import play.api.mvc.{ AnyContent, ControllerComponents, Request, Result }
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.{ OverseasAuthAction, RegistrationAuthAction, SubscriptionAuthAction }
-import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.support.AuthData
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, ~ }
@@ -40,9 +38,10 @@ import scala.concurrent.{ ExecutionContext, Future }
 class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with MockitoSugar with BeforeAndAfterEach with AuthData {
   import uk.gov.hmrc.auth.core.{ Enrolment, authorise, _ }
 
-  val mockMicroserviceAuthConnector: MicroserviceAuthConnector = mock[MicroserviceAuthConnector]
-  val mockMetrics: Metrics = mock[Metrics]
-  val mockAuthConnector: AuthActions = new AuthActions(mockMetrics, mockMicroserviceAuthConnector)
+  val mockPlayAuthConnector = mock[PlayAuthConnector]
+  val mockCC = mock[ControllerComponents]
+  val mockAuthConnector = mock[AuthConnector]
+  val mockAuthActions: AuthActions = new AuthActions(mockCC, mockAuthConnector)
 
   val subscriptionAction: SubscriptionAuthAction = { implicit request => implicit authIds => Future successful Ok }
   val registrationAction: RegistrationAuthAction = { implicit request => implicit provider => Future successful Ok }
@@ -51,7 +50,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
 
   private def agentAuthStub(returnValue: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]]): OngoingStubbing[Future[Option[AffinityGroup] ~ Option[Credentials] ~ Option[String]]] =
     when(
-      mockMicroserviceAuthConnector
+      mockPlayAuthConnector
         .authorise(
           any[authorise.Predicate](),
           any[Retrieval[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
@@ -59,13 +58,13 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
 
   private def agentAuthStubWithAffinity(returnValue: Future[Option[AffinityGroup]]) =
     when(
-      mockMicroserviceAuthConnector
+      mockPlayAuthConnector
         .authorise(
           any[authorise.Predicate](),
           any[Retrieval[Option[AffinityGroup]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
       .thenReturn(returnValue)
 
-  override def beforeEach(): Unit = reset(mockMicroserviceAuthConnector)
+  override def beforeEach(): Unit = reset(mockPlayAuthConnector)
 
   val fakeRequest = FakeRequest().withBody[JsValue](Json.parse("""{}"""))
 
@@ -73,7 +72,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
     "return OK for an Agent with Agent affinity group" in {
       agentAuthStub(agentAffinityWithCredentialsAndGroupId)
 
-      val response: Result = await(mockAuthConnector.authorisedWithAffinityGroup(subscriptionAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.authorisedWithAffinityGroup(subscriptionAction).apply(fakeRequest))
 
       status(response) shouldBe OK
     }
@@ -81,7 +80,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
     "return UNAUTHORISED when the user does not belong to Agent affinity group" in {
       agentAuthStub(agentIncorrectAffinity)
 
-      val response: Result = await(mockAuthConnector.authorisedWithAffinityGroup(subscriptionAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.authorisedWithAffinityGroup(subscriptionAction).apply(fakeRequest))
 
       status(response) shouldBe 403
     }
@@ -89,7 +88,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
     "return UNAUTHORISED when auth fails to return an AffinityGroup or Enrolments" in {
       agentAuthStub(neitherHaveAffinityOrEnrolment)
 
-      val response: Result = await(mockAuthConnector.authorisedWithAffinityGroup(subscriptionAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.authorisedWithAffinityGroup(subscriptionAction).apply(fakeRequest))
 
       status(response) shouldBe UNAUTHORIZED
     }
@@ -98,7 +97,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
       agentAuthStub(failedStubForAgent)
 
       val thrown = intercept[Exception] {
-        await(mockAuthConnector.authorisedWithAffinityGroup(subscriptionAction).apply(fakeRequest))
+        await(mockAuthActions.authorisedWithAffinityGroup(subscriptionAction).apply(fakeRequest))
       }
 
       thrown.getMessage shouldBe "oh no !"
@@ -109,7 +108,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
     "return OK for an Agent with Agent affinity group" in {
       agentAuthStubWithAffinity(agentAffinity)
 
-      val response: Result = await(mockAuthConnector.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
+      val response: Result = await(mockAuthActions.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
 
       status(response) shouldBe OK
     }
@@ -117,7 +116,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
     "return FORBIDDEN when the user does not belong to Agent affinity group" in {
       agentAuthStubWithAffinity(individualAffinity)
 
-      val response: Result = await(mockAuthConnector.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
+      val response: Result = await(mockAuthActions.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
 
       status(response) shouldBe 403
     }
@@ -125,7 +124,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
     "return UNAUTHORISED when auth fails to return an AffinityGroup" in {
       agentAuthStubWithAffinity(Future.successful(None))
 
-      val response: Result = await(mockAuthConnector.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
+      val response: Result = await(mockAuthActions.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
 
       status(response) shouldBe UNAUTHORIZED
     }
@@ -134,7 +133,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
       agentAuthStubWithAffinity(failedStubForAgent)
 
       val thrown = intercept[Exception] {
-        await(mockAuthConnector.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
+        await(mockAuthActions.authorisedWithAgentAffinity(agentAction).apply(FakeRequest()))
       }
 
       thrown.getMessage shouldBe "oh no !"
@@ -146,38 +145,38 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
     val fakeRequest = FakeRequest()
 
     "return OK when we have the correct affinity group" in {
-      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
+      when(mockPlayAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(validAgentAffinity)
 
-      val response: Result = await(mockAuthConnector.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
 
       status(response) shouldBe OK
     }
 
     "return UNAUTHORISED when we have the wrong affinity group" in {
-      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
+      when(mockPlayAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(invalidAgentAffinity)
 
-      val response: Result = await(mockAuthConnector.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
 
       status(response) shouldBe 403
     }
 
     "return UNAUTHORISED when we have no affinity group" in {
-      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
+      when(mockPlayAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(noAffinity)
 
-      val response: Result = await(mockAuthConnector.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
 
       status(response) shouldBe UNAUTHORIZED
     }
 
     "return the same error when auth throws an error" in {
-      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
+      when(mockPlayAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(Future.failed(new Exception("unexpected error")))
 
       val thrown = intercept[Exception] {
-        await(mockAuthConnector.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
+        await(mockAuthActions.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
       }
 
       thrown.getMessage shouldBe "unexpected error"
@@ -192,7 +191,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
         affinityGroup = Some(AffinityGroup.Agent),
         enrolments = Enrolments(Set.empty))
 
-      val response: Result = await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
 
       status(response) shouldBe OK
     }
@@ -202,7 +201,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
         affinityGroup = Some(AffinityGroup.Individual),
         enrolments = Enrolments(Set.empty))
 
-      val response: Result = await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
 
       status(response) shouldBe 403
     }
@@ -212,7 +211,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
         affinityGroup = None,
         enrolments = Enrolments(Set.empty))
 
-      val response: Result = await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
 
       status(response) shouldBe UNAUTHORIZED
     }
@@ -222,7 +221,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
         affinityGroup = Some(AffinityGroup.Agent),
         enrolments = Enrolments(agentEnrolment))
 
-      val response: Result = await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
 
       status(response) shouldBe FORBIDDEN
     }
@@ -234,17 +233,17 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
         affinityGroup = Some(AffinityGroup.Agent),
         enrolments = Enrolments(someOtherEnrolments))
 
-      val response: Result = await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
 
       status(response) shouldBe FORBIDDEN
     }
 
     "return the same error when auth throws an error" in {
-      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
+      when(mockPlayAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(Future.failed(new Exception("unexpected error")))
 
       val thrown = intercept[Exception] {
-        await(mockAuthConnector.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
+        await(mockAuthActions.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
       }
 
       thrown.getMessage shouldBe "unexpected error"
@@ -259,7 +258,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
       val retrievalResponse: Future[Retrievals] =
         Future successful new ~(new ~(new ~(enrolments, affinityGroup), retrievedCredentials), retrievedGroupId)
 
-      when(mockMicroserviceAuthConnector.authorise(any[Predicate](), any[Retrieval[Retrievals]]())(any[HeaderCarrier](), any[ExecutionContext]()))
+      when(mockPlayAuthConnector.authorise(any[Predicate](), any[Retrieval[Retrievals]]())(any[HeaderCarrier](), any[ExecutionContext]()))
         .thenReturn(retrievalResponse)
     }
   }

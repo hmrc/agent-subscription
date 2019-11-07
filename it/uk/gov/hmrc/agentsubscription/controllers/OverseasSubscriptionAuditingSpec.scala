@@ -57,7 +57,7 @@ class OverseasSubscriptionAuditingSpec extends BaseAuditSpec
     }
   }
 
-  private def doOverseasSubscriptionRequest() = new Resource(s"/agent-subscription/overseas-subscription", port).putEmpty()
+  private def doOverseasSubscriptionRequest() = new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
 
   private def expectedDetails: JsObject =
     Json.parse(

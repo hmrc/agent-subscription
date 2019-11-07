@@ -16,23 +16,21 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
 import play.api.libs.json.Json
-import play.api.mvc.{ Action, AnyContent }
+import play.api.mvc.{ Action, AnyContent, ControllerComponents }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
-import uk.gov.hmrc.agentsubscription.connectors.{ CitizenDetailsConnector, MicroserviceAuthConnector }
+import uk.gov.hmrc.agentsubscription.connectors.CitizenDetailsConnector
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class CitizenDetailsController @Inject() (citizenDetailsConnector: CitizenDetailsConnector)(implicit
-  metrics: Metrics,
-  ec: ExecutionContext,
-  microserviceAuthConnector: MicroserviceAuthConnector)
-  extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
+class CitizenDetailsController @Inject() (citizenDetailsConnector: CitizenDetailsConnector, val authActions: AuthActions, cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
+
+  import authActions._
 
   def getDesignatoryDetails(nino: Nino): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
     citizenDetailsConnector.getDesignatoryDetails(nino).map(dd => Ok(Json.toJson(dd)))

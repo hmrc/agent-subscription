@@ -16,20 +16,20 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
-
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{ Inject, Named, Singleton }
+import javax.inject.{ Inject, Singleton }
 import play.api.http.Status
 import play.api.libs.json._
 import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.logging.Authorization
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -83,19 +83,20 @@ object DesRegistrationRequest {
 
 @Singleton
 class DesConnector @Inject() (
-  @Named("des.environment") environment: String,
-  @Named("des.authorization-token") authorizationToken: String,
-  @Named("des-baseUrl") baseUrl: URL,
-  httpPost: HttpPost,
-  httpGet: HttpGet,
+  appConfig: AppConfig,
+  http: HttpClient,
   metrics: Metrics) extends Status with HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
+  val baseUrl = appConfig.desBaseUrl
+  val environment = appConfig.desEnvironment
+  val authToken = appConfig.desAuthToken
+
   def createOverseasBusinessPartnerRecord(request: OverseasRegistrationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SafeId] = {
     monitor("ConsumedAPI-DES-Overseas-CreateRegistration-POST") {
-      val url = new URL(baseUrl, "/registration/02.00.00/organisation")
+      val url = s"$baseUrl/registration/02.00.00/organisation"
 
-      httpPost.POST[OverseasRegistrationRequest, JsValue](url.toString, request)(implicitly[Writes[OverseasRegistrationRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
+      http.POST[OverseasRegistrationRequest, JsValue](url, request)(implicitly[Writes[OverseasRegistrationRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
         .map(response => (response \ "safeId").as[SafeId])
         .recover {
           case e =>
@@ -106,7 +107,7 @@ class DesConnector @Inject() (
 
   def subscribeToAgentServices(safeId: SafeId, agencyDetails: OverseasAgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     monitor("ConsumedAPI-DES-SubscribeOverseasAgent-POST") {
-      httpPost.POST[OverseasAgencyDetails, JsValue](desOverseasSubscribeUrl(safeId).toString, agencyDetails)(implicitly[Writes[OverseasAgencyDetails]], implicitly[HttpReads[JsValue]], desHeaders, ec)
+      http.POST[OverseasAgencyDetails, JsValue](desOverseasSubscribeUrl(safeId).toString, agencyDetails)(implicitly[Writes[OverseasAgencyDetails]], implicitly[HttpReads[JsValue]], desHeaders, ec)
         .map(response => (response \ "agentRegistrationNumber").as[Arn])
         .recover {
           case e => throw new RuntimeException(s"Failed to create subscription in ETMP for safeId: $safeId ${e.getMessage}", e)
@@ -116,7 +117,7 @@ class DesConnector @Inject() (
 
   def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     monitor("ConsumedAPI-DES-SubscribeAgent-POST") {
-      httpPost.POST[DesSubscriptionRequest, JsValue](desSubscribeUrl(utr).toString, request)(implicitly[Writes[DesSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
+      http.POST[DesSubscriptionRequest, JsValue](desSubscribeUrl(utr).toString, request)(implicitly[Writes[DesSubscriptionRequest]], implicitly[HttpReads[JsValue]], desHeaders, ec)
     } map {
       r => (r \ "agentRegistrationNumber").as[Arn]
     } recover {
@@ -153,7 +154,7 @@ class DesConnector @Inject() (
   def getAgentRecordDetails(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AgentRecord] = {
     val encodedUtr = UriEncoding.encodePathSegment(utr.value, "UTF-8")
 
-    val url = new URL(baseUrl, s"/registration/personal-details/utr/$encodedUtr")
+    val url = s"$baseUrl/registration/personal-details/utr/$encodedUtr"
     getWithDesHeaders[AgentRecord]("GetAgentRecord", url)
   }
 
@@ -161,7 +162,7 @@ class DesConnector @Inject() (
   def getCorporationTaxUtr(crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Utr] = {
     val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
 
-    val url = new URL(baseUrl, s"/corporation-tax/identifiers/crn/$encodedCrn")
+    val url = s"$baseUrl/corporation-tax/identifiers/crn/$encodedCrn"
 
     getWithDesHeaders[JsValue]("GetCtUtr", url).map { response =>
       (response \ "CTUTR").as[Utr]
@@ -172,7 +173,7 @@ class DesConnector @Inject() (
   def getVatKnownfacts(vrn: Vrn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[String] = {
     val encodedVrn = UriEncoding.encodePathSegment(vrn.value, "UTF-8")
 
-    val url = new URL(baseUrl, s"/vat/known-facts/control-list/$encodedVrn")
+    val url = s"$baseUrl/vat/known-facts/control-list/$encodedVrn"
 
     getWithDesHeaders[JsValue]("GetVatKnownfacts", url).map { response =>
       (response \ "dateOfReg").as[String]
@@ -181,7 +182,7 @@ class DesConnector @Inject() (
 
   private def getRegistrationJson(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] =
     monitor("DES-GetAgentRegistration-POST") {
-      httpPost.POST[DesRegistrationRequest, Option[JsValue]](
+      http.POST[DesRegistrationRequest, Option[JsValue]](
         desRegistrationUrl(utr).toString,
         DesRegistrationRequest(isAnAgent = false))(
           implicitly[Writes[DesRegistrationRequest]],
@@ -191,27 +192,27 @@ class DesConnector @Inject() (
         throw new DesConnectorException(s"400 Bad Request response from DES for utr ${utr.value}", badRequest)
     }
 
-  private def desSubscribeUrl(utr: Utr): URL =
-    new URL(baseUrl, s"/registration/agents/utr/${encodePathSegment(utr.value)}")
+  private def desSubscribeUrl(utr: Utr): String =
+    s"$baseUrl/registration/agents/utr/${encodePathSegment(utr.value)}"
 
-  private def desOverseasSubscribeUrl(safeId: SafeId): URL =
-    new URL(baseUrl, s"/registration/agents/safeId/${encodePathSegment(safeId.value)}")
+  private def desOverseasSubscribeUrl(safeId: SafeId): String =
+    s"$baseUrl/registration/agents/safeId/${encodePathSegment(safeId.value)}"
 
-  private def desRegistrationUrl(utr: Utr): URL =
-    new URL(baseUrl, s"/registration/individual/utr/${encodePathSegment(utr.value)}")
+  private def desRegistrationUrl(utr: Utr): String =
+    s"$baseUrl/registration/individual/utr/${encodePathSegment(utr.value)}"
 
   private def desHeaders(implicit hc: HeaderCarrier): HeaderCarrier = {
     hc.copy(
-      authorization = Some(Authorization(s"Bearer $authorizationToken")),
+      authorization = Some(Authorization(s"Bearer $authToken")),
       extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
   }
 
-  private def getWithDesHeaders[A: HttpReads](apiName: String, url: URL)(
+  private def getWithDesHeaders[A: HttpReads](apiName: String, url: String)(
     implicit
     hc: HeaderCarrier,
     ec: ExecutionContext): Future[A] =
     monitor(s"ConsumedAPI-DES-$apiName-GET") {
-      httpGet.GET[A](url.toString)(implicitly[HttpReads[A]], desHeaders, ec)
+      http.GET[A](url)(implicitly[HttpReads[A]], desHeaders, ec)
     }
 
 }

@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.support
 
 import play.api.http.{ HeaderNames, MimeTypes }
-import play.api.libs.ws.{ WSClient, WSRequest, WSResponse }
+import play.api.libs.ws.{ DefaultBodyWritables, WSClient, WSRequest, WSResponse }
 import play.api.mvc.Results
 import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
 import uk.gov.hmrc.play.http.ws.WSHttpResponse
@@ -34,21 +34,11 @@ object Http {
   }
 
   def post(url: String, body: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier, ws: WSClient): HttpResponse = perform(url) { request =>
-    request.withHeaders(headers: _*).post(body)
-  }
-
-  def postEmpty(url: String)(implicit hc: HeaderCarrier, ws: WSClient): HttpResponse = perform(url) { request =>
-    import play.api.http.Writeable._
-    request.post(Results.EmptyContent())
+    request.withHttpHeaders(headers: _*).post(body)
   }
 
   def put(url: String, body: String, headers: Seq[(String, String)] = Seq.empty)(implicit hc: HeaderCarrier, ws: WSClient): HttpResponse = perform(url) { request =>
-    request.withHeaders(headers: _*).put(body)
-  }
-
-  def putEmpty(url: String)(implicit hc: HeaderCarrier, ws: WSClient): HttpResponse = perform(url) { request =>
-    import play.api.http.Writeable._
-    request.put(Results.EmptyContent())
+    request.withHttpHeaders(headers: _*).put(body)
   }
 
   def delete(url: String)(implicit hc: HeaderCarrier, ws: WSClient): HttpResponse = perform(url) { request =>
@@ -56,7 +46,7 @@ object Http {
   }
 
   private def perform(url: String)(fun: WSRequest => Future[WSResponse])(implicit hc: HeaderCarrier, ws: WSClient): WSHttpResponse =
-    await(fun(ws.url(url).withHeaders(hc.headers: _*).withRequestTimeout(20000 milliseconds)).map(new WSHttpResponse(_)))
+    await(fun(ws.url(url).withHttpHeaders(hc.headers: _*).withRequestTimeout(20000 milliseconds)).map(new WSHttpResponse(_)))
 
   private def await[A](future: Future[A]) = Await.result(future, Duration(10, SECONDS))
 
@@ -70,12 +60,6 @@ class Resource(path: String, port: Int) {
 
   def postAsJson(body: String)(implicit hc: HeaderCarrier = HeaderCarrier(), ws: WSClient) =
     Http.post(url, body, Seq(HeaderNames.CONTENT_TYPE -> MimeTypes.JSON))(hc, ws)
-
-  def postEmpty()(implicit hc: HeaderCarrier = HeaderCarrier(), ws: WSClient) =
-    Http.postEmpty(url)(hc, ws)
-
-  def putEmpty()(implicit hc: HeaderCarrier = HeaderCarrier(), ws: WSClient) =
-    Http.putEmpty(url)(hc, ws)
 
   def putAsJson(body: String)(implicit hc: HeaderCarrier = HeaderCarrier(), ws: WSClient) =
     Http.put(url, body, Seq(HeaderNames.CONTENT_TYPE -> MimeTypes.JSON))(hc, ws)

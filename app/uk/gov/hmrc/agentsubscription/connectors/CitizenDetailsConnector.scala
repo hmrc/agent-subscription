@@ -16,13 +16,12 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
-
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{ Inject, Named, Singleton }
+import javax.inject.{ Inject, Singleton }
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HeaderCarrier
@@ -32,21 +31,25 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 @ImplementedBy(classOf[CitizenDetailsConnectorImpl])
 trait CitizenDetailsConnector {
+
+  def appConfig: AppConfig
   def getDesignatoryDetails(nino: Nino)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesignatoryDetails]
 }
 
 @Singleton
 class CitizenDetailsConnectorImpl @Inject() (
-  @Named("citizen-details-baseUrl") baseUrl: URL,
+  val appConfig: AppConfig,
   httpClient: HttpClient,
   metrics: Metrics)
   extends CitizenDetailsConnector with HttpAPIMonitor {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
+  val baseUrl = appConfig.citizenDetailsBaseUrl
+
   def getDesignatoryDetails(nino: Nino)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesignatoryDetails] =
-    monitor("ConsumedAPI-getDesignatoryDetails-GET") {
-      val url = new URL(baseUrl, s"/citizen-details/${nino.value}/designatory-details")
+    monitor(s"ConsumedAPI-getDesignatoryDetails-GET") {
+      val url = s"$baseUrl/citizen-details/${nino.value}/designatory-details"
       httpClient.GET[DesignatoryDetails](url.toString)
     }
 }

@@ -21,8 +21,9 @@ import java.net.URL
 import org.mockito.ArgumentMatchers.{ any, eq => eqs }
 import org.mockito.Mockito.{ verify, when }
 import org.scalatest.concurrent.Eventually
-import org.slf4j.Logger
-import play.api.LoggerLike
+import org.slf4j.helpers.BasicMarker
+import org.slf4j.{ Logger, Marker }
+import play.api.{ LoggerLike, MarkerContext }
 import play.api.libs.json.{ JsObject, Json }
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
@@ -462,7 +463,11 @@ class LoggerLikeStub extends LoggerLike {
 
   override val logger: Logger = null
 
-  override def warn(msg: => String): Unit = {
+  implicit val markerContext: MarkerContext = new MarkerContext {
+    override def marker: Option[Marker] = None
+  }
+
+  override def warn(msg: => String)(implicit mc: MarkerContext): Unit = {
     logMessages += msg
     ()
   }
@@ -472,3 +477,4 @@ class LoggerLikeStub extends LoggerLike {
     ()
   }
 }
+

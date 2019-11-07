@@ -1,7 +1,7 @@
 package uk.gov.hmrc.agentsubscription.repository
 
 import org.scalatest.concurrent.Eventually
-import org.scalatestplus.play.OneAppPerSuite
+import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
@@ -13,7 +13,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RecoveryDataRepositoryISpec extends UnitSpec with OneAppPerSuite with MongoApp with Eventually {
+class RecoveryDataRepositoryISpec extends UnitSpec with GuiceOneAppPerSuite with MongoApp with Eventually {
 
   protected def appBuilder: GuiceApplicationBuilder = new GuiceApplicationBuilder()
     .configure(mongoConfiguration)

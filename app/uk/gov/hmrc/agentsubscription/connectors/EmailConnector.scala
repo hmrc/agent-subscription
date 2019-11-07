@@ -16,35 +16,40 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
-
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{ Inject, Named }
+import javax.inject.Inject
 import play.api.Logger
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.EmailInformation
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpPost, HttpResponse }
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @ImplementedBy(classOf[EmailConnectorImpl])
 trait EmailConnector {
+  def appConfig: AppConfig
   def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit]
 }
 
-class EmailConnectorImpl @Inject() (@Named("email-baseUrl") baseUrl: URL, http: HttpPost, metrics: Metrics)
+class EmailConnectorImpl @Inject() (val appConfig: AppConfig, http: HttpClient, metrics: Metrics)
   extends HttpAPIMonitor with EmailConnector {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] =
+  val baseUrl = appConfig.emailBaseUrl
+
+  def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+    val url = s"$baseUrl/hmrc/email"
     monitor(s"ConsumedAPI-Send-Email-${emailInformation.templateId}") {
       http
-        .POST[EmailInformation, HttpResponse](new URL(s"$baseUrl/hmrc/email").toString, emailInformation)
+        .POST[EmailInformation, HttpResponse](url, emailInformation)
         .map(_ => ())
     }.recover {
       case e => Logger(getClass).warn(s"sending email failed: $e")
     }
+  }
 }

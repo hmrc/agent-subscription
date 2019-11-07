@@ -1,26 +1,25 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
 import java.util.UUID
 
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.OneAppPerSuite
 import play.api.libs.json.Json
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.OverseasDesStubs
-import uk.gov.hmrc.agentsubscription.support.{ MetricsTestSupport, WireMockSupport }
+import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DesConnectorForOverseasISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with OverseasDesStubs with MetricsTestSupport with MockitoSugar {
+class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with MetricsTestSupport with MockitoSugar {
   private implicit val hc = HeaderCarrier()
 
-  private val bearerToken = "auth-token"
-  private val environment = "des-env"
+  private val bearerToken = "secret"
+  private val environment = "test"
   private val safeId = SafeId("XE0001234567890")
 
   override protected def expectedBearerToken = Some(bearerToken)
@@ -28,11 +27,11 @@ class DesConnectorForOverseasISpec extends UnitSpec with OneAppPerSuite with Wir
   override protected def expectedEnvironment = Some(environment)
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
-  private lazy val httpPost: HttpPost = app.injector.instanceOf[HttpPost]
-  private lazy val httpGet: HttpGet = app.injector.instanceOf[HttpGet]
+  private lazy val http: HttpClient = app.injector.instanceOf[HttpClient]
+  private lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   private lazy val connector: DesConnector =
-    new DesConnector(environment, bearerToken, new URL(s"http://localhost:$wireMockPort"), httpPost, httpGet, metrics)
+    new DesConnector(appConfig, http, metrics)
 
   private val overseasRegistrationRequest = OverseasRegistrationRequest(
     "AGSV",

@@ -16,26 +16,26 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import com.kenshoo.play.metrics.Metrics
 import javax.inject._
 import play.api.Logger
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{ Action, AnyContent }
+import play.api.mvc.{ Action, AnyContent, ControllerComponents }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
-import uk.gov.hmrc.agentsubscription.connectors.{ InvalidBusinessAddressException, InvalidIsAnASAgentException, MicroserviceAuthConnector }
+import uk.gov.hmrc.agentsubscription.connectors.{ InvalidBusinessAddressException, InvalidIsAnASAgentException }
 import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.agentsubscription.utils.toFuture
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class RegistrationController @Inject() (service: RegistrationService)(implicit metrics: Metrics, ec: ExecutionContext,
-  microserviceAuthConnector: MicroserviceAuthConnector)
-  extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
+class RegistrationController @Inject() (service: RegistrationService, authActions: AuthActions, cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
+
+  import authActions._
 
   def getRegistration(utr: Utr, postcode: String): Action[AnyContent] = authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider => {
     if (!Utr.isValid(utr.value))

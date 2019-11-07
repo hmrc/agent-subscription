@@ -16,26 +16,23 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import com.kenshoo.play.metrics.Metrics
 import javax.inject._
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{ Action, AnyContent }
+import play.api.mvc.{ Action, AnyContent, ControllerComponents }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
-import uk.gov.hmrc.agentsubscription.connectors.MicroserviceAuthConnector
 import uk.gov.hmrc.agentsubscription.model.{ SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.service.{ EnrolmentAlreadyAllocated, SubscriptionService }
-import uk.gov.hmrc.http.Upstream5xxResponse
-import uk.gov.hmrc.play.bootstrap.controller.BaseController
+import uk.gov.hmrc.http.{ HeaderCarrier, Upstream5xxResponse }
+import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class SubscriptionController @Inject() (subscriptionService: SubscriptionService)(implicit
-  metrics: Metrics,
-  ec: ExecutionContext,
-  microserviceAuthConnector: MicroserviceAuthConnector)
-  extends AuthActions(metrics, microserviceAuthConnector) with BaseController {
+class SubscriptionController @Inject() (subscriptionService: SubscriptionService, authActions: AuthActions, cc: ControllerComponents)(implicit ec: ExecutionContext)
+  extends BackendController(cc) {
+
+  import authActions._
 
   def createSubscription: Action[JsValue] = authorisedWithAffinityGroup { implicit request => implicit authIds =>
     withJsonBody[SubscriptionRequest] { subscriptionRequest =>

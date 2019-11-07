@@ -16,32 +16,34 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.net.URL
-
-import javax.inject.{ Inject, Named, Singleton }
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
+import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ Complete, Registered }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.http._
+import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
 class AgentOverseasApplicationConnector @Inject() (
-  @Named("agent-overseas-application-baseUrl") baseUrl: URL,
-  http: HttpPut with HttpGet,
+  appConfig: AppConfig,
+  http: HttpClient,
   metrics: Metrics) extends HttpAPIMonitor {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
+  val baseUrl = appConfig.agentOverseasApplicationBaseUrl
+
   def updateApplicationStatus(status: ApplicationStatus, authId: String, safeId: Option[SafeId] = None, arn: Option[Arn] = None)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
-    val url: URL = new URL(baseUrl, s"/agent-overseas-application/application/${status.key}")
+    val url = s"$baseUrl/agent-overseas-application/application/${status.key}"
 
     val body = status match {
       case Registered => Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
@@ -60,7 +62,7 @@ class AgentOverseasApplicationConnector @Inject() (
 
   def currentApplication(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CurrentApplication] = {
     val activeStatuses = ApplicationStatus.ActiveStatuses.map(status => s"statusIdentifier=${status.key}").mkString("&")
-    val url = new URL(baseUrl, s"/agent-overseas-application/application?$activeStatuses")
+    val url = s"$baseUrl/agent-overseas-application/application?$activeStatuses"
 
     monitor("ConsumedAPI-Agent-Overseas-Application-application-GET") {
       http.GET(url.toString).map { response =>

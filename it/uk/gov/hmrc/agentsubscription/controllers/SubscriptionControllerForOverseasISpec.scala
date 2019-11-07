@@ -210,7 +210,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
         result.status shouldBe 500
         (result.json \ "statusCode").as[Int] shouldBe 500
-        (result.json \ "message").as[String] shouldBe "JsResultException(errors:List((/agencyName,List(ValidationError(List(error.name.invalid),WrappedArray())))))"
+        (result.json \ "message").as[String] shouldBe "JsResultException(errors:List((/agencyName,List(JsonValidationError(List(error.name.invalid),WrappedArray())))))"
 
         verifyApiCalls(
           attemptingRegistration = 0,
@@ -438,7 +438,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     }
   }
 
-  private def doSubscriptionRequest = new Resource(s"/agent-subscription/overseas-subscription", port).putEmpty()
+  private def doSubscriptionRequest = new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
 
   private val agencyDetailsJson =
     s"""
