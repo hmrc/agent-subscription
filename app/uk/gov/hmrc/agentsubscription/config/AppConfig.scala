@@ -26,8 +26,6 @@ class AppConfig @Inject() (servicesConfig: ServicesConfig) {
 
   def getConf(key: String) = servicesConfig.getString(key)
 
-  val authBaseUrl = servicesConfig.baseUrl("auth")
-
   val desBaseUrl = servicesConfig.baseUrl("des")
   val desEnvironment = getConf("microservice.services.des.environment")
   val desAuthToken = getConf("microservice.services.des.authorization-token")
