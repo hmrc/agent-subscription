@@ -51,7 +51,7 @@ class AgentOverseasApplicationConnector @Inject() (
       case _ => Json.obj()
     }
 
-    monitor(s"Agent-Overseas-Application-updateStatus-PUT") {
+    monitor("ConsumedAPI-Agent-Overseas-Application-updateStatus-PUT") {
       http.PUT[JsValue, HttpResponse](url.toString, body)
         .map(_.status == 204)
         .recover {
@@ -64,7 +64,7 @@ class AgentOverseasApplicationConnector @Inject() (
     val activeStatuses = ApplicationStatus.ActiveStatuses.map(status => s"statusIdentifier=${status.key}").mkString("&")
     val url = s"$baseUrl/agent-overseas-application/application?$activeStatuses"
 
-    monitor(s"Agent-Overseas-Application-application-GET") {
+    monitor("ConsumedAPI-Agent-Overseas-Application-application-GET") {
       http.GET(url.toString).map { response =>
         val json = response.json.head
         val status = (json \ "status").as[ApplicationStatus]

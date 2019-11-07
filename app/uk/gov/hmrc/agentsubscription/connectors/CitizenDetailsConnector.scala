@@ -48,7 +48,7 @@ class CitizenDetailsConnectorImpl @Inject() (
   val baseUrl = appConfig.citizenDetailsBaseUrl
 
   def getDesignatoryDetails(nino: Nino)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesignatoryDetails] =
-    monitor(s"CITIZEN-DETAILS-getDesignatoryDetails-GET") {
+    monitor(s"ConsumedAPI-getDesignatoryDetails-GET") {
       val url = s"$baseUrl/citizen-details/${nino.value}/designatory-details"
       httpClient.GET[DesignatoryDetails](url.toString)
     }

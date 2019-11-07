@@ -44,7 +44,7 @@ class EmailConnectorImpl @Inject() (val appConfig: AppConfig, http: HttpClient, 
 
   def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
     val url = s"$baseUrl/hmrc/email"
-    monitor(s"Send-Email-${emailInformation.templateId}") {
+    monitor(s"ConsumedAPI-Send-Email-${emailInformation.templateId}") {
       http
         .POST[EmailInformation, HttpResponse](url, emailInformation)
         .map(_ => ())

@@ -59,7 +59,7 @@ class AgentAssuranceConnectorImpl @Inject() (
 
     val url: String = s"$baseUrl/agent-assurance/amls"
 
-    monitor("AgentAssurance-amls-POST") {
+    monitor("ConsumedAPI-AgentAssurance-amls-POST") {
       http
         .POST(url, CreateAmlsRequest(utr, amlsDetails))
         .map(_.status == CREATED)
@@ -74,7 +74,7 @@ class AgentAssuranceConnectorImpl @Inject() (
 
     val url = s"$baseUrl/agent-assurance/amls/utr/${utr.value}"
 
-    monitor(s"AgentAssurance-amls-PUT") {
+    monitor(s"ConsumedAPI-AgentAssurance-amls-PUT") {
       http.PUT[JsObject, HttpResponse](url, Json.obj("value" -> arn.value))
         .map[Option[AmlsDetails]](r => Some(r.json.as[AmlsDetails]))
     }.recover {
@@ -87,7 +87,7 @@ class AgentAssuranceConnectorImpl @Inject() (
 
     val url = s"$baseUrl/agent-assurance/overseas-agents/amls"
 
-    monitor("AgentAssurance-overseas-agents-amls-POST") {
+    monitor("ConsumedAPI-AgentAssurance-overseas-agents-amls-POST") {
       http.POST(url, CreateOverseasAmlsRequest(arn, amlsDetails))
         .map(_ => ())
         .recover {
