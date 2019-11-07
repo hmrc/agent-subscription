@@ -16,7 +16,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with WireMockSupport with TaxEnrolmentsStubs with MetricsTestSupport with MockitoSugar {
   private lazy val wiremockUrl = new URL(s"http://localhost:$wireMockPort")
-  private lazy val auditConnector = mock[AuditConnector]
   private lazy val httpVerbs = app.injector.instanceOf[HttpPut with HttpPost with HttpGet with HttpDelete]
   private lazy val connector = new TaxEnrolmentsConnector(wiremockUrl, wiremockUrl, httpVerbs, app.injector.instanceOf[Metrics])
 
@@ -33,7 +32,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       createKnownFactsSucceeds(arn.value)
       val result = await(connector.addKnownFacts(arn.value, knownFactKey, postcode))
       result shouldBe 200
-      verifyTimerExistsAndBeenUpdated("EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT")
+      verifyTimerExistsAndBeenUpdated("ConsumedAPI-EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT")
     }
 
     "propagate an exception after failing to create known facts" in {
@@ -52,7 +51,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       deleteKnownFactsSucceeds(arn.value)
       val result = await(connector.deleteKnownFacts(arn))
       result shouldBe 204
-      verifyTimerExistsAndBeenUpdated("EMAC-DeleteKnownFacts-HMRC-AS-AGENT-DELETE")
+      verifyTimerExistsAndBeenUpdated("ConsumedAPI-EMAC-DeleteKnownFacts-HMRC-AS-AGENT-DELETE")
     }
 
     "propagate an exception after failing to delete known facts" in {
@@ -74,7 +73,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       enrolmentSucceeds(groupId, arn.value)
       val result = await(connector.enrol(groupId, arn, enrolmentRequest))
       result shouldBe 200
-      verifyTimerExistsAndBeenUpdated("EMAC-Enrol-HMRC-AS-AGENT-POST")
+      verifyTimerExistsAndBeenUpdated("ConsumedAPI-EMAC-Enrol-HMRC-AS-AGENT-POST")
     }
 
     "propagate an exception for a failed enrolment" in {
@@ -95,7 +94,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       allocatedPrincipalEnrolmentExists(arn.value, groupId)
       val result = await(connector.hasPrincipalGroupIds(arn))
       result shouldBe true
-      verifyTimerExistsAndBeenUpdated("EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET")
+      verifyTimerExistsAndBeenUpdated("ConsumedAPI-EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET")
     }
 
     "return false after a successful query for principal enrolment" in {
@@ -103,7 +102,7 @@ class TaxEnrolmentsConnectorISpec extends UnitSpec with OneAppPerSuite with Wire
       allocatedPrincipalEnrolmentNotExists(arn.value)
       val result = await(connector.hasPrincipalGroupIds(arn))
       result shouldBe false
-      verifyTimerExistsAndBeenUpdated("EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET")
+      verifyTimerExistsAndBeenUpdated("ConsumedAPI-EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET")
     }
 
     "propagate an exception for a failed query" when {

@@ -40,7 +40,7 @@ class EmailConnectorImpl @Inject() (@Named("email-baseUrl") baseUrl: URL, http: 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] =
-    monitor(s"Send-Email-${emailInformation.templateId}") {
+    monitor(s"ConsumedAPI-Send-Email-${emailInformation.templateId}") {
       http
         .POST[EmailInformation, HttpResponse](new URL(s"$baseUrl/hmrc/email").toString, emailInformation)
         .map(_ => ())
