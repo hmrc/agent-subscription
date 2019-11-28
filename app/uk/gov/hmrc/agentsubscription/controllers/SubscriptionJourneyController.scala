@@ -22,6 +22,7 @@ import com.google.inject.Inject
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
 import play.api.mvc.{ Action, AnyContent, ControllerComponents }
+import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
@@ -66,7 +67,9 @@ class SubscriptionJourneyController @Inject() (
             Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
           } else {
             val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
-            subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent)
+            subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent) recover {
+              case ex: DatabaseException if ex.code.contains(11000) => Conflict //if database returns duplicate key error
+            }
           }
         }
     }

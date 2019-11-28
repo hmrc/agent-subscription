@@ -16,21 +16,23 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import org.mockito.ArgumentMatchers.{ any, eq => eqs }
+import org.mockito.ArgumentMatchers.{any, eq => eqs}
 import org.mockito.Mockito._
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.libs.json.{ JsValue, Json }
-import play.api.mvc.{ ControllerComponents, Result, Results }
+import play.api.libs.json.{JsValue, Json}
+import play.api.mvc.{Result, Results}
 import play.api.test.FakeRequest
+import play.api.test.Helpers._
+import reactivemongo.bson.BSONDocument
+import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
-import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.{ BusinessDetails, BusinessType, Postcode, SubscriptionJourneyRecord, UserMapping }
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 
-import scala.concurrent.{ ExecutionContext, Future }
-import play.api.test.Helpers._
-import uk.gov.hmrc.http.HeaderCarrier
+import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionJourneyControllerSpec extends UnitSpec with Results with MockitoSugar {
 
@@ -145,7 +147,6 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return no content when a successful update has been done" in {
-
       when(
         mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
         .thenReturn(Future.successful(()))
@@ -154,9 +155,22 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
 
       val result: Result = await(controller.createOrUpdate(AuthProviderId("cred-1234")).apply(request))
       result.header.status shouldBe 204
-
     }
 
+    "return conflict when there is already an existing record" in {
+      when(
+        mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
+        .thenReturn(Future.failed(new DatabaseException {
+          override def originalDocument: Option[BSONDocument] = None
+          override def code: Option[Int] = Some(11000)
+          override def message: String = "duplicate exception"
+        }))
+
+      val request = FakeRequest().withBody[JsValue](Json.toJson(minimalRecord))
+
+      val result: Result = await(controller.createOrUpdate(AuthProviderId("cred-1234")).apply(request))
+      result.header.status shouldBe 409
+    }
   }
 
 }
