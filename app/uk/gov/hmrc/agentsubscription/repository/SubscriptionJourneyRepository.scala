@@ -16,12 +16,13 @@
 
 package uk.gov.hmrc.agentsubscription.repository
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.commands.WriteResult
-import reactivemongo.api.indexes.{ Index, IndexType }
-import reactivemongo.bson.{ BSONDocument, BSONObjectID }
+import reactivemongo.api.indexes.{Index, IndexType}
+import reactivemongo.bson.{BSONDocument, BSONObjectID}
+import reactivemongo.core.errors.DatabaseException
 import reactivemongo.play.json.ImplicitBSONHandlers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
@@ -29,7 +30,7 @@ import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourn
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class SubscriptionJourneyRepository @Inject() (
@@ -42,6 +43,7 @@ class SubscriptionJourneyRepository @Inject() (
 
   private def expireRecordAfterSeconds: Long = 2592000 // 30 days
 
+  @throws(classOf[DatabaseException])
   def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] = {
     collection.update(ordered = false).one(
       Json.obj("authProviderId" -> authProviderId.id),
