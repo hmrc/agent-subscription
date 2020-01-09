@@ -71,7 +71,7 @@ lazy val compileDeps = Seq(
   "uk.gov.hmrc" %% "domain" % "5.6.0-play-26",
   "com.github.blemale" %% "scaffeine" % "2.6.0",
   "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "4.3.0",
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.20.0-play-26",
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "7.22.0-play-26",
   ws
 )
 
@@ -87,7 +87,7 @@ def testDeps(scope: String) = Seq(
 
 def tmpMacWorkaround(): Seq[ModuleID] =
   if (sys.props.get("os.name").fold(false)(_.toLowerCase.contains("mac")))
-    Seq("org.reactivemongo" % "reactivemongo-shaded-native" % "0.16.1-osx-x86-64" % "runtime,test,it")
+    Seq("org.reactivemongo" % "reactivemongo-shaded-native" % "0.18.6-osx-x86-64" % "runtime,test,it")
   else Seq()
 
 lazy val root = Project("agent-subscription", file("."))
