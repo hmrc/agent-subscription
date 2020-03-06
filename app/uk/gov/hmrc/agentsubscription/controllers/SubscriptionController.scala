@@ -35,14 +35,15 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
   import authActions._
 
   def createSubscription: Action[JsValue] = authorisedWithAffinityGroup { implicit request => implicit authIds =>
-    withJsonBody[SubscriptionRequest] { subscriptionRequest =>
-      subscriptionService.createSubscription(subscriptionRequest, authIds).map {
-        case Some(a) => Created(toJson(SubscriptionResponse(a)))
-        case None => Forbidden(s"No business partner record found for ${subscriptionRequest.utr}")
-      }.recover {
-        case _: EnrolmentAlreadyAllocated => Conflict
-        case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
-      }
+    withJsonBody[SubscriptionRequest] {
+      subscriptionRequest =>
+        subscriptionService.createSubscription(subscriptionRequest, authIds).map {
+          case Some(a) => Created(toJson(SubscriptionResponse(a)))
+          case None => Forbidden(s"No business partner record found for ${subscriptionRequest.utr}")
+        }.recover {
+          case _: EnrolmentAlreadyAllocated => Conflict
+          case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
+        }
     }
   }
 
