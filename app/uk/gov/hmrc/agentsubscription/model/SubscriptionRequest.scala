@@ -16,10 +16,11 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
+import play.api.i18n.Lang
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Utr, Arn }
+import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 
 object Address {
   implicit val writes: Writes[Address] = Json.writes[Address]
@@ -52,6 +53,7 @@ object SubscriptionRequest {
     (__ \ "utr").read[Utr](verifying[Utr](utr => Utr.isValid(utr.value))) and
     (__ \ "knownFacts").read[KnownFacts] and
     (__ \ "agency").read[Agency] and
+    (__ \ "langForEmail").readNullable[Lang] and
     (__ \ "amlsDetails").readNullable[AmlsDetails])(SubscriptionRequest.apply _)
 }
 
@@ -75,6 +77,7 @@ case class SubscriptionRequest(
   utr: Utr,
   knownFacts: KnownFacts,
   agency: Agency,
+  langForEmail: Option[Lang],
   amlsDetails: Option[AmlsDetails] = None)
 
 case class SubscriptionResponse(arn: Arn)
