@@ -95,7 +95,7 @@ class SubscriptionService @Inject() (
     val defaultTemplate = "agent_services_account_created" // english -- default and always for overseas agents
     val welshTemplate = "agent_services_account_created_cy" // welsh (for uk agents)
     val templateId: String = langForEmail.fold(defaultTemplate)(l => if (l.satisfies(Lang("cy"))) welshTemplate else defaultTemplate)
-    emailConnector.sendEmail(EmailInformation(Seq(email), templateId, Map("agencyName" -> agencyName, "arn" -> arn.value)))
+    emailConnector.sendEmail(EmailInformation(Seq(email), templateId, Map("agencyName" -> agencyName, "arn" -> arn.value.replace('-', ' '))))
   }
 
   def createSubscription(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
