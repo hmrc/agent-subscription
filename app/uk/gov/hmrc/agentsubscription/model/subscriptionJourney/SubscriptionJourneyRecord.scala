@@ -21,7 +21,9 @@ import java.time.LocalDateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{ JsPath, Json, OFormat }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 import uk.gov.hmrc.agentsubscription.model.{ AuthProviderId, DateOfBirth }
+
 import uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney.AmlsData
 import uk.gov.hmrc.domain.Nino
 
@@ -39,22 +41,28 @@ final case class SubscriptionJourneyRecord(
   userMappings: List[UserMapping],
   mappingComplete: Boolean,
   cleanCredsAuthProviderId: Option[AuthProviderId],
-  lastModifiedDate: Option[LocalDateTime])
+  lastModifiedDate: Option[LocalDateTime],
+  contactDetailsEmailCheck: Boolean,
+  contactDetailsTradingName: Option[String],
+  contactDetailsTradingAddress: Option[BusinessAddress])
 
 object SubscriptionJourneyRecord {
 
   import MongoLocalDateTimeFormat._
 
-  implicit val subscriptionJourneyFormat: OFormat[SubscriptionJourneyRecord] = (
-    (JsPath \ "authProviderId").format[AuthProviderId] and
-    (JsPath \ "continueId").formatNullable[String] and
-    (JsPath \ "businessDetails").format[BusinessDetails] and
-    (JsPath \ "amlsData").formatNullable[AmlsData] and
-    (JsPath \ "userMappings").format[List[UserMapping]] and
-    (JsPath \ "mappingComplete").format[Boolean] and
-    (JsPath \ "cleanCredsAuthProviderId").formatNullable[AuthProviderId] and
-    (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime])(SubscriptionJourneyRecord.apply, unlift(SubscriptionJourneyRecord.unapply))
-
+  implicit val subscriptionJourneyFormat: OFormat[SubscriptionJourneyRecord] =
+    ((JsPath \ "authProviderId").format[AuthProviderId] and
+      (JsPath \ "continueId").formatNullable[String] and
+      (JsPath \ "businessDetails").format[BusinessDetails] and
+      (JsPath \ "amlsData").formatNullable[AmlsData] and
+      (JsPath \ "userMappings").format[List[UserMapping]] and
+      (JsPath \ "mappingComplete").format[Boolean] and
+      (JsPath \ "cleanCredsAuthProviderId").formatNullable[AuthProviderId] and
+      (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime] and
+      (JsPath \ "contactDetailsEmailCheck").format[Boolean] and
+      (JsPath \ "contactDetailsTradingName").formatNullable[String] and
+      (JsPath \ "contactDetailsTradingAddress")
+      .formatNullable[BusinessAddress])(SubscriptionJourneyRecord.apply, unlift(SubscriptionJourneyRecord.unapply))
 }
 
 /**
