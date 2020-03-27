@@ -44,6 +44,9 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     List.empty,
     mappingComplete = false,
     None,
+    None,
+    false,
+    None,
     None)
 
   val mockRepo: SubscriptionJourneyRepository = mock[SubscriptionJourneyRepository]

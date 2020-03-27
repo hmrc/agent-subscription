@@ -51,7 +51,10 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
       cleanCredsAuthProviderId = None,
       mappingComplete = false,
       userMappings = List(),
-      lastModifiedDate = None)
+      lastModifiedDate = None,
+      contactDetailsEmailCheck = true,
+      contactDetailsTradingName = Some("My Trading Name"),
+      contactDetailsTradingAddress = Some(businessAddress))
 
   override def beforeEach() {
     super.beforeEach()
