@@ -45,7 +45,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     mappingComplete = false,
     None,
     None,
-    false,
+    None,
     None,
     None)
 
