@@ -22,7 +22,7 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json.{ JsPath, Json, OFormat }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
-import uk.gov.hmrc.agentsubscription.model.{ AuthProviderId, ContactEmailData, DateOfBirth }
+import uk.gov.hmrc.agentsubscription.model.{ AuthProviderId, ContactEmailData, ContactTradingAddressData, ContactTradingNameData, DateOfBirth }
 import uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney.AmlsData
 import uk.gov.hmrc.domain.Nino
 
@@ -42,8 +42,8 @@ final case class SubscriptionJourneyRecord(
   cleanCredsAuthProviderId: Option[AuthProviderId],
   lastModifiedDate: Option[LocalDateTime],
   contactEmailData: Option[ContactEmailData],
-  contactDetailsTradingName: Option[String],
-  contactDetailsTradingAddress: Option[BusinessAddress])
+  contactTradingNameData: Option[ContactTradingNameData],
+  contactTradingAddressData: Option[ContactTradingAddressData])
 
 object SubscriptionJourneyRecord {
 
@@ -59,9 +59,9 @@ object SubscriptionJourneyRecord {
       (JsPath \ "cleanCredsAuthProviderId").formatNullable[AuthProviderId] and
       (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime] and
       (JsPath \ "contactEmailData").formatNullable[ContactEmailData] and
-      (JsPath \ "contactDetailsTradingName").formatNullable[String] and
-      (JsPath \ "contactDetailsTradingAddress")
-      .formatNullable[BusinessAddress])(SubscriptionJourneyRecord.apply, unlift(SubscriptionJourneyRecord.unapply))
+      (JsPath \ "contactTradingNameData").formatNullable[ContactTradingNameData] and
+      (JsPath \ "contactTradingAddressData")
+      .formatNullable[ContactTradingAddressData])(SubscriptionJourneyRecord.apply, unlift(SubscriptionJourneyRecord.unapply))
 }
 
 /**

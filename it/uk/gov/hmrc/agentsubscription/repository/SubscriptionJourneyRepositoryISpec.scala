@@ -9,7 +9,7 @@ import play.api.inject.guice.GuiceApplicationBuilder
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
-import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, AuthProviderId, ContactEmailData, RegisteredDetails }
+import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, AuthProviderId, ContactEmailData, ContactTradingAddressData, ContactTradingNameData, RegisteredDetails }
 import uk.gov.hmrc.agentsubscription.support.MongoApp
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.play.test.UnitSpec
@@ -53,8 +53,8 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
       userMappings = List(),
       lastModifiedDate = None,
       contactEmailData = Some(ContactEmailData(true, Some("email@email.com"))),
-      contactDetailsTradingName = Some("My Trading Name"),
-      contactDetailsTradingAddress = Some(businessAddress))
+      contactTradingNameData = Some(ContactTradingNameData(true, Some("My Trading Name"))),
+      contactTradingAddressData = Some(ContactTradingAddressData(true, Some(businessAddress))))
 
   override def beforeEach() {
     super.beforeEach()
