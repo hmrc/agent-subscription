@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentsubscription.model
 import play.api.libs.json.{ Format, Json }
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 
-case class ContactTradingAddressData(check: Boolean, contactTradingAddress: Option[BusinessAddress])
+case class ContactTradingAddressData(useBusinessAddress: Boolean, contactTradingAddress: Option[BusinessAddress])
 
 object ContactTradingAddressData {
 
