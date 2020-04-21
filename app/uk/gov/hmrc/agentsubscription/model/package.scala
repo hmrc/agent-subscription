@@ -69,6 +69,21 @@ package object model {
     filter[String](JsonValidationError("error.overseas.countryCode"))(_ != "GB") andKeep
       filter[String](JsonValidationError("error.overseas.countryCode"))(_.matches(overseasCountryCodeRegex))
   }
+
+  private[model] val ukAddressForOverseasCountryCodeValidation = {
+    val greatBritainCountryCode = "GB"
+
+    filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](JsonValidationError("error.overseas.countryCode"))(_.matches(greatBritainCountryCode))
+  }
+
+  private[model] val ukAddressForOverseasPostalCodeValidation = {
+    val postalCodePattern = """^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}|BFPO\s?[0-9]{1,10}$"""
+
+    filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
+      filter[String](JsonValidationError("error.overseas.ukAddressForOverseasPostalCode"))(_.matches(postalCodePattern))
+  }
+
   private[model] val overseasTelephoneNumberValidation = {
     val overseasPhoneRegex = s"^[A-Z0-9 )\\/(\\-*#]{0,24}$$"
 

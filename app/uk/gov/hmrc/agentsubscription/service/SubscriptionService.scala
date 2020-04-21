@@ -46,12 +46,12 @@ private case class SubscriptionAuditDetail(
   amlsDetails: Option[AmlsDetails])
 
 case class OverseasSubscriptionAuditDetail(
-  agentReferenceNumber: Option[Arn],
-  safeId: SafeId,
-  agencyName: String,
-  agencyEmail: String,
-  agencyAddress: OverseasAgencyAddress,
-  amlsDetails: Option[OverseasAmlsDetails])
+                                            agentReferenceNumber: Option[Arn],
+                                            safeId: SafeId,
+                                            agencyName: String,
+                                            agencyEmail: String,
+                                            agencyAddress: OverseasAgencyAddress,
+                                            amlsDetails: Option[OverseasAmlsDetails])
 
 object OverseasSubscriptionAuditDetail {
   implicit val format: OFormat[OverseasSubscriptionAuditDetail] = Json.format[OverseasSubscriptionAuditDetail]

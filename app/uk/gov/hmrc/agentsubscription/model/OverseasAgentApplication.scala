@@ -18,6 +18,36 @@ package uk.gov.hmrc.agentsubscription.model
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{ Json, Reads, _ }
 
+sealed trait OverseasAddress {
+  def addressLine1: String
+  def addressLine2: String
+  def addressLine3: Option[String]
+  def addressLine4: Option[String]
+  def countryCode: String
+}
+
+final case class UkAddressForOverseas(
+  addressLine1: String,
+  addressLine2: String,
+  addressLine3: Option[String],
+  addressLine4: Option[String],
+  postalCode: String,
+  countryCode: String) extends OverseasAddress
+
+final case class OverseasBusinessAddress(
+  addressLine1: String,
+  addressLine2: String,
+  addressLine3: Option[String],
+  addressLine4: Option[String],
+  countryCode: String) extends OverseasAddress
+
+final case class OverseasAgencyAddress(
+  addressLine1: String,
+  addressLine2: String,
+  addressLine3: Option[String],
+  addressLine4: Option[String],
+  countryCode: String) extends OverseasAddress
+
 case class TradingDetails(tradingName: String, tradingAddress: OverseasBusinessAddress)
 
 case class OverseasContactDetails(businessTelephone: String, businessEmail: String)
@@ -26,20 +56,6 @@ case class OverseasAgencyDetails(
   agencyName: String,
   agencyEmail: String,
   agencyAddress: OverseasAgencyAddress)
-
-case class OverseasBusinessAddress(
-  addressLine1: String,
-  addressLine2: String,
-  addressLine3: Option[String],
-  addressLine4: Option[String],
-  countryCode: String)
-
-case class OverseasAgencyAddress(
-  addressLine1: String,
-  addressLine2: String,
-  addressLine3: Option[String],
-  addressLine4: Option[String],
-  countryCode: String)
 
 object OverseasAgencyAddress {
   implicit val writes: OWrites[OverseasAgencyAddress] = Json.writes[OverseasAgencyAddress]
@@ -59,6 +75,18 @@ object OverseasBusinessAddress {
     (__ \ "addressLine3").readNullable[String](overseasAddressValidation) and
     (__ \ "addressLine4").readNullable[String](overseasAddressValidation) and
     (__ \ "countryCode").read[String](overseasCountryCodeValidation))(OverseasBusinessAddress.apply _)
+}
+
+object UkAddressForOverseas {
+
+  implicit val writes: OWrites[UkAddressForOverseas] = Json.writes[UkAddressForOverseas]
+  implicit val reads: Reads[UkAddressForOverseas] = (
+    (__ \ "addressLine1").read[String](overseasAddressValidation) and
+    (__ \ "addressLine2").read[String](overseasAddressValidation) and
+    (__ \ "addressLine3").readNullable[String](overseasAddressValidation) and
+    (__ \ "addressLine4").readNullable[String](overseasAddressValidation) and
+    (__ \ "postalCode").read[String](ukAddressForOverseasPostalCodeValidation) and
+    (__ \ "countryCode").read[String](ukAddressForOverseasCountryCodeValidation))(UkAddressForOverseas.apply _)
 }
 
 object TradingDetails {

@@ -38,7 +38,7 @@ case class OverseasRegistrationRequest(
   isAnAgent: Boolean,
   isAGroup: Boolean,
   organisation: Organisation,
-  address: OverseasBusinessAddress,
+  address: OverseasAddress,
   contactDetails: ContactDetails)
 
 object OverseasRegistrationRequest {
