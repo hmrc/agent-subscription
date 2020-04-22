@@ -46,12 +46,12 @@ private case class SubscriptionAuditDetail(
   amlsDetails: Option[AmlsDetails])
 
 case class OverseasSubscriptionAuditDetail(
-                                            agentReferenceNumber: Option[Arn],
-                                            safeId: SafeId,
-                                            agencyName: String,
-                                            agencyEmail: String,
-                                            agencyAddress: OverseasAgencyAddress,
-                                            amlsDetails: Option[OverseasAmlsDetails])
+  agentReferenceNumber: Option[Arn],
+  safeId: SafeId,
+  agencyName: String,
+  agencyEmail: String,
+  agencyAddress: OverseasAgencyAddress,
+  amlsDetails: Option[OverseasAmlsDetails])
 
 object OverseasSubscriptionAuditDetail {
   implicit val format: OFormat[OverseasSubscriptionAuditDetail] = Json.format[OverseasSubscriptionAuditDetail]
@@ -166,7 +166,7 @@ class SubscriptionService @Inject() (
     }
   }
 
-  private def subscribeAndEnrolOverseas(authIds: AuthIds, safeId: SafeId, amlsDetailsOpt: Option[OverseasAmlsDetails], agencyDetails: OverseasAgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+  private def subscribeAndEnrolOverseas(authIds: AuthIds, safeId: SafeId, amlsDetailsOpt: Option[OverseasAmlsDetails], agencyDetails: OverseasAgencyDetailsForUkAgentOverseas)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
     for {
       arn <- desConnector.subscribeToAgentServices(safeId, agencyDetails)
       _ <- addKnownFactsAndEnrolOverseas(arn, agencyDetails, authIds)

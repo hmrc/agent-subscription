@@ -46,9 +46,11 @@ final case class OverseasAgencyAddress(
   addressLine2: String,
   addressLine3: Option[String],
   addressLine4: Option[String],
-  countryCode: String) extends OverseasAddress
+  countryCode: String)
 
 case class TradingDetails(tradingName: String, tradingAddress: OverseasBusinessAddress)
+
+case class TradingDetailsForUkAgentOverseas(tradingName: String, tradingAddress: OverseasAddress)
 
 case class OverseasContactDetails(businessTelephone: String, businessEmail: String)
 
@@ -56,6 +58,36 @@ case class OverseasAgencyDetails(
   agencyName: String,
   agencyEmail: String,
   agencyAddress: OverseasAgencyAddress)
+
+case class OverseasAgencyDetailsForUkAgentOverseas(
+  agencyName: String,
+  agencyEmail: String,
+  agencyAddress: OverseasAddress)
+
+object OverseasAddress {
+
+  implicit val ukAddresWrites: Writes[OverseasAddress] = new Writes[OverseasAddress] {
+    def writes(a: OverseasAddress): JsValue = a match {
+      case uk: UkAddressForOverseas => Json.toJson(uk)(Json.writes[UkAddressForOverseas])
+      case os: OverseasBusinessAddress => Json.toJson(os)(Json.writes[OverseasBusinessAddress])
+    }
+  }
+
+  implicit val ukAddressReads: Reads[OverseasAddress] = (
+    (__ \ "addressLine1").read[String](overseasAddressValidation) and
+    (__ \ "addressLine2").read[String](overseasAddressValidation) and
+    (__ \ "addressLine3").readNullable[String](overseasAddressValidation) and
+    (__ \ "addressLine4").readNullable[String](overseasAddressValidation) and
+    (__ \ "postalCode").read[String](ukAddressForOverseasPostalCodeValidation) and
+    (__ \ "countryCode").read[String](ukAddressForOverseasCountryCodeValidation))(UkAddressForOverseas.apply _)
+    .map(x => x: OverseasAddress) orElse (
+
+      (__ \ "addressLine1").lazyRead[String](overseasAddressValidation) and
+      (__ \ "addressLine2").lazyRead[String](overseasAddressValidation) and
+      (__ \ "addressLine3").lazyReadNullable[String](overseasAddressValidation) and
+      (__ \ "addressLine4").lazyReadNullable[String](overseasAddressValidation) and
+      (__ \ "countryCode").lazyRead[String](overseasCountryCodeValidation))(OverseasBusinessAddress.apply _).map(x => x: OverseasAddress)
+}
 
 object OverseasAgencyAddress {
   implicit val writes: OWrites[OverseasAgencyAddress] = Json.writes[OverseasAgencyAddress]
@@ -68,6 +100,7 @@ object OverseasAgencyAddress {
 }
 
 object OverseasBusinessAddress {
+
   implicit val writes: OWrites[OverseasBusinessAddress] = Json.writes[OverseasBusinessAddress]
   implicit val reads: Reads[OverseasBusinessAddress] = (
     (__ \ "addressLine1").read[String](overseasAddressValidation) and
@@ -112,4 +145,13 @@ object OverseasAgencyDetails {
     (__ \ "agencyName").read[String](overseasNameValidation) and
     (__ \ "agencyEmail").read[String](overseasEmailValidation) and
     (__ \ "agencyAddress").read[OverseasAgencyAddress])(OverseasAgencyDetails.apply _)
+}
+
+object OverseasAgencyDetailsForUkAgentOverseas {
+  implicit val writes: OWrites[OverseasAgencyDetailsForUkAgentOverseas] = Json.writes[OverseasAgencyDetailsForUkAgentOverseas]
+
+  implicit val reads: Reads[OverseasAgencyDetailsForUkAgentOverseas] = (
+    (__ \ "agencyName").read[String](overseasNameValidation) and
+    (__ \ "agencyEmail").read[String](overseasEmailValidation) and
+    (__ \ "agencyAddress").read[OverseasBusinessAddress])(OverseasAgencyDetailsForUkAgentOverseas.apply _)
 }
