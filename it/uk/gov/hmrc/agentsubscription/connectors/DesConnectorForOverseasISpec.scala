@@ -33,32 +33,53 @@ class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with 
   private lazy val connector: DesConnector =
     new DesConnector(appConfig, http, metrics)
 
-  private val overseasRegistrationRequest = OverseasRegistrationRequest(
+  private val validUkAddress = UkAddressForOverseas("Mandatory Address Line 1", "Mandatory Address Line 2",
+    Some("Optional Address Line 3"), None, "SW4 7QH", "GB")
+
+  private val overseasAddress = OverseasBusinessAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
+    Some("Optional Address Line 3"), Some("Optional Address Line 4"), "IE")
+
+  private val overseasRegistrationRequestWithOverseasAddress = OverseasRegistrationRequest(
     "AGSV",
     UUID.randomUUID.toString.replaceAll("-", ""), false, false,
     Organisation("Test Organisation Name"),
-    OverseasBusinessAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
-      Some("Optional Address Line 3"), Some("Optional Address Line 4"), "IE"), ContactDetails("00491234567890", "test@test.example"))
+    overseasAddress, ContactDetails("00491234567890", "test@test.example"))
 
-  private val overseasSubscriptionRequest = OverseasAgencyDetails(
+  private val overseasRegistrationRequestWithValidUkAddress = OverseasRegistrationRequest(
+    "AGSV",
+    UUID.randomUUID.toString.replaceAll("-", ""), false, false,
+    Organisation("Test Organisation Name"),
+    validUkAddress, ContactDetails("00491234567890", "test@test.example"))
+
+  private val overseasSubscriptionRequestWithOverseasAddress = OverseasAgencyDetailsForMaybeUkAgent(
     "Test Organisation Name",
-    "test@test.example", OverseasAgencyAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
-      Some("Optional Address Line 3"), Some("Optional Address Line 4"), "IE"))
+    "test@test.example", overseasAddress)
+
+  private val overseasSubscriptionRequestWithValidUkAddress = overseasSubscriptionRequestWithOverseasAddress
+    .copy(agencyAddress = validUkAddress)
 
   "subscribeToAgentServices" should {
-    "return an ARN when subscription is successful" in {
-      subscriptionSucceeds(safeId.value, Json.toJson(overseasSubscriptionRequest).toString)
+    "return an ARN when subscription is successful using an overseas address" in {
+      subscriptionSucceeds(safeId.value, Json.toJson(overseasSubscriptionRequestWithOverseasAddress).toString)
 
-      val result = await(connector.subscribeToAgentServices(safeId, overseasSubscriptionRequest))
+      val result = await(connector.subscribeToAgentServices(safeId, overseasSubscriptionRequestWithOverseasAddress))
+
+      result shouldBe Arn("TARN0000001")
+    }
+
+    "return an ARN when subscription is successful using a valid UK address" in {
+      subscriptionSucceeds(safeId.value, Json.toJson(overseasSubscriptionRequestWithValidUkAddress).toString)
+
+      val result = await(connector.subscribeToAgentServices(safeId, overseasSubscriptionRequestWithValidUkAddress))
 
       result shouldBe Arn("TARN0000001")
     }
 
     "propagate an exception containing the safeId if there is a duplicate submission" in {
-      subscriptionAlreadyExists(safeId.value, Json.toJson(overseasSubscriptionRequest).toString)
+      subscriptionAlreadyExists(safeId.value, Json.toJson(overseasSubscriptionRequestWithOverseasAddress).toString)
 
       val exception = intercept[RuntimeException] {
-        await(connector.subscribeToAgentServices(safeId, overseasSubscriptionRequest))
+        await(connector.subscribeToAgentServices(safeId, overseasSubscriptionRequestWithOverseasAddress))
       }
 
       exception.getMessage.contains(safeId.value) shouldBe true
@@ -66,10 +87,10 @@ class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with 
     }
 
     "propagate an exception containing the safeId if the agency is not registered" in {
-      agencyNotRegistered(safeId.value, Json.toJson(overseasSubscriptionRequest).toString)
+      agencyNotRegistered(safeId.value, Json.toJson(overseasSubscriptionRequestWithOverseasAddress).toString)
 
       val exception = intercept[RuntimeException] {
-        await(connector.subscribeToAgentServices(safeId, overseasSubscriptionRequest))
+        await(connector.subscribeToAgentServices(safeId, overseasSubscriptionRequestWithOverseasAddress))
       }
 
       exception.getMessage.contains(safeId.value) shouldBe true
@@ -78,10 +99,18 @@ class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with 
   }
 
   "createOverseasBusinessPartnerRecord" should {
-    "return safeId for when an overseas BPR is created" in {
-      organisationRegistrationSucceeds(Json.toJson(overseasRegistrationRequest).toString())
+    "return safeId for when an overseas BPR is created using an overseas address" in {
+      organisationRegistrationSucceeds(Json.toJson(overseasRegistrationRequestWithOverseasAddress).toString())
 
-      val response = await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequest))
+      val response = await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequestWithOverseasAddress))
+
+      response.value shouldBe "XE0001234567890"
+    }
+
+    "return safeId for when an overseas BPR is created using a uk address" in {
+      organisationRegistrationSucceeds(Json.toJson(overseasRegistrationRequestWithValidUkAddress).toString())
+
+      val response = await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequestWithValidUkAddress))
 
       response.value shouldBe "XE0001234567890"
     }
@@ -89,13 +118,13 @@ class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with 
     "return exception for when an overseas BPR creation fails with NOT_FOUND error" in {
       organisationRegistrationFailsWithNotFound()
 
-      an[RuntimeException] should be thrownBy (await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequest)))
+      an[RuntimeException] should be thrownBy (await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequestWithOverseasAddress)))
     }
 
     "return exception for when an overseas BPR creation fails for an invalid payload" in {
       organisationRegistrationFailsWithInvalidPayload()
 
-      an[RuntimeException] should be thrownBy (await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequest.copy(regime = ""))))
+      an[RuntimeException] should be thrownBy (await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequestWithOverseasAddress.copy(regime = ""))))
     }
   }
 }

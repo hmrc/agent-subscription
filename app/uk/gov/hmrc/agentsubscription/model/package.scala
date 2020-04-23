@@ -66,8 +66,8 @@ package object model {
   private[model] val overseasCountryCodeValidation = {
     val overseasCountryCodeRegex = "[A-Z]{2}"
 
-    filter[String](JsonValidationError("error.overseas.countryCode"))(_ != "GB") andKeep
-      filter[String](JsonValidationError("error.overseas.countryCode"))(_.matches(overseasCountryCodeRegex))
+    //filter[String](JsonValidationError("error.overseas.countryCode"))(_ != "GB") andKeep
+    filter[String](JsonValidationError("error.overseas.countryCode"))(_.matches(overseasCountryCodeRegex))
   }
 
   private[model] val ukAddressForOverseasCountryCodeValidation = {

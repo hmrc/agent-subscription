@@ -105,9 +105,9 @@ class DesConnector @Inject() (
     }
   }
 
-  def subscribeToAgentServices(safeId: SafeId, agencyDetails: OverseasAgencyDetailsForUkAgentOverseas)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
+  def subscribeToAgentServices(safeId: SafeId, agencyDetails: OverseasAgencyDetailsForMaybeUkAgent)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     monitor("ConsumedAPI-DES-SubscribeOverseasAgent-POST") {
-      http.POST[OverseasAgencyDetailsForUkAgentOverseas, JsValue](desOverseasSubscribeUrl(safeId).toString, agencyDetails)(implicitly[Writes[OverseasAgencyDetailsForUkAgentOverseas]], implicitly[HttpReads[JsValue]], desHeaders, ec)
+      http.POST[OverseasAgencyDetailsForMaybeUkAgent, JsValue](desOverseasSubscribeUrl(safeId).toString, agencyDetails)(implicitly[Writes[OverseasAgencyDetailsForMaybeUkAgent]], implicitly[HttpReads[JsValue]], desHeaders, ec)
         .map(response => (response \ "agentRegistrationNumber").as[Arn])
         .recover {
           case e => throw new RuntimeException(s"Failed to create subscription in ETMP for safeId: $safeId ${e.getMessage}", e)

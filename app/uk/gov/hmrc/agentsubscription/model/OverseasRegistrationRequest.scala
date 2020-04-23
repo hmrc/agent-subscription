@@ -54,26 +54,11 @@ object OverseasRegistrationRequest {
       isAnAgent = false,
       isAGroup = false,
       Organisation(organisationName = fromApplication.tradingDetails.tradingName),
-      address = addressTypeSelector(fromApplication.tradingDetails.tradingAddress),
+      address = maybeUkAddress(fromApplication.tradingDetails.tradingAddress),
       contactDetails = ContactDetails(
         phoneNumber = fromApplication.businessContactDetails.businessTelephone,
         emailAddress = fromApplication.businessContactDetails.businessEmail))
   }
 
-  def addressTypeSelector(address: OverseasAddress): OverseasAddress = address.countryCode match {
-    case "GB" => UkAddressForOverseas(
-      addressLine1 = address.addressLine1,
-      addressLine2 = address.addressLine2,
-      addressLine3 = address.addressLine3,
-      addressLine4 = None,
-      postalCode = address.addressLine4.getOrElse(throw new RuntimeException("line 4 of the address form should be defined to extract UK postal code")),
-      countryCode = "GB")
-    case _ => OverseasBusinessAddress(
-      addressLine1 = address.addressLine1,
-      addressLine2 = address.addressLine2,
-      addressLine3 = address.addressLine3,
-      addressLine4 = None,
-      countryCode = address.countryCode)
-  }
 }
 

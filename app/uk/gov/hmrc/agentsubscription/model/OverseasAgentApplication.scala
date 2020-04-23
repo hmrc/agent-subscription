@@ -59,21 +59,37 @@ case class OverseasAgencyDetails(
   agencyEmail: String,
   agencyAddress: OverseasAgencyAddress)
 
-case class OverseasAgencyDetailsForUkAgentOverseas(
+case class OverseasAgencyDetailsForMaybeUkAgent(
   agencyName: String,
   agencyEmail: String,
   agencyAddress: OverseasAddress)
 
 object OverseasAddress {
 
-  implicit val ukAddresWrites: Writes[OverseasAddress] = new Writes[OverseasAddress] {
+  def maybeUkAddress(address: OverseasAddress): OverseasAddress = address.countryCode match {
+    case "GB" => UkAddressForOverseas(
+      addressLine1 = address.addressLine1,
+      addressLine2 = address.addressLine2,
+      addressLine3 = address.addressLine3,
+      addressLine4 = None,
+      postalCode = address.addressLine4.getOrElse(throw new RuntimeException("line 4 of the address form should be defined for GB countryCode")),
+      countryCode = "GB")
+    case _ => OverseasBusinessAddress(
+      addressLine1 = address.addressLine1,
+      addressLine2 = address.addressLine2,
+      addressLine3 = address.addressLine3,
+      addressLine4 = address.addressLine4,
+      countryCode = address.countryCode)
+  }
+
+  implicit val overseasAddressWrites: Writes[OverseasAddress] = new Writes[OverseasAddress] {
     def writes(a: OverseasAddress): JsValue = a match {
       case uk: UkAddressForOverseas => Json.toJson(uk)(Json.writes[UkAddressForOverseas])
       case os: OverseasBusinessAddress => Json.toJson(os)(Json.writes[OverseasBusinessAddress])
     }
   }
 
-  implicit val ukAddressReads: Reads[OverseasAddress] = (
+  implicit val overseasAddressReads: Reads[OverseasAddress] = (
     (__ \ "addressLine1").read[String](overseasAddressValidation) and
     (__ \ "addressLine2").read[String](overseasAddressValidation) and
     (__ \ "addressLine3").readNullable[String](overseasAddressValidation) and
@@ -100,6 +116,15 @@ object OverseasAgencyAddress {
 }
 
 object OverseasBusinessAddress {
+
+  def fromOverseasAgencyAddress(osAddress: OverseasAgencyAddress): OverseasBusinessAddress = {
+    OverseasBusinessAddress(
+      addressLine1 = osAddress.addressLine1,
+      addressLine2 = osAddress.addressLine2,
+      addressLine3 = osAddress.addressLine3,
+      addressLine4 = osAddress.addressLine4,
+      countryCode = osAddress.countryCode)
+  }
 
   implicit val writes: OWrites[OverseasBusinessAddress] = Json.writes[OverseasBusinessAddress]
   implicit val reads: Reads[OverseasBusinessAddress] = (
@@ -139,6 +164,7 @@ object OverseasContactDetails {
 }
 
 object OverseasAgencyDetails {
+
   implicit val writes: OWrites[OverseasAgencyDetails] = Json.writes[OverseasAgencyDetails]
 
   implicit val reads: Reads[OverseasAgencyDetails] = (
@@ -147,11 +173,11 @@ object OverseasAgencyDetails {
     (__ \ "agencyAddress").read[OverseasAgencyAddress])(OverseasAgencyDetails.apply _)
 }
 
-object OverseasAgencyDetailsForUkAgentOverseas {
-  implicit val writes: OWrites[OverseasAgencyDetailsForUkAgentOverseas] = Json.writes[OverseasAgencyDetailsForUkAgentOverseas]
+object OverseasAgencyDetailsForMaybeUkAgent {
+  implicit val writes: OWrites[OverseasAgencyDetailsForMaybeUkAgent] = Json.writes[OverseasAgencyDetailsForMaybeUkAgent]
 
-  implicit val reads: Reads[OverseasAgencyDetailsForUkAgentOverseas] = (
+  implicit val reads: Reads[OverseasAgencyDetailsForMaybeUkAgent] = (
     (__ \ "agencyName").read[String](overseasNameValidation) and
     (__ \ "agencyEmail").read[String](overseasEmailValidation) and
-    (__ \ "agencyAddress").read[OverseasBusinessAddress])(OverseasAgencyDetailsForUkAgentOverseas.apply _)
+    (__ \ "agencyAddress").read[OverseasBusinessAddress])(OverseasAgencyDetailsForMaybeUkAgent.apply _)
 }
