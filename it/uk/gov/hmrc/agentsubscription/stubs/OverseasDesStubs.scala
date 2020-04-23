@@ -54,6 +54,14 @@ trait OverseasDesStubs {
     ()
   }
 
+  def organisationRegistrationFailsWithInvalidPostCode(): Unit = {
+    stubFor(maybeWithDesHeaderCheck(post(urlEqualTo(s"/registration/02.00.00/organisation")))
+      .willReturn(aResponse()
+        .withStatus(400)
+        .withBody(invalidPayloadResponse)))
+    ()
+  }
+
   def subscriptionSucceeds(safeId: String, requestJson: String): Unit = {
     stubFor(maybeWithDesHeaderCheck(subscriptionRequest(safeId, requestJson))
       .willReturn(aResponse()

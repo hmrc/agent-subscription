@@ -23,13 +23,46 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
   "creating a subscription" should {
     "return a successful response containing the ARN" when {
-      "all fields are populated" in {
+      "all fields are populated and using an overseas address" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
-        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(stubbedGroupId, arn)
+        createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
+        givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
+        givenEmailSent(emailInfo)
+
+        val result = await(doSubscriptionRequest)
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe arn
+
+        verifyApiCalls(
+          attemptingRegistration = 1,
+          etmpRegistration = 1,
+          registered = 1,
+          subscription = 1,
+          allocatedPrincipalEnrolment = 1,
+          deleteKnownFact = 1,
+          createKnownFact = 1,
+          enrol = 1,
+          amls = 1,
+          complete = 1)
+      }
+
+      "all fields are populated and using a valid UK address" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        givenValidApplication("accepted", ukAddress = true)
+        givenUpdateApplicationStatus(AttemptingRegistration, 204)
+        organisationRegistrationSucceeds()
+        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithValidUkAddressJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
@@ -62,7 +95,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
-        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
@@ -98,7 +131,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
       def aSuccessfulSubscriptionForAlreadyRegisteredAcceptedApplication(applicationStatus: String) = {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication(applicationStatus, Some(safeId.value))
-        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
@@ -128,7 +161,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
       "creating amls record fails with 409 Conflict because a record already exists" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("registered", Some(safeId.value))
-        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
@@ -159,7 +192,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     "return Conflict if there is an existing HMRC-AS-AGENT enrolment for their Arn already allocated to some group" in {
       requestIsAuthenticatedWithNoEnrolments()
       givenValidApplication("registered", Some(safeId.value))
-      subscriptionSucceeds(safeId.value, agencyDetailsJson)
+      subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
       allocatedPrincipalEnrolmentExists(arn, "someOtherGroupId")
 
       val result = await(doSubscriptionRequest)
@@ -270,7 +303,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
-        subscriptionAlreadyExists(safeId.value, agencyDetailsJson)
+        subscriptionAlreadyExists(safeId.value, agencyDetailsWithOverseasAddressJson)
 
         val result = await(doSubscriptionRequest)
 
@@ -285,7 +318,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
-        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
         allocatedPrincipalEnrolmentFails(arn)
 
         val result = await(doSubscriptionRequest)
@@ -306,7 +339,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
-        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsFails(arn)
 
@@ -329,7 +362,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
-        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsFails(arn)
@@ -354,7 +387,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
-        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
@@ -381,7 +414,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
-        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
@@ -411,7 +444,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
-        subscriptionSucceeds(safeId.value, agencyDetailsJson)
+        subscriptionSucceeds(safeId.value, agencyDetailsWithOverseasAddressJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
@@ -440,7 +473,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
   private def doSubscriptionRequest = new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
 
-  private val agencyDetailsJson =
+  private val agencyDetailsWithOverseasAddressJson =
     s"""
        |{
        |  "agencyName": "Agency name",
@@ -449,6 +482,20 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
        |    "addressLine1": "Mandatory Address Line 1",
        |    "addressLine2": "Mandatory Address Line 2",
        |    "countryCode": "IE"
+       |  }
+       |}
+     """.stripMargin
+
+  private val agencyDetailsWithValidUkAddressJson =
+    s"""
+       |{
+       |  "agencyName": "Agency name",
+       |  "agencyEmail": "agencyemail@domain.com",
+       |  "agencyAddress": {
+       |    "addressLine1": "Mandatory Address Line 1",
+       |    "addressLine2": "Mandatory Address Line 2",
+       |    "postalCode": "SW4 7QH",
+       |    "countryCode": "GB"
        |  }
        |}
      """.stripMargin
