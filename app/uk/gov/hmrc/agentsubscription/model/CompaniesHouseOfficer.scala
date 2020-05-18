@@ -16,19 +16,18 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{ Format, Json }
-import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails.Person
+import java.time.LocalDate
 
-//Add more fields as required: https://github.com/hmrc/citizen-details
-case class DesignatoryDetails(person: Option[Person] = None)
+import play.api.libs.json._
+import play.api.libs.json.Reads
+import play.api.libs.functional.syntax._
 
-object DesignatoryDetails {
+case class CompaniesHouseOfficer(name: String, resignedOn: Option[LocalDate])
 
-  case class Person(lastName: Option[String] = None, dateOfBirth: Option[DateOfBirth] = None)
+object CompaniesHouseOfficer {
 
-  object Person {
-    implicit val format: Format[Person] = Json.format[Person]
-  }
+  implicit val reads: Reads[CompaniesHouseOfficer] = (
+    (__ \ "name").read[String] and
+    (__ \ "resigned_on").readNullable[LocalDate])(CompaniesHouseOfficer.apply _)
 
-  implicit val format: Format[DesignatoryDetails] = Json.format[DesignatoryDetails]
 }

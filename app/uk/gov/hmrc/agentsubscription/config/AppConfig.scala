@@ -46,4 +46,6 @@ class AppConfig @Inject() (servicesConfig: ServicesConfig) {
 
   val mongodbSubscriptionJourneyTTL = servicesConfig.getInt("mongodb.subscriptionjourney.ttl")
 
+  val companiesHouseApiProxyBaseUrl = servicesConfig.baseUrl("companies-house-api-proxy")
+
 }

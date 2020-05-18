@@ -13,6 +13,7 @@ GET    /vat-known-facts/vrn/:vrn/dateOfRegistration/:dateOfReg     @uk.gov.hmrc.
 
 GET    /citizen-details/:nino/designatory-details     @uk.gov.hmrc.agentsubscription.controllers.CitizenDetailsController.getDesignatoryDetails(nino: uk.gov.hmrc.domain.Nino)
 
+GET     /companies-house-api-proxy/company/:crn/officers/:nameToMatch @uk.gov.hmrc.agentsubscription.controllers.CompaniesHouseController.getCompanyOfficers(crn: uk.gov.hmrc.agentsubscription.model.Crn, nameToMatch: String)
 
 # Find journey record by either primary or mapped auth provider id
 GET     /subscription/journey/id/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByAuthId(authProviderId: AuthProviderId)

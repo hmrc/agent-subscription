@@ -35,12 +35,12 @@ class CitizenDetailsControllerISpec extends BaseISpec with CitizenDetailsStubs w
   "GET /citizen-details/${nino}/designatory-details" should {
     "return 200 when nino is found in Citizen details and the dob returned matches" in {
       requestIsAuthenticatedWithNoEnrolments()
-      givencitizenDetailsFoundForNino(nino.value, dobString)
+      givencitizenDetailsFoundForNino(nino.value, dobString, Some("Matchmaker"))
 
       val response = doRequest(nino)
       response.status shouldBe 200
 
-      response.json.as[DesignatoryDetails] shouldBe DesignatoryDetails(Some(Person(Some(dob))))
+      response.json.as[DesignatoryDetails] shouldBe DesignatoryDetails(Some(Person(Some("Matchmaker"), Some(dob))))
     }
 
     "return 404 when DesignatoryDetails are not found for a passed in nino" in {
