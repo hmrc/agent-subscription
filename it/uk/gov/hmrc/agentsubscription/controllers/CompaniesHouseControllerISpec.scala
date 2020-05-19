@@ -46,11 +46,11 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
       response.status shouldBe 400
     }
 
-    "return Internal Server Error if the Companies House API token has expired" in {
+    "return NotFound if the Companies House API token has expired" in {
       requestIsAuthenticatedWithNoEnrolments()
       givenCompaniesHouseOfficersListWithStatus("SC123456", 401)
       val response = await(new Resource(s"/agent-subscription/companies-house-api-proxy/company/SC123456/officers/lucas", port).get)
-      response.status shouldBe 500
+      response.status shouldBe 404
     }
 
     "return OK if a match was found" in {

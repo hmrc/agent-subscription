@@ -32,15 +32,15 @@ class CompaniesHouseApiProxyConnectorISpec extends BaseISpec with CompaniesHouse
       val result = await(connector.getCompanyOfficers(crn))
       val date = LocalDate.parse("2019-12-27")
 
-      result shouldBe Some(List(CompaniesHouseOfficer("FERGUSON, Jim", Some(date)), CompaniesHouseOfficer("LUCAS, George", None)))
+      result shouldBe List(CompaniesHouseOfficer("FERGUSON, Jim", Some(date)), CompaniesHouseOfficer("LUCAS, George", None))
     }
 
-    "return None when Unauthorized" in {
+    "return Seq.empty when Unauthorized" in {
 
       givenCompaniesHouseOfficersListWithStatus(crn.value, 401)
       val result = await(connector.getCompanyOfficers(crn))
 
-      result shouldBe None
+      result shouldBe Seq.empty
     }
 
   }

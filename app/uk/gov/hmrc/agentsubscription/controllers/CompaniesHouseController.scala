@@ -31,10 +31,10 @@ class CompaniesHouseController @Inject() (companiesHouseService: CompaniesHouseS
 
   import authActions._
 
-  def getCompanyOfficers(crn: Crn, nameToMatch: String): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
-    companiesHouseService.officerListContainsNameToMatch(crn, nameToMatch).map {
+  def matchCompanyOfficers(crn: Crn, nameToMatch: String): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
+    companiesHouseService.knownFactCheck(crn, nameToMatch).map {
       case Match => Ok
-      case NoMatch => NotFound
+      case NoMatch | RecordNotFound => NotFound
       case _ => InternalServerError
     }
   }

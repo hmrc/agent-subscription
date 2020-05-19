@@ -28,24 +28,22 @@ import scala.concurrent.{ ExecutionContext, Future }
 @Singleton
 class CompaniesHouseService @Inject() (companiesHouseConnector: CompaniesHouseApiProxyConnector)(implicit ec: ExecutionContext) {
 
-  def officerListContainsNameToMatch(crn: Crn, nameToMatch: String)(implicit hc: HeaderCarrier): Future[MatchDetailsResponse] = {
+  def knownFactCheck(crn: Crn, nameToMatch: String)(implicit hc: HeaderCarrier): Future[MatchDetailsResponse] = {
     companiesHouseConnector.getCompanyOfficers(crn).map {
-      case Some(result) =>
+      case Nil => RecordNotFound
+      case result =>
 
         val matchResult: Boolean = result
           .filterNot(_.resignedOn.isDefined)
           .map(_.name.toLowerCase)
           .mkString
-          .contains(nameToMatch)
+          .contains(nameToMatch.toLowerCase)
 
         if (matchResult) Match
         else {
-          Logger.warn(s"Companies House did not have a record of $nameToMatch appearing on list of officers for crn $crn")
+          Logger.warn(s"Companies House known fact check failed for $nameToMatch and crn $crn")
           NoMatch
         }
-      case None => {
-        UnknownError
-      }
     }
   }
 
