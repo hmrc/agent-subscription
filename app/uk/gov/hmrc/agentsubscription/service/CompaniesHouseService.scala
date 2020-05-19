@@ -16,14 +16,14 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import play.api.Logger
 import uk.gov.hmrc.agentsubscription.connectors.CompaniesHouseApiProxyConnector
-import uk.gov.hmrc.agentsubscription.model.{ Crn, MatchDetailsResponse }
-import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.{ UnknownError, _ }
-import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier }
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
+import uk.gov.hmrc.agentsubscription.model.{Crn, MatchDetailsResponse}
+import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class CompaniesHouseService @Inject() (companiesHouseConnector: CompaniesHouseApiProxyConnector)(implicit ec: ExecutionContext) {

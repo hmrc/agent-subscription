@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import javax.inject.{ Inject, Singleton }
-import play.api.mvc.{ Action, AnyContent, ControllerComponents }
+import javax.inject.{Inject, Singleton}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.model.Crn
-import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.{ InvalidIdentifier, Match, NoMatch, RecordNotFound, UnknownError }
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.{Match, NoMatch, RecordNotFound}
 import uk.gov.hmrc.agentsubscription.service.CompaniesHouseService
 import uk.gov.hmrc.play.bootstrap.controller.BackendController
 
