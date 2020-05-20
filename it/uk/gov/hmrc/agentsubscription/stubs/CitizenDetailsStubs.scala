@@ -4,7 +4,7 @@ import com.github.tomakehurst.wiremock.client.WireMock.{ aResponse, get, stubFor
 
 trait CitizenDetailsStubs {
 
-  def givencitizenDetailsFoundForNino(nino: String, dob: String) =
+  def givencitizenDetailsFoundForNino(nino: String, dob: String, lastName: Option[String] = None) =
     stubFor(
       get(urlEqualTo(s"/citizen-details/$nino/designatory-details"))
         .willReturn(
@@ -15,7 +15,7 @@ trait CitizenDetailsStubs {
                          |       "person" : {
                          |         "firstName" : "HIPPY",
                          |         "middleName" : "T",
-                         |         "lastName" : "NEWYEAR",
+                         |         ${lastName.map(name => s""" "lastName" : "$name", """).getOrElse("")}
                          |         "title" : "Mr",
                          |         "honours": "BSC",
                          |         "sex" : "M",
