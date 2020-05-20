@@ -21,6 +21,7 @@ import java.time.LocalDate
 import org.mockito.ArgumentMatchers.{any, anyString, contains, eq => eqs}
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
+import play.api.i18n.Lang
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
@@ -74,6 +75,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = "BB1 1BB", countryCode = "GB"),
           Some("01234 567890"),
           "testagency@example.com"),
+        Some(Lang("en")),
         Some(amlsDetails))
 
       await(service.createSubscription(subscriptionRequest, authIds))
@@ -123,6 +125,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = agencyPostcode, countryCode = "GB"),
           Some("01234 567890"),
           "testagency@example.com"),
+        Some(Lang("en")),
         Some(amlsDetails))
 
       await(service.createSubscription(subscriptionRequest, authIds))
@@ -149,6 +152,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
             Address("1 Test Street", Some("address line 2"), Some("address line 3"), Some("address line 4"), postcode = agencyPostcode, countryCode = "GB"),
             Some("01234 567890"),
             "testagency@example.com"),
+          Some(Lang("en")),
           Some(amlsDetails))
 
         val thrown = intercept[IllegalStateException](

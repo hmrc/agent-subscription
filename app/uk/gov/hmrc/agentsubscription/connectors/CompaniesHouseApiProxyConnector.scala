@@ -19,17 +19,17 @@ package uk.gov.hmrc.agentsubscription.connectors
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{Inject, Singleton}
+import javax.inject.{ Inject, Singleton }
 import play.api.Logger
 import play.api.libs.json.JsValue
 import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn}
-import uk.gov.hmrc.http.{HeaderCarrier, Upstream4xxResponse}
+import uk.gov.hmrc.agentsubscription.model.{ CompaniesHouseOfficer, Crn }
+import uk.gov.hmrc.http.{ HeaderCarrier, Upstream4xxResponse }
 import uk.gov.hmrc.play.bootstrap.http.HttpClient
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ ExecutionContext, Future }
 
 @ImplementedBy(classOf[CompaniesHouseApiProxyConnectorImpl])
 trait CompaniesHouseApiProxyConnector {
