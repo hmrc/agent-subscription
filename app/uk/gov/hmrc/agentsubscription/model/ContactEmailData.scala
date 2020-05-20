@@ -17,18 +17,10 @@
 package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.{ Format, Json }
-import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails.Person
 
-//Add more fields as required: https://github.com/hmrc/citizen-details
-case class DesignatoryDetails(person: Option[Person] = None)
+case class ContactEmailData(useBusinessEmail: Boolean, contactEmail: Option[String])
 
-object DesignatoryDetails {
-
-  case class Person(lastName: Option[String] = None, dateOfBirth: Option[DateOfBirth] = None)
-
-  object Person {
-    implicit val format: Format[Person] = Json.format[Person]
-  }
-
-  implicit val format: Format[DesignatoryDetails] = Json.format[DesignatoryDetails]
+object ContactEmailData {
+  implicit val format: Format[ContactEmailData] = Json.format[ContactEmailData]
 }
+

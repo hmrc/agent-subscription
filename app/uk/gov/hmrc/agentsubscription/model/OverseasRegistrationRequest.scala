@@ -32,16 +32,19 @@ object Organisation {
   implicit val organisationFormat: OFormat[Organisation] = Json.format
 }
 
+import OverseasAddress._
+
 case class OverseasRegistrationRequest(
   regime: String,
   acknowledgementReference: String,
   isAnAgent: Boolean,
   isAGroup: Boolean,
   organisation: Organisation,
-  address: OverseasBusinessAddress,
+  address: OverseasAddress,
   contactDetails: ContactDetails)
 
 object OverseasRegistrationRequest {
+
   implicit val overseasRegistrationRequestFormat: OFormat[OverseasRegistrationRequest] = Json.format
 
   def apply(fromApplication: CurrentApplication): OverseasRegistrationRequest = {
@@ -51,10 +54,11 @@ object OverseasRegistrationRequest {
       isAnAgent = false,
       isAGroup = false,
       Organisation(organisationName = fromApplication.tradingDetails.tradingName),
-      address = fromApplication.tradingDetails.tradingAddress,
+      address = maybeUkAddress(fromApplication.tradingDetails.tradingAddress),
       contactDetails = ContactDetails(
         phoneNumber = fromApplication.businessContactDetails.businessTelephone,
         emailAddress = fromApplication.businessContactDetails.businessEmail))
   }
+
 }
 

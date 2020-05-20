@@ -23,5 +23,7 @@ abstract class BaseISpec extends UnitSpec with GuiceOneServerPerSuite with WireM
         "microservice.services.citizen-details.port" -> wireMockPort,
         "microservice.services.email.port" -> wireMockPort,
         "microservice.services.agent-mapping.port" -> wireMockPort,
-        "microservice.services.agent-mapping.host" -> wireMockHost)
+        "microservice.services.agent-mapping.host" -> wireMockHost,
+        "microservice.services.companies-house-api-proxy.port" -> wireMockPort,
+        "microservice.services.companies-house-api-proxy.host" -> wireMockHost)
 }

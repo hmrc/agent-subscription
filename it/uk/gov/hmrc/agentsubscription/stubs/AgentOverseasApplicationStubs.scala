@@ -21,7 +21,8 @@ trait AgentOverseasApplicationStubs {
     businessTradingName: String = "tradingName",
     agencyName: String = "Agency name",
     supervisoryBody: String = "supervisoryName",
-    hasAmls: Boolean = true) = {
+    hasAmls: Boolean = true,
+    ukAddress: Boolean = false) = {
     stubFor(get(urlEqualTo(getApplicationUrl))
       .willReturn(aResponse()
         .withStatus(200)
@@ -59,8 +60,78 @@ trait AgentOverseasApplicationStubs {
              |      "agencyAddress": {
              |        "addressLine1": "Mandatory Address Line 1",
              |        "addressLine2": "Mandatory Address Line 2",
-             |        "countryCode": "IE"
-             |      }
+             |        ${
+            if (ukAddress) """"addressLine4": "SW4 7QH",
+             |      "countryCode": "GB"}
+             |  """
+            else """"countryCode": "IE"}"""
+          }
+             |    },
+             |    "status": "$status",
+             |    "authProviderIds": [
+             |      "agentAuthProviderId"
+             |    ],
+             |    "maintainerDetails": {
+             |      "reviewedDate": "2019-02-20T10:35:21.65",
+             |      "reviewerPid": "PID",
+             |      "rejectReasons": [
+             |        "rejected reason"
+             |      ]
+             |    }
+             |   ${safeId.map(id => s""", "safeId" : "$id" """).getOrElse("")}
+             |  }
+             |]
+           """.stripMargin)))
+  }
+
+  def givenInvalidApplicationUKAddressWithoutPostalCode(
+    status: String,
+    safeId: Option[String] = None,
+    businessTradingName: String = "tradingName",
+    agencyName: String = "Agency name",
+    supervisoryBody: String = "supervisoryName",
+    hasAmls: Boolean = true,
+    postalCodeInLine4Value: String) = {
+    stubFor(get(urlEqualTo(getApplicationUrl))
+      .willReturn(aResponse()
+        .withStatus(200)
+        .withBody(
+          s"""
+             [
+             |  {
+             |    "applicationReference": "someValidAppReference",
+             |    ${
+            if (hasAmls) """"amls": {
+             |    "supervisoryBody": "supervisoryName",
+             |    "membershipNumber": "supervisoryId"},"""
+            else ""
+          }
+             |    "contactDetails": {
+             |      "firstName": "firstName",
+             |      "lastName": "lastName",
+             |      "jobTitle": "jobTitle",
+             |      "businessTelephone": "BUSINESS PHONE 123456789",
+             |      "businessEmail": "email@domain.com"
+             |    },
+             |    "tradingDetails": {
+             |      "tradingName": "$businessTradingName",
+             |      "tradingAddress": {
+             |        "addressLine1": "addressLine1",
+             |        "addressLine2": "addressLine2",
+             |        "addressLine4": "$postalCodeInLine4Value",
+             |        "countryCode": "GB"
+             |      },
+             |      "isUkRegisteredTaxOrNino": "no",
+             |      "isHmrcAgentRegistered": "no"
+             |    },
+             |    "agencyDetails": {
+             |      "agencyName": "$agencyName",
+             |      "agencyEmail": "agencyemail@domain.com",
+             |      "agencyAddress": {
+             |        "addressLine1": "Mandatory Address Line 1",
+             |        "addressLine2": "Mandatory Address Line 2",
+                      "addressLine4": "$postalCodeInLine4Value",
+             |        "countryCode": "GB",
              |    },
              |    "status": "$status",
              |    "authProviderIds": [
