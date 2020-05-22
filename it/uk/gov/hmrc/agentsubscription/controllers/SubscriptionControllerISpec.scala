@@ -578,6 +578,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
        |    "email": "agency@example.com",
        |    "telephone": "0123 456 7890"
        |   },
+       |    "langForEmail" : "en",
        |   "amlsDetails": {
        |      "supervisoryBody":"supervisory",
        |      "membershipNumber":"12345",

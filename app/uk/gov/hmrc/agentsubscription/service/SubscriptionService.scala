@@ -25,6 +25,7 @@ import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscription, AuditService, OverseasAgentSubscription }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors._
+import play.api.i18n.Lang
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Complete, Registered }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.{ RecoveryRepository, SubscriptionJourneyRepository }
@@ -86,9 +87,16 @@ class SubscriptionService @Inject() (
         address.countryCode))
   }
 
-  private def sendEmail(email: String, agencyName: String, arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] =
-    emailConnector.sendEmail(EmailInformation(Seq(email), "agent_services_account_created", Map("agencyName" -> agencyName, "arn" -> arn.value)))
-
+  private def sendEmail(
+    email: String,
+    agencyName: String,
+    arn: Arn,
+    langForEmail: Option[Lang])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+    val defaultTemplate = "agent_services_account_created" // english -- default and always for overseas agents
+    val welshTemplate = "agent_services_account_created_cy" // welsh (for uk agents)
+    val templateId: String = langForEmail.fold(defaultTemplate)(l => if (l.satisfies(Lang("cy"))) welshTemplate else defaultTemplate)
+    emailConnector.sendEmail(EmailInformation(Seq(email), templateId, Map("agencyName" -> agencyName, "arn" -> arn.value)))
+  }
   def createSubscription(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
     val utr = subscriptionRequest.utr
     desConnector.getRegistration(utr) flatMap {
@@ -109,7 +117,7 @@ class SubscriptionService @Inject() (
           }
           updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
           _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
-          _ <- sendEmail(subscriptionRequest.agency.email, subscriptionRequest.agency.name, arn)
+          _ <- sendEmail(subscriptionRequest.agency.email, subscriptionRequest.agency.name, arn, subscriptionRequest.langForEmail)
         } yield {
           auditService.auditEvent(AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
           Some(arn)
@@ -179,7 +187,7 @@ class SubscriptionService @Inject() (
         case None => Future(())
       }
       _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, authIds.userId, None, Some(arn))
-      _ <- sendEmail(agencyDetails.agencyEmail, agencyDetails.agencyName, arn)
+      _ <- sendEmail(agencyDetails.agencyEmail, agencyDetails.agencyName, arn, None)
     } yield Some(arn)
 
   private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, updatedAmlsDetails: Option[AmlsDetails]) =
@@ -252,5 +260,6 @@ class SubscriptionService @Inject() (
       address = agentRecord.agencyAddress,
       telephone = agentRecord.phoneNumber,
       email = agentRecord.agencyEmail),
+    None,
     None)
 }
