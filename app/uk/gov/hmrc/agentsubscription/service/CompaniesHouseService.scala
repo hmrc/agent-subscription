@@ -17,7 +17,11 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{ Inject, Singleton }
-import play.api.Logger
+import play.api.{ Logger, LoggerLike }
+import play.api.libs.json.{ JsObject, Json, OWrites }
+import play.api.mvc.{ AnyContent, Request }
+import uk.gov.hmrc.agentsubscription.audit.{ AuditService, CompaniesHouseOfficerCheck }
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.connectors.CompaniesHouseApiProxyConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.model.{ Crn, MatchDetailsResponse }
@@ -25,12 +29,35 @@ import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-@Singleton
-class CompaniesHouseService @Inject() (companiesHouseConnector: CompaniesHouseApiProxyConnector)(implicit ec: ExecutionContext) {
+private object CheckCompaniesHouseOfficersAuditDetail {
+  implicit val writes: OWrites[CheckCompaniesHouseOfficersAuditDetail] = Json.writes[CheckCompaniesHouseOfficersAuditDetail]
+}
 
-  def knownFactCheck(crn: Crn, nameToMatch: String)(implicit hc: HeaderCarrier): Future[MatchDetailsResponse] = {
+private case class CheckCompaniesHouseOfficersAuditDetail(
+  authProviderId: Option[String],
+  authProviderType: Option[String],
+  crn: Crn,
+  nameToMatch: String,
+  matchDetailsResponse: MatchDetailsResponse)
+
+@Singleton
+class CompaniesHouseService @Inject() (
+  companiesHouseConnector: CompaniesHouseApiProxyConnector,
+  auditService: AuditService) {
+
+  protected def getLogger: LoggerLike = Logger
+
+  def knownFactCheck(crn: Crn, nameToMatch: String)(implicit
+    hc: HeaderCarrier,
+    provider: Provider,
+    ec: ExecutionContext,
+    request: Request[AnyContent]): Future[MatchDetailsResponse] = {
     companiesHouseConnector.getCompanyOfficers(crn).map {
-      case Nil => RecordNotFound
+      case Nil => {
+        getLogger.warn(s"Companies House had no record of ${crn.value}")
+        auditCompaniesHouseCheckResult(crn, nameToMatch, RecordNotFound)
+        RecordNotFound
+      }
       case result =>
 
         val matchResult: Boolean = result
@@ -39,12 +66,36 @@ class CompaniesHouseService @Inject() (companiesHouseConnector: CompaniesHouseAp
           .mkString
           .contains(nameToMatch.toLowerCase)
 
-        if (matchResult) Match
-        else {
-          Logger.warn(s"Companies House known fact check failed for $nameToMatch and crn $crn")
+        if (matchResult) {
+          auditCompaniesHouseCheckResult(crn, nameToMatch, Match)
+          Match
+        } else {
+          getLogger.warn(s"Companies House known fact check failed for $nameToMatch and crn ${crn.value}")
+          auditCompaniesHouseCheckResult(crn, nameToMatch, NoMatch)
           NoMatch
         }
     }
   }
+
+  private def auditCompaniesHouseCheckResult(
+    crn: Crn,
+    nameToMatch: String,
+    matchDetailsResponse: MatchDetailsResponse)(implicit
+    hc: HeaderCarrier,
+    provider: Provider,
+    ec: ExecutionContext,
+    request: Request[AnyContent]): Unit = {
+    auditService.auditEvent(
+      CompaniesHouseOfficerCheck,
+      "Check Companies House officers",
+      toJsObject(CheckCompaniesHouseOfficersAuditDetail(
+        Some(provider.providerId),
+        Some(provider.providerType),
+        crn,
+        nameToMatch,
+        matchDetailsResponse)))
+  }
+
+  private def toJsObject(detail: CheckCompaniesHouseOfficersAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
 }
