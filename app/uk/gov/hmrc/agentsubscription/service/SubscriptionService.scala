@@ -138,6 +138,7 @@ class SubscriptionService @Inject() (
           for {
             updatedAmlsDetails <- agentAssuranceConnector.updateAmls(updateSubscriptionRequest.utr, arn)
             _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
+            _ <- sendEmail(subscriptionRequest.agency.email, subscriptionRequest.agency.name, arn, subscriptionRequest.langForEmail)
           } yield {
             auditService.auditEvent(AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
             Some(arn)
@@ -256,6 +257,6 @@ class SubscriptionService @Inject() (
       address = agentRecord.agencyAddress,
       telephone = agentRecord.phoneNumber,
       email = agentRecord.agencyEmail),
-    None,
+    langForEmail = request.langForEmail,
     None)
 }
