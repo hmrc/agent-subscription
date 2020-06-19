@@ -85,11 +85,12 @@ object SubscriptionResponse {
   implicit val format: OFormat[SubscriptionResponse] = Json.format
 }
 
-case class UpdateSubscriptionRequest(utr: Utr, knownFacts: KnownFacts)
+case class UpdateSubscriptionRequest(utr: Utr, knownFacts: KnownFacts, langForEmail: Option[Lang])
 
 object UpdateSubscriptionRequest {
   implicit val writes: Writes[UpdateSubscriptionRequest] = Json.writes[UpdateSubscriptionRequest]
   implicit val reads: Reads[UpdateSubscriptionRequest] = (
     (__ \ "utr").read[Utr](verifying[Utr](utr => Utr.isValid(utr.value))) and
-    (__ \ "knownFacts").read[KnownFacts])(UpdateSubscriptionRequest.apply _)
+    (__ \ "knownFacts").read[KnownFacts] and
+    (__ \ "langForEmail").readNullable[Lang])(UpdateSubscriptionRequest.apply _)
 }
