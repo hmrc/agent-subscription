@@ -16,18 +16,22 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import java.time.LocalDate
-
 import play.api.libs.json._
 import play.api.libs.json.Reads
 import play.api.libs.functional.syntax._
 
-case class CompaniesHouseOfficer(name: String, resignedOn: Option[LocalDate])
+case class CompaniesHouseDateOfBirth(day: Option[Int], month: Int, year: Int)
+
+case class CompaniesHouseOfficer(name: String, dateOfBirth: Option[CompaniesHouseDateOfBirth])
+
+object CompaniesHouseDateOfBirth {
+  implicit val format: Format[CompaniesHouseDateOfBirth] = Json.format[CompaniesHouseDateOfBirth]
+}
 
 object CompaniesHouseOfficer {
 
   implicit val reads: Reads[CompaniesHouseOfficer] = (
     (__ \ "name").read[String] and
-    (__ \ "resigned_on").readNullable[LocalDate])(CompaniesHouseOfficer.apply _)
+    (__ \ "date_of_birth").readNullable[CompaniesHouseDateOfBirth])(CompaniesHouseOfficer.apply _)
 
 }

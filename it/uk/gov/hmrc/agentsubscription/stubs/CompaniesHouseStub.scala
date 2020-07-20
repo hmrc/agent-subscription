@@ -6,80 +6,114 @@ import uk.gov.hmrc.agentsubscription.model.Crn
 
 trait CompaniesHouseStub {
 
-  def givenCompaniesHouseOfficersListFoundForCrn(crn: Crn): StubMapping =
+  def givenSuccessfulCompaniesHouseResponseMultipleMatches(crn: Crn, surname: String): StubMapping =
     stubFor(
-      get(urlEqualTo(s"/companies-house-api-proxy/company/${crn.value}/officers"))
+      get(urlEqualTo(s"/companies-house-api-proxy/company/${crn.value}/officers?surname=$surname"))
         .willReturn(
           aResponse()
             .withStatus(200)
             .withBody(
               s"""{
-                 |  "total_results": 3,
-                 |  "items_per_page": 35,
-                 |  "etag": "0905d15615b770cd4fcc27fdc1c959474ae4c03e",
-                 |  "items": [
-                 |    {
-                 |      "appointed_on": "2015-04-10",
-                 |      "occupation": "Director",
-                 |      "country_of_residence": "United Kingdom",
-                 |      "date_of_birth": {
-                 |        "year": 1948,
-                 |        "month": 4
-                 |      },
-                 |      "officer_role": "director",
-                 |      "address": {
-                 |        "locality": "London",
-                 |        "country": "England",
-                 |        "address_line_1": "9 Charcot Road",
-                 |        "premises": "Flat 6, Osler Court",
-                 |        "postal_code": "NW9 5XW"
-                 |      },
-                 |      "name": "FERGUSON, Jim",
-                 |      "resigned_on": "2019-12-27",
-                 |      "links": {
-                 |        "officer": {
-                 |          "appointments": "/officers/mlvDFJq0QpFX1hTw93U7MJNh_ko/appointments"
-                 |        }
-                 |      },
-                 |      "nationality": "Italian"
-                 |    },
-                 |    {
-                 |      "appointed_on": "2015-04-10",
-                 |      "occupation": "Director",
-                 |      "country_of_residence": "United Kingdom",
-                 |      "date_of_birth": {
-                 |        "year": 1948,
-                 |        "month": 4
-                 |      },
-                 |      "officer_role": "director",
-                 |      "address": {
-                 |        "locality": "London",
-                 |        "country": "England",
-                 |        "address_line_1": "9 Charcot Road",
-                 |        "premises": "Flat 6, Osler Court",
-                 |        "postal_code": "NW9 5XW"
-                 |      },
-                 |      "name": "LUCAS, George",
-                 |      "links": {
-                 |        "officer": {
-                 |          "appointments": "/officers/mlvDFJq0QpFX1hTw93U7MJNh_ko/appointments"
-                 |        }
-                 |      },
-                 |      "nationality": "Italian"
-                 |    }
-                 |  ],
-                 |  "links": {
-                 |    "self": "/company/01234567/appointments"
-                 |  },
-                 |  "active_count": 2,
-                 |  "kind": "officer-list",
-                 |  "start_index": 0,
-                 |  "resigned_count": 1
-                 |}""".stripMargin)))
+               |  "active_count": 928,
+               |  "etag": "a7449ea0bc927f42bde410ae5e363175d86b25ba",
+               |  "inactive_count": 0,
+               |  "items": [
+               |    {
+               |      "address": {
+               |        "address_line_1": "1 Embankment Place",
+               |        "address_line_2": "London",
+               |        "postal_code": "WC2N 6RH"
+               |      },
+               |      "appointed_on": "2017-07-01",
+               |      "country_of_residence": "United Kingdom",
+               |      "date_of_birth": {
+               |        "day": 4,
+               |        "month": 8,
+               |        "year": 1967
+               |      },
+               |      "links": {
+               |        "officer": {
+               |          "appointments": "/officers/N8XUMrDCaazalBOxadslhYiSEFg/appointments"
+               |        }
+               |      },
+               |      "name": "$surname, David",
+               |      "officer_role": "llp-member"
+               |    },
+               |    {
+               |      "address": {
+               |        "address_line_1": "1 Embankment Place",
+               |        "locality": "London",
+               |        "postal_code": "WC2N 6RH",
+               |        "premises": "Pricewaterhousecoopers Llp"
+               |      },
+               |      "appointed_on": "2009-07-01",
+               |      "date_of_birth": {
+               |        "month": 4,
+               |        "year": 1974
+               |      },
+               |      "links": {
+               |        "officer": {
+               |          "appointments": "/officers/0CvZu-XZW8dJwwvmePvJCitAx60/appointments"
+               |        }
+               |      },
+               |      "name": "$surname, Hamish",
+               |      "officer_role": "llp-member"
+               |    },
+               |    {
+               |      "address": {
+               |        "address_line_1": "1 Embankment Place",
+               |        "address_line_2": "London",
+               |        "postal_code": "WC2N 6RH"
+               |      },
+               |      "appointed_on": "2016-07-01",
+               |      "country_of_residence": "United Kingdom",
+               |      "date_of_birth": {
+               |        "month": 2,
+               |        "year": 1973
+               |      },
+               |      "links": {
+               |        "officer": {
+               |          "appointments": "/officers/9u8qKtX7eIkrZ9cPr6Ucw1Xusw4/appointments"
+               |        }
+               |      },
+               |      "name": "$surname, Iain Blair",
+               |      "officer_role": "llp-member"
+               |    },
+               |    {
+               |      "address": {
+               |        "address_line_1": "1 Embankment Place",
+               |        "locality": "London",
+               |        "postal_code": "WC2N 6RH",
+               |        "premises": "Pricewaterhousecoopers Llp"
+               |      },
+               |      "appointed_on": "2012-07-01",
+               |      "country_of_residence": "United Kingdom",
+               |      "date_of_birth": {
+               |        "month": 10,
+               |        "year": 1972
+               |      },
+               |      "links": {
+               |        "officer": {
+               |          "appointments": "/officers/_Gr_WQ8xjsi8Iar3vKAkbpmtpn0/appointments"
+               |        }
+               |      },
+               |      "name": "$surname, Mark Richard",
+               |      "officer_role": "llp-member"
+               |    }
+               |  ],
+               |  "items_per_page": 100,
+               |  "kind": "officer-list",
+               |  "links": {
+               |    "self": "/company/${crn.value}/officers"
+               |  },
+               |  "resigned_count": 1070,
+               |  "start_index": 0,
+               |  "total_results": 1998
+               |}""".stripMargin)))
 
-  def givenCompaniesHouseOfficersListWithStatus(crn: String, status: Int): StubMapping =
+  def givenCompaniesHouseOfficersListWithStatus(crn: String, surname: String, status: Int): StubMapping =
     stubFor(
-      get(urlEqualTo(s"/companies-house-api-proxy/company/$crn/officers"))
+      get(urlEqualTo(s"/companies-house-api-proxy/company/$crn/officers?surname=$surname"))
         .willReturn(
           aResponse()
             .withStatus(status)))

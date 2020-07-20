@@ -472,6 +472,11 @@ class LoggerLikeStub extends LoggerLike {
     ()
   }
 
+  override def info(msg: => String)(implicit mc: MarkerContext): Unit = {
+    logMessages += msg
+    ()
+  }
+
   def clear(): Unit = {
     logMessages.clear()
     ()

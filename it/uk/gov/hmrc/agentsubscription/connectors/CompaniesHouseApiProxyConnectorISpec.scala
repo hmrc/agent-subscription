@@ -5,7 +5,7 @@ import java.time.LocalDate
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.{ CompaniesHouseOfficer, Crn }
+import uk.gov.hmrc.agentsubscription.model.{ CompaniesHouseDateOfBirth, CompaniesHouseOfficer, Crn }
 import uk.gov.hmrc.agentsubscription.stubs.CompaniesHouseStub
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.http.HeaderCarrier
@@ -26,19 +26,22 @@ class CompaniesHouseApiProxyConnectorISpec extends BaseISpec with CompaniesHouse
   val crn = Crn("01234567")
 
   "GET companyOfficers" should {
-    "return a list of officers for a valid CRN" in {
+    "return a list of officers who's surname matches the nameToMatch for a given CRN" in {
 
-      givenCompaniesHouseOfficersListFoundForCrn(crn)
-      val result = await(connector.getCompanyOfficers(crn))
-      val date = LocalDate.parse("2019-12-27")
+      givenSuccessfulCompaniesHouseResponseMultipleMatches(crn, "FERGUSON")
+      val result = await(connector.getCompanyOfficers(crn, "FERGUSON"))
 
-      result shouldBe List(CompaniesHouseOfficer("FERGUSON, Jim", Some(date)), CompaniesHouseOfficer("LUCAS, George", None))
+      result shouldBe List(
+        CompaniesHouseOfficer("FERGUSON, David", Some(CompaniesHouseDateOfBirth(Some(4), 8, 1967))),
+        CompaniesHouseOfficer("FERGUSON, Hamish", Some(CompaniesHouseDateOfBirth(None, 4, 1974))),
+        CompaniesHouseOfficer("FERGUSON, Iain Blair", Some(CompaniesHouseDateOfBirth(None, 2, 1973))),
+        CompaniesHouseOfficer("FERGUSON, Mark Richard", Some(CompaniesHouseDateOfBirth(None, 10, 1972))))
     }
 
     "return Seq.empty when Unauthorized" in {
 
-      givenCompaniesHouseOfficersListWithStatus(crn.value, 401)
-      val result = await(connector.getCompanyOfficers(crn))
+      givenCompaniesHouseOfficersListWithStatus(crn.value, "FERGUSON", 401)
+      val result = await(connector.getCompanyOfficers(crn, "FERGUSON"))
 
       result shouldBe Seq.empty
     }

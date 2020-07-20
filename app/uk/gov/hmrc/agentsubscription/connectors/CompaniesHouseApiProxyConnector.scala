@@ -35,7 +35,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 trait CompaniesHouseApiProxyConnector {
 
   def appConfig: AppConfig
-  def getCompanyOfficers(crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[CompaniesHouseOfficer]]
+  def getCompanyOfficers(crn: Crn, surname: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[CompaniesHouseOfficer]]
 
 }
 
@@ -49,10 +49,11 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (
 
   val baseUrl = appConfig.companiesHouseApiProxyBaseUrl
 
-  override def getCompanyOfficers(crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[CompaniesHouseOfficer]] = {
+  override def getCompanyOfficers(crn: Crn, surname: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[CompaniesHouseOfficer]] = {
     monitor(s"ConsumedAPI-getCompanyOfficers-GET") {
       val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
-      val url = s"$baseUrl/companies-house-api-proxy/company/$encodedCrn/officers"
+      val encodedSurname = UriEncoding.encodePathSegment(surname, "UTF-8")
+      val url = s"$baseUrl/companies-house-api-proxy/company/$encodedCrn/officers?surname=$encodedSurname"
       httpClient.GET[JsValue](url).map { response =>
         val json = response
         (json \ "items").as[Seq[CompaniesHouseOfficer]]

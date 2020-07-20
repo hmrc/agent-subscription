@@ -62,9 +62,9 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
 
   "knownFactCheck" should {
     "audit appropriate values when there is a successful match result" in {
-      when(companiesHouseConnector.getCompanyOfficers(any[Crn])(eqs(hc), any[ExecutionContext]))
+      when(companiesHouseConnector.getCompanyOfficers(any[Crn], any[String])(eqs(hc), any[ExecutionContext]))
         .thenReturn(
-          Future successful (List(CompaniesHouseOfficer("BROWN, David", None), CompaniesHouseOfficer("LEWIS, John", Some(LocalDate.now())))))
+          Future successful (List(CompaniesHouseOfficer("BROWN, David", None), CompaniesHouseOfficer("LEWIS, John", None))))
 
       val nameToMatch = "Brown"
 
@@ -86,10 +86,10 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
       }
     }
 
-    "audit appropriate values when there is an unsuccessful match result" in {
-      when(companiesHouseConnector.getCompanyOfficers(any[Crn])(eqs(hc), any[ExecutionContext]))
+    "audit appropriate values when there is no match" in {
+      when(companiesHouseConnector.getCompanyOfficers(any[Crn], any[String])(eqs(hc), any[ExecutionContext]))
         .thenReturn(
-          Future successful (List(CompaniesHouseOfficer("BROWN, David", None), CompaniesHouseOfficer("LEWIS, John", Some(LocalDate.now())))))
+          Future successful (List()))
 
       val nameToMatch = "Lewis"
 
@@ -112,34 +112,6 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
 
       stubbedLogger.logMessages.size shouldBe 1
       stubbedLogger.logMessages.head shouldBe s"Companies House known fact check failed for $nameToMatch and crn ${crn.value}"
-    }
-
-    "audit appropriate values when no record found" in {
-      when(companiesHouseConnector.getCompanyOfficers(any[Crn])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(
-          Future successful (List.empty[CompaniesHouseOfficer]))
-
-      val nameToMatch = "Lewis"
-
-      await(service.knownFactCheck(crn, nameToMatch)(hc, provider, ec, request))
-
-      val expectedExtraDetail = Json.parse(
-        s"""
-           |{
-           |  "authProviderId": "${provider.providerId}",
-           |  "authProviderType": "${provider.providerType}",
-           |  "crn": "${crn.value}",
-           |  "nameToMatch": "$nameToMatch",
-           |  "matchDetailsResponse": "record_not_found"
-           |}
-           |""".stripMargin).asInstanceOf[JsObject]
-      eventually {
-        verify(auditService)
-          .auditEvent(CompaniesHouseOfficerCheck, "Check Companies House officers", expectedExtraDetail)(hc, request)
-      }
-
-      stubbedLogger.logMessages.size shouldBe 1
-      stubbedLogger.logMessages.head shouldBe s"Companies House had no record of ${crn.value}"
     }
   }
 }
