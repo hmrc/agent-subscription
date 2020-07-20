@@ -55,11 +55,11 @@ class CompaniesHouseService @Inject() (
     companiesHouseConnector.getCompanyOfficers(crn, nameToMatch).map {
       case Nil => {
         getLogger.warn(s"Companies House known fact check failed for $nameToMatch and crn ${crn.value}")
-        auditCompaniesHouseCheckResult(crn, nameToMatch, RecordNotFound)
-        RecordNotFound
+        auditCompaniesHouseCheckResult(crn, nameToMatch, NoMatch)
+        NoMatch
       }
       case _ =>
-        //TODO improve this by i) match the full name (using a fuzzy match open source algo) and ii) match date of birth (against CiD record)
+        //TODO improve this by i) match the full name (using a fuzzy match) and ii) match date of birth (against CiD record)
         getLogger.info(s"successful match result for company number ${crn.value}")
         auditCompaniesHouseCheckResult(crn, nameToMatch, Match)
         Match

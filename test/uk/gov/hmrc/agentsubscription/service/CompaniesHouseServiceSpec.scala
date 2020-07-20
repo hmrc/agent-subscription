@@ -102,7 +102,7 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
            |  "authProviderType": "${provider.providerType}",
            |  "crn": "${crn.value}",
            |  "nameToMatch": "$nameToMatch",
-           |  "matchDetailsResponse": "record_not_found"
+           |  "matchDetailsResponse": "no_match"
            |}
            |""".stripMargin).asInstanceOf[JsObject]
       eventually {
