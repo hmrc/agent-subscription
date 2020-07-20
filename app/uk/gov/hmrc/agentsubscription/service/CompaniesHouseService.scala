@@ -52,28 +52,17 @@ class CompaniesHouseService @Inject() (
     provider: Provider,
     ec: ExecutionContext,
     request: Request[AnyContent]): Future[MatchDetailsResponse] = {
-    companiesHouseConnector.getCompanyOfficers(crn).map {
+    companiesHouseConnector.getCompanyOfficers(crn, nameToMatch).map {
       case Nil => {
-        getLogger.warn(s"Companies House had no record of ${crn.value}")
+        getLogger.warn(s"Companies House known fact check failed for $nameToMatch and crn ${crn.value}")
         auditCompaniesHouseCheckResult(crn, nameToMatch, RecordNotFound)
         RecordNotFound
       }
-      case result =>
-
-        val matchResult: Boolean = result
-          .filterNot(_.resignedOn.isDefined)
-          .map(_.name.toLowerCase)
-          .mkString
-          .contains(nameToMatch.toLowerCase)
-
-        if (matchResult) {
-          auditCompaniesHouseCheckResult(crn, nameToMatch, Match)
-          Match
-        } else {
-          getLogger.warn(s"Companies House known fact check failed for $nameToMatch and crn ${crn.value}")
-          auditCompaniesHouseCheckResult(crn, nameToMatch, NoMatch)
-          NoMatch
-        }
+      case _ =>
+        //TODO improve this by i) match the full name (using a fuzzy match open source algo) and ii) match date of birth (against CiD record)
+        getLogger.info(s"successful match result for company number ${crn.value}")
+        auditCompaniesHouseCheckResult(crn, nameToMatch, Match)
+        Match
     }
   }
 
