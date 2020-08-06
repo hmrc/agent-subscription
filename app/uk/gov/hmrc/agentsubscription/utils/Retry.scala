@@ -37,7 +37,7 @@ object Retry {
     def unapply(e: Exception): Option[Exception] = e match {
       case ex: GatewayTimeoutException => Some(ex)
       case ex: BadGatewayException => Some(ex)
-      case ex @ Upstream5xxResponse(_, _, _) => Some(ex)
+      case ex @ Upstream5xxResponse(_, _, _, _) => Some(ex)
       case _ => None
     }
   }
