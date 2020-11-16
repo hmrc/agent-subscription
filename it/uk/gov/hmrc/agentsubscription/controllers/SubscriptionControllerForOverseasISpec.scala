@@ -454,11 +454,11 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
      """.stripMargin
 
   private def verifyApiCalls(
-    attemptingRegistration: Int = 0,
-    etmpRegistration: Int = 0,
-    registered: Int = 0,
-    subscription: Int = 0,
-    allocatedPrincipalEnrolment: Int = 0,
+    attemptingRegistration: Int,
+    etmpRegistration: Int,
+    registered: Int,
+    subscription: Int,
+    allocatedPrincipalEnrolment: Int,
     deleteKnownFact: Int = 0,
     createKnownFact: Int = 0,
     enrol: Int = 0,

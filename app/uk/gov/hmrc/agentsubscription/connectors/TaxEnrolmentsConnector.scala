@@ -25,12 +25,16 @@ import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
-
+import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.HttpReads.Implicits._
 import scala.concurrent.{ ExecutionContext, Future }
+import uk.gov.hmrc.http.HttpErrorFunctions._
+import play.api.http.Status._
 
 case class KnownFact(key: String, value: String)
+
 case class Legacy(previousVerifiers: Seq[KnownFact])
+
 case class KnownFactsRequest(verifiers: Seq[KnownFact], legacy: Option[Legacy])
 
 object KnownFact {
@@ -44,6 +48,7 @@ object Legacy {
 object KnownFactsRequest {
   implicit val formatKFR: OFormat[KnownFactsRequest] = format
 }
+
 case class EnrolmentRequest(userId: String, `type`: String, friendlyName: String, verifiers: Seq[KnownFact])
 
 object EnrolmentRequest {
@@ -65,17 +70,27 @@ class TaxEnrolmentsConnector @Inject() (
     val request = KnownFactsRequest(List(KnownFact(knownFactKey, knownFactValue)), None)
 
     monitor("ConsumedAPI-EMAC-AddKnownFacts-HMRC-AS-AGENT-PUT") {
-      http.PUT[JsValue, HttpResponse](s"""$taxEnrolmentsBaseUrl/tax-enrolments/enrolments/${enrolmentKey(arn)}""", Json.toJson(request)) map {
-        response => response.status
-      }
+      val url = s"""$taxEnrolmentsBaseUrl/tax-enrolments/enrolments/${enrolmentKey(arn)}"""
+      http
+        .PUT[JsValue, HttpResponse](url, Json.toJson(request))
+        .map(response =>
+          response.status match {
+            case s if is2xx(s) => s
+            case s => throw UpstreamErrorResponse(response.body, s)
+          })
     }
   }
 
   // EACD's ES7 API
   def deleteKnownFacts(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] = {
     monitor("ConsumedAPI-EMAC-DeleteKnownFacts-HMRC-AS-AGENT-DELETE") {
-      http.DELETE[HttpResponse](s"""$espBaseUrl/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(arn.value)}""")
-        .map(_.status)
+      http
+        .DELETE[HttpResponse](s"""$espBaseUrl/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(arn.value)}""")
+        .map(response =>
+          response.status match {
+            case s if is2xx(s) => s
+            case s => throw UpstreamErrorResponse(response.body, s)
+          })
     }
   }
 
@@ -84,9 +99,13 @@ class TaxEnrolmentsConnector @Inject() (
     val serviceUrl = s"""$taxEnrolmentsBaseUrl/tax-enrolments/groups/$groupId/enrolments/${enrolmentKey(arn.value)}"""
 
     monitor("ConsumedAPI-EMAC-Enrol-HMRC-AS-AGENT-POST") {
-      http.POST[JsValue, HttpResponse](serviceUrl, Json.toJson(enrolmentRequest)) map {
-        response => response.status
-      }
+      http
+        .POST[JsValue, HttpResponse](serviceUrl, Json.toJson(enrolmentRequest))
+        .map(response =>
+          response.status match {
+            case s if is2xx(s) => s
+            case s => throw UpstreamErrorResponse(response.body, s)
+          })
     }
   }
 
@@ -95,11 +114,15 @@ class TaxEnrolmentsConnector @Inject() (
     val url = s"$espBaseUrl/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(arn.value)}/groups?type=principal"
 
     monitor("ConsumedAPI-EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET") {
-      http.GET[HttpResponse](url)
-    }.map(response => response.status match {
-      case 200 => (response.json \ "principalGroupIds").as[Seq[String]].nonEmpty
-      case 204 => false
-    })
+      http
+        .GET[HttpResponse](url)
+        .map(response => response.status match {
+          case OK => (response.json \ "principalGroupIds").as[Seq[String]].nonEmpty
+          case NO_CONTENT => false
+          case BAD_REQUEST => throw new BadRequestException(response.body)
+          case s => throw UpstreamErrorResponse(response.body, s)
+        })
+    }
   }
 
   private def enrolmentKey(arn: String): String = s"HMRC-AS-AGENT~AgentReferenceNumber~$arn"

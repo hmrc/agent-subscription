@@ -16,7 +16,6 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import com.kenshoo.play.metrics.Metrics
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import play.api.mvc.ControllerComponents
@@ -27,8 +26,8 @@ import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.agentsubscription.support.{ AkkaMaterializerSpec, AuthData, ResettingMockitoSugar }
-import uk.gov.hmrc.auth.core.{ AffinityGroup, AuthConnector, PlayAuthConnector, authorise }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, ~ }
+import uk.gov.hmrc.auth.core.{ AffinityGroup, PlayAuthConnector, authorise }
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.test.UnitSpec
 

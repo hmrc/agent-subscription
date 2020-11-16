@@ -23,8 +23,8 @@ import play.api.mvc.{ Action, AnyContent, ControllerComponents }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.model.{ SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest }
 import uk.gov.hmrc.agentsubscription.service.{ EnrolmentAlreadyAllocated, SubscriptionService }
-import uk.gov.hmrc.http.{ HeaderCarrier, Upstream5xxResponse }
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.http.UpstreamErrorResponse
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
@@ -41,7 +41,7 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
         case None => Forbidden(s"No business partner record found for ${subscriptionRequest.utr}")
       }.recover {
         case _: EnrolmentAlreadyAllocated => Conflict
-        case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
+        case _: IllegalStateException | _: UpstreamErrorResponse => InternalServerError
       }
     }
   }
@@ -53,7 +53,7 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
         case None => Forbidden("No business partner record found for ${subscriptionRequest.utr}")
       }.recover {
         case _: EnrolmentAlreadyAllocated => Conflict
-        case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
+        case _: IllegalStateException | _: UpstreamErrorResponse => InternalServerError
       }
     }
   }
@@ -64,7 +64,7 @@ class SubscriptionController @Inject() (subscriptionService: SubscriptionService
       case None => Forbidden
     }.recover {
       case _: EnrolmentAlreadyAllocated => Conflict
-      case _: IllegalStateException | _: Upstream5xxResponse => InternalServerError
+      case _: IllegalStateException | _: UpstreamErrorResponse => InternalServerError
     }
 
   }

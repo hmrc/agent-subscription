@@ -24,8 +24,9 @@ import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse }
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpErrorFunctions._
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -50,6 +51,12 @@ class CitizenDetailsConnectorImpl @Inject() (
   def getDesignatoryDetails(nino: Nino)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesignatoryDetails] =
     monitor(s"ConsumedAPI-getDesignatoryDetails-GET") {
       val url = s"$baseUrl/citizen-details/${nino.value}/designatory-details"
-      httpClient.GET[DesignatoryDetails](url.toString)
+      httpClient
+        .GET[HttpResponse](url.toString)
+        .map(response =>
+          response.status match {
+            case s if is2xx(s) => response.json.as[DesignatoryDetails]
+            case s => throw UpstreamErrorResponse(response.body, s)
+          })
     }
 }

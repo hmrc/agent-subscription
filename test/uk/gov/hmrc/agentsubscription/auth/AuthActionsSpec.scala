@@ -43,10 +43,10 @@ class AuthActionsSpec(implicit val ec: ExecutionContext) extends UnitSpec with M
   val mockAuthConnector = mock[AuthConnector]
   val mockAuthActions: AuthActions = new AuthActions(mockCC, mockAuthConnector)
 
-  val subscriptionAction: SubscriptionAuthAction = { implicit request => implicit authIds => Future successful Ok }
-  val registrationAction: RegistrationAuthAction = { implicit request => implicit provider => Future successful Ok }
-  val overseasAgentAction: OverseasAuthAction = { implicit request => implicit provider => Future successful Ok }
-  val agentAction: Request[AnyContent] => Future[Result] = { implicit request => Future successful Ok }
+  val subscriptionAction: SubscriptionAuthAction = { request => authIds => Future successful Ok }
+  val registrationAction: RegistrationAuthAction = { request => provider => Future successful Ok }
+  val overseasAgentAction: OverseasAuthAction = { request => provider => Future successful Ok }
+  val agentAction: Request[AnyContent] => Future[Result] = { request => Future successful Ok }
 
   private def agentAuthStub(returnValue: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]]): OngoingStubbing[Future[Option[AffinityGroup] ~ Option[Credentials] ~ Option[String]]] =
     when(

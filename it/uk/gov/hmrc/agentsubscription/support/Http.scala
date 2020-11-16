@@ -17,8 +17,7 @@
 package uk.gov.hmrc.agentsubscription.support
 
 import play.api.http.{ HeaderNames, MimeTypes }
-import play.api.libs.ws.{ DefaultBodyWritables, WSClient, WSRequest, WSResponse }
-import play.api.mvc.Results
+import play.api.libs.ws.{ WSClient, WSRequest, WSResponse }
 import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
 import uk.gov.hmrc.play.http.ws.WSHttpResponse
 
@@ -45,8 +44,8 @@ object Http {
     request.delete()
   }
 
-  private def perform(url: String)(fun: WSRequest => Future[WSResponse])(implicit hc: HeaderCarrier, ws: WSClient): WSHttpResponse =
-    await(fun(ws.url(url).withHttpHeaders(hc.headers: _*).withRequestTimeout(20000 milliseconds)).map(new WSHttpResponse(_)))
+  private def perform(url: String)(fun: WSRequest => Future[WSResponse])(implicit hc: HeaderCarrier, ws: WSClient): HttpResponse =
+    await(fun(ws.url(url).withHttpHeaders(hc.headers: _*).withRequestTimeout(20000 milliseconds)).map(WSHttpResponse(_)))
 
   private def await[A](future: Future[A]) = Await.result(future, Duration(10, SECONDS))
 

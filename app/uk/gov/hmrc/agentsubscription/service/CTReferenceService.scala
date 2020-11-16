@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{ Inject, Singleton }
-import play.api.Logger
+import play.api.Logging
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
 import uk.gov.hmrc.agentsubscription.model.{ Crn, MatchDetailsResponse }
@@ -27,25 +27,25 @@ import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, NotFoundException 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class CTReferenceService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext) {
+class CTReferenceService @Inject() (desConnector: DesConnector) extends Logging {
 
   def matchCorporationTaxUtrWithCrn(utr: Utr, crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[MatchDetailsResponse] = {
     desConnector.getCorporationTaxUtr(crn).map { ctUtr =>
       if (ctUtr == utr)
         Match
       else {
-        Logger.warn("The supplied utr does not match with the utr from DES records")
+        logger.warn("The supplied utr does not match with the utr from DES records")
         NoMatch
       }
     }.recover {
       case _: NotFoundException =>
-        Logger.warn(s"No ct utr found for the crn ${crn.value}")
+        logger.warn(s"No ct utr found for the crn ${crn.value}")
         RecordNotFound
       case _: BadRequestException =>
-        Logger.warn(s"The crn ${crn.value} supplied is invalid")
+        logger.warn(s"The crn ${crn.value} supplied is invalid")
         InvalidIdentifier
       case ex =>
-        Logger.warn(s"Some exception occured ${ex.getMessage}")
+        logger.warn(s"Some exception occured ${ex.getMessage}")
         UnknownError
     }
   }

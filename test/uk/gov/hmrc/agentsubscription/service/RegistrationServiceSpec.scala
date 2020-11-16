@@ -21,11 +21,10 @@ import java.net.URL
 import org.mockito.ArgumentMatchers.{ any, eq => eqs }
 import org.mockito.Mockito.{ verify, when }
 import org.scalatest.concurrent.Eventually
-import org.slf4j.helpers.BasicMarker
 import org.slf4j.{ Logger, Marker }
-import play.api.{ LoggerLike, MarkerContext }
 import play.api.libs.json.{ JsObject, Json }
 import play.api.test.FakeRequest
+import play.api.{ LoggerLike, MarkerContext }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
 import uk.gov.hmrc.agentsubscription.audit.{ AuditService, CheckAgencyStatus }
@@ -67,8 +66,6 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
       val arn = Arn("TARN0000001")
-      val businessAddress =
-        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("AA1 1AA"), "GB")
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful Some(DesRegistrationResponse(

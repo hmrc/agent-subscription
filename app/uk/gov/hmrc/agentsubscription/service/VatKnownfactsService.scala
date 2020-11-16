@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{ Inject, Singleton }
-import play.api.Logger
+import play.api.Logging
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
@@ -27,25 +27,25 @@ import uk.gov.hmrc.http.{ BadRequestException, HeaderCarrier, NotFoundException 
 import scala.concurrent.{ ExecutionContext, Future }
 
 @Singleton
-class VatKnownfactsService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext) {
+class VatKnownfactsService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext) extends Logging {
 
   def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String)(implicit hc: HeaderCarrier): Future[MatchDetailsResponse] = {
     desConnector.getVatKnownfacts(vrn).map { dateOfReg =>
       if (dateOfReg == vatRegistrationDate)
         Match
       else {
-        Logger.warn("The supplied VAT registration date does not match with the date of registration from DES records")
+        logger.warn("The supplied VAT registration date does not match with the date of registration from DES records")
         NoMatch
       }
     }.recover {
       case ex: NotFoundException =>
-        Logger.warn(s"No records found for the vrn ${vrn.value}", ex)
+        logger.warn(s"No records found for the vrn ${vrn.value}", ex)
         RecordNotFound
       case ex: BadRequestException =>
-        Logger.warn(s"The vrn ${vrn.value} supplied is invalid", ex)
+        logger.warn(s"The vrn ${vrn.value} supplied is invalid", ex)
         InvalidIdentifier
       case ex =>
-        Logger.warn(s"Some exception occured ${ex.getMessage}")
+        logger.warn(s"Some exception occured ${ex.getMessage}")
         UnknownError
     }
   }

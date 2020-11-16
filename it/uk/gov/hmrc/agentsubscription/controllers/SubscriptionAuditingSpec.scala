@@ -81,7 +81,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
   }
 
   private def doSubscriptionRequest(request: String) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
-  private def doUpdateSubscriptionRequest(request: String = updateSubscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).putAsJson(request)
+  private def doUpdateSubscriptionRequest(request: String) = new Resource(s"/agent-subscription/subscription", port).putAsJson(request)
 
   private def subscriptionRequest(utr: Utr): String =
     s"""

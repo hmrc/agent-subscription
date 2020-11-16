@@ -553,7 +553,6 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     jsObject.transform(transformer) match {
       case s: JsSuccess[JsObject] => s.get
       case e: JsError =>
-        println(e)
         throw new RuntimeException(s"Unable to transform JSON: $e")
     }
   }

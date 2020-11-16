@@ -1,7 +1,5 @@
 package uk.gov.hmrc.agentsubscription.stubs
 
-import java.util.regex.{ Matcher, Pattern }
-
 import com.github.tomakehurst.wiremock.client.WireMock._
 
 trait TaxEnrolmentsStubs {
