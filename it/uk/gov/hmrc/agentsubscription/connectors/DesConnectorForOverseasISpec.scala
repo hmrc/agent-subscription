@@ -11,7 +11,7 @@ import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.OverseasDesStubs
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -62,7 +62,7 @@ class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with 
       }
 
       exception.getMessage.contains(safeId.value) shouldBe true
-      exception.getCause.asInstanceOf[Upstream4xxResponse].upstreamResponseCode shouldBe 409
+      exception.getCause.asInstanceOf[UpstreamErrorResponse].statusCode shouldBe 409
     }
 
     "propagate an exception containing the safeId if the agency is not registered" in {

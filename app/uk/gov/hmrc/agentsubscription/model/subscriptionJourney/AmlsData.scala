@@ -32,8 +32,6 @@ package uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney
  * limitations under the License.
  */
 
-import java.time.LocalDate
-
 import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.AmlsDetails
 

@@ -67,7 +67,6 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
         mockRepo.findByAuthId(eqs[AuthProviderId](AuthProviderId("minimal")))(any[ExecutionContext]))
         .thenReturn(Future.successful(Some(minimalRecord)))
 
-      //println(s"controller is ${controller.findByAuthId(AuthProviderId(""))(ec)}")
       val result: Result = await(controller.findByAuthId(AuthProviderId("minimal")).apply(FakeRequest()))
       result.header.status shouldBe 200
     }

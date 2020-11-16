@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentsubscription.support
 
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
-import uk.gov.hmrc.auth.core.{ AffinityGroup, Enrolment, EnrolmentIdentifier, Enrolments }
+import uk.gov.hmrc.auth.core.{ AffinityGroup, Enrolment, EnrolmentIdentifier }
 
 import scala.concurrent.Future
 

@@ -9,7 +9,7 @@ import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, OverseasAmlsDetails, RegisteredDetails }
 import uk.gov.hmrc.agentsubscription.stubs.AgentAssuranceStub
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

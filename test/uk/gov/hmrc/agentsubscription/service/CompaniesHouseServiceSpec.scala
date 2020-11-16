@@ -17,11 +17,11 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import java.net.URL
-import java.time.LocalDate
 
 import org.mockito.ArgumentMatchers.{ any, eq => eqs }
 import org.mockito.Mockito.{ verify, when }
 import org.scalatest.concurrent.Eventually
+import play.api.Logging
 import play.api.libs.json.{ JsObject, Json }
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
@@ -36,7 +36,7 @@ import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ ExecutionContext, Future }
 
-class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
+class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually with Logging {
 
   private val companiesHouseConnector = resettingMock[CompaniesHouseApiProxyConnector]
   private val auditService = resettingMock[AuditService]
@@ -53,7 +53,6 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
   private val hc = HeaderCarrier()
   private val provider = Provider("provId", "provType")
   private val request = RequestWithAuthority(Authority(authorityUrl, authProviderId = Some(provider.providerId), authProviderType = Some(provider.providerType), "", ""), FakeRequest())
-  private val requestWithoutAuthProvider = RequestWithAuthority(Authority(authorityUrl, authProviderId = None, authProviderType = None, "", ""), FakeRequest())
 
   override def beforeEach(): Unit = {
     super.beforeEach()

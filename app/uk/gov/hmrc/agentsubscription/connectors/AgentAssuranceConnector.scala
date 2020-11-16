@@ -20,15 +20,18 @@ import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
+import play.api.Logging
 import play.api.libs.json.{ Format, JsObject, Json }
-import play.mvc.Http.Status.CREATED
+import play.mvc.Http.Status._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.AgentAssuranceConnector.{ CreateAmlsRequest, CreateOverseasAmlsRequest }
 import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, OverseasAmlsDetails }
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.HttpErrorFunctions._
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -49,7 +52,7 @@ class AgentAssuranceConnectorImpl @Inject() (
   val appConfig: AppConfig,
   http: HttpClient,
   metrics: Metrics)
-  extends AgentAssuranceConnector with HttpAPIMonitor {
+  extends AgentAssuranceConnector with HttpAPIMonitor with Logging {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
@@ -58,14 +61,19 @@ class AgentAssuranceConnectorImpl @Inject() (
   override def createAmls(utr: Utr, amlsDetails: AmlsDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
     val url: String = s"$baseUrl/agent-assurance/amls"
-
     monitor("ConsumedAPI-AgentAssurance-amls-POST") {
       http
-        .POST(url, CreateAmlsRequest(utr, amlsDetails))
-        .map(_.status == CREATED)
-        .recover {
-          //403 -> There is an existing AMLS record for the Utr with Arn set
-          case e: Upstream4xxResponse if e.upstreamResponseCode == 403 => false
+        .POST[CreateAmlsRequest, HttpResponse](url, CreateAmlsRequest(utr, amlsDetails))
+        .map { response =>
+          response.status match {
+            case CREATED => true
+            case FORBIDDEN => false //403 -> There is an existing AMLS record for the Utr with Arn set
+            case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST at: $url body: ${response.body}")
+            case s =>
+              val message = s"Unexpected response: $s from: $url body: ${response.body}"
+              logger.error(message)
+              throw UpstreamErrorResponse(message, s)
+          }
         }
     }
   }
@@ -76,10 +84,16 @@ class AgentAssuranceConnectorImpl @Inject() (
 
     monitor(s"ConsumedAPI-AgentAssurance-amls-PUT") {
       http.PUT[JsObject, HttpResponse](url, Json.obj("value" -> arn.value))
-        .map[Option[AmlsDetails]](r => Some(r.json.as[AmlsDetails]))
-    }.recover {
-      //404 -> Partially subscribed agents may not have any stored amls details, then updating fails with 404
-      case _: NotFoundException => None
+        .map(response =>
+          response.status match {
+            case s if is2xx(s) => response.json.asOpt[AmlsDetails]
+            case NOT_FOUND => None //404 -> Partially subscribed agents may not have any stored amls details, then updating fails with 404
+            case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST at: $url body: ${response.body}")
+            case s =>
+              val message = s"Unexpected response: $s from: $url body: ${response.body}"
+              logger.error(message)
+              throw UpstreamErrorResponse(message, s)
+          })
     }
   }
 
@@ -88,16 +102,24 @@ class AgentAssuranceConnectorImpl @Inject() (
     val url = s"$baseUrl/agent-assurance/overseas-agents/amls"
 
     monitor("ConsumedAPI-AgentAssurance-overseas-agents-amls-POST") {
-      http.POST(url, CreateOverseasAmlsRequest(arn, amlsDetails))
-        .map(_ => ())
-        .recover {
-          case e: Upstream4xxResponse if e.upstreamResponseCode == 409 => ()
-        }
+      http
+        .POST[CreateOverseasAmlsRequest, HttpResponse](url, CreateOverseasAmlsRequest(arn, amlsDetails))
+        .map(response =>
+          response.status match {
+            case s if is2xx(s) => ()
+            case CONFLICT => ()
+            case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST at: $url body: ${response.body}")
+            case s =>
+              val message = s"Unexpected response: $s from: $url body: ${response.body}"
+              logger.error(message)
+              throw UpstreamErrorResponse(message, s)
+          })
     }
   }
 }
 
 object AgentAssuranceConnector {
+
   case class CreateAmlsRequest(utr: Utr, amlsDetails: AmlsDetails)
 
   object CreateAmlsRequest {
@@ -109,4 +131,5 @@ object AgentAssuranceConnector {
   object CreateOverseasAmlsRequest {
     implicit val format: Format[CreateOverseasAmlsRequest] = Json.format[CreateOverseasAmlsRequest]
   }
+
 }

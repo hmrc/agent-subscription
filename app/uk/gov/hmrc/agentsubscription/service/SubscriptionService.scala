@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{ Inject, Singleton }
-import play.api.Logger
+import play.api.Logging
 import play.api.libs.json._
 import play.api.mvc.{ AnyContent, Request }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
@@ -70,7 +70,7 @@ class SubscriptionService @Inject() (
   agentAssuranceConnector: AgentAssuranceConnector,
   agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
   emailConnector: EmailConnector,
-  mappingConnector: MappingConnector) {
+  mappingConnector: MappingConnector) extends Logging {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
     val address = subscriptionRequest.agency.address
@@ -97,24 +97,27 @@ class SubscriptionService @Inject() (
     val templateId: String = langForEmail.fold(defaultTemplate)(l => if (l.satisfies(Lang("cy"))) welshTemplate else defaultTemplate)
     emailConnector.sendEmail(EmailInformation(Seq(email), templateId, Map("agencyName" -> agencyName, "arn" -> arn.value)))
   }
+
   def createSubscription(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+
+    def subscribeAndMap(maybeArn: Option[Arn], utr: Utr, isAnAsAgent: Boolean): Future[Arn] = {
+      maybeArn match {
+        case Some(arn) if isAnAsAgent => Future.successful(arn)
+        case _ => for {
+          arn <- desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
+          _ <- mappingConnector.createMappings(arn)
+          _ <- mappingConnector.createMappingDetails(arn)
+          _ <- subscriptionJourneyRepository.delete(utr)
+        } yield arn
+      }
+    }
+
     val utr = subscriptionRequest.utr
     desConnector.getRegistration(utr) flatMap {
       case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _), _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) =>
         for {
-          _ <- subscriptionRequest.amlsDetails match {
-            case Some(details) => agentAssuranceConnector.createAmls(utr, details)
-            case None => Future.successful(false)
-          }
-          arn <- maybeArn match {
-            case Some(arn) if isAnAsAgent => Future.successful(arn)
-            case _ => for {
-              arn <- desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
-              _ <- mappingConnector.createMappings(arn)
-              _ <- mappingConnector.createMappingDetails(arn)
-              _ <- subscriptionJourneyRepository.delete(utr)
-            } yield arn
-          }
+          _ <- subscriptionRequest.amlsDetails.map(agentAssuranceConnector.createAmls(utr, _)).getOrElse(Future.successful(false))
+          arn <- subscribeAndMap(maybeArn, utr, isAnAsAgent)
           updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
           _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
           _ <- sendEmail(subscriptionRequest.agency.email, subscriptionRequest.agency.name, arn, subscriptionRequest.langForEmail)
@@ -123,7 +126,7 @@ class SubscriptionService @Inject() (
           Some(arn)
         }
       case _ =>
-        Logger.warn(s"No business partner record was associated with $utr")
+        logger.warn(s"No business partner record was associated with $utr")
         Future successful None
     }
   }
@@ -243,7 +246,7 @@ class SubscriptionService @Inject() (
       }).recover {
         case e: EnrolmentAlreadyAllocated => throw e
         case e =>
-          Logger.error(s"Failed to add known facts and enrol for: ${arn.value} after $tries attempts", e)
+          logger.error(s"Failed to add known facts and enrol for: ${arn.value} after $tries attempts", e)
           throw new IllegalStateException(s"Failed to add known facts and enrol in EMAC for arn: ${arn.value}", e)
       }
   }

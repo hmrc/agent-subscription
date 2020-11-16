@@ -17,9 +17,9 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import javax.inject.{ Inject, Singleton }
+import play.api.{ LoggerLike, Logging }
 import play.api.libs.json.{ Json, _ }
 import play.api.mvc.{ AnyContent, Request }
-import play.api.{ Logger, LoggerLike }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.audit.{ AuditService, CheckAgencyStatus }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
@@ -45,8 +45,8 @@ private case class CheckAgencyStatusAuditDetail(
   agentReferenceNumber: Option[Arn])
 
 @Singleton
-class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector, auditService: AuditService) {
-  protected def getLogger: LoggerLike = Logger
+class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsConnector: TaxEnrolmentsConnector, auditService: AuditService) extends Logging {
+  protected def getLogger: LoggerLike = logger
 
   def getRegistration(utr: Utr, postcode: String)(implicit
     hc: HeaderCarrier,
@@ -119,7 +119,6 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
     agentReferenceNumber: Option[Arn])(implicit
     hc: HeaderCarrier,
     provider: Provider,
-    ec: ExecutionContext,
     request: Request[AnyContent]): Unit =
     auditService.auditEvent(
       CheckAgencyStatus,

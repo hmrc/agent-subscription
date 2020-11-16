@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import javax.inject._
-import play.api.Logger
+import play.api.Logging
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
 import play.api.mvc.{ Action, AnyContent, ControllerComponents }
@@ -27,13 +27,13 @@ import uk.gov.hmrc.agentsubscription.connectors.{ InvalidBusinessAddressExceptio
 import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.agentsubscription.utils.toFuture
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class RegistrationController @Inject() (service: RegistrationService, authActions: AuthActions, cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
+class RegistrationController @Inject() (service: RegistrationService, authActions: AuthActions, cc: ControllerComponents)(implicit ec: ExecutionContext)
+  extends BackendController(cc) with Logging {
 
   import authActions._
 
@@ -48,10 +48,10 @@ class RegistrationController @Inject() (service: RegistrationService, authAction
         .getOrElse(NotFound))
         .recover {
           case InvalidBusinessAddressException =>
-            Logger.info(InvalidBusinessAddressException.error.getMessage)
+            logger.info(InvalidBusinessAddressException.error.getMessage)
             NotFound
           case InvalidIsAnASAgentException =>
-            Logger.info(InvalidIsAnASAgentException.error.getMessage)
+            logger.info(InvalidIsAnASAgentException.error.getMessage)
             InternalServerError
         }
   }

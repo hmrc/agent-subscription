@@ -20,14 +20,15 @@ import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
-import play.api.Logger
-import play.api.libs.json.JsValue
+import play.api.Logging
 import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.{ CompaniesHouseOfficer, Crn }
-import uk.gov.hmrc.http.{ HeaderCarrier, Upstream4xxResponse }
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.HttpErrorFunctions._
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse }
+import play.api.http.Status._
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -43,7 +44,7 @@ trait CompaniesHouseApiProxyConnector {
 class CompaniesHouseApiProxyConnectorImpl @Inject() (
   val appConfig: AppConfig,
   httpClient: HttpClient,
-  metrics: Metrics) extends CompaniesHouseApiProxyConnector with HttpAPIMonitor {
+  metrics: Metrics) extends CompaniesHouseApiProxyConnector with HttpAPIMonitor with Logging {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
@@ -54,13 +55,17 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (
       val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
       val encodedSurname = UriEncoding.encodePathSegment(surname, "UTF-8")
       val url = s"$baseUrl/companies-house-api-proxy/company/$encodedCrn/officers?surname=$encodedSurname"
-      httpClient.GET[JsValue](url).map { response =>
-        val json = response
-        (json \ "items").as[Seq[CompaniesHouseOfficer]]
-      }.recover {
-        case e: Upstream4xxResponse => {
-          Logger.warn(s"${e.message}")
-          Seq.empty
+      httpClient.GET[HttpResponse](url).map { response =>
+        response.status match {
+          case s if is2xx(s) =>
+            (response.json \ "items").as[Seq[CompaniesHouseOfficer]]
+          case BAD_REQUEST => throw UpstreamErrorResponse(response.body, BAD_REQUEST)
+          case s if is4xx(s) =>
+            logger.warn(s"getCompanyOfficers http status: $s, response:${response.body}")
+            Seq.empty
+          case s =>
+            logger.error(s"getCompanyOfficers http status: $s, response:${response.body}")
+            Seq.empty
         }
       }
     }

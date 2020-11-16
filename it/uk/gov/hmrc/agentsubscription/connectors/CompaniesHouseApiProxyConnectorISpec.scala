@@ -1,15 +1,12 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
-import java.time.LocalDate
-
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.{ CompaniesHouseDateOfBirth, CompaniesHouseOfficer, Crn }
 import uk.gov.hmrc.agentsubscription.stubs.CompaniesHouseStub
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.{ HeaderCarrier, HttpClient }
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

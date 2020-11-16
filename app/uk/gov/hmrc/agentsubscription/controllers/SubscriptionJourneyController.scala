@@ -27,7 +27,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -35,21 +35,21 @@ class SubscriptionJourneyController @Inject() (
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
 
-  def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
+  def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async {
     subscriptionJourneyRepository.findByAuthId(authProviderId).map {
       case Some(record) => Ok(toJson(record))
       case None => NoContent
     }
   }
 
-  def findByUtr(utr: Utr): Action[AnyContent] = Action.async { implicit request =>
+  def findByUtr(utr: Utr): Action[AnyContent] = Action.async {
     subscriptionJourneyRepository.findByUtr(utr).map {
       case Some(record) => Ok(toJson(record))
       case None => NoContent
     }
   }
 
-  def findByContinueId(continueId: String): Action[AnyContent] = Action.async { implicit request =>
+  def findByContinueId(continueId: String): Action[AnyContent] = Action.async {
     subscriptionJourneyRepository.findByContinueId(continueId).map {
       case Some(record) => Ok(toJson(record))
       case None => NoContent

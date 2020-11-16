@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentsubscription.connectors
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 import javax.inject.{ Inject, Singleton }
-import play.api.Logger
+import play.api.Logging
 import play.api.libs.json._
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
@@ -27,15 +27,16 @@ import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ Complete, Registered }
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
-
+import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.HttpReads.Implicits._
 import scala.concurrent.{ ExecutionContext, Future }
+import play.api.http.Status._
 
 @Singleton
 class AgentOverseasApplicationConnector @Inject() (
   appConfig: AppConfig,
   http: HttpClient,
-  metrics: Metrics) extends HttpAPIMonitor {
+  metrics: Metrics) extends HttpAPIMonitor with Logging {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
@@ -52,11 +53,14 @@ class AgentOverseasApplicationConnector @Inject() (
     }
 
     monitor("ConsumedAPI-Agent-Overseas-Application-updateStatus-PUT") {
-      http.PUT[JsValue, HttpResponse](url.toString, body)
-        .map(_.status == 204)
-        .recover {
-          case e => throw new RuntimeException(s"Could not update overseas agent application status to ${status.key} for userId: $authId with ${e.getMessage}")
-        }
+      http.PUT[JsValue, HttpResponse](url, body)
+        .map(response =>
+          response.status match {
+            case NO_CONTENT => true
+            case s =>
+              logger.error("Unexpected response: $s from: $url body: ${response.body}")
+              throw new RuntimeException(s"Could not update overseas agent application status to ${status.key} for userId: $authId")
+          })
     }
   }
 
@@ -65,7 +69,7 @@ class AgentOverseasApplicationConnector @Inject() (
     val url = s"$baseUrl/agent-overseas-application/application?$activeStatuses"
 
     monitor("ConsumedAPI-Agent-Overseas-Application-application-GET") {
-      http.GET(url.toString).map { response =>
+      http.GET[HttpResponse](url).map { response =>
         val json = response.json.head
         val status = (json \ "status").as[ApplicationStatus]
 
@@ -83,7 +87,7 @@ class AgentOverseasApplicationConnector @Inject() (
       }.recover {
         case e: JsResultException =>
           val errors: Seq[String] = e.errors.flatMap(_._2.map(_.message))
-          Logger.error(s"The retrieved current application is invalid: $errors")
+          logger.error(s"The retrieved current application is invalid: $errors")
           throw e
 
         case e => throw new RuntimeException(s"Could not retrieve overseas agent application", e)

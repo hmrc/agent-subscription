@@ -21,8 +21,7 @@ import java.time.LocalDateTime
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{ JsPath, Json, OFormat }
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
-import uk.gov.hmrc.agentsubscription.model.{ AuthProviderId, ContactEmailData, ContactTradingAddressData, ContactTradingNameData, DateOfBirth }
+import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney.AmlsData
 import uk.gov.hmrc.domain.Nino
 

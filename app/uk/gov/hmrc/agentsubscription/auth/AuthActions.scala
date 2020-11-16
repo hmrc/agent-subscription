@@ -27,7 +27,7 @@ import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{ affinityGroup, allEnrolments, credentials, groupIdentifier }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
-import uk.gov.hmrc.play.bootstrap.controller.BackendController
+import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -36,9 +36,6 @@ class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthCo
   extends BackendController(cc) with AuthorisedFunctions {
 
   private val AuthProvider: AuthProviders = AuthProviders(GovernmentGateway)
-  private val agentEnrol = "HMRC-AS-AGENT"
-  private val agentEnrolId = "AgentReferenceNumber"
-  private val isAnAgent = true
 
   def authorisedWithAffinityGroup(action: SubscriptionAuthAction): Action[JsValue] = Action.async(parse.json) { implicit request =>
     authorised(AuthProvider)
@@ -103,7 +100,7 @@ class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthCo
       }
   }
 
-  def handleFailure()(implicit request: Request[_]): PartialFunction[Throwable, Result] = {
+  def handleFailure(): PartialFunction[Throwable, Result] = {
     case _: NoActiveSession ⇒ GenericUnauthorized
     case _: UnsupportedAuthProvider ⇒ GenericUnauthorized
   }

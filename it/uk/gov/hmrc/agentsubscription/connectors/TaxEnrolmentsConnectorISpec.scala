@@ -2,14 +2,11 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport, WireMockSupport }
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
+import uk.gov.hmrc.http.{ HttpClient, _ }
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -39,10 +36,10 @@ class TaxEnrolmentsConnectorISpec extends BaseISpec with TaxEnrolmentsStubs with
     "propagate an exception after failing to create known facts" in {
       createKnownFactsFails(arn.value)
 
-      val exception = intercept[Upstream5xxResponse] {
+      val exception = intercept[UpstreamErrorResponse] {
         await(connector.addKnownFacts(arn.value, knownFactKey, postcode))
       }
-      exception.upstreamResponseCode shouldBe 500
+      exception.statusCode shouldBe 500
     }
   }
 
@@ -58,10 +55,10 @@ class TaxEnrolmentsConnectorISpec extends BaseISpec with TaxEnrolmentsStubs with
     "propagate an exception after failing to delete known facts" in {
       deleteKnownFactsFails(arn.value)
 
-      val exception = intercept[Upstream5xxResponse] {
+      val exception = intercept[UpstreamErrorResponse] {
         await(connector.deleteKnownFacts(arn))
       }
-      exception.upstreamResponseCode shouldBe 500
+      exception.statusCode shouldBe 500
     }
   }
 
@@ -80,11 +77,11 @@ class TaxEnrolmentsConnectorISpec extends BaseISpec with TaxEnrolmentsStubs with
     "propagate an exception for a failed enrolment" in {
       enrolmentFails(groupId, arn.value)
 
-      val exception = intercept[Upstream5xxResponse] {
+      val exception = intercept[UpstreamErrorResponse] {
         await(connector.enrol(groupId, arn, enrolmentRequest))
       }
 
-      exception.upstreamResponseCode shouldBe 500
+      exception.statusCode shouldBe 500
     }
   }
 
@@ -110,11 +107,11 @@ class TaxEnrolmentsConnectorISpec extends BaseISpec with TaxEnrolmentsStubs with
       "failed with 500" in {
         allocatedPrincipalEnrolmentFails(arn.value, 500)
 
-        val exception = intercept[Upstream5xxResponse] {
+        val exception = intercept[UpstreamErrorResponse] {
           await(connector.hasPrincipalGroupIds(arn))
         }
 
-        exception.upstreamResponseCode shouldBe 500
+        exception.statusCode shouldBe 500
       }
       "failed with 400" in {
         allocatedPrincipalEnrolmentFails(arn.value, 400)

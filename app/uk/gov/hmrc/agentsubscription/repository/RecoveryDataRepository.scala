@@ -18,7 +18,6 @@ package uk.gov.hmrc.agentsubscription.repository
 
 import javax.inject.{ Inject, Singleton }
 import org.joda.time.DateTime
-import play.api.Logger
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
 import reactivemongo.api.indexes.{ Index, IndexType }
@@ -53,7 +52,7 @@ class RecoveryRepository @Inject() (mongoComponent: ReactiveMongoComponent)
     insert(RecoveryData(authIds, arn, subscriptionRequest, errorMessage)).map(_ => ())
       .recoverWith {
         case e =>
-          Logger.error(s"Failed to create recovery record for ${arn.value}", e)
+          logger.error(s"Failed to create recovery record for ${arn.value}", e)
           Future failed e
       }
   }

@@ -22,8 +22,6 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
 
-import scala.language.postfixOps
-
 class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolmentsStubs with AuthStub {
 
   implicit val ws = app.injector.instanceOf[WSClient]

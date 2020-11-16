@@ -1,12 +1,7 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import com.kenshoo.play.metrics.Metrics
-import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.verify
-import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.libs.json.{ JsValue, Json }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model
@@ -14,13 +9,8 @@ import uk.gov.hmrc.agentsubscription.model.{ AgentRecord, Crn }
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.domain.Vrn
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.play.audit.http.config.AuditingConfig
-import uk.gov.hmrc.play.audit.http.connector.AuditConnector
-import uk.gov.hmrc.play.audit.model.MergedDataEvent
-import uk.gov.hmrc.play.bootstrap.http.HttpClient
+import uk.gov.hmrc.http.{ HttpClient, _ }
 
-import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport with MockitoSugar {
@@ -42,8 +32,6 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
   private lazy val connector: DesConnector =
     new DesConnector(appConfig, http, metrics)
-
-  private lazy val mockAuditConnector = mock[AuditConnector]
 
   "subscribeToAgentServices" should {
     "return an ARN when subscription is successful" in {
@@ -70,7 +58,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
       }
 
       exception.getMessage.contains(utr.value) shouldBe true
-      exception.getCause.asInstanceOf[Upstream4xxResponse].upstreamResponseCode shouldBe 409
+      exception.getCause.asInstanceOf[UpstreamErrorResponse].statusCode shouldBe 409
     }
 
     "propagate an exception containing the utr if the agency is not registered" in {
@@ -195,7 +183,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
     "return 5xx exception if DES fails to respond" in {
       ctUtrRecordFails()
 
-      an[Upstream5xxResponse] shouldBe thrownBy(await(connector.getCorporationTaxUtr(crn)))
+      an[UpstreamErrorResponse] shouldBe thrownBy(await(connector.getCorporationTaxUtr(crn)))
     }
   }
 
@@ -221,7 +209,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
     "return 5xx exception if DES fails to respond" in {
       vatKnownfactsRecordFails()
 
-      an[Upstream5xxResponse] shouldBe thrownBy(await(connector.getVatKnownfacts(vrn)))
+      an[UpstreamErrorResponse] shouldBe thrownBy(await(connector.getVatKnownfacts(vrn)))
     }
   }
 

@@ -26,8 +26,6 @@ import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DataStreamStub, DesStubs,
 import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegments
 
-import scala.language.postfixOps
-
 class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub with TaxEnrolmentsStubs {
 
   private val utr = Utr("2000000000")
