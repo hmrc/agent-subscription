@@ -12,7 +12,7 @@ interact with their clients. The domain is Subscriptions to Agent Services follo
 
 ## Running the app locally
 
-    sm --start AGENT_MTD -f
+    sm --start AGENT_ONBOARDING -r
     sm --stop AGENT_SUBSCRIPTION
     sbt run
 
