@@ -17,16 +17,16 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import java.time.{ LocalDateTime, ZoneOffset }
-
 import com.google.inject.Inject
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{ Action, AnyContent, ControllerComponents }
+import play.api.mvc.{ Action, AnyContent, ControllerComponents, Result }
 import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
+import uk.gov.hmrc.agentsubscription.utils._
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.{ ExecutionContext, Future }
@@ -67,11 +67,22 @@ class SubscriptionJourneyController @Inject() (
             Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
           } else {
             val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
-            subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent) recover {
-              case ex: DatabaseException if ex.code.contains(11000) => Conflict //if database returns duplicate key error
+            subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent) recoverWith {
+              case ex: DatabaseException if ex.code.contains(11000) => handleConflict(journeyRecord)
             }
           }
         }
     }
+  }
+
+  def handleConflict(sjr: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Result] = {
+    val utr = sjr.businessDetails.utr
+    for {
+      optExistingSjr <- subscriptionJourneyRepository.findByUtr(utr)
+      existingSjr <- optExistingSjr.fold[Future[SubscriptionJourneyRecord]](new IllegalStateException(s"Could not find existing SJR with UTR = $utr").toFailure)(_.toFuture)
+      updatedSjr = existingSjr.copy(authProviderId = sjr.authProviderId)
+      _ <- subscriptionJourneyRepository.updateOnUtr(utr, updatedSjr)
+      result <- Ok(toJson(updatedSjr)).toFuture
+    } yield result
   }
 }

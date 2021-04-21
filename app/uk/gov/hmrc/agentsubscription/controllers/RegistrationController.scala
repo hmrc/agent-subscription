@@ -26,7 +26,7 @@ import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.{ InvalidBusinessAddressException, InvalidIsAnASAgentException }
 import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
-import uk.gov.hmrc.agentsubscription.utils.toFuture
+import uk.gov.hmrc.agentsubscription.utils.valueOps
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
@@ -58,7 +58,7 @@ class RegistrationController @Inject() (service: RegistrationService, authAction
   }
 
   private def badRequest(code: String) =
-    toFuture(BadRequest(Json.obj("code" -> code)))
+    BadRequest(Json.obj("code" -> code)).toFuture
 
   private def validPostcode(postcode: String): Boolean = {
     postcode.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)

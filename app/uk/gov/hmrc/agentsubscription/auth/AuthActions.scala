@@ -22,7 +22,7 @@ import play.api.libs.json.{ JsValue, Json, OFormat, Writes }
 import play.api.mvc.Results.{ Forbidden, Unauthorized }
 import play.api.mvc.{ AnyContent, Result, _ }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions._
-import uk.gov.hmrc.agentsubscription.utils.toFuture
+import uk.gov.hmrc.agentsubscription.utils.valueOps
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{ affinityGroup, allEnrolments, credentials, groupIdentifier }
@@ -45,9 +45,9 @@ class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthCo
             action(request)(AuthIds(providerId, groupId))
           } else {
             NotAnAgent
-          }
+          }.toFuture
 
-        case _ => GenericUnauthorized
+        case _ => GenericUnauthorized.toFuture
 
       } recover {
         handleFailure()
@@ -60,8 +60,8 @@ class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthCo
         if (isAgent(affinityG))
           action(request)
         else
-          NotAnAgent
-      case _ => GenericUnauthorized
+          NotAnAgent.toFuture
+      case _ => GenericUnauthorized.toFuture
     } recover {
       handleFailure()
     }
@@ -72,12 +72,12 @@ class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthCo
       .retrieve(allEnrolments and affinityGroup and credentials and groupIdentifier) {
         case enrolments ~ Some(affinityG) ~ Some(Credentials(providerId, _)) ~ Some(groupId) =>
           if (!isAgent(affinityG))
-            NotAnAgent
+            NotAnAgent.toFuture
           else if (enrolments.enrolments.nonEmpty)
-            AgentCannotSubscribe
+            AgentCannotSubscribe.toFuture
           else
             action(request)(AuthIds(providerId, groupId))
-        case _ => GenericUnauthorized
+        case _ => GenericUnauthorized.toFuture
       } recover {
         handleFailure()
       }
@@ -91,9 +91,9 @@ class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthCo
             action(request)(Provider(providerId, providerType))
           } else {
             NotAnAgent
-          }
+          }.toFuture
 
-        case _ => GenericUnauthorized
+        case _ => GenericUnauthorized.toFuture
 
       } recover {
         handleFailure()

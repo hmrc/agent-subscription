@@ -98,5 +98,16 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
 
       await(repo.findByAuthId(AuthProviderId("auth-id"))) shouldBe Some(updatedSubscriptionJourney)
     }
+
+    "update a SubscriptionJourney record identified by its UTR" in {
+      val updatedSubscriptionJourney = subscriptionJourneyRecord
+        .copy(authProviderId = AuthProviderId("new-auth-id"))
+
+      await(repo.insert(subscriptionJourneyRecord))
+      await(repo.updateOnUtr(subscriptionJourneyRecord.businessDetails.utr, updatedSubscriptionJourney))
+
+      await(repo.findByAuthId(AuthProviderId("new-auth-id"))) shouldBe Some(updatedSubscriptionJourney)
+    }
+
   }
 }
