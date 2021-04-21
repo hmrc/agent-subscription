@@ -51,6 +51,14 @@ class SubscriptionJourneyRepository @Inject() (
       upsert = true).checkResult
   }
 
+  @throws(classOf[DatabaseException])
+  def updateOnUtr(utr: Utr, record: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] = {
+    collection.update(ordered = false).one(
+      Json.obj("businessDetails.utr" -> utr.value),
+      record,
+      upsert = false).checkResult
+  }
+
   private implicit class WriteResultChecker(future: Future[WriteResult]) {
     def checkResult(implicit ec: ExecutionContext): Future[Unit] = future.map { writeResult =>
       if (hasProblems(writeResult)) throw new RuntimeException(writeResult.toString)

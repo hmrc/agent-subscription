@@ -160,6 +160,11 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return conflict when there is already an existing record" in {
+      val existingRecord = minimalRecord // The existing record in the repo
+      val newAuthProviderId = AuthProviderId("cred-new")
+      val newRecord = minimalRecord.copy(authProviderId = newAuthProviderId) // The new record (that we're trying to store)
+      val updatedExistingRecord = existingRecord.copy(authProviderId = newAuthProviderId) // The existing record, modified with the new record's authId
+
       when(
         mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
         .thenReturn(Future.failed(new DatabaseException {
@@ -168,10 +173,19 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
           override def message: String = "duplicate exception"
         }))
 
-      val request = FakeRequest().withBody[JsValue](Json.toJson(minimalRecord))
+      when(
+        mockRepo.updateOnUtr(any[Utr], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
+        .thenReturn(Future.successful(()))
 
-      val result: Result = await(controller.createOrUpdate(AuthProviderId("cred-1234")).apply(request))
-      result.header.status shouldBe 409
+      when(
+        mockRepo.findByUtr(any[Utr])(any[ExecutionContext]))
+        .thenReturn(Future.successful(Some(existingRecord)))
+
+      val request = FakeRequest().withBody[JsValue](Json.toJson(newRecord))
+
+      val result: Result = await(controller.createOrUpdate(newAuthProviderId).apply(request))
+      result.header.status shouldBe 200
+      (contentAsJson(result) \ "authProviderId").as[String] shouldBe updatedExistingRecord.authProviderId.id
     }
   }
 
