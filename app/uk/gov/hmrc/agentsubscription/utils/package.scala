@@ -20,8 +20,6 @@ import scala.concurrent.Future
 
 package object utils {
 
-  //implicit def toFuture[Result](a: Result): Future[Result] = Future.successful(a)
-
   implicit class throwableOps(val t: Throwable) extends AnyVal {
     def toFailure[A]: Future[A] = Future.failed(t)
   }
