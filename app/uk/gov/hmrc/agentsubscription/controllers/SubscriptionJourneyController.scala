@@ -80,7 +80,7 @@ class SubscriptionJourneyController @Inject() (
     val utr = sjr.businessDetails.utr
     for {
       optExistingSjr <- subscriptionJourneyRepository.findByUtr(utr)
-      existingSjr <- optExistingSjr.fold[Future[SubscriptionJourneyRecord]] ( logUTRError(sjr).toFailure )(_.toFuture)
+      existingSjr <- optExistingSjr.fold[Future[SubscriptionJourneyRecord]](logUTRError(sjr).toFailure)(_.toFuture)
       updatedSjr = existingSjr.copy(authProviderId = sjr.authProviderId)
       _ <- subscriptionJourneyRepository.updateOnUtr(utr, updatedSjr)
       result <- Ok(toJson(updatedSjr)).toFuture
