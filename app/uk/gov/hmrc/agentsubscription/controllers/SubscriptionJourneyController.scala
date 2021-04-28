@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import java.time.{ LocalDateTime, ZoneOffset }
 import com.google.inject.Inject
+import play.api.Logging
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
 import play.api.mvc.{ Action, AnyContent, ControllerComponents, Result }
@@ -33,7 +34,7 @@ import scala.concurrent.{ ExecutionContext, Future }
 
 class SubscriptionJourneyController @Inject() (
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
-  cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
+  cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) with Logging {
 
   def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async {
     subscriptionJourneyRepository.findByAuthId(authProviderId).map {
@@ -79,10 +80,15 @@ class SubscriptionJourneyController @Inject() (
     val utr = sjr.businessDetails.utr
     for {
       optExistingSjr <- subscriptionJourneyRepository.findByUtr(utr)
-      existingSjr <- optExistingSjr.fold[Future[SubscriptionJourneyRecord]](new IllegalStateException(s"Could not find existing SJR with UTR = $utr").toFailure)(_.toFuture)
+      existingSjr <- optExistingSjr.fold[Future[SubscriptionJourneyRecord]] ( logUTRError(sjr).toFailure )(_.toFuture)
       updatedSjr = existingSjr.copy(authProviderId = sjr.authProviderId)
       _ <- subscriptionJourneyRepository.updateOnUtr(utr, updatedSjr)
       result <- Ok(toJson(updatedSjr)).toFuture
     } yield result
+  }
+
+  def logUTRError(sjr: SubscriptionJourneyRecord) = {
+    logger.warn(s"Conflict saving SJR with UTR ${sjr.businessDetails.utr} \n ${toJson(sjr).toString()}")
+    new IllegalStateException(s"Could not find existing SJR with UTR = ${sjr.businessDetails.utr}")
   }
 }
