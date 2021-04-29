@@ -69,7 +69,9 @@ class SubscriptionJourneyController @Inject() (
           } else {
             val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
             subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent) recoverWith {
-              case ex: DatabaseException if ex.code.contains(11000) => handleConflict(journeyRecord)
+              case ex: DatabaseException if ex.code.contains(11000) =>
+                logger.error(ex.getMessage(), ex)
+                handleConflict(journeyRecord)
             }
           }
         }
