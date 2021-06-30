@@ -23,8 +23,7 @@ import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.logging.{ Authorization, RequestId, SessionId }
+import uk.gov.hmrc.http.{ Authorization, HeaderCarrier, RequestId, SessionId }
 import uk.gov.hmrc.play.audit.http.connector.{ AuditConnector, AuditResult }
 import uk.gov.hmrc.play.audit.model.{ DataEvent, ExtendedDataEvent }
 import uk.gov.hmrc.play.test.UnitSpec
@@ -59,7 +58,7 @@ class AuditServiceSpec(implicit val ec: ExecutionContext) extends UnitSpec with 
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[ExtendedDataEvent])
         verify(mockConnector).sendExtendedEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
-        captor.getValue shouldBe an[ExtendedDataEvent]
+
         val sentEvent = captor.getValue.asInstanceOf[ExtendedDataEvent]
 
         sentEvent.auditSource shouldBe "agent-subscription"
@@ -99,7 +98,7 @@ class AuditServiceSpec(implicit val ec: ExecutionContext) extends UnitSpec with 
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[DataEvent])
         verify(mockConnector).sendEvent(captor.capture())(any[HeaderCarrier], any[ExecutionContext])
-        captor.getValue shouldBe an[ExtendedDataEvent]
+
         val sentEvent = captor.getValue.asInstanceOf[ExtendedDataEvent]
 
         sentEvent.tags("deviceID") shouldBe "device ID"

@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
+
 import javax.inject.{ Inject, Singleton }
 import play.api.libs.json._
 import play.utils.UriEncoding
@@ -27,13 +28,15 @@ import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.logging.Authorization
 import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 import uk.gov.hmrc.http.HttpReads.Implicits._
+
 import scala.concurrent.{ ExecutionContext, Future }
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import play.api.http.Status._
+
+import java.util.UUID
 
 case class Address(
   addressLine1: String,
@@ -93,11 +96,21 @@ class DesConnector @Inject() (
   val environment = appConfig.desEnvironment
   val authToken = appConfig.desAuthToken
 
+  private val Environment = "Environment"
+  private val CorrelationId = "CorrelationId"
+  private val Authorization_ = "Authorization"
+
+  private def explicitHeaders =
+    Seq(
+      Environment -> s"$environment",
+      CorrelationId -> UUID.randomUUID().toString,
+      Authorization_ -> s"Bearer $authToken")
+
   def createOverseasBusinessPartnerRecord(request: OverseasRegistrationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SafeId] = {
     monitor("ConsumedAPI-DES-Overseas-CreateRegistration-POST") {
       val url = s"$baseUrl/registration/02.00.00/organisation"
 
-      http.POST[OverseasRegistrationRequest, HttpResponse](url, request)(implicitly, implicitly, desHeaders, ec)
+      http.POST[OverseasRegistrationRequest, HttpResponse](url, request, headers = explicitHeaders)(implicitly, implicitly, desHeaders, ec)
         .map(response =>
           response.status match {
             case s if is2xx(s) => (response.json \ "safeId").as[SafeId]
@@ -108,7 +121,7 @@ class DesConnector @Inject() (
 
   def subscribeToAgentServices(safeId: SafeId, agencyDetails: OverseasAgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     monitor("ConsumedAPI-DES-SubscribeOverseasAgent-POST") {
-      http.POST[OverseasAgencyDetails, HttpResponse](desOverseasSubscribeUrl(safeId).toString, agencyDetails)(implicitly, implicitly, desHeaders, ec)
+      http.POST[OverseasAgencyDetails, HttpResponse](desOverseasSubscribeUrl(safeId), agencyDetails, headers = explicitHeaders)(implicitly, implicitly, desHeaders, ec)
         .map(response =>
           response.status match {
             case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
@@ -120,7 +133,7 @@ class DesConnector @Inject() (
   def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
     monitor("ConsumedAPI-DES-SubscribeAgent-POST") {
       http
-        .POST[DesSubscriptionRequest, HttpResponse](desSubscribeUrl(utr), request)(implicitly, implicitly, desHeaders, ec)
+        .POST[DesSubscriptionRequest, HttpResponse](desSubscribeUrl(utr), request, headers = explicitHeaders)(implicitly, implicitly, desHeaders, ec)
         .map(response =>
           response.status match {
             case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
@@ -190,8 +203,8 @@ class DesConnector @Inject() (
   private def getRegistrationJson(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] =
     monitor("DES-GetAgentRegistration-POST") {
       http.POST[DesRegistrationRequest, Option[JsValue]](
-        desRegistrationUrl(utr).toString,
-        DesRegistrationRequest(isAnAgent = false))(
+        desRegistrationUrl(utr),
+        DesRegistrationRequest(isAnAgent = false), headers = explicitHeaders)(
           implicitly[Writes[DesRegistrationRequest]],
           implicitly[HttpReads[Option[JsValue]]], desHeaders, ec)
     } recover {
@@ -219,7 +232,7 @@ class DesConnector @Inject() (
     hc: HeaderCarrier, ec: ExecutionContext): Future[JsValue] =
     monitor(s"ConsumedAPI-DES-$apiName-GET") {
       http
-        .GET[HttpResponse](url)(implicitly, desHeaders, ec)
+        .GET[HttpResponse](url, headers = explicitHeaders)(implicitly, desHeaders, ec)
         .map(response =>
           response.status match {
             case s if is2xx(s) => response.json
