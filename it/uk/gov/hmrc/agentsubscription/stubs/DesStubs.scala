@@ -569,6 +569,25 @@ trait DesStubs {
 
   }
 
+  def amlsSubscriptionRecordExists(amlsRegNumber: String) = {
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/anti-money-laundering/subscription/$amlsRegNumber/status")))
+      .willReturn(aResponse()
+        .withStatus(200).withBody(
+          s"""{
+         |"formBundleStatus": "Approved",
+         |"safeId": "xyz",
+         |"currentRegYearStartDate": "2021-01-01",
+         |"currentRegYearEndDate": "2021-12-31",
+         |"suspended": false
+         |}""".stripMargin)))
+  }
+
+  def amlsSubscriptionRecordFails(amlsRegNumber: String, status: Int) = {
+    stubFor(maybeWithDesHeaderCheck(get(urlEqualTo(s"/anti-money-laundering/subscription/$amlsRegNumber/status")))
+      .willReturn(aResponse()
+        .withStatus(status)))
+  }
+
   private def maybeWithDesHeaderCheck(mappingBuilder: MappingBuilder): MappingBuilder =
     maybeWithOptionalAuthorizationHeaderCheck(maybeWithEnvironmentHeaderCheck(mappingBuilder))
 
