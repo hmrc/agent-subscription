@@ -200,6 +200,16 @@ class DesConnector @Inject() (
     }
   }
 
+  //API #1028 Get Subscription Status
+  def getAmlsSubscriptionStatus(amlsRegistrationNumber: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AmlsSubscriptionRecord] = {
+
+    val url = s"$baseUrl/anti-money-laundering/subscription/$amlsRegistrationNumber/status"
+
+    getWithDesHeaders("GetAmlsSubscriptionStatus", url).map { response =>
+      response.as[AmlsSubscriptionRecord]
+    }
+  }
+
   private def getRegistrationJson(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] =
     monitor("DES-GetAgentRegistration-POST") {
       http.POST[DesRegistrationRequest, Option[JsValue]](

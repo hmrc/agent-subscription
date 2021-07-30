@@ -5,12 +5,13 @@ import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model
-import uk.gov.hmrc.agentsubscription.model.{ AgentRecord, Crn }
+import uk.gov.hmrc.agentsubscription.model.{ AgentRecord, AmlsSubscriptionRecord, Crn }
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.http.{ HttpClient, _ }
 
+import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport with MockitoSugar {
@@ -210,6 +211,33 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
       vatKnownfactsRecordFails()
 
       an[UpstreamErrorResponse] shouldBe thrownBy(await(connector.getVatKnownfacts(vrn)))
+    }
+  }
+
+  "getAmlsSubscription" should {
+    "return AmlsSubscriptionRecord when AmlsRegistrationNumber is known in ETMP" in {
+
+      amlsSubscriptionRecordExists("XAML00000200000")
+
+      def parseDate(str: String) = Some(LocalDate.parse(str))
+
+      val result = await(connector.getAmlsSubscriptionStatus("XAML00000200000"))
+
+      result shouldBe AmlsSubscriptionRecord("Approved", "xyz", parseDate("2021-01-01"), parseDate("2021-12-31"), Some(false))
+    }
+
+    "return NotFoundException when AmlsRegistrationNumber is not known in ETMP" in {
+
+      amlsSubscriptionRecordFails("XAML00000200000", 404)
+
+      an[NotFoundException] shouldBe thrownBy(await(connector.getAmlsSubscriptionStatus("XAML00000200000")))
+    }
+
+    "return a BadRequestException when AmlsRegistrationNumber is invalid in DES" in {
+
+      amlsSubscriptionRecordFails("XXX", 400)
+
+      an[BadRequestException] shouldBe thrownBy(await(connector.getAmlsSubscriptionStatus("XXX")))
     }
   }
 
