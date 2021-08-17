@@ -54,19 +54,19 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
     ec: ExecutionContext,
     request: Request[AnyContent]): Future[Option[RegistrationDetails]] = {
     desConnector.getRegistration(utr) flatMap {
-      case Some(DesRegistrationResponse(isAnASAgent, organisationName, None, agentReferenceNumber, businessAddress, email)) if businessAddress.postalCode.nonEmpty =>
+      case Some(DesRegistrationResponse(isAnASAgent, organisationName, None, agentReferenceNumber, businessAddress, email, safeId)) if businessAddress.postalCode.nonEmpty =>
         if (isAnASAgent) {
           getLogger.warn(s"The business partner record of type organisation associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned")
         }
 
-        checkRegistrationAndEnrolment(utr, postcode, businessAddress.postalCode, isAnASAgent, organisationName, agentReferenceNumber, businessAddress, email)
-      case Some(DesRegistrationResponse(isAnASAgent, _, Some(DesIndividual(first, last)), agentReferenceNumber, businessAddress, email)) if businessAddress.postalCode.nonEmpty =>
+        checkRegistrationAndEnrolment(utr, postcode, businessAddress.postalCode, isAnASAgent, organisationName, agentReferenceNumber, businessAddress, email, safeId)
+      case Some(DesRegistrationResponse(isAnASAgent, _, Some(DesIndividual(first, last)), agentReferenceNumber, businessAddress, email, safeId)) if businessAddress.postalCode.nonEmpty =>
         if (isAnASAgent) {
           getLogger.warn(s"The business partner record of type individual associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned")
         }
 
-        checkRegistrationAndEnrolment(utr, postcode, businessAddress.postalCode, isAnASAgent, Some(s"$first $last"), agentReferenceNumber, businessAddress, email)
-      case Some(DesRegistrationResponse(isAnASAgent, _, _, agentReferenceNumber, address, _)) =>
+        checkRegistrationAndEnrolment(utr, postcode, businessAddress.postalCode, isAnASAgent, Some(s"$first $last"), agentReferenceNumber, businessAddress, email, safeId)
+      case Some(DesRegistrationResponse(isAnASAgent, _, _, agentReferenceNumber, address, _, _)) =>
         if (isAnASAgent) {
           getLogger.warn(s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${address.postalCode.nonEmpty}")
           auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, Some(true), Some(isAnASAgent), agentReferenceNumber)
@@ -86,7 +86,8 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
     isAnASAgent: Boolean, taxpayerName: Option[String],
     maybeArn: Option[Arn],
     businessAddress: BusinessAddress,
-    emailAddress: Option[String])(implicit
+    emailAddress: Option[String],
+    safeId: Option[String])(implicit
     hc: HeaderCarrier,
     provider: Provider,
     ec: ExecutionContext,
@@ -101,7 +102,7 @@ class RegistrationService @Inject() (desConnector: DesConnector, taxEnrolmentsCo
 
       isSubscribedToAgentServices.map { isSubscribed =>
         auditCheckAgencyStatus(utr, postcode, knownFactsMatched, isSubscribedToAgentServices = Some(isSubscribed), Some(isAnASAgent), maybeArn)
-        Some(RegistrationDetails(isSubscribed, isAnASAgent, taxpayerName, businessAddress, emailAddress))
+        Some(RegistrationDetails(isSubscribed, isAnASAgent, taxpayerName, businessAddress, emailAddress, safeId))
       }
 
     } else {

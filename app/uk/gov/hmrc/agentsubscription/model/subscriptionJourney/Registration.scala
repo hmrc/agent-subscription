@@ -40,7 +40,8 @@ case class Registration(
   isSubscribedToAgentServices: Boolean,
   isSubscribedToETMP: Boolean,
   address: BusinessAddress,
-  emailAddress: Option[String])
+  emailAddress: Option[String],
+  safeId: Option[String])
 
 object Registration {
   implicit val formats: Format[Registration] = Json.format[Registration]

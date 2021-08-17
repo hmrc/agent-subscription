@@ -83,7 +83,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, Some("My Agency"), None, Some(Arn("TARN0000001")), businessAddress, Some("agency@example.com")))
+      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, Some("My Agency"), None, Some(Arn("TARN0000001")), businessAddress, Some("agency@example.com"), Some("safeId")))
     }
 
     "return registration details for an individual UTR that is known by DES" in {
@@ -91,7 +91,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, Some(DesIndividual("First", "Last")), Some(Arn("AARN0000002")), businessAddress, Some("individual@example.com")))
+      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, Some(DesIndividual("First", "Last")), Some(Arn("AARN0000002")), businessAddress, Some("individual@example.com"), Some("safeId")))
     }
 
     "return registration details without organisationName for a UTR that is known by DES" in {
@@ -99,7 +99,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, None, None, businessAddress, Some("agent1@example.com")))
+      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, None, None, businessAddress, Some("agent1@example.com"), None))
     }
 
     "return registration details without postcode for a UTR that is known by DES" in {
@@ -108,7 +108,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
       val registration = await(connector.getRegistration(utr))
 
       registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, None, None,
-        BusinessAddress("AddressLine1 A", None, None, None, None, "GB"), Some("agent1@example.com")))
+        BusinessAddress("AddressLine1 A", None, None, None, None, "GB"), Some("agent1@example.com"), None))
     }
 
     "return registration details without email for a UTR that is known by DES" in {
@@ -117,7 +117,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
       val registration = await(connector.getRegistration(utr))
 
       registration shouldBe Some(DesRegistrationResponse(isAnASAgent = false, None, None, None,
-        BusinessAddress("AddressLine1 A", None, None, None, Some("AA1 1AA"), "GB"), None))
+        BusinessAddress("AddressLine1 A", None, None, None, Some("AA1 1AA"), "GB"), None, None))
     }
 
     "not return a registration for a UTR that is unknown to DES" in {

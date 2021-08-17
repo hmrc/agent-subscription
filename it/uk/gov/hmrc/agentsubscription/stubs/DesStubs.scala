@@ -410,7 +410,8 @@ trait DesStubs {
              |          "countryCode": "GB"
              |      },
              |      "agencyEmail": "agency@example.com"
-             |  }
+             |  },
+             |  "safeId": "safeId"
              |}
                """.stripMargin)))
   }
@@ -440,7 +441,8 @@ trait DesStubs {
              |  "agentReferenceNumber": "AARN0000002",
              |  "contactDetails": {
              |        "emailAddress": "individual@example.com"
-             |    }
+             |    },
+             |    "safeId": "safeId"
              |}
                """.stripMargin)))
   }
