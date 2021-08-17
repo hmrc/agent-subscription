@@ -114,7 +114,7 @@ class SubscriptionService @Inject() (
 
     val utr = subscriptionRequest.utr
     desConnector.getRegistration(utr) flatMap {
-      case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _), _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) =>
+      case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _), _, _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) =>
         for {
           _ <- subscriptionRequest.amlsDetails.map(agentAssuranceConnector.createAmls(utr, _)).getOrElse(Future.successful(false))
           arn <- subscribeAndMap(maybeArn, utr, isAnAsAgent)

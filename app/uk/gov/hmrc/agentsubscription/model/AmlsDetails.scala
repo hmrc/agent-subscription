@@ -21,7 +21,9 @@ import java.time.format.DateTimeFormatter
 
 import play.api.libs.json.{ Json, _ }
 
-case class RegisteredDetails(membershipNumber: String, membershipExpiresOn: LocalDate)
+case class RegisteredDetails(membershipNumber: String, membershipExpiresOn: LocalDate, amlsSafeId: Option[String], agentBPRSafeId: Option[String]) {
+  val safeIdsMatch: Option[Boolean] = amlsSafeId.flatMap(amls => agentBPRSafeId.map(_ == amls))
+}
 
 object RegisteredDetails {
   implicit val format: OFormat[RegisteredDetails] = Json.format
@@ -45,11 +47,15 @@ object AmlsDetails {
 
       val mayBeMembershipNumber = (json \ "membershipNumber").asOpt[String]
 
+      val amlsSafeId = (json \ "amlsSafeId").asOpt[String]
+
+      val agentBPRSafeId = (json \ "agentBPRSafeId").asOpt[String]
+
       mayBeMembershipNumber match {
 
         case Some(membershipNumber) =>
           val membershipExpiresOn = LocalDate.parse((json \ "membershipExpiresOn").as[String], formatter)
-          JsSuccess(AmlsDetails(supervisoryBody, Right(RegisteredDetails(membershipNumber, membershipExpiresOn))))
+          JsSuccess(AmlsDetails(supervisoryBody, Right(RegisteredDetails(membershipNumber, membershipExpiresOn, amlsSafeId, agentBPRSafeId))))
 
         case None =>
           val appliedOn = LocalDate.parse((json \ "appliedOn").as[String], formatter)

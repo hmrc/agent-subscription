@@ -25,7 +25,8 @@ case class RegistrationDetails(
   isSubscribedToETMP: Boolean,
   taxpayerName: Option[String],
   address: BusinessAddress,
-  emailAddress: Option[String])
+  emailAddress: Option[String],
+  safeId: Option[String] = None)
 
 object RegistrationDetails {
   implicit val registrationDetailsObjectFormat: OFormat[RegistrationDetails] = format

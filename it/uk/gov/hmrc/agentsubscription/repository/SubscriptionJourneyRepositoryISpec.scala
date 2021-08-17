@@ -30,13 +30,13 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
     Some(registrationName),
     isSubscribedToAgentServices = false,
     isSubscribedToETMP = false,
-    businessAddress, Some("test@gmail.com"))
+    businessAddress, Some("test@gmail.com"), Some("safeId"))
 
   override implicit lazy val app: Application = appBuilder.build()
 
   private lazy val repo = app.injector.instanceOf[SubscriptionJourneyRepository]
 
-  val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("123456789", LocalDate.now())))
+  val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("123456789", LocalDate.now(), Some("amlsSafeId"), Some("agentBPRSafeId"))))
 
   private val subscriptionJourneyRecord =
     SubscriptionJourneyRecord(

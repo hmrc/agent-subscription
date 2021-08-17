@@ -61,7 +61,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     val businessUtr = Utr("4000000009")
     val businessPostcode = "AA1 1AA"
     val arn = "ARN0001"
-    val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", LocalDate.now())))
+    val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", LocalDate.now(), Some("amlsSafeId"), Some("agentBPRSafeId"))))
 
     "audit appropriate values" in {
 
@@ -98,7 +98,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           |  "amlsDetails": {
           |      "supervisoryBody":"supervisory",
           |      "membershipNumber":"12345",
-          |      "membershipExpiresOn":"${LocalDate.now()}"
+          |      "membershipExpiresOn":"${LocalDate.now()}",
+          |      "amlsSafeId": "amlsSafeId",
+          |      "agentBPRSafeId": "agentBPRSafeId"
           |   }
           |}
           |""".stripMargin).asInstanceOf[JsObject]
@@ -201,7 +203,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         isAnASAgent = false, organisationName = Some("Test Business"), None, None,
-        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None)))
+        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None, Some("safeId"))))
 
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
@@ -241,7 +243,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         isAnASAgent = false, organisationName = Some("Test Business"), None, None,
-        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None)))
+        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None, Some("safeId"))))
 
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
@@ -272,7 +274,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         isAnASAgent = false, organisationName = Some("Test Business"), None, None,
-        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None)))
+        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None, Some("safeId"))))
 
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
@@ -306,7 +308,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         isAnASAgent = false, organisationName = Some("Test Business"), None, None,
-        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None)))
+        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None, Some("safeId"))))
 
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
@@ -343,7 +345,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Some(DesRegistrationResponse(
         isAnASAgent = false, organisationName = Some("Test Business"), None, None,
-        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None)))
+        BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(businessPostcode), "GB"), None, Some("safeId"))))
 
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))

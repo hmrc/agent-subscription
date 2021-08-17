@@ -73,7 +73,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some("Organisation name"),
           None,
           Some(arn),
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None)))
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful true)
@@ -113,7 +113,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some("Organisation name"),
           None,
           Some(arn),
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None)))
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful false)
@@ -152,7 +152,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some("Organisation name"),
           None,
           None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None)))
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
 
       await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
@@ -186,7 +186,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some("Organisation name"),
           None,
           None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("XX9 9XX"), "GB"), None)))
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("XX9 9XX"), "GB"), None, Some("safeId"))))
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, request))
 
@@ -220,7 +220,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           Some(DesIndividual("First", "Last")),
           arn,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None)))
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful true)
@@ -260,7 +260,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           Some(DesIndividual("First", "Last")),
           arn,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None)))
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful false)
@@ -299,7 +299,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           Some(DesIndividual("First", "Last")),
           None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None)))
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
 
       await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
@@ -333,7 +333,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           Some(DesIndividual("First", "Last")),
           None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("XX9 9XX"), "GB"), None)))
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("XX9 9XX"), "GB"), None, Some("safeId"))))
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, request))
 
@@ -366,7 +366,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           None,
           None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), None, "GB"), None)))
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), None, "GB"), None, Some("safeId"))))
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, requestWithoutAuthProvider))
 
@@ -400,7 +400,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           None,
           None,
           None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), None, "GB"), None)))
+          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), None, "GB"), None, Some("safeId"))))
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, requestWithoutAuthProvider))
 
