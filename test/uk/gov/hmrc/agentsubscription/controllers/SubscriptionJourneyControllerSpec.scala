@@ -159,7 +159,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
       result.header.status shouldBe 204
     }
 
-    "return conflict when there is already an existing record" in {
+    "return 200 with authProviderID updated when there is already an existing record" in {
       val existingRecord = minimalRecord // The existing record in the repo
       val newAuthProviderId = AuthProviderId("cred-new")
       val newRecord = minimalRecord.copy(authProviderId = newAuthProviderId) // The new record (that we're trying to store)
@@ -187,6 +187,68 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
       result.header.status shouldBe 200
       (contentAsJson(result) \ "authProviderId").as[String] shouldBe updatedExistingRecord.authProviderId.id
     }
+
+    "return 200 with authProviderID and cleanCredsAuthProviderID updated when there is already an existing record" +
+      "with these fields defined and the request contains a cleanCredsAuthProviderId" in {
+        val existingRecord = minimalRecord.copy(cleanCredsAuthProviderId = Some(AuthProviderId("existing-clean-creds"))) // The existing record in the repo
+        val newAuthProviderId = AuthProviderId("cred-new-clean")
+        val newRecord = minimalRecord.copy(authProviderId = newAuthProviderId, cleanCredsAuthProviderId = Some(newAuthProviderId)) // The new record (that we're trying to store)
+        val updatedExistingRecord = existingRecord.copy(authProviderId = newAuthProviderId, cleanCredsAuthProviderId = Some(newAuthProviderId)) // The existing record, modified with the new record's authId and clean credID
+
+        when(
+          mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
+          .thenReturn(Future.failed(new DatabaseException {
+            override def originalDocument: Option[BSONDocument] = None
+            override def code: Option[Int] = Some(11000)
+            override def message: String = "duplicate exception"
+          }))
+
+        when(
+          mockRepo.updateOnUtr(any[Utr], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
+          .thenReturn(Future.successful(()))
+
+        when(
+          mockRepo.findByUtr(any[Utr])(any[ExecutionContext]))
+          .thenReturn(Future.successful(Some(existingRecord)))
+
+        val request = FakeRequest().withBody[JsValue](Json.toJson(newRecord))
+
+        val result: Result = await(controller.createOrUpdate(newAuthProviderId).apply(request))
+        result.header.status shouldBe 200
+        (contentAsJson(result) \ "authProviderId").as[String] shouldBe updatedExistingRecord.authProviderId.id
+        (contentAsJson(result) \ "cleanCredsAuthProviderId").asOpt[AuthProviderId] shouldBe updatedExistingRecord.cleanCredsAuthProviderId
+      }
+
+    "return 200 with authProviderID updated and no change to cleanCredsAuthProviderId when there is already an existing record" +
+      " and the request does not contain a cleanCredsAuthProviderId" in {
+        val existingRecord = minimalRecord.copy(cleanCredsAuthProviderId = Some(AuthProviderId("existing-clean-creds"))) // The existing record in the repo
+        val newAuthProviderId = AuthProviderId("cred-new")
+        val newRecord = minimalRecord.copy(authProviderId = newAuthProviderId) // The new record (that we're trying to store)
+        val updatedExistingRecord = existingRecord.copy(authProviderId = newAuthProviderId) // The existing record, modified with the new record's authId
+
+        when(
+          mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
+          .thenReturn(Future.failed(new DatabaseException {
+            override def originalDocument: Option[BSONDocument] = None
+            override def code: Option[Int] = Some(11000)
+            override def message: String = "duplicate exception"
+          }))
+
+        when(
+          mockRepo.updateOnUtr(any[Utr], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
+          .thenReturn(Future.successful(()))
+
+        when(
+          mockRepo.findByUtr(any[Utr])(any[ExecutionContext]))
+          .thenReturn(Future.successful(Some(existingRecord)))
+
+        val request = FakeRequest().withBody[JsValue](Json.toJson(newRecord))
+
+        val result: Result = await(controller.createOrUpdate(newAuthProviderId).apply(request))
+        result.header.status shouldBe 200
+        (contentAsJson(result) \ "authProviderId").as[String] shouldBe updatedExistingRecord.authProviderId.id
+        (contentAsJson(result) \ "cleanCredsAuthProviderId").asOpt[AuthProviderId] shouldBe existingRecord.cleanCredsAuthProviderId
+      }
   }
 
 }
