@@ -9,6 +9,7 @@ import uk.gov.hmrc.agentsubscription.stubs.AgentOverseasApplicationStubs
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.HttpClient
+import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

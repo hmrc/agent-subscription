@@ -12,6 +12,7 @@ import uk.gov.hmrc.agentsubscription.stubs.OverseasDesStubs
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.HttpClient
+import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

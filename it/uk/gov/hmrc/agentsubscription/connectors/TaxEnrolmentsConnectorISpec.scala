@@ -7,6 +7,7 @@ import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.http.{ HttpClient, _ }
+import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

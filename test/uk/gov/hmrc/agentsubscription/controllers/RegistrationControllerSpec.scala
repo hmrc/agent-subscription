@@ -20,16 +20,16 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import play.api.mvc.ControllerComponents
 import play.api.test.FakeRequest
-import play.api.test.Helpers._
+import play.api.test.Helpers
+import play.api.test.Helpers.defaultAwaitTimeout
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
-import uk.gov.hmrc.agentsubscription.support.{ AkkaMaterializerSpec, AuthData, ResettingMockitoSugar }
+import uk.gov.hmrc.agentsubscription.support.{ AkkaMaterializerSpec, AuthData, ResettingMockitoSugar, UnitSpec }
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, ~ }
 import uk.gov.hmrc.auth.core.{ AffinityGroup, PlayAuthConnector, authorise }
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ ExecutionContext, Future }
 
@@ -66,14 +66,14 @@ class RegistrationControllerSpec(implicit val ec: ExecutionContext) extends Unit
       agentAuthStub(agentAffinityWithCredentials)
       val result = controller.getRegistration(invalidUtr, validPostcode)(FakeRequest())
       status(result) shouldBe 400
-      (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_UTR"
+      (Helpers.contentAsJson(result) \ "code").as[String] shouldBe "INVALID_UTR"
     }
 
     "return 400 INVALID_POSTCODE if the postcode is invalid " in {
       agentAuthStub(agentAffinityWithCredentials)
       val result = controller.getRegistration(validUtr, invalidPostcode)(FakeRequest())
       status(result) shouldBe 400
-      (contentAsJson(result) \ "code").as[String] shouldBe "INVALID_POSTCODE"
+      (Helpers.contentAsJson(result) \ "code").as[String] shouldBe "INVALID_POSTCODE"
     }
   }
 }

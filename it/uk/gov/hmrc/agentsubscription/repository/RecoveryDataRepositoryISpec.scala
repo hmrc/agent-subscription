@@ -5,11 +5,12 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.agentsubscription.support.MongoApp
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

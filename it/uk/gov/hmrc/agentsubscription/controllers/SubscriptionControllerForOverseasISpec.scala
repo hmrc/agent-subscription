@@ -38,7 +38,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
         givenEmailSent(emailInfo)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe arn
@@ -70,7 +70,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
         givenEmailSent(emailInfo)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe arn
@@ -107,7 +107,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
         givenEmailSent(emailInfo)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe arn
@@ -137,7 +137,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
         givenEmailSent(emailInfo)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe arn
@@ -162,7 +162,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
       subscriptionSucceeds(safeId.value, agencyDetailsJson)
       allocatedPrincipalEnrolmentExists(arn, "someOtherGroupId")
 
-      val result = await(doSubscriptionRequest)
+      val result = doSubscriptionRequest
 
       result.status shouldBe 409
 
@@ -185,7 +185,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("attempting_registration")
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 403
         verifyApiCalls(0, 0, 0, 0, 0)
@@ -193,7 +193,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
       "the user does not have Agent affinity" in {
         requestIsAuthenticatedWithNoEnrolments(affinityGroup = "Individual")
-        await(doSubscriptionRequest).status shouldBe 403
+        doSubscriptionRequest.status shouldBe 403
 
         verify(0, getRequestedFor(urlEqualTo(getApplicationUrl)))
       }
@@ -206,7 +206,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         val invalidAgencyName = "Acme & Sons" // Ampersands are not allowed for the agency name
         givenValidApplication("accepted", agencyName = invalidAgencyName)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
         (result.json \ "statusCode").as[Int] shouldBe 500
@@ -231,7 +231,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationFailsWithNotFound()
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
 
@@ -243,7 +243,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 409)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
 
@@ -257,7 +257,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(Registered, 409, safeIdJson)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
 
@@ -272,7 +272,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         givenUpdateApplicationStatus(Registered, 204, safeIdJson)
         subscriptionAlreadyExists(safeId.value, agencyDetailsJson)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
 
@@ -288,7 +288,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentFails(arn)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
 
@@ -310,7 +310,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsFails(arn)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
 
@@ -334,7 +334,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         deleteKnownFactsSucceeds(arn)
         createKnownFactsFails(arn)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
 
@@ -360,7 +360,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         createKnownFactsSucceeds(arn)
         enrolmentFails(stubbedGroupId, arn)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
 
@@ -388,7 +388,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         enrolmentSucceeds(stubbedGroupId, arn)
         createOverseasAmlsFailsWithStatus(500)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
 
@@ -419,7 +419,7 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
         givenUpdateApplicationStatus(Complete, 409)
 
-        val result = await(doSubscriptionRequest)
+        val result = doSubscriptionRequest
 
         result.status shouldBe 500
 
