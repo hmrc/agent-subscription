@@ -1,18 +1,18 @@
 package uk.gov.hmrc.agentsubscription.repository
 
 import java.time.LocalDate
-
 import org.scalatest.concurrent.Eventually
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
 import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, AuthProviderId, ContactEmailData, ContactTradingAddressData, ContactTradingNameData, RegisteredDetails }
 import uk.gov.hmrc.agentsubscription.support.MongoApp
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

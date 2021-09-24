@@ -29,8 +29,8 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ ExecutionContext, Future }
 

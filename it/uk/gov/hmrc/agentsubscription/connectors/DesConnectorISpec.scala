@@ -10,6 +10,7 @@ import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.http.{ HttpClient, _ }
+import play.api.test.Helpers._
 
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global

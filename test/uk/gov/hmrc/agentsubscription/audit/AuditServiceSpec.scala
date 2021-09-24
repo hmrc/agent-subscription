@@ -23,10 +23,10 @@ import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.{ Authorization, HeaderCarrier, RequestId, SessionId }
 import uk.gov.hmrc.play.audit.http.connector.{ AuditConnector, AuditResult }
 import uk.gov.hmrc.play.audit.model.{ DataEvent, ExtendedDataEvent }
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ ExecutionContext, Future }
 

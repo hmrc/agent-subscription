@@ -16,8 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.utils
 
+import play.api.test.Helpers._
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.{ BadGatewayException, GatewayTimeoutException }
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

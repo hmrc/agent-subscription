@@ -17,22 +17,21 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import java.net.URL
-
 import org.mockito.ArgumentMatchers.{ any, eq => eqs }
 import org.mockito.Mockito.{ verify, when }
 import org.scalatest.concurrent.Eventually
 import play.api.Logging
 import play.api.libs.json.{ JsObject, Json }
 import play.api.test.FakeRequest
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
 import uk.gov.hmrc.agentsubscription.audit.{ AuditService, CompaniesHouseOfficerCheck }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors.CompaniesHouseApiProxyConnector
 import uk.gov.hmrc.agentsubscription.model.{ CompaniesHouseOfficer, Crn }
-import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
+import uk.gov.hmrc.agentsubscription.support.{ ResettingMockitoSugar, UnitSpec }
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ ExecutionContext, Future }
 

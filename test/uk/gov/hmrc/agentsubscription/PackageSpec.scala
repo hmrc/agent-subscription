@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 
-class PackageSpec extends FunSuite {
+class PackageSpec extends AnyFunSuite {
 
   test("Postcode matcher should return false when postcodes are not the same") {
     val postcode1 = "AB1 1BA"

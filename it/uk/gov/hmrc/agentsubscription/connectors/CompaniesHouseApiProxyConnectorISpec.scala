@@ -7,6 +7,7 @@ import uk.gov.hmrc.agentsubscription.model.{ CompaniesHouseDateOfBirth, Companie
 import uk.gov.hmrc.agentsubscription.stubs.CompaniesHouseStub
 import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
 import uk.gov.hmrc.http.{ HeaderCarrier, HttpClient }
+import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 

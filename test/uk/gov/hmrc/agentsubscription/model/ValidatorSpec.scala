@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.JsonValidationError
 import play.api.libs.json.{ JsError, JsString, JsSuccess }
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 
 class ValidatorSpec extends UnitSpec {
 

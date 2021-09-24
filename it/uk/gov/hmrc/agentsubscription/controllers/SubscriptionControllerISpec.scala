@@ -46,7 +46,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
     "return a response containing the ARN" when {
       "all fields are populated" in new TestSetup {
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
@@ -59,7 +59,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         val fields = Seq(address \ "addressLine2", address \ "addressLine3", address \ "addressLine4")
         subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
 
-        val result = await(doSubscriptionRequest(removeFields(fields)))
+        val result = doSubscriptionRequest(removeFields(fields))
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
@@ -71,7 +71,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       "BPR has isAnAsAgent=true and there is no previous allocation for HMRC-AS-AGENT for the arn" in new TestSetup {
         organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
 
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
@@ -83,7 +83,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       "all fields except telephone number are populated" in new TestSetup {
         subscriptionSucceedsWithoutTelephoneNo(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
 
-        val result = await(doSubscriptionRequest(subscriptionRequestWithoutTelephoneNo))
+        val result = doSubscriptionRequest(subscriptionRequestWithoutTelephoneNo)
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
@@ -97,7 +97,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
       allocatedPrincipalEnrolmentExists(arn, "someGroupId")
 
-      val result = await(doSubscriptionRequest())
+      val result = doSubscriptionRequest()
 
       result.status shouldBe 409
 
@@ -111,7 +111,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         requestIsAuthenticatedWithNoEnrolments()
         registrationDoesNotExist(utr)
 
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 403
       }
@@ -121,14 +121,14 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         organisationRegistrationExists(utr)
         val request = Json.parse(subscriptionRequest).as[SubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
 
-        val result = await(doSubscriptionRequest(stringify(toJson(request))))
+        val result = doSubscriptionRequest(stringify(toJson(request)))
 
         result.status shouldBe 403
       }
 
       "the user already has enrolments" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 403
       }
@@ -137,127 +137,127 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     "return Bad Request " when {
       "utr is missing" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(removeFields(Seq(__ \ "utr"))))
+        val result = doSubscriptionRequest(removeFields(Seq(__ \ "utr")))
 
         result.status shouldBe 400
       }
 
       "utr contains non-numeric characters" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345")))))
+        val result = doSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345"))))
 
         result.status shouldBe 400
       }
 
       "utr contains fewer than 10 digits" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345")))))
+        val result = doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345"))))
 
         result.status shouldBe 400
       }
 
       "utr contains more than 10 digits" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901")))))
+        val result = doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901"))))
 
         result.status shouldBe 400
       }
 
       "name contains invalid characters" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "name", "InvalidAgencyName!@")))))
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "name", "InvalidAgencyName!@"))))
 
         result.status shouldBe 400
       }
 
       "address is missing" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(removeFields(Seq(address))))
+        val result = doSubscriptionRequest(removeFields(Seq(address)))
 
         result.status shouldBe 400
       }
 
       "address line 1 contains invalid characters" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", invalidAddress)))))
+        val result = doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", invalidAddress))))
 
         result.status shouldBe 400
       }
 
       "address line 2 contains invalid characters" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine2", invalidAddress)))))
+        val result = doSubscriptionRequest(replaceFields(Seq((address, "addressLine2", invalidAddress))))
         result.status shouldBe 400
       }
 
       "address line 3 contains invalid characters" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine3", invalidAddress)))))
+        val result = doSubscriptionRequest(replaceFields(Seq((address, "addressLine3", invalidAddress))))
         result.status shouldBe 400
       }
 
       "address line 4 contains invalid characters" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((address, "addressLine4", invalidAddress)))))
+        val result = doSubscriptionRequest(replaceFields(Seq((address, "addressLine4", invalidAddress))))
         result.status shouldBe 400
       }
 
       "email is missing" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(removeFields(Seq(agency \ "email"))))
+        val result = doSubscriptionRequest(removeFields(Seq(agency \ "email")))
 
         result.status shouldBe 400
       }
       "email has no local part" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "@domain")))))
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "email", "@domain"))))
 
         result.status shouldBe 400
       }
       "email has no domain part" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "local@")))))
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "email", "local@"))))
 
         result.status shouldBe 400
       }
       "email has no @" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "email", "local")))))
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "email", "local"))))
 
         result.status shouldBe 400
       }
 
       "telephone number contains words" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "0123 456 78aa")))))
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "0123 456 78aa"))))
 
         result.status shouldBe 400
       }
 
       "telephone number is provided but empty" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "")))))
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "telephone", ""))))
 
         result.status shouldBe 400
       }
 
       "postcode is missing" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(removeFields(Seq(address \ "postcode"))))
+        val result = doSubscriptionRequest(removeFields(Seq(address \ "postcode")))
 
         result.status shouldBe 400
       }
 
       "known facts postcode is not valid" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567")))))
+        val result = doSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567"))))
 
         result.status shouldBe 400
       }
 
       "countryCode is missing" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doSubscriptionRequest(removeFields(Seq(address \ "countryCode"))))
+        val result = doSubscriptionRequest(removeFields(Seq(address \ "countryCode")))
 
         result.status shouldBe 400
       }
@@ -268,7 +268,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
         createAmlsFailsWithStatus(400)
 
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 400
       }
@@ -276,7 +276,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       "create amls succeeds but update amls fails with 400 error from agent assurance" in new TestSetup {
         updateAmlsFailsWithStatus(utr, Arn(arn), 400)
 
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 400
       }
@@ -287,7 +287,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         requestIsAuthenticatedWithNoEnrolments()
         registrationRequestFails()
 
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -300,7 +300,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
         allocatedPrincipalEnrolmentFails(arn)
 
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -315,7 +315,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         deleteKnownFactsFails("")
         givenMappingCreationWithStatus(Arn(arn), 201)
 
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -331,7 +331,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         createKnownFactsFails("")
         givenMappingCreationWithStatus(Arn(arn), 201)
 
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -339,7 +339,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       "create enrolment fails in EMAC " in new TestSetup {
         enrolmentFails(groupId, arn)
 
-        val result = await(doSubscriptionRequest())
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -370,7 +370,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         createAmlsSucceeds(utr, amlsDetails)
         updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
 
-        val result = await(doUpdateSubscriptionRequest())
+        val result = doUpdateSubscriptionRequest()
 
         result.status shouldBe 200
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
@@ -387,7 +387,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       createAmlsSucceeds(utr, amlsDetails)
       updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
 
-      val result = await(doUpdateSubscriptionRequest())
+      val result = doUpdateSubscriptionRequest()
 
       result.status shouldBe 409
 
@@ -401,7 +401,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         requestIsAuthenticatedWithNoEnrolments()
         agentRecordDoesNotExist(utr)
 
-        val result = await(doUpdateSubscriptionRequest())
+        val result = doUpdateSubscriptionRequest()
 
         result.status shouldBe 403
       }
@@ -411,14 +411,14 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         agentRecordExists(utr)
         val request = Json.parse(updateSubscriptionRequest).as[UpdateSubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
 
-        val result = await(doUpdateSubscriptionRequest(stringify(toJson(request))))
+        val result = doUpdateSubscriptionRequest(stringify(toJson(request)))
 
         result.status shouldBe 403
       }
 
       "the user already has enrolments" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doUpdateSubscriptionRequest())
+        val result = doUpdateSubscriptionRequest()
 
         result.status shouldBe 403
       }
@@ -427,42 +427,42 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     "return Bad Request " when {
       "utr is missing" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doUpdateSubscriptionRequest(removeFields(Seq(__ \ "utr"))))
+        val result = doUpdateSubscriptionRequest(removeFields(Seq(__ \ "utr")))
 
         result.status shouldBe 400
       }
 
       "utr contains non-numeric characters" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345")))))
+        val result = doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345"))))
 
         result.status shouldBe 400
       }
 
       "utr contains fewer than 10 digits" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345")))))
+        val result = doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345"))))
 
         result.status shouldBe 400
       }
 
       "utr contains more than 10 digits" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901")))))
+        val result = doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901"))))
 
         result.status shouldBe 400
       }
 
       "postcode is missing" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "")))))
+        val result = doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", ""))))
 
         result.status shouldBe 400
       }
 
       "known facts postcode is not valid" in {
         requestIsAuthenticatedWithNoEnrolments()
-        val result = await(doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567")))))
+        val result = doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567"))))
 
         result.status shouldBe 400
       }
@@ -483,13 +483,13 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         requestIsAuthenticatedWithNoEnrolments()
         agentRecordFails()
 
-        val result = await(doUpdateSubscriptionRequest())
+        val result = doUpdateSubscriptionRequest()
 
         result.status shouldBe 500
       }
 
       "query allocated enrolment fails in EMAC " in new TestSetup {
-        val result = await(doUpdateSubscriptionRequest())
+        val result = doUpdateSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -498,7 +498,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsFails("")
 
-        val result = await(doUpdateSubscriptionRequest())
+        val result = doUpdateSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -508,7 +508,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         deleteKnownFactsSucceeds("")
         createKnownFactsFails("")
 
-        val result = await(doUpdateSubscriptionRequest())
+        val result = doUpdateSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -518,7 +518,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
         createKnownFactsSucceeds(arn)
         enrolmentFails(groupId, arn)
 
-        val result = await(doUpdateSubscriptionRequest())
+        val result = doUpdateSubscriptionRequest()
 
         result.status shouldBe 500
       }

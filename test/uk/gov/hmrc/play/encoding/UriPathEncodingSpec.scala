@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.play.encoding
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class UriPathEncodingSpec extends WordSpec with Matchers {
+class UriPathEncodingSpec extends AnyWordSpecLike with Matchers {
   "encodePathSegments" should {
     "separate segments with forward slashes" in {
       UriPathEncoding.encodePathSegments("one", "two", "three") shouldBe "/one/two/three"

@@ -16,9 +16,10 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import play.api.Logger.logger
+import play.api.Logging
 import play.api.libs.json.Json
 import play.api.mvc.{ Action, AnyContent, ControllerComponents }
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
@@ -27,7 +28,9 @@ import javax.inject.{ Inject, Singleton }
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class AmlsSubscriptionController @Inject() (des: DesConnector, cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
+class AmlsSubscriptionController @Inject() (des: DesConnector, cc: ControllerComponents, appConfig: AppConfig)(implicit ec: ExecutionContext) extends BackendController(cc) with Logging {
+
+  val appName = appConfig.appName
 
   private def is5xx(u: UpstreamErrorResponse): Boolean = u.statusCode >= 500 && u.statusCode < 600
 

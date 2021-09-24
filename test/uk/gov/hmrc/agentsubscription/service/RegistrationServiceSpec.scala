@@ -17,13 +17,13 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import java.net.URL
-
 import org.mockito.ArgumentMatchers.{ any, eq => eqs }
 import org.mockito.Mockito.{ verify, when }
 import org.scalatest.concurrent.Eventually
 import org.slf4j.{ Logger, Marker }
 import play.api.libs.json.{ JsObject, Json }
 import play.api.test.FakeRequest
+import play.api.test.Helpers._
 import play.api.{ LoggerLike, MarkerContext }
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
@@ -31,9 +31,8 @@ import uk.gov.hmrc.agentsubscription.audit.{ AuditService, CheckAgencyStatus }
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
+import uk.gov.hmrc.agentsubscription.support.{ ResettingMockitoSugar, UnitSpec }
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.collection.mutable
 import scala.concurrent.{ ExecutionContext, Future }

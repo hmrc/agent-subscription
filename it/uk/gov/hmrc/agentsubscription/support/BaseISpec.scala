@@ -3,7 +3,6 @@ package uk.gov.hmrc.agentsubscription.support
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
-import uk.gov.hmrc.play.test.UnitSpec
 
 abstract class BaseISpec extends UnitSpec with GuiceOneServerPerSuite with WireMockSupport {
   override implicit lazy val app: Application = appBuilder

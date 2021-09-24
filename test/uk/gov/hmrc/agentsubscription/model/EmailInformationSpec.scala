@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.Json.toJson
-import uk.gov.hmrc.play.test.UnitSpec
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 
 class EmailInformationSpec extends UnitSpec {
 

@@ -1,9 +1,9 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import java.time.LocalDate
-
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, OverseasAmlsDetails, RegisteredDetails }

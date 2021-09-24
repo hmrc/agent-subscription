@@ -42,7 +42,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       givenEmailSent(emailInfo)
       givenMappingCreationWithStatus(Arn(arn), 201)
 
-      val result = await(doSubscriptionRequest(subscriptionRequest(utr)))
+      val result = doSubscriptionRequest(subscriptionRequest(utr))
 
       result.status shouldBe 201
 
@@ -67,7 +67,7 @@ class SubscriptionAuditingSpec extends BaseAuditSpec with Eventually with DesStu
       createAmlsSucceeds(utr, amlsDetails)
       updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
 
-      val result = await(doUpdateSubscriptionRequest(updateSubscriptionRequest))
+      val result = doUpdateSubscriptionRequest(updateSubscriptionRequest)
 
       result.status shouldBe 200
 

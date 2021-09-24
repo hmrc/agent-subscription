@@ -21,17 +21,16 @@ import org.mockito.Mockito.{ reset, when }
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.http.Status._
 import play.api.libs.json.{ JsValue, Json }
 import play.api.mvc.Results.Ok
 import play.api.mvc.{ AnyContent, ControllerComponents, Request, Result }
 import play.api.test.FakeRequest
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.{ OverseasAuthAction, RegistrationAuthAction, SubscriptionAuthAction }
-import uk.gov.hmrc.agentsubscription.support.AuthData
+import uk.gov.hmrc.agentsubscription.support.{ AuthData, UnitSpec }
 import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.{ Credentials, Retrieval, ~ }
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.test.UnitSpec
 
 import scala.concurrent.{ ExecutionContext, Future }
 
