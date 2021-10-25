@@ -114,16 +114,21 @@ class SubscriptionService @Inject() (
 
     val utr = subscriptionRequest.utr
     desConnector.getRegistration(utr) flatMap {
-      case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _), _, _)) if postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode) =>
-        for {
-          _ <- subscriptionRequest.amlsDetails.map(agentAssuranceConnector.createAmls(utr, _)).getOrElse(Future.successful(false))
-          arn <- subscribeAndMap(maybeArn, utr, isAnAsAgent)
-          updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
-          _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
-          _ <- sendEmail(subscriptionRequest.agency.email, subscriptionRequest.agency.name, arn, subscriptionRequest.langForEmail)
-        } yield {
-          auditService.auditEvent(AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
-          Some(arn)
+      case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _), _, _)) =>
+        if (postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode)) {
+          for {
+            _ <- subscriptionRequest.amlsDetails.map(agentAssuranceConnector.createAmls(utr, _)).getOrElse(Future.successful(false))
+            arn <- subscribeAndMap(maybeArn, utr, isAnAsAgent)
+            updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
+            _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
+            _ <- sendEmail(subscriptionRequest.agency.email, subscriptionRequest.agency.name, arn, subscriptionRequest.langForEmail)
+          } yield {
+            auditService.auditEvent(AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
+            Some(arn)
+          }
+        } else {
+          logger.warn(s"the postcode from the business partner record did not match that in the subscription request known facts")
+          Future successful None
         }
       case _ =>
         logger.warn(s"No business partner record was associated with $utr")

@@ -78,17 +78,17 @@ class SubscriptionJourneyController @Inject() (
     }
   }
 
-  // Find the SJR then overwrite the authProviderId and if included in the request, the cleanCredsAuthProviderId.
+  // Find the SJR then overwrite the authProviderId, businessDetails and cleanCredsAuthProviderId. This allows the journey to progress when
+  // the agent uses a different cred to continue the journey after some days/weeks and during that time some details may have changed e.g. address.
   def handleConflict(sjr: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Result] = {
     val utr = sjr.businessDetails.utr
     for {
       optExistingSjr <- subscriptionJourneyRepository.findByUtr(utr)
       existingSjr <- optExistingSjr.fold[Future[SubscriptionJourneyRecord]](logUTRError(sjr).toFailure)(_.toFuture)
-      updatedSjr = sjr.cleanCredsAuthProviderId
-        .fold(existingSjr.copy(authProviderId = sjr.authProviderId))(
-          cleanCreds => existingSjr.copy(
-            authProviderId = sjr.authProviderId,
-            cleanCredsAuthProviderId = Some(cleanCreds)))
+      updatedSjr = existingSjr.copy(
+        authProviderId = sjr.authProviderId,
+        businessDetails = sjr.businessDetails,
+        cleanCredsAuthProviderId = sjr.cleanCredsAuthProviderId)
       _ <- subscriptionJourneyRepository.updateOnUtr(utr, updatedSjr)
       result <- Ok(toJson(updatedSjr)).toFuture
     } yield result
