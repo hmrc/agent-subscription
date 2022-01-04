@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter
 
 import play.api.libs.json.{ Json, _ }
 
-case class RegisteredDetails(membershipNumber: String, membershipExpiresOn: LocalDate, amlsSafeId: Option[String], agentBPRSafeId: Option[String]) {
+case class RegisteredDetails(membershipNumber: String, membershipExpiresOn: Option[LocalDate], amlsSafeId: Option[String], agentBPRSafeId: Option[String]) {
   val safeIdsMatch: Option[Boolean] = amlsSafeId.flatMap(amls => agentBPRSafeId.map(_ == amls))
 }
 
@@ -54,7 +54,7 @@ object AmlsDetails {
       mayBeMembershipNumber match {
 
         case Some(membershipNumber) =>
-          val membershipExpiresOn = LocalDate.parse((json \ "membershipExpiresOn").as[String], formatter)
+          val membershipExpiresOn = (json \ "membershipExpiresOn").asOpt[String].map(date => LocalDate.parse(date, formatter))
           JsSuccess(AmlsDetails(supervisoryBody, Right(RegisteredDetails(membershipNumber, membershipExpiresOn, amlsSafeId, agentBPRSafeId))))
 
         case None =>

@@ -36,7 +36,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
 
   private lazy val repo = app.injector.instanceOf[SubscriptionJourneyRepository]
 
-  val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("123456789", LocalDate.now(), Some("amlsSafeId"), Some("agentBPRSafeId"))))
+  val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("123456789", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId"))))
 
   private val subscriptionJourneyRecord =
     SubscriptionJourneyRecord(

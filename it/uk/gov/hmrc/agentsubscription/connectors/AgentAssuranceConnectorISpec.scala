@@ -24,7 +24,7 @@ class AgentAssuranceConnectorISpec extends BaseISpec with AgentAssuranceStub wit
 
   private lazy val connector: AgentAssuranceConnector = new AgentAssuranceConnectorImpl(appConfig, http, metrics)
 
-  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", LocalDate.now(), Some("amlsSafeId"), Some("agentBPRSafeId"))))
+  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId"))))
   val overseasAmlsDetails = OverseasAmlsDetails("supervisory", Some("12345"))
 
   "creating AMLS" should {
