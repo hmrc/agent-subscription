@@ -18,7 +18,7 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
   val groupId = "groupId"
   implicit val ws = app.injector.instanceOf[WSClient]
 
-  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", LocalDate.now(), Some("amlsSafeId"), Some("agentBPRSafeId"))))
+  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId"))))
 
   val emailInfo = EmailInformation(
     Seq("agency@example.com"),

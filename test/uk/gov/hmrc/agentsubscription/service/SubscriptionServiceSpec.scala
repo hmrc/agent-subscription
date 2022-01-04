@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 HM Revenue & Customs
+ * Copyright 2022 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,7 +60,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     val businessUtr = Utr("4000000009")
     val businessPostcode = "AA1 1AA"
     val arn = "ARN0001"
-    val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", LocalDate.now(), Some("amlsSafeId"), Some("agentBPRSafeId"))))
+    val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId"))))
 
     "audit appropriate values" in {
 
