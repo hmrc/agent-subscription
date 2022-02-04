@@ -42,7 +42,8 @@ final case class SubscriptionJourneyRecord(
   lastModifiedDate: Option[LocalDateTime],
   contactEmailData: Option[ContactEmailData],
   contactTradingNameData: Option[ContactTradingNameData],
-  contactTradingAddressData: Option[ContactTradingAddressData])
+  contactTradingAddressData: Option[ContactTradingAddressData],
+  verifiedEmails: Set[String] = Set.empty)
 
 object SubscriptionJourneyRecord {
 
@@ -59,8 +60,9 @@ object SubscriptionJourneyRecord {
       (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime] and
       (JsPath \ "contactEmailData").formatNullable[ContactEmailData] and
       (JsPath \ "contactTradingNameData").formatNullable[ContactTradingNameData] and
-      (JsPath \ "contactTradingAddressData")
-      .formatNullable[ContactTradingAddressData])(SubscriptionJourneyRecord.apply, unlift(SubscriptionJourneyRecord.unapply))
+      (JsPath \ "contactTradingAddressData").formatNullable[ContactTradingAddressData] and
+      (JsPath \ "verifiedEmails")
+      .formatWithDefault[Set[String]](Set.empty[String]))(SubscriptionJourneyRecord.apply, unlift(SubscriptionJourneyRecord.unapply))
 }
 
 /**
