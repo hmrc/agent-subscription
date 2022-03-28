@@ -40,7 +40,7 @@ class AgentOverseasApplicationConnector @Inject() (
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
-  val baseUrl = appConfig.agentOverseasApplicationBaseUrl
+  val baseUrl: String = appConfig.agentOverseasApplicationBaseUrl
 
   def updateApplicationStatus(status: ApplicationStatus, authId: String, safeId: Option[SafeId] = None, arn: Option[Arn] = None)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
@@ -58,7 +58,7 @@ class AgentOverseasApplicationConnector @Inject() (
           response.status match {
             case NO_CONTENT => true
             case s =>
-              logger.error("Unexpected response: $s from: $url body: ${response.body}")
+              logger.error(s"Unexpected response: $s from: $url body: ${response.body}")
               throw new RuntimeException(s"Could not update overseas agent application status to ${status.key} for userId: $authId")
           })
     }
