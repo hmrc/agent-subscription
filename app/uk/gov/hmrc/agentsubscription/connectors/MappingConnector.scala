@@ -67,11 +67,13 @@ class MappingConnector @Inject() (
     val createMappingDetailsUrl = s"$baseUrl/agent-mapping/mappings/task-list/details/arn/${arn.value}"
 
     monitor("ConsumedAPI-Mapping-createOrUpdateMappingDetails-POST") {
-      http.PUT[String, HttpResponse](createMappingDetailsUrl, "").map { _ =>
-        logger.info("creating mapping details from subscription journey record was successful"); ()
-      }.recover {
-        case ex =>
-          logger.error(s"creating or updating mapping details failed for some reason: $ex"); ()
+      http.PUT[String, HttpResponse](createMappingDetailsUrl, "").map { response =>
+        response.status match {
+          case CREATED => logger.info("creating mapping details from subscription journey record was successful")
+          case OK => logger.info(s"user mappings were empty")
+          case NOT_FOUND => logger.warn(s"no user mappings found for this auth provider")
+          case e => logger.warn(s"create user mappings failed with status $e")
+        }
       }
     }
   }
