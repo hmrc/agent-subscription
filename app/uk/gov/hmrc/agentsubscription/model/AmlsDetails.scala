@@ -19,9 +19,14 @@ package uk.gov.hmrc.agentsubscription.model
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-import play.api.libs.json.{ Json, _ }
+import play.api.libs.json.{Json, _}
 
-case class RegisteredDetails(membershipNumber: String, membershipExpiresOn: Option[LocalDate], amlsSafeId: Option[String], agentBPRSafeId: Option[String]) {
+case class RegisteredDetails(
+  membershipNumber: String,
+  membershipExpiresOn: Option[LocalDate],
+  amlsSafeId: Option[String],
+  agentBPRSafeId: Option[String]
+) {
   val safeIdsMatch: Option[Boolean] = amlsSafeId.flatMap(amls => agentBPRSafeId.map(_ == amls))
 }
 
@@ -54,8 +59,14 @@ object AmlsDetails {
       mayBeMembershipNumber match {
 
         case Some(membershipNumber) =>
-          val membershipExpiresOn = (json \ "membershipExpiresOn").asOpt[String].map(date => LocalDate.parse(date, formatter))
-          JsSuccess(AmlsDetails(supervisoryBody, Right(RegisteredDetails(membershipNumber, membershipExpiresOn, amlsSafeId, agentBPRSafeId))))
+          val membershipExpiresOn =
+            (json \ "membershipExpiresOn").asOpt[String].map(date => LocalDate.parse(date, formatter))
+          JsSuccess(
+            AmlsDetails(
+              supervisoryBody,
+              Right(RegisteredDetails(membershipNumber, membershipExpiresOn, amlsSafeId, agentBPRSafeId))
+            )
+          )
 
         case None =>
           val appliedOn = (json \ "appliedOn").asOpt[String].map(LocalDate.parse(_, formatter))
@@ -67,7 +78,7 @@ object AmlsDetails {
 
       val detailsJson = amlsDetails.details match {
         case Right(registeredDetails) => Json.toJson(registeredDetails)
-        case Left(pendingDetails) => Json.toJson(pendingDetails)
+        case Left(pendingDetails)     => Json.toJson(pendingDetails)
       }
 
       Json.obj("supervisoryBody" -> amlsDetails.supervisoryBody).deepMerge(detailsJson.as[JsObject])

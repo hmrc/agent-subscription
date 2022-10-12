@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.JsonValidationError
-import play.api.libs.json.{ JsError, JsString, JsSuccess }
+import play.api.libs.json.{JsError, JsString, JsSuccess}
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 
 class ValidatorSpec extends UnitSpec {
@@ -505,7 +505,8 @@ class ValidatorSpec extends UnitSpec {
       }
 
       "longer than 132 characters" in {
-        val email133CharsLong = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@b.com"
+        val email133CharsLong =
+          "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa@b.com"
         email133CharsLong.length shouldBe 133
 
         validateOSEmail(email133CharsLong) shouldBe emailValidationError
@@ -549,10 +550,10 @@ class ValidatorSpec extends UnitSpec {
 
       "3rd - 5th characters are not '000'" in {
         val validSafeIds = for {
-          third <- 0 to 9
+          third  <- 0 to 9
           fourth <- 0 to 9
-          fifth <- 0 to 9
-          if (0 != (third + fourth + fifth))
+          fifth  <- 0 to 9
+          if 0 != (third + fourth + fifth)
         } yield s"X$third$fourth${fifth}1234567890"
 
         validSafeIds.foreach { validSafeId =>
@@ -587,14 +588,11 @@ class ValidatorSpec extends UnitSpec {
     }
   }
 
-  private def whitespaceValidationError = {
+  private def whitespaceValidationError =
     JsError(JsonValidationError("error.whitespace.or.empty"))
-  }
-  private def postcodeValidationError = {
+  private def postcodeValidationError =
     JsError(JsonValidationError("error.postcode.invalid"))
-  }
 
-  private def telephoneValidationError = {
+  private def telephoneValidationError =
     JsError(JsonValidationError("error.telephone.invalid"))
-  }
 }

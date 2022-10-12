@@ -16,25 +16,30 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.{ Json, OFormat }
+import play.api.libs.json.{Json, OFormat}
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.domain.AgentCode
 
-/**
- * A single GG user (agent login) which is being consolidated into a new ASA account
- *
- * @param authProviderId identifies the GG user being mapped
- * @param agentCode the main agent code that this GG user has - part of auth details
- * @param legacyEnrolments the applicable enrolments for this agent
- * @param count the number of active client relationships - from EACD
- * @param ggTag the user's label for this GG user, generally the last 4 digits of the GG ID
- */
+/** A single GG user (agent login) which is being consolidated into a new ASA account
+  *
+  * @param authProviderId
+  *   identifies the GG user being mapped
+  * @param agentCode
+  *   the main agent code that this GG user has - part of auth details
+  * @param legacyEnrolments
+  *   the applicable enrolments for this agent
+  * @param count
+  *   the number of active client relationships - from EACD
+  * @param ggTag
+  *   the user's label for this GG user, generally the last 4 digits of the GG ID
+  */
 final case class UserMapping(
   authProviderId: AuthProviderId,
   agentCode: Option[AgentCode],
   legacyEnrolments: Seq[AgentEnrolment],
   count: Int = 0,
-  ggTag: String)
+  ggTag: String
+)
 
 object UserMapping {
   implicit val format: OFormat[UserMapping] = Json.format

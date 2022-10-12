@@ -18,42 +18,38 @@ package uk.gov.hmrc.agentsubscription.audit
 
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{ verify, when }
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
-import uk.gov.hmrc.http.{ Authorization, HeaderCarrier, RequestId, SessionId }
-import uk.gov.hmrc.play.audit.http.connector.{ AuditConnector, AuditResult }
-import uk.gov.hmrc.play.audit.model.{ DataEvent, ExtendedDataEvent }
+import uk.gov.hmrc.http.{Authorization, HeaderCarrier, RequestId, SessionId}
+import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
+import uk.gov.hmrc.play.audit.model.{DataEvent, ExtendedDataEvent}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class AuditServiceSpec(implicit val ec: ExecutionContext) extends UnitSpec with MockitoSugar with Eventually {
   "auditEvent" should {
     "send an event with the correct fields" in {
       val mockConnector = mock[AuditConnector]
-      when(mockConnector.sendExtendedEvent(any[ExtendedDataEvent])(any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful AuditResult.Success)
+      when(mockConnector.sendExtendedEvent(any[ExtendedDataEvent])(any[HeaderCarrier], any[ExecutionContext]))
+        .thenReturn(Future successful AuditResult.Success)
       val service = new AuditService(mockConnector)
 
       val hc = HeaderCarrier(
         authorization = Some(Authorization("dummy bearer token")),
         sessionId = Some(SessionId("dummy session id")),
         requestId = Some(RequestId("dummy request id")),
-        trueClientPort = Some("12345"))
+        trueClientPort = Some("12345")
+      )
 
       val detail = Json.obj(
-        "agencyName" -> "Test Agency",
-        "agencyAddress" -> Json.obj(
-          "addressLine1" -> "1 Test Street",
-          "addressLine2" -> "Test village"))
-      service.auditEvent(
-        AgentSubscription,
-        "transaction name",
-        detail)(
-          hc,
-          FakeRequest("GET", "/path"))
+        "agencyName"    -> "Test Agency",
+        "agencyAddress" -> Json.obj("addressLine1" -> "1 Test Street", "addressLine2" -> "Test village")
+      )
+      service.auditEvent(AgentSubscription, "transaction name", detail)(hc, FakeRequest("GET", "/path"))
 
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[ExtendedDataEvent])
@@ -82,18 +78,13 @@ class AuditServiceSpec(implicit val ec: ExecutionContext) extends UnitSpec with 
     "include the deviceID in the tags not the detail" in {
       pending
       val mockConnector = mock[AuditConnector]
-      when(mockConnector.sendEvent(any[DataEvent])(any[HeaderCarrier], any[ExecutionContext])).thenReturn(Future successful AuditResult.Success)
+      when(mockConnector.sendEvent(any[DataEvent])(any[HeaderCarrier], any[ExecutionContext]))
+        .thenReturn(Future successful AuditResult.Success)
       val service = new AuditService(mockConnector)
 
-      val hc = HeaderCarrier(
-        deviceID = Some("device ID"))
+      val hc = HeaderCarrier(deviceID = Some("device ID"))
 
-      service.auditEvent(
-        AgentSubscription,
-        "transaction name",
-        Json.obj())(
-          hc,
-          FakeRequest("GET", "/path"))
+      service.auditEvent(AgentSubscription, "transaction name", Json.obj())(hc, FakeRequest("GET", "/path"))
 
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[DataEvent])
@@ -110,9 +101,7 @@ class AuditServiceSpec(implicit val ec: ExecutionContext) extends UnitSpec with 
     "convert a Map[String, String] into a JsObject with the same entries as the map" in {
       val service = new AuditService(null)
 
-      val js = service.toJsObject(Map(
-        "name" -> "value",
-        "other name" -> "other value"))
+      val js = service.toJsObject(Map("name" -> "value", "other name" -> "other value"))
 
       (js \ "name").as[String] shouldBe "value"
       (js \ "other name").as[String] shouldBe "other value"

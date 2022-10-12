@@ -30,8 +30,7 @@ object CompaniesHouseDateOfBirth {
 
 object CompaniesHouseOfficer {
 
-  implicit val reads: Reads[CompaniesHouseOfficer] = (
-    (__ \ "name").read[String] and
+  implicit val reads: Reads[CompaniesHouseOfficer] = ((__ \ "name").read[String] and
     (__ \ "date_of_birth").readNullable[CompaniesHouseDateOfBirth])(CompaniesHouseOfficer.apply _)
 
 }

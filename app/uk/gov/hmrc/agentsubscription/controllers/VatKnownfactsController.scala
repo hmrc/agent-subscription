@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import javax.inject.{ Inject, Singleton }
-import play.api.mvc.{ Action, AnyContent, ControllerComponents }
+import javax.inject.{Inject, Singleton}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.agentsubscription.service.VatKnownfactsService
@@ -30,17 +30,19 @@ import scala.concurrent.ExecutionContext
 class VatKnownfactsController @Inject() (
   service: VatKnownfactsService,
   authActions: AuthActions,
-  cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
+  cc: ControllerComponents
+)(implicit ec: ExecutionContext)
+    extends BackendController(cc) {
 
   import authActions._
 
-  def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
-    service.matchVatKnownfacts(vrn, vatRegistrationDate).map {
-      case Match => Ok
-      case NoMatch | RecordNotFound => NotFound
-      case InvalidIdentifier => BadRequest
-      case _ => InternalServerError
-    }
+  def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String): Action[AnyContent] = authorisedWithAgentAffinity {
+    implicit request =>
+      service.matchVatKnownfacts(vrn, vatRegistrationDate).map {
+        case Match                    => Ok
+        case NoMatch | RecordNotFound => NotFound
+        case InvalidIdentifier        => BadRequest
+        case _                        => InternalServerError
+      }
   }
 }
-

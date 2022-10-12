@@ -19,16 +19,16 @@ package uk.gov.hmrc.agentsubscription.connectors
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails
 import uk.gov.hmrc.domain.Nino
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.HttpErrorFunctions._
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[CitizenDetailsConnectorImpl])
 trait CitizenDetailsConnector {
@@ -38,11 +38,8 @@ trait CitizenDetailsConnector {
 }
 
 @Singleton
-class CitizenDetailsConnectorImpl @Inject() (
-  val appConfig: AppConfig,
-  httpClient: HttpClient,
-  metrics: Metrics)
-  extends CitizenDetailsConnector with HttpAPIMonitor {
+class CitizenDetailsConnectorImpl @Inject() (val appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics)
+    extends CitizenDetailsConnector with HttpAPIMonitor {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
@@ -56,7 +53,8 @@ class CitizenDetailsConnectorImpl @Inject() (
         .map(response =>
           response.status match {
             case s if is2xx(s) => response.json.as[DesignatoryDetails]
-            case s => throw UpstreamErrorResponse(response.body, s)
-          })
+            case s             => throw UpstreamErrorResponse(response.body, s)
+          }
+        )
     }
 }

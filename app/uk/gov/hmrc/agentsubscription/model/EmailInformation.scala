@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{ Json, OFormat }
+import play.api.libs.json.{Json, OFormat}
 
 case class EmailInformation(
   to: Seq[String],
@@ -24,7 +24,8 @@ case class EmailInformation(
   parameters: Map[String, String],
   force: Boolean = false,
   eventUrl: Option[String] = None,
-  onSendUrl: Option[String] = None)
+  onSendUrl: Option[String] = None
+)
 
 object EmailInformation {
   implicit val formats: OFormat[EmailInformation] = Json.format

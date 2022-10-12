@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.agentsubscription.repository
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import org.joda.time.DateTime
 import play.api.libs.json._
 import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.indexes.{ Index, IndexType }
+import reactivemongo.api.indexes.{Index, IndexType}
 import reactivemongo.bson.BSONObjectID
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
@@ -28,34 +28,31 @@ import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
 import uk.gov.hmrc.mongo.ReactiveRepository
 import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class RecoveryRepository @Inject() (mongoComponent: ReactiveMongoComponent)
-  extends ReactiveRepository[RecoveryData, BSONObjectID](
-    "agent-recovery-store",
-    mongoComponent.mongoConnector.db,
-    RecoveryData.recoveryDataFormat,
-    ReactiveMongoFormats.objectIdFormats) with StrictlyEnsureIndexes[RecoveryData, BSONObjectID] {
+    extends ReactiveRepository[RecoveryData, BSONObjectID](
+      "agent-recovery-store",
+      mongoComponent.mongoConnector.db,
+      RecoveryData.recoveryDataFormat,
+      ReactiveMongoFormats.objectIdFormats
+    ) with StrictlyEnsureIndexes[RecoveryData, BSONObjectID] {
 
   override def indexes: Seq[Index] = Seq(
-    Index(
-      key = Seq("arn" -> IndexType.Ascending),
-      name = Some("Arn"),
-      unique = false),
-    Index(
-      key = Seq("createdDate" -> IndexType.Ascending),
-      name = Some("createDate"),
-      unique = false))
+    Index(key = Seq("arn" -> IndexType.Ascending), name = Some("Arn"), unique = false),
+    Index(key = Seq("createdDate" -> IndexType.Ascending), name = Some("createDate"), unique = false)
+  )
 
-  def create(authIds: AuthIds, arn: Arn, subscriptionRequest: SubscriptionRequest, errorMessage: String)(implicit ec: ExecutionContext): Future[Unit] = {
-    insert(RecoveryData(authIds, arn, subscriptionRequest, errorMessage)).map(_ => ())
-      .recoverWith {
-        case e =>
-          logger.error(s"Failed to create recovery record for ${arn.value}", e)
-          Future failed e
+  def create(authIds: AuthIds, arn: Arn, subscriptionRequest: SubscriptionRequest, errorMessage: String)(implicit
+    ec: ExecutionContext
+  ): Future[Unit] =
+    insert(RecoveryData(authIds, arn, subscriptionRequest, errorMessage))
+      .map(_ => ())
+      .recoverWith { case e =>
+        logger.error(s"Failed to create recovery record for ${arn.value}", e)
+        Future failed e
       }
-  }
 }
 
 case class RecoveryData(
@@ -63,7 +60,8 @@ case class RecoveryData(
   arn: Arn,
   subscriptionRequest: SubscriptionRequest,
   errorMessage: String,
-  createdDate: DateTime = DateTime.now)
+  createdDate: DateTime = DateTime.now
+)
 
 object RecoveryData {
   implicit val dateFormat: Format[DateTime] = ReactiveMongoFormats.dateTimeFormats

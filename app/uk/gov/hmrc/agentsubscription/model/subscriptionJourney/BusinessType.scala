@@ -57,9 +57,9 @@ object BusinessType {
 
   def apply(convertToType: String): BusinessType = convertToType match {
     case "limited_company" => LimitedCompany
-    case "sole_trader" => SoleTrader
-    case "partnership" => Partnership
-    case "llp" => Llp
+    case "sole_trader"     => SoleTrader
+    case "partnership"     => Partnership
+    case "llp"             => Llp
 
   }
 
@@ -68,9 +68,9 @@ object BusinessType {
     override def reads(json: JsValue): JsResult[BusinessType] = {
       json.as[String] match {
         case "limited_company" => JsSuccess(LimitedCompany)
-        case "sole_trader" => JsSuccess(SoleTrader)
-        case "partnership" => JsSuccess(Partnership)
-        case "llp" => JsSuccess(Llp)
+        case "sole_trader"     => JsSuccess(SoleTrader)
+        case "partnership"     => JsSuccess(Partnership)
+        case "llp"             => JsSuccess(Llp)
 
       }
       JsSuccess(BusinessType.apply(json.as[String]))
@@ -79,11 +79,10 @@ object BusinessType {
     override def writes(o: BusinessType): JsValue =
       o match {
         case LimitedCompany => JsString("limited_company")
-        case SoleTrader => JsString("sole_trader")
-        case Partnership => JsString("partnership")
-        case Llp => JsString("llp")
+        case SoleTrader     => JsString("sole_trader")
+        case Partnership    => JsString("partnership")
+        case Llp            => JsString("llp")
 
       }
   }
 }
-

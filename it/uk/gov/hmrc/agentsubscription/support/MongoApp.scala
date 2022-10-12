@@ -1,7 +1,7 @@
 package uk.gov.hmrc.agentsubscription.support
 
-import org.scalatest.{ BeforeAndAfterEach, Suite }
-import uk.gov.hmrc.mongo.{ MongoSpecSupport, Awaiting => MongoAwaiting }
+import org.scalatest.{BeforeAndAfterEach, Suite}
+import uk.gov.hmrc.mongo.{Awaiting => MongoAwaiting, MongoSpecSupport}
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.global
@@ -20,9 +20,8 @@ trait ResetMongoBeforeTest extends BeforeAndAfterEach {
     dropMongoDb()
   }
 
-  def dropMongoDb()(implicit ec: ExecutionContext = global): Unit = {
+  def dropMongoDb()(implicit ec: ExecutionContext = global): Unit =
     Awaiting.await(mongo().drop())
-  }
 }
 
 object Awaiting extends MongoAwaiting

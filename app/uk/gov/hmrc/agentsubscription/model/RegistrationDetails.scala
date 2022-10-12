@@ -26,7 +26,8 @@ case class RegistrationDetails(
   taxpayerName: Option[String],
   address: BusinessAddress,
   emailAddress: Option[String],
-  safeId: Option[String] = None)
+  safeId: Option[String] = None
+)
 
 object RegistrationDetails {
   implicit val registrationDetailsObjectFormat: OFormat[RegistrationDetails] = format

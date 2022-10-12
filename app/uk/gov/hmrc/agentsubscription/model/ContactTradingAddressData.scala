@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{ Format, Json }
+import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 
 case class ContactTradingAddressData(useBusinessAddress: Boolean, contactTradingAddress: Option[BusinessAddress])
@@ -25,4 +25,3 @@ object ContactTradingAddressData {
 
   implicit val format: Format[ContactTradingAddressData] = Json.format[ContactTradingAddressData]
 }
-

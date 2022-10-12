@@ -9,7 +9,7 @@ lazy val scoverageSettings = {
     ScoverageKeys.coverageMinimum := 80.00,
     ScoverageKeys.coverageFailOnMinimum := true,
     ScoverageKeys.coverageHighlighting := true,
-    parallelExecution in Test := false
+    Test / parallelExecution := false
   )
 }
 
@@ -22,7 +22,7 @@ lazy val wartRemoverSettings = {
       Wart.IsInstanceOf,
       Wart.Any
     )
-    wartremoverWarnings in (Compile, compile) ++= warningWarts
+    Compile / compile / wartremoverWarnings ++= warningWarts
   }
 
   val wartRemoverError = {
@@ -47,15 +47,15 @@ lazy val wartRemoverSettings = {
       Wart.Var,
       Wart.While)
 
-    wartremoverErrors in (Compile, compile) ++= errorWarts
+    Compile / compile / wartremoverErrors ++= errorWarts
   }
 
   Seq(
     wartRemoverError,
     wartRemoverWarning,
-    wartremoverErrors in (Test, compile) --= Seq(Wart.Any, Wart.Equals, Wart.Null, Wart.NonUnitStatements, Wart.PublicInference),
+    Test / compile / wartremoverErrors --= Seq(Wart.Any, Wart.Equals, Wart.Null, Wart.NonUnitStatements, Wart.PublicInference),
     wartremoverExcluded ++=
-    routes.in(Compile).value ++
+    (Compile / routes).value ++
     (baseDirectory.value / "it").get ++
     (baseDirectory.value / "test").get ++
     Seq(sourceManaged.value / "main" / "sbt-buildinfo" / "BuildInfo.scala")
@@ -65,19 +65,19 @@ lazy val wartRemoverSettings = {
 
 lazy val compileDeps = Seq(
   ws,
-  "uk.gov.hmrc" %% "bootstrap-backend-play-28" % "5.9.0",
-  "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.25.0-play-27",
-  "uk.gov.hmrc" %% "domain" % "6.2.0-play-28",
+  "uk.gov.hmrc" %% "bootstrap-backend-play-28" % "7.7.0",
+  "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.47.0-play-28",
+  "uk.gov.hmrc" %% "domain" % "8.1.0-play-28",
   "com.github.blemale" %% "scaffeine" % "4.0.1",
   "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "4.8.0-play-28",
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "8.0.0-play-28"
+  "uk.gov.hmrc" %% "simple-reactivemongo" % "8.1.0-play-28"
 )
 
 def testDeps(scope: String) = Seq(
   "org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0" % scope,
   "org.scalatestplus" %% "mockito-3-12" % "3.2.10.0" % scope,
   "com.github.tomakehurst" % "wiremock-jre8" % "2.26.1" % scope,
-  "uk.gov.hmrc" %% "reactivemongo-test" % "5.0.0-play-28" % scope,
+  "uk.gov.hmrc" %% "reactivemongo-test" % "5.1.0-play-28" % scope,
   "com.vladsch.flexmark" % "flexmark-all" % "0.35.10" % scope
 )
 
@@ -90,7 +90,7 @@ lazy val root = Project("agent-subscription", file("."))
   .settings(
     name := "agent-subscription",
     organization := "uk.gov.hmrc",
-    scalaVersion := "2.12.10",
+    scalaVersion := "2.12.15",
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
       "-Xlint:-missing-interpolator,_",
@@ -107,14 +107,16 @@ lazy val root = Project("agent-subscription", file("."))
       Resolver.typesafeRepo("releases"),
     ),
     resolvers += "HMRC-local-artefacts-maven" at "https://artefacts.tax.service.gov.uk/artifactory/hmrc-releases-local",
+    Compile / scalafmtOnCompile := true,
+    Test / scalafmtOnCompile := true,
     libraryDependencies ++= tmpMacWorkaround ++ compileDeps ++ testDeps("test") ++ testDeps("it"),
     libraryDependencies ++= Seq(
-      compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.4.4" cross CrossVersion.full),
-      "com.github.ghik" % "silencer-lib" % "1.4.4" % Provided cross CrossVersion.full
+      compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.8" cross CrossVersion.full),
+      "com.github.ghik" % "silencer-lib" % "1.7.8" % Provided cross CrossVersion.full
     ),
     publishingSettings,
     scoverageSettings,
-    unmanagedResourceDirectories in Compile += baseDirectory.value / "resources",
+    Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     routesImport ++= Seq(
       "uk.gov.hmrc.agentsubscription.model.AuthProviderId",
       "java.util.UUID",
@@ -125,11 +127,10 @@ lazy val root = Project("agent-subscription", file("."))
   .configs(IntegrationTest)
   .settings(
     majorVersion := 0,
-    Keys.fork in IntegrationTest := false,
+    IntegrationTest / Keys.fork := false,
     Defaults.itSettings,
-    unmanagedSourceDirectories in IntegrationTest += baseDirectory(_ / "it").value,
-    parallelExecution in IntegrationTest := false
+    IntegrationTest / unmanagedSourceDirectories += baseDirectory(_ / "it").value,
+    IntegrationTest / parallelExecution := false
   )
-  .settings(scalariformItSettings)
   .settings(wartRemoverSettings: _*)
   .enablePlugins(PlayScala, SbtDistributablesPlugin)

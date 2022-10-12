@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{ JsString, JsValue, Writes }
+import play.api.libs.json.{JsString, JsValue, Writes}
 
 sealed trait MatchDetailsResponse
 
@@ -29,11 +29,11 @@ object MatchDetailsResponse {
 
   implicit val matchDetailsWrites: Writes[MatchDetailsResponse] = new Writes[MatchDetailsResponse] {
     override def writes(o: MatchDetailsResponse): JsValue = o match {
-      case Match => JsString("match_successful")
-      case NoMatch => JsString("no_match")
-      case RecordNotFound => JsString("record_not_found")
+      case Match             => JsString("match_successful")
+      case NoMatch           => JsString("no_match")
+      case RecordNotFound    => JsString("record_not_found")
       case InvalidIdentifier => JsString("invalid_identifier")
-      case UnknownError => JsString("unknown_error")
+      case UnknownError      => JsString("unknown_error")
     }
   }
 }

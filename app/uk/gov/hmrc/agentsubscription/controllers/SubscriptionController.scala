@@ -19,53 +19,66 @@ package uk.gov.hmrc.agentsubscription.controllers
 import javax.inject._
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{ Action, AnyContent, ControllerComponents }
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
-import uk.gov.hmrc.agentsubscription.model.{ SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest }
-import uk.gov.hmrc.agentsubscription.service.{ EnrolmentAlreadyAllocated, SubscriptionService }
+import uk.gov.hmrc.agentsubscription.model.{SubscriptionRequest, SubscriptionResponse, UpdateSubscriptionRequest}
+import uk.gov.hmrc.agentsubscription.service.{EnrolmentAlreadyAllocated, SubscriptionService}
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class SubscriptionController @Inject() (subscriptionService: SubscriptionService, authActions: AuthActions, cc: ControllerComponents)(implicit ec: ExecutionContext)
-  extends BackendController(cc) {
+class SubscriptionController @Inject() (
+  subscriptionService: SubscriptionService,
+  authActions: AuthActions,
+  cc: ControllerComponents
+)(implicit ec: ExecutionContext)
+    extends BackendController(cc) {
 
   import authActions._
 
   def createSubscription: Action[JsValue] = authorisedWithAffinityGroup { implicit request => implicit authIds =>
     withJsonBody[SubscriptionRequest] { subscriptionRequest =>
-      subscriptionService.createSubscription(subscriptionRequest, authIds).map {
-        case Some(a) => Created(toJson(SubscriptionResponse(a)))
-        case None => Forbidden(s"No business partner record found for ${subscriptionRequest.utr}")
-      }.recover {
-        case _: EnrolmentAlreadyAllocated => Conflict
-        case _: IllegalStateException | _: UpstreamErrorResponse => InternalServerError
-      }
+      subscriptionService
+        .createSubscription(subscriptionRequest, authIds)
+        .map {
+          case Some(a) => Created(toJson(SubscriptionResponse(a)))
+          case None    => Forbidden(s"No business partner record found for ${subscriptionRequest.utr}")
+        }
+        .recover {
+          case _: EnrolmentAlreadyAllocated                        => Conflict
+          case _: IllegalStateException | _: UpstreamErrorResponse => InternalServerError
+        }
     }
   }
 
   def updateSubscription: Action[JsValue] = authorisedWithAffinityGroup { implicit request => implicit authIds =>
     withJsonBody[UpdateSubscriptionRequest] { updateSubscriptionRequest =>
-      subscriptionService.updateSubscription(updateSubscriptionRequest, authIds).map {
-        case Some(arn) => Ok(toJson(SubscriptionResponse(arn)))
-        case None => Forbidden("No business partner record found for ${subscriptionRequest.utr}")
-      }.recover {
-        case _: EnrolmentAlreadyAllocated => Conflict
-        case _: IllegalStateException | _: UpstreamErrorResponse => InternalServerError
-      }
+      subscriptionService
+        .updateSubscription(updateSubscriptionRequest, authIds)
+        .map {
+          case Some(arn) => Ok(toJson(SubscriptionResponse(arn)))
+          case None      => Forbidden("No business partner record found for ${subscriptionRequest.utr}")
+        }
+        .recover {
+          case _: EnrolmentAlreadyAllocated                        => Conflict
+          case _: IllegalStateException | _: UpstreamErrorResponse => InternalServerError
+        }
     }
   }
 
   def createOverseasSubscription: Action[AnyContent] = overseasAgentAuth { implicit request => implicit authIds =>
-    subscriptionService.createOverseasSubscription(authIds).map {
-      case Some(arn) => Created(toJson(SubscriptionResponse(arn)))
-      case None => Forbidden
-    }.recover {
-      case _: EnrolmentAlreadyAllocated => Conflict
-      case _: IllegalStateException | _: UpstreamErrorResponse => InternalServerError
-    }
+    subscriptionService
+      .createOverseasSubscription(authIds)
+      .map {
+        case Some(arn) => Created(toJson(SubscriptionResponse(arn)))
+        case None      => Forbidden
+      }
+      .recover {
+        case _: EnrolmentAlreadyAllocated                        => Conflict
+        case _: IllegalStateException | _: UpstreamErrorResponse => InternalServerError
+      }
 
   }
 }

@@ -3,27 +3,33 @@ package uk.gov.hmrc.agentsubscription.controllers
 import java.time.LocalDate
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import play.api.libs.json.Json.{ stringify, toJson }
+import play.api.libs.json.Json.{stringify, toJson}
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
-import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, KnownFacts, RegisteredDetails, SubscriptionRequest, UpdateSubscriptionRequest, _ }
-import uk.gov.hmrc.agentsubscription.stubs.{ AgentAssuranceStub, AuthStub, DesStubs, TaxEnrolmentsStubs, _ }
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, KnownFacts, RegisteredDetails, SubscriptionRequest, UpdateSubscriptionRequest, _}
+import uk.gov.hmrc.agentsubscription.stubs.{AgentAssuranceStub, AuthStub, DesStubs, TaxEnrolmentsStubs, _}
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
-class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub with EmailStub with MappingStubs {
+class SubscriptionControllerISpec
+    extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub with EmailStub
+    with MappingStubs {
   val utr = Utr("7000000002")
 
   val arn = "TARN0000001"
   val groupId = "groupId"
   implicit val ws = app.injector.instanceOf[WSClient]
 
-  val amlsDetails: AmlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("12345", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId"))))
+  val amlsDetails: AmlsDetails = AmlsDetails(
+    "supervisory",
+    Right(RegisteredDetails("12345", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId")))
+  )
 
   val emailInfo = EmailInformation(
     Seq("agency@example.com"),
     "agent_services_account_created",
-    Map("agencyName" -> "My Agency", "arn" -> "TARN0000001"))
+    Map("agencyName" -> "My Agency", "arn" -> "TARN0000001")
+  )
 
   "creating a subscription" should {
     val agency = __ \ "agency"
@@ -409,7 +415,8 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
       "postcodes don't match" in {
         requestIsAuthenticatedWithNoEnrolments()
         agentRecordExists(utr)
-        val request = Json.parse(updateSubscriptionRequest).as[UpdateSubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
+        val request =
+          Json.parse(updateSubscriptionRequest).as[UpdateSubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
 
         val result = doUpdateSubscriptionRequest(stringify(toJson(request)))
 
@@ -525,8 +532,10 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
     }
   }
 
-  private def doSubscriptionRequest(request: String = subscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
-  private def doUpdateSubscriptionRequest(request: String = updateSubscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).putAsJson(request)
+  private def doSubscriptionRequest(request: String = subscriptionRequest) =
+    new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
+  private def doUpdateSubscriptionRequest(request: String = updateSubscriptionRequest) =
+    new Resource(s"/agent-subscription/subscription", port).putAsJson(request)
 
   private def removeFields(fields: Seq[JsPath]): String = {
     val request = Json.parse(subscriptionRequest).as[JsObject]
@@ -548,8 +557,9 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
   }
 
   private def replaceFields(jsObject: JsObject, fields: Seq[(JsPath, String, String)]): JsObject = {
-    val transformer = fields.map(field => field._1.json.update(
-      __.read[JsObject].map(o => o ++ Json.obj(field._2 -> field._3)))).reduce((a, b) => a andThen b)
+    val transformer = fields
+      .map(field => field._1.json.update(__.read[JsObject].map(o => o ++ Json.obj(field._2 -> field._3))))
+      .reduce((a, b) => a andThen b)
     jsObject.transform(transformer) match {
       case s: JsSuccess[JsObject] => s.get
       case e: JsError =>
@@ -612,11 +622,11 @@ class SubscriptionControllerISpec extends BaseISpec with DesStubs with AuthStub 
 
   private val updateSubscriptionRequest =
     s"""
-      |{
-      |  "utr": "${utr.value}" ,
-      |  "knownFacts": {
-      |    "postcode": "TF3 4ER"
-      |  }
-      |}
+       |{
+       |  "utr": "${utr.value}" ,
+       |  "knownFacts": {
+       |    "postcode": "TF3 4ER"
+       |  }
+       |}
     """.stripMargin
 }

@@ -19,38 +19,41 @@ package uk.gov.hmrc.agentsubscription.connectors
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{ Inject, Singleton }
 import play.api.Logging
+import play.api.http.Status._
 import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.{ CompaniesHouseOfficer, Crn }
+import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn}
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse }
-import play.api.http.Status._
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[CompaniesHouseApiProxyConnectorImpl])
 trait CompaniesHouseApiProxyConnector {
 
   def appConfig: AppConfig
-  def getCompanyOfficers(crn: Crn, surname: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[CompaniesHouseOfficer]]
-
+  def getCompanyOfficers(crn: Crn, surname: String)(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[Seq[CompaniesHouseOfficer]]
 }
 
 @Singleton
-class CompaniesHouseApiProxyConnectorImpl @Inject() (
-  val appConfig: AppConfig,
-  httpClient: HttpClient,
-  metrics: Metrics) extends CompaniesHouseApiProxyConnector with HttpAPIMonitor with Logging {
+class CompaniesHouseApiProxyConnectorImpl @Inject() (val appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics)
+    extends CompaniesHouseApiProxyConnector with HttpAPIMonitor with Logging {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   val baseUrl = appConfig.companiesHouseApiProxyBaseUrl
 
-  override def getCompanyOfficers(crn: Crn, surname: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Seq[CompaniesHouseOfficer]] = {
+  override def getCompanyOfficers(crn: Crn, surname: String)(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[Seq[CompaniesHouseOfficer]] =
     monitor(s"ConsumedAPI-getCompanyOfficers-GET") {
       val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
       val encodedSurname = UriEncoding.encodePathSegment(surname, "UTF-8")
@@ -69,5 +72,4 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (
         }
       }
     }
-  }
 }

@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{ Format, Json }
+import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails.Person
 
 //Add more fields as required: https://github.com/hmrc/citizen-details

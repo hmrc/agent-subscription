@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.config
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 @Singleton

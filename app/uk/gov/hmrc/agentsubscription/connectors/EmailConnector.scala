@@ -26,11 +26,11 @@ import play.api.http.Status.ACCEPTED
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.EmailInformation
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpResponse }
+import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[EmailConnectorImpl])
 trait EmailConnector extends Logging {
@@ -39,7 +39,7 @@ trait EmailConnector extends Logging {
 }
 
 class EmailConnectorImpl @Inject() (val appConfig: AppConfig, http: HttpClient, metrics: Metrics)
-  extends HttpAPIMonitor with EmailConnector {
+    extends HttpAPIMonitor with EmailConnector {
 
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
@@ -50,10 +50,12 @@ class EmailConnectorImpl @Inject() (val appConfig: AppConfig, http: HttpClient, 
     monitor(s"ConsumedAPI-Send-Email-${emailInformation.templateId}") {
       http
         .POST[EmailInformation, HttpResponse](url, emailInformation)
-        .map(response => response.status match {
-          case ACCEPTED => logger.info(s"sent email success! template: ${emailInformation.templateId}")
-          case e => logger.warn(s"sent email FAILED with status $e for template: ${emailInformation.templateId}")
-        })
+        .map(response =>
+          response.status match {
+            case ACCEPTED => logger.info(s"sent email success! template: ${emailInformation.templateId}")
+            case e => logger.warn(s"sent email FAILED with status $e for template: ${emailInformation.templateId}")
+          }
+        )
     }
   }
 }

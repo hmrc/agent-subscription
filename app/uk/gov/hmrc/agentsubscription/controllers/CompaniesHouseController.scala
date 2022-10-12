@@ -16,27 +16,32 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import javax.inject.{ Inject, Singleton }
-import play.api.mvc.{ Action, AnyContent, ControllerComponents }
+import javax.inject.{Inject, Singleton}
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.model.Crn
-import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.{ Match, NoMatch, RecordNotFound }
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.{Match, NoMatch, RecordNotFound}
 import uk.gov.hmrc.agentsubscription.service.CompaniesHouseService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class CompaniesHouseController @Inject() (companiesHouseService: CompaniesHouseService, val authActions: AuthActions, cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
+class CompaniesHouseController @Inject() (
+  companiesHouseService: CompaniesHouseService,
+  val authActions: AuthActions,
+  cc: ControllerComponents
+)(implicit ec: ExecutionContext)
+    extends BackendController(cc) {
 
   import authActions._
 
-  def matchCompanyOfficers(crn: Crn, nameToMatch: String): Action[AnyContent] = authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider => {
-    companiesHouseService.knownFactCheck(crn, nameToMatch).map {
-      case Match => Ok
-      case NoMatch | RecordNotFound => NotFound
-      case _ => InternalServerError
+  def matchCompanyOfficers(crn: Crn, nameToMatch: String): Action[AnyContent] =
+    authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider =>
+      companiesHouseService.knownFactCheck(crn, nameToMatch).map {
+        case Match                    => Ok
+        case NoMatch | RecordNotFound => NotFound
+        case _                        => InternalServerError
+      }
     }
-  }
-  }
 }

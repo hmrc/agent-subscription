@@ -19,8 +19,8 @@ package uk.gov.hmrc.agentsubscription.controllers
 import play.api.libs.json.JsValue
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs, TaxEnrolmentsStubs }
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
+import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, TaxEnrolmentsStubs}
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
 class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolmentsStubs with AuthStub {
 

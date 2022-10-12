@@ -17,25 +17,25 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import java.net.URL
-import org.mockito.ArgumentMatchers.{ any, eq => eqs }
-import org.mockito.Mockito.{ verify, when }
+import org.mockito.ArgumentMatchers.{any, eq => eqs}
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
-import org.slf4j.{ Logger, Marker }
-import play.api.libs.json.{ JsObject, Json }
+import org.slf4j.{Logger, Marker}
+import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import play.api.{ LoggerLike, MarkerContext }
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import play.api.{LoggerLike, MarkerContext}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
-import uk.gov.hmrc.agentsubscription.audit.{ AuditService, CheckAgencyStatus }
+import uk.gov.hmrc.agentsubscription.audit.{AuditService, CheckAgencyStatus}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.support.{ ResettingMockitoSugar, UnitSpec }
+import uk.gov.hmrc.agentsubscription.support.{ResettingMockitoSugar, UnitSpec}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import scala.collection.mutable
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
@@ -52,8 +52,18 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   private val hc = HeaderCarrier()
   private val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private val provider = Provider("provId", "provType")
-  private val request = RequestWithAuthority(Authority(authorityUrl, authProviderId = Some(provider.providerId), authProviderType = Some(provider.providerType), "", ""), FakeRequest())
-  private val requestWithoutAuthProvider = RequestWithAuthority(Authority(authorityUrl, authProviderId = None, authProviderType = None, "", ""), FakeRequest())
+  private val request = RequestWithAuthority(
+    Authority(
+      authorityUrl,
+      authProviderId = Some(provider.providerId),
+      authProviderType = Some(provider.providerType),
+      "",
+      ""
+    ),
+    FakeRequest()
+  )
+  private val requestWithoutAuthProvider =
+    RequestWithAuthority(Authority(authorityUrl, authProviderId = None, authProviderType = None, "", ""), FakeRequest())
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -67,31 +77,46 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val arn = Arn("TARN0000001")
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          isAnASAgent = true,
-          Some("Organisation name"),
-          None,
-          Some(arn),
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
+        .thenReturn(
+          Future successful Some(
+            DesRegistrationResponse(
+              isAnASAgent = true,
+              Some("Organisation name"),
+              None,
+              Some(arn),
+              BusinessAddress(
+                "AddressLine1 A",
+                Some("AddressLine2 A"),
+                Some("AddressLine3 A"),
+                Some("AddressLine4 A"),
+                Some(postcode),
+                "GB"
+              ),
+              None,
+              Some("safeId")
+            )
+          )
+        )
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful true)
 
       await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-          |{
-          |  "authProviderId": "${provider.providerId}",
-          |  "authProviderType": "${provider.providerType}",
-          |  "utr": "${utr.value}",
-          |  "postcode": "$postcode",
-          |  "knownFactsMatched": true,
-          |  "isSubscribedToAgentServices": true,
-          |  "isAnAsAgentInDes" : true,
-          |  "agentReferenceNumber": "TARN0000001"
-          |}
-          |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$postcode",
+                  |  "knownFactsMatched": true,
+                  |  "isSubscribedToAgentServices": true,
+                  |  "isAnAsAgentInDes" : true,
+                  |  "agentReferenceNumber": "TARN0000001"
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
@@ -107,31 +132,46 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val arn = Arn("TARN0000001")
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          isAnASAgent = true,
-          Some("Organisation name"),
-          None,
-          Some(arn),
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
+        .thenReturn(
+          Future successful Some(
+            DesRegistrationResponse(
+              isAnASAgent = true,
+              Some("Organisation name"),
+              None,
+              Some(arn),
+              BusinessAddress(
+                "AddressLine1 A",
+                Some("AddressLine2 A"),
+                Some("AddressLine3 A"),
+                Some("AddressLine4 A"),
+                Some(postcode),
+                "GB"
+              ),
+              None,
+              Some("safeId")
+            )
+          )
+        )
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful false)
 
       await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-           |{
-           |  "authProviderId": "${provider.providerId}",
-           |  "authProviderType": "${provider.providerType}",
-           |  "utr": "${utr.value}",
-           |  "postcode": "$postcode",
-           |  "knownFactsMatched": true,
-           |  "isSubscribedToAgentServices": false,
-           |  "isAnAsAgentInDes" : true,
-           |  "agentReferenceNumber": "TARN0000001"
-           |}
-           |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$postcode",
+                  |  "knownFactsMatched": true,
+                  |  "isSubscribedToAgentServices": false,
+                  |  "isAnAsAgentInDes" : true,
+                  |  "agentReferenceNumber": "TARN0000001"
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
@@ -146,27 +186,42 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val postcode = "AA1 1AA"
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          isAnASAgent = false,
-          Some("Organisation name"),
-          None,
-          None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
+        .thenReturn(
+          Future successful Some(
+            DesRegistrationResponse(
+              isAnASAgent = false,
+              Some("Organisation name"),
+              None,
+              None,
+              BusinessAddress(
+                "AddressLine1 A",
+                Some("AddressLine2 A"),
+                Some("AddressLine3 A"),
+                Some("AddressLine4 A"),
+                Some(postcode),
+                "GB"
+              ),
+              None,
+              Some("safeId")
+            )
+          )
+        )
 
       await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-           |{
-           |  "authProviderId": "${provider.providerId}",
-           |  "authProviderType": "${provider.providerType}",
-           |  "utr": "${utr.value}",
-           |  "postcode": "$postcode",
-           |  "knownFactsMatched": true,
-           |  "isSubscribedToAgentServices": false,
-           |  "isAnAsAgentInDes" : false
-           |}
-           |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$postcode",
+                  |  "knownFactsMatched": true,
+                  |  "isSubscribedToAgentServices": false,
+                  |  "isAnAsAgentInDes" : false
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
@@ -180,26 +235,41 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val suppliedPostcode = "AA1 1AA"
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          isAnASAgent = false,
-          Some("Organisation name"),
-          None,
-          None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("XX9 9XX"), "GB"), None, Some("safeId"))))
+        .thenReturn(
+          Future successful Some(
+            DesRegistrationResponse(
+              isAnASAgent = false,
+              Some("Organisation name"),
+              None,
+              None,
+              BusinessAddress(
+                "AddressLine1 A",
+                Some("AddressLine2 A"),
+                Some("AddressLine3 A"),
+                Some("AddressLine4 A"),
+                Some("XX9 9XX"),
+                "GB"
+              ),
+              None,
+              Some("safeId")
+            )
+          )
+        )
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-           |{
-           |  "authProviderId": "${provider.providerId}",
-           |  "authProviderType": "${provider.providerType}",
-           |  "utr": "${utr.value}",
-           |  "postcode": "$suppliedPostcode",
-           |  "knownFactsMatched": false,
-           |  "isAnAsAgentInDes" : false
-           |}
-           |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$suppliedPostcode",
+                  |  "knownFactsMatched": false,
+                  |  "isAnAsAgentInDes" : false
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
@@ -214,31 +284,46 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val arn = Some(Arn("AARN0000002"))
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          isAnASAgent = true,
-          None,
-          Some(DesIndividual("First", "Last")),
-          arn,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
+        .thenReturn(
+          Future successful Some(
+            DesRegistrationResponse(
+              isAnASAgent = true,
+              None,
+              Some(DesIndividual("First", "Last")),
+              arn,
+              BusinessAddress(
+                "AddressLine1 A",
+                Some("AddressLine2 A"),
+                Some("AddressLine3 A"),
+                Some("AddressLine4 A"),
+                Some(postcode),
+                "GB"
+              ),
+              None,
+              Some("safeId")
+            )
+          )
+        )
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful true)
 
       await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-           |{
-           |  "authProviderId": "${provider.providerId}",
-           |  "authProviderType": "${provider.providerType}",
-           |  "utr": "${utr.value}",
-           |  "postcode": "$postcode",
-           |  "knownFactsMatched": true,
-           |  "isSubscribedToAgentServices": true,
-           |  "isAnAsAgentInDes" : true,
-           |  "agentReferenceNumber": "AARN0000002"
-           |}
-           |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$postcode",
+                  |  "knownFactsMatched": true,
+                  |  "isSubscribedToAgentServices": true,
+                  |  "isAnAsAgentInDes" : true,
+                  |  "agentReferenceNumber": "AARN0000002"
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
@@ -254,31 +339,46 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val arn = Some(Arn("AARN0000002"))
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          isAnASAgent = true,
-          None,
-          Some(DesIndividual("First", "Last")),
-          arn,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
+        .thenReturn(
+          Future successful Some(
+            DesRegistrationResponse(
+              isAnASAgent = true,
+              None,
+              Some(DesIndividual("First", "Last")),
+              arn,
+              BusinessAddress(
+                "AddressLine1 A",
+                Some("AddressLine2 A"),
+                Some("AddressLine3 A"),
+                Some("AddressLine4 A"),
+                Some(postcode),
+                "GB"
+              ),
+              None,
+              Some("safeId")
+            )
+          )
+        )
 
       when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
         .thenReturn(Future successful false)
 
       await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-          |{
-          |  "authProviderId": "${provider.providerId}",
-          |  "authProviderType": "${provider.providerType}",
-          |  "utr": "${utr.value}",
-          |  "postcode": "$postcode",
-          |  "knownFactsMatched": true,
-          |  "isSubscribedToAgentServices": false,
-          |  "isAnAsAgentInDes" : true,
-          |  "agentReferenceNumber": "AARN0000002"
-          |}
-          |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$postcode",
+                  |  "knownFactsMatched": true,
+                  |  "isSubscribedToAgentServices": false,
+                  |  "isAnAsAgentInDes" : true,
+                  |  "agentReferenceNumber": "AARN0000002"
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
@@ -293,27 +393,42 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val postcode = "AA1 1AA"
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          isAnASAgent = false,
-          None,
-          Some(DesIndividual("First", "Last")),
-          None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some(postcode), "GB"), None, Some("safeId"))))
+        .thenReturn(
+          Future successful Some(
+            DesRegistrationResponse(
+              isAnASAgent = false,
+              None,
+              Some(DesIndividual("First", "Last")),
+              None,
+              BusinessAddress(
+                "AddressLine1 A",
+                Some("AddressLine2 A"),
+                Some("AddressLine3 A"),
+                Some("AddressLine4 A"),
+                Some(postcode),
+                "GB"
+              ),
+              None,
+              Some("safeId")
+            )
+          )
+        )
 
       await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-          |{
-          |  "authProviderId": "${provider.providerId}",
-          |  "authProviderType": "${provider.providerType}",
-          |  "utr": "${utr.value}",
-          |  "postcode": "$postcode",
-          |  "knownFactsMatched": true,
-          |  "isSubscribedToAgentServices": false,
-          |  "isAnAsAgentInDes": false
-          |}
-          |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$postcode",
+                  |  "knownFactsMatched": true,
+                  |  "isSubscribedToAgentServices": false,
+                  |  "isAnAsAgentInDes": false
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
@@ -327,26 +442,41 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val suppliedPostcode = "AA1 1AA"
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          isAnASAgent = false,
-          None,
-          Some(DesIndividual("First", "Last")),
-          None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("XX9 9XX"), "GB"), None, Some("safeId"))))
+        .thenReturn(
+          Future successful Some(
+            DesRegistrationResponse(
+              isAnASAgent = false,
+              None,
+              Some(DesIndividual("First", "Last")),
+              None,
+              BusinessAddress(
+                "AddressLine1 A",
+                Some("AddressLine2 A"),
+                Some("AddressLine3 A"),
+                Some("AddressLine4 A"),
+                Some("XX9 9XX"),
+                "GB"
+              ),
+              None,
+              Some("safeId")
+            )
+          )
+        )
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-          |{
-          |  "authProviderId": "${provider.providerId}",
-          |  "authProviderType": "${provider.providerType}",
-          |  "utr": "${utr.value}",
-          |  "postcode": "$suppliedPostcode",
-          |  "knownFactsMatched": false,
-          |  "isAnAsAgentInDes": false
-          |}
-          |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$suppliedPostcode",
+                  |  "knownFactsMatched": false,
+                  |  "isAnAsAgentInDes": false
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
@@ -360,26 +490,41 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val suppliedPostcode = "AA1 1AA"
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          isAnASAgent = false,
-          None,
-          None,
-          None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), None, "GB"), None, Some("safeId"))))
+        .thenReturn(
+          Future successful Some(
+            DesRegistrationResponse(
+              isAnASAgent = false,
+              None,
+              None,
+              None,
+              BusinessAddress(
+                "AddressLine1 A",
+                Some("AddressLine2 A"),
+                Some("AddressLine3 A"),
+                Some("AddressLine4 A"),
+                None,
+                "GB"
+              ),
+              None,
+              Some("safeId")
+            )
+          )
+        )
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, requestWithoutAuthProvider))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-          |{
-          |  "authProviderId": "${provider.providerId}",
-          |  "authProviderType": "${provider.providerType}",
-          |  "utr": "${utr.value}",
-          |  "postcode": "$suppliedPostcode",
-          |  "knownFactsMatched": false,
-          |  "isAnAsAgentInDes": false
-          |}
-          |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$suppliedPostcode",
+                  |  "knownFactsMatched": false,
+                  |  "isAnAsAgentInDes": false
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, requestWithoutAuthProvider)
@@ -394,27 +539,42 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val suppliedPostcode = "AA1 1AA"
 
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(DesRegistrationResponse(
-          isAnASAgent = true,
-          None,
-          None,
-          None,
-          BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), None, "GB"), None, Some("safeId"))))
+        .thenReturn(
+          Future successful Some(
+            DesRegistrationResponse(
+              isAnASAgent = true,
+              None,
+              None,
+              None,
+              BusinessAddress(
+                "AddressLine1 A",
+                Some("AddressLine2 A"),
+                Some("AddressLine3 A"),
+                Some("AddressLine4 A"),
+                None,
+                "GB"
+              ),
+              None,
+              Some("safeId")
+            )
+          )
+        )
 
       await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, requestWithoutAuthProvider))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-          |{
-          |  "authProviderId": "${provider.providerId}",
-          |  "authProviderType": "${provider.providerType}",
-          |  "utr": "${utr.value}",
-          |  "postcode": "$suppliedPostcode",
-          |  "knownFactsMatched": false,
-          |  "isSubscribedToAgentServices": true,
-          |  "isAnAsAgentInDes": true
-          |}
-          |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$suppliedPostcode",
+                  |  "knownFactsMatched": false,
+                  |  "isSubscribedToAgentServices": true,
+                  |  "isAnAsAgentInDes": true
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, requestWithoutAuthProvider)
@@ -431,16 +591,17 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext])).thenReturn(Future successful None)
       await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-          |{
-          |  "authProviderId": "${provider.providerId}",
-          |  "authProviderType": "${provider.providerType}",
-          |  "utr": "${utr.value}",
-          |  "postcode": "$postcode",
-          |  "knownFactsMatched": false
-          |}
-          |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "utr": "${utr.value}",
+                  |  "postcode": "$postcode",
+                  |  "knownFactsMatched": false
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
@@ -478,4 +639,3 @@ class LoggerLikeStub extends LoggerLike {
     ()
   }
 }
-

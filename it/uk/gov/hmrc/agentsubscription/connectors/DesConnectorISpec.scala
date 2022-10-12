@@ -2,14 +2,14 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model
-import uk.gov.hmrc.agentsubscription.model.{ AgentRecord, AmlsSubscriptionRecord, Crn }
+import uk.gov.hmrc.agentsubscription.model.{AgentRecord, AmlsSubscriptionRecord, Crn}
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
 import uk.gov.hmrc.domain.Vrn
-import uk.gov.hmrc.http.{ HttpClient, _ }
+import uk.gov.hmrc.http.{HttpClient, _}
 import play.api.test.Helpers._
 
 import java.time.LocalDate
@@ -77,14 +77,31 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
   "getRegistration" should {
     val businessAddress =
-      BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("AA1 1AA"), "GB")
+      BusinessAddress(
+        "AddressLine1 A",
+        Some("AddressLine2 A"),
+        Some("AddressLine3 A"),
+        Some("AddressLine4 A"),
+        Some("AA1 1AA"),
+        "GB"
+      )
 
     "return registration details for a organisation UTR that is known by DES" in {
       organisationRegistrationExists(utr)
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, Some("My Agency"), None, Some(Arn("TARN0000001")), businessAddress, Some("agency@example.com"), Some("safeId")))
+      registration shouldBe Some(
+        DesRegistrationResponse(
+          isAnASAgent = true,
+          Some("My Agency"),
+          None,
+          Some(Arn("TARN0000001")),
+          businessAddress,
+          Some("agency@example.com"),
+          Some("safeId")
+        )
+      )
     }
 
     "return registration details for an individual UTR that is known by DES" in {
@@ -92,7 +109,17 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, Some(DesIndividual("First", "Last")), Some(Arn("AARN0000002")), businessAddress, Some("individual@example.com"), Some("safeId")))
+      registration shouldBe Some(
+        DesRegistrationResponse(
+          isAnASAgent = true,
+          None,
+          Some(DesIndividual("First", "Last")),
+          Some(Arn("AARN0000002")),
+          businessAddress,
+          Some("individual@example.com"),
+          Some("safeId")
+        )
+      )
     }
 
     "return registration details without organisationName for a UTR that is known by DES" in {
@@ -100,7 +127,9 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, None, None, businessAddress, Some("agent1@example.com"), None))
+      registration shouldBe Some(
+        DesRegistrationResponse(isAnASAgent = true, None, None, None, businessAddress, Some("agent1@example.com"), None)
+      )
     }
 
     "return registration details without postcode for a UTR that is known by DES" in {
@@ -108,8 +137,17 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = true, None, None, None,
-        BusinessAddress("AddressLine1 A", None, None, None, None, "GB"), Some("agent1@example.com"), None))
+      registration shouldBe Some(
+        DesRegistrationResponse(
+          isAnASAgent = true,
+          None,
+          None,
+          None,
+          BusinessAddress("AddressLine1 A", None, None, None, None, "GB"),
+          Some("agent1@example.com"),
+          None
+        )
+      )
     }
 
     "return registration details without email for a UTR that is known by DES" in {
@@ -117,8 +155,17 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
       val registration = await(connector.getRegistration(utr))
 
-      registration shouldBe Some(DesRegistrationResponse(isAnASAgent = false, None, None, None,
-        BusinessAddress("AddressLine1 A", None, None, None, Some("AA1 1AA"), "GB"), None, None))
+      registration shouldBe Some(
+        DesRegistrationResponse(
+          isAnASAgent = false,
+          None,
+          None,
+          None,
+          BusinessAddress("AddressLine1 A", None, None, None, Some("AA1 1AA"), "GB"),
+          None,
+          None
+        )
+      )
     }
 
     "not return a registration for a UTR that is unknown to DES" in {
@@ -147,10 +194,12 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
           addressLine3 = Some("Anytown"),
           addressLine4 = Some("County"),
           postcode = "AA1 2AA",
-          countryCode = "GB"),
+          countryCode = "GB"
+        ),
         agencyEmail = "agency@example.com",
         businessPostcode = "TF3 4ER",
-        phoneNumber = Some("0123 456 7890"))
+        phoneNumber = Some("0123 456 7890")
+      )
     }
 
     "not return a agent record for a UTR that is unknown to DES" in {
@@ -224,7 +273,13 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
       val result = await(connector.getAmlsSubscriptionStatus("XAML00000200000"))
 
-      result shouldBe AmlsSubscriptionRecord("Approved", "xyz", parseDate("2021-01-01"), parseDate("2021-12-31"), Some(false))
+      result shouldBe AmlsSubscriptionRecord(
+        "Approved",
+        "xyz",
+        parseDate("2021-01-01"),
+        parseDate("2021-12-31"),
+        Some(false)
+      )
     }
 
     "return NotFoundException when AmlsRegistrationNumber is not known in ETMP" in {
@@ -244,8 +299,14 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
   def request = DesSubscriptionRequest(
     agencyName = "My Agency",
-    agencyAddress = Address(addressLine1 = "1 Some Street", addressLine2 = Some("MyTown"), postalCode = "AA1 1AA", countryCode = "GB"),
+    agencyAddress = Address(
+      addressLine1 = "1 Some Street",
+      addressLine2 = Some("MyTown"),
+      postalCode = "AA1 1AA",
+      countryCode = "GB"
+    ),
     agencyEmail = "agency@example.com",
-    telephoneNumber = Some("0123 456 7890"))
+    telephoneNumber = Some("0123 456 7890")
+  )
 
 }

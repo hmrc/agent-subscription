@@ -32,7 +32,7 @@ package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
  * limitations under the License.
  */
 
-import play.api.libs.json.{ Format, Json }
+import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 
 case class Registration(
@@ -41,7 +41,8 @@ case class Registration(
   isSubscribedToETMP: Boolean,
   address: BusinessAddress,
   emailAddress: Option[String],
-  safeId: Option[String])
+  safeId: Option[String]
+)
 
 object Registration {
   implicit val formats: Format[Registration] = Json.format[Registration]
@@ -52,7 +53,8 @@ case class UpdateBusinessAddressForm(
   addressLine2: Option[String],
   addressLine3: Option[String] = None,
   addressLine4: Option[String] = None,
-  postCode: String)
+  postCode: String
+)
 
 object UpdateBusinessAddressForm {
   def apply(businessAddress: BusinessAddress): UpdateBusinessAddressForm =
@@ -61,6 +63,6 @@ object UpdateBusinessAddressForm {
       businessAddress.addressLine2,
       businessAddress.addressLine3,
       businessAddress.addressLine4,
-      businessAddress.postalCode.getOrElse(throw new Exception("Postcode is mandatory")))
+      businessAddress.postalCode.getOrElse(throw new Exception("Postcode is mandatory"))
+    )
 }
-

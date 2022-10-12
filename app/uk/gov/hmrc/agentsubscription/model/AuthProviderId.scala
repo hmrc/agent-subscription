@@ -19,11 +19,10 @@ package uk.gov.hmrc.agentsubscription.model
 import play.api.libs.json.Format
 import play.api.libs.functional.syntax._
 
-/**
- * Auth provider id (credential id) associated with a Government Gateway account.
- *
- * @param id
- */
+/** Auth provider id (credential id) associated with a Government Gateway account.
+  *
+  * @param id
+  */
 final case class AuthProviderId(id: String)
 
 object AuthProviderId {

@@ -16,11 +16,10 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{ Format, Json }
+import play.api.libs.json.{Format, Json}
 
 case class ContactEmailData(useBusinessEmail: Boolean, contactEmail: Option[String])
 
 object ContactEmailData {
   implicit val format: Format[ContactEmailData] = Json.format[ContactEmailData]
 }
-

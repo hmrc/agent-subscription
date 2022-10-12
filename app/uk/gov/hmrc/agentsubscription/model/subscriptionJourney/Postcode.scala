@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import uk.gov.hmrc.domain.{ SimpleObjectReads, SimpleObjectWrites }
+import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites}
 
 case class Postcode(value: String)
 

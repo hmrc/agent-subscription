@@ -9,7 +9,7 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
-import uk.gov.hmrc.agentsubscription.model.{ AmlsDetails, AuthProviderId, ContactEmailData, ContactTradingAddressData, ContactTradingNameData, RegisteredDetails }
+import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, AuthProviderId, ContactEmailData, ContactTradingAddressData, ContactTradingNameData, RegisteredDetails}
 import uk.gov.hmrc.agentsubscription.support.MongoApp
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
@@ -25,18 +25,31 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
   val otherUtr = Utr("0123456789")
   val registrationName = "My Agency"
   val businessAddress =
-    BusinessAddress("AddressLine1 A", Some("AddressLine2 A"), Some("AddressLine3 A"), Some("AddressLine4 A"), Some("AA11AA"), "GB")
+    BusinessAddress(
+      "AddressLine1 A",
+      Some("AddressLine2 A"),
+      Some("AddressLine3 A"),
+      Some("AddressLine4 A"),
+      Some("AA11AA"),
+      "GB"
+    )
   val registration = Registration(
     Some(registrationName),
     isSubscribedToAgentServices = false,
     isSubscribedToETMP = false,
-    businessAddress, Some("test@gmail.com"), Some("safeId"))
+    businessAddress,
+    Some("test@gmail.com"),
+    Some("safeId")
+  )
 
   override implicit lazy val app: Application = appBuilder.build()
 
   private lazy val repo = app.injector.instanceOf[SubscriptionJourneyRepository]
 
-  val amlsDetails = AmlsDetails("supervisory", Right(RegisteredDetails("123456789", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId"))))
+  val amlsDetails = AmlsDetails(
+    "supervisory",
+    Right(RegisteredDetails("123456789", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId")))
+  )
 
   private val subscriptionJourneyRecord =
     SubscriptionJourneyRecord(
@@ -45,7 +58,8 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
         businessType = BusinessType.SoleTrader,
         utr = validUtr,
         postcode = Postcode("bn12 1hn"),
-        nino = Some(Nino("AE123456C"))),
+        nino = Some(Nino("AE123456C"))
+      ),
       continueId = Some("XXX"),
       amlsData = None,
       cleanCredsAuthProviderId = None,
@@ -54,7 +68,8 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
       lastModifiedDate = None,
       contactEmailData = Some(ContactEmailData(true, Some("email@email.com"))),
       contactTradingNameData = Some(ContactTradingNameData(true, Some("My Trading Name"))),
-      contactTradingAddressData = Some(ContactTradingAddressData(true, Some(businessAddress))))
+      contactTradingAddressData = Some(ContactTradingAddressData(true, Some(businessAddress)))
+    )
 
   override def beforeEach() {
     super.beforeEach()
@@ -90,8 +105,7 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
 
     "update a SubscriptionJourney record" in {
       val updatedSubscriptionJourney = subscriptionJourneyRecord
-        .copy(
-          businessDetails = subscriptionJourneyRecord.businessDetails.copy(postcode = Postcode("AAABBB")))
+        .copy(businessDetails = subscriptionJourneyRecord.businessDetails.copy(postcode = Postcode("AAABBB")))
 
       await(repo.insert(subscriptionJourneyRecord))
       await(repo.upsert(AuthProviderId("auth-id"), updatedSubscriptionJourney))

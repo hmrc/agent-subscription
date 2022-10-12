@@ -16,23 +16,23 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.libs.json._
-import play.api.mvc.{ AnyContent, Request }
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import play.api.mvc.{AnyContent, Request}
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription._
-import uk.gov.hmrc.agentsubscription.audit.{ AgentSubscription, AuditService, OverseasAgentSubscription }
+import uk.gov.hmrc.agentsubscription.audit.{AgentSubscription, AuditService, OverseasAgentSubscription}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors._
 import play.api.i18n.Lang
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Complete, Registered }
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{AttemptingRegistration, Complete, Registered}
 import uk.gov.hmrc.agentsubscription.model._
-import uk.gov.hmrc.agentsubscription.repository.{ RecoveryRepository, SubscriptionJourneyRepository }
+import uk.gov.hmrc.agentsubscription.repository.{RecoveryRepository, SubscriptionJourneyRepository}
 import uk.gov.hmrc.agentsubscription.utils.Retry
-import uk.gov.hmrc.http.{ HeaderCarrier, NotFoundException }
+import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 private object SubscriptionAuditDetail {
   implicit val writes: OWrites[SubscriptionAuditDetail] = Json.writes[SubscriptionAuditDetail]
@@ -44,7 +44,8 @@ private case class SubscriptionAuditDetail(
   agencyName: String,
   agencyAddress: model.Address,
   agencyEmail: String,
-  amlsDetails: Option[AmlsDetails])
+  amlsDetails: Option[AmlsDetails]
+)
 
 case class OverseasSubscriptionAuditDetail(
   agentReferenceNumber: Option[Arn],
@@ -52,7 +53,8 @@ case class OverseasSubscriptionAuditDetail(
   agencyName: String,
   agencyEmail: String,
   agencyAddress: OverseasAgencyAddress,
-  amlsDetails: Option[OverseasAmlsDetails])
+  amlsDetails: Option[OverseasAmlsDetails]
+)
 
 object OverseasSubscriptionAuditDetail {
   implicit val format: OFormat[OverseasSubscriptionAuditDetail] = Json.format[OverseasSubscriptionAuditDetail]
@@ -70,7 +72,8 @@ class SubscriptionService @Inject() (
   agentAssuranceConnector: AgentAssuranceConnector,
   agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
   emailConnector: EmailConnector,
-  mappingConnector: MappingConnector) extends Logging {
+  mappingConnector: MappingConnector
+) extends Logging {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
     val address = subscriptionRequest.agency.address
@@ -84,50 +87,81 @@ class SubscriptionService @Inject() (
         address.addressLine3,
         address.addressLine4,
         address.postcode,
-        address.countryCode))
+        address.countryCode
+      )
+    )
   }
 
-  private def sendEmail(
-    email: String,
-    agencyName: String,
-    arn: Arn,
-    langForEmail: Option[Lang])(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+  private def sendEmail(email: String, agencyName: String, arn: Arn, langForEmail: Option[Lang])(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[Unit] = {
     val defaultTemplate = "agent_services_account_created" // english -- default and always for overseas agents
     val welshTemplate = "agent_services_account_created_cy" // welsh (for uk agents)
-    val templateId: String = langForEmail.fold(defaultTemplate)(l => if (l == Lang("cy")) welshTemplate else defaultTemplate)
-    emailConnector.sendEmail(EmailInformation(Seq(email), templateId, Map("agencyName" -> agencyName, "arn" -> arn.value)))
+    val templateId: String =
+      langForEmail.fold(defaultTemplate)(l => if (l == Lang("cy")) welshTemplate else defaultTemplate)
+    emailConnector.sendEmail(
+      EmailInformation(Seq(email), templateId, Map("agencyName" -> agencyName, "arn" -> arn.value))
+    )
   }
 
-  def createSubscription(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+  def createSubscription(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext,
+    request: Request[Any]
+  ): Future[Option[Arn]] = {
 
-    def subscribeAndMap(maybeArn: Option[Arn], utr: Utr, isAnAsAgent: Boolean): Future[Arn] = {
+    def subscribeAndMap(maybeArn: Option[Arn], utr: Utr, isAnAsAgent: Boolean): Future[Arn] =
       maybeArn match {
         case Some(arn) if isAnAsAgent => Future.successful(arn)
-        case _ => for {
-          arn <- desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
-          _ <- mappingConnector.createMappings(arn)
-          _ <- mappingConnector.createMappingDetails(arn)
-          _ <- subscriptionJourneyRepository.delete(utr)
-        } yield arn
+        case _ =>
+          for {
+            arn <- desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
+            _   <- mappingConnector.createMappings(arn)
+            _   <- mappingConnector.createMappingDetails(arn)
+            _   <- subscriptionJourneyRepository.delete(utr)
+          } yield arn
       }
-    }
 
     val utr = subscriptionRequest.utr
     desConnector.getRegistration(utr) flatMap {
-      case Some(DesRegistrationResponse(isAnAsAgent, _, _, maybeArn, BusinessAddress(_, _, _, _, Some(desPostcode), _), _, _)) =>
+      case Some(
+            DesRegistrationResponse(
+              isAnAsAgent,
+              _,
+              _,
+              maybeArn,
+              BusinessAddress(_, _, _, _, Some(desPostcode), _),
+              _,
+              _
+            )
+          ) =>
         if (postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode)) {
           for {
-            _ <- subscriptionRequest.amlsDetails.map(agentAssuranceConnector.createAmls(utr, _)).getOrElse(Future.successful(false))
-            arn <- subscribeAndMap(maybeArn, utr, isAnAsAgent)
+            _ <- subscriptionRequest.amlsDetails
+                   .map(agentAssuranceConnector.createAmls(utr, _))
+                   .getOrElse(Future.successful(false))
+            arn                <- subscribeAndMap(maybeArn, utr, isAnAsAgent)
             updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
-            _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
-            _ <- sendEmail(subscriptionRequest.agency.email, subscriptionRequest.agency.name, arn, subscriptionRequest.langForEmail)
+            _                  <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
+            _ <- sendEmail(
+                   subscriptionRequest.agency.email,
+                   subscriptionRequest.agency.name,
+                   arn,
+                   subscriptionRequest.langForEmail
+                 )
           } yield {
-            auditService.auditEvent(AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
+            auditService.auditEvent(
+              AgentSubscription,
+              "Agent services subscription",
+              auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails)
+            )
             Some(arn)
           }
         } else {
-          logger.warn(s"the postcode from the business partner record did not match that in the subscription request known facts")
+          logger.warn(
+            s"the postcode from the business partner record did not match that in the subscription request known facts"
+          )
           Future successful None
         }
       case _ =>
@@ -136,28 +170,48 @@ class SubscriptionService @Inject() (
     }
   }
 
-  def updateSubscription(updateSubscriptionRequest: UpdateSubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[Any]): Future[Option[Arn]] = {
+  def updateSubscription(updateSubscriptionRequest: UpdateSubscriptionRequest, authIds: AuthIds)(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext,
+    request: Request[Any]
+  ): Future[Option[Arn]] =
     desConnector
       .getAgentRecordDetails(updateSubscriptionRequest.utr)
       .flatMap { agentRecord =>
-        if (agentRecord.isAnASAgent && postcodesMatch(agentRecord.businessPostcode, updateSubscriptionRequest.knownFacts.postcode)) {
+        if (
+          agentRecord.isAnASAgent && postcodesMatch(
+            agentRecord.businessPostcode,
+            updateSubscriptionRequest.knownFacts.postcode
+          )
+        ) {
           val arn = agentRecord.arn
           val subscriptionRequest = mergeSubscriptionRequest(updateSubscriptionRequest, agentRecord)
           for {
             updatedAmlsDetails <- agentAssuranceConnector.updateAmls(updateSubscriptionRequest.utr, arn)
-            _ <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
-            _ <- sendEmail(subscriptionRequest.agency.email, subscriptionRequest.agency.name, arn, subscriptionRequest.langForEmail)
+            _                  <- addKnownFactsAndEnrolUk(arn, subscriptionRequest, authIds)
+            _ <- sendEmail(
+                   subscriptionRequest.agency.email,
+                   subscriptionRequest.agency.name,
+                   arn,
+                   subscriptionRequest.langForEmail
+                 )
           } yield {
-            auditService.auditEvent(AgentSubscription, "Agent services subscription", auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails))
+            auditService.auditEvent(
+              AgentSubscription,
+              "Agent services subscription",
+              auditDetailJsObject(arn, subscriptionRequest, updatedAmlsDetails)
+            )
             Some(arn)
           }
         } else Future.successful(None)
-      }.recover {
-        case _: NotFoundException => None
       }
-  }
+      .recover { case _: NotFoundException =>
+        None
+      }
 
-  def createOverseasSubscription(authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[AnyContent]): Future[Option[Arn]] = {
+  def createOverseasSubscription(
+    authIds: AuthIds
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[AnyContent]): Future[Option[Arn]] = {
     val userId = authIds.userId
 
     agentOverseasApplicationConnector.currentApplication.flatMap {
@@ -167,15 +221,26 @@ class SubscriptionService @Inject() (
         subscribeAndEnrolOverseas(authIds, safeId, amlsDetails, agencyDetails)
       case application =>
         for {
-          _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
+          _ <-
+            agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
           safeId <- desConnector.createOverseasBusinessPartnerRecord(OverseasRegistrationRequest(application))
-          _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Registered, userId, Some(safeId))
+          _ <-
+            agentOverseasApplicationConnector
+              .updateApplicationStatus(ApplicationStatus.Registered, userId, Some(safeId))
           arnOpt <- subscribeAndEnrolOverseas(authIds, safeId, application.amlsDetails, application.agencyDetails)
         } yield {
-          val auditJson = Json.toJson(OverseasSubscriptionAuditDetail(
-            arnOpt,
-            safeId, application.agencyDetails.agencyName,
-            application.agencyDetails.agencyEmail, application.agencyDetails.agencyAddress, application.amlsDetails)).as[JsObject]
+          val auditJson = Json
+            .toJson(
+              OverseasSubscriptionAuditDetail(
+                arnOpt,
+                safeId,
+                application.agencyDetails.agencyName,
+                application.agencyDetails.agencyEmail,
+                application.agencyDetails.agencyAddress,
+                application.amlsDetails
+              )
+            )
+            .as[JsObject]
 
           auditService.auditEvent(OverseasAgentSubscription, "Overseas agent subscription", auditJson)
           arnOpt
@@ -183,19 +248,30 @@ class SubscriptionService @Inject() (
     }
   }
 
-  private def subscribeAndEnrolOverseas(authIds: AuthIds, safeId: SafeId, amlsDetailsOpt: Option[OverseasAmlsDetails], agencyDetails: OverseasAgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+  private def subscribeAndEnrolOverseas(
+    authIds: AuthIds,
+    safeId: SafeId,
+    amlsDetailsOpt: Option[OverseasAmlsDetails],
+    agencyDetails: OverseasAgencyDetails
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext) =
     for {
       arn <- desConnector.subscribeToAgentServices(safeId, agencyDetails)
-      _ <- addKnownFactsAndEnrolOverseas(arn, agencyDetails, authIds)
+      _   <- addKnownFactsAndEnrolOverseas(arn, agencyDetails, authIds)
       _ <- amlsDetailsOpt match {
-        case Some(amlsDetails) => agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
-        case None => Future(())
-      }
-      _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.Complete, authIds.userId, None, Some(arn))
+             case Some(amlsDetails) => agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
+             case None              => Future(())
+           }
+      _ <-
+        agentOverseasApplicationConnector
+          .updateApplicationStatus(ApplicationStatus.Complete, authIds.userId, None, Some(arn))
       _ <- sendEmail(agencyDetails.agencyEmail, agencyDetails.agencyName, arn, None)
     } yield Some(arn)
 
-  private def auditDetailJsObject(arn: Arn, subscriptionRequest: SubscriptionRequest, updatedAmlsDetails: Option[AmlsDetails]) =
+  private def auditDetailJsObject(
+    arn: Arn,
+    subscriptionRequest: SubscriptionRequest,
+    updatedAmlsDetails: Option[AmlsDetails]
+  ) =
     toJsObject(
       SubscriptionAuditDetail(
         arn,
@@ -203,11 +279,16 @@ class SubscriptionService @Inject() (
         subscriptionRequest.agency.name,
         subscriptionRequest.agency.address,
         subscriptionRequest.agency.email,
-        updatedAmlsDetails))
+        updatedAmlsDetails
+      )
+    )
 
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
-  private def addKnownFactsAndEnrolOverseas(arn: Arn, agencyDetails: OverseasAgencyDetails, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+  private def addKnownFactsAndEnrolOverseas(arn: Arn, agencyDetails: OverseasAgencyDetails, authIds: AuthIds)(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[Unit] = {
     val knownFactKey = "CountryCode"
     val knownFactValue = agencyDetails.agencyAddress.countryCode
     val friendlyName = agencyDetails.agencyName
@@ -215,7 +296,10 @@ class SubscriptionService @Inject() (
     addKnownFactsAndEnrol(arn, knownFactKey, knownFactValue, friendlyName, authIds)
   }
 
-  private def addKnownFactsAndEnrolUk(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+  private def addKnownFactsAndEnrolUk(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[Unit] = {
     val knownFactKey = "AgencyPostcode"
     val knownFactValue = subscriptionRequest.agency.address.postcode
     val friendlyName = subscriptionRequest.agency.name
@@ -224,21 +308,36 @@ class SubscriptionService @Inject() (
       .recover {
         case e: EnrolmentAlreadyAllocated => throw e
         case e: IllegalStateException =>
-          recoveryRepository.create(authIds, arn, subscriptionRequest, s"Failed to add known facts and enrol due to; ${e.getCause.getClass.getName}: ${e.getCause.getMessage}")
-          throw new IllegalStateException(s"Failed to add known facts and enrol in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}", e)
+          recoveryRepository.create(
+            authIds,
+            arn,
+            subscriptionRequest,
+            s"Failed to add known facts and enrol due to; ${e.getCause.getClass.getName}: ${e.getCause.getMessage}"
+          )
+          throw new IllegalStateException(
+            s"Failed to add known facts and enrol in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}",
+            e
+          )
       }
   }
 
-  private def addKnownFactsAndEnrol(arn: Arn, knownFactKey: String, knownFactValue: String, friendlyName: String, authIds: AuthIds)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+  private def addKnownFactsAndEnrol(
+    arn: Arn,
+    knownFactKey: String,
+    knownFactValue: String,
+    friendlyName: String,
+    authIds: AuthIds
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
     val enrolRequest = EnrolmentRequest(
       userId = authIds.userId,
       `type` = "principal",
       friendlyName = friendlyName,
-      Seq(KnownFact(knownFactKey, knownFactValue)))
+      Seq(KnownFact(knownFactKey, knownFactValue))
+    )
 
     val tries = 3
-    Retry.retry(tries)(
-      taxEnrolmentsConnector.hasPrincipalGroupIds(arn).flatMap { alreadyEnrolled =>
+    Retry
+      .retry(tries)(taxEnrolmentsConnector.hasPrincipalGroupIds(arn).flatMap { alreadyEnrolled =>
         if (!alreadyEnrolled) {
           for {
             _ <- taxEnrolmentsConnector.deleteKnownFacts(arn)
@@ -246,9 +345,12 @@ class SubscriptionService @Inject() (
             _ <- taxEnrolmentsConnector.enrol(authIds.groupId, arn, enrolRequest)
           } yield ()
         } else {
-          Future.failed(EnrolmentAlreadyAllocated("An enrolment for HMRC-AS-AGENT with this Arn as an identifier already exists"))
+          Future.failed(
+            EnrolmentAlreadyAllocated("An enrolment for HMRC-AS-AGENT with this Arn as an identifier already exists")
+          )
         }
-      }).recover {
+      })
+      .recover {
         case e: EnrolmentAlreadyAllocated => throw e
         case e =>
           logger.error(s"Failed to add known facts and enrol for: ${arn.value} after $tries attempts", e)
@@ -257,14 +359,17 @@ class SubscriptionService @Inject() (
   }
 
   /** This method creates a SubscriptionRequest for partially subscribed agents */
-  private def mergeSubscriptionRequest(request: UpdateSubscriptionRequest, agentRecord: AgentRecord) = SubscriptionRequest(
-    utr = request.utr,
-    knownFacts = request.knownFacts,
-    agency = Agency(
-      name = agentRecord.agencyName,
-      address = agentRecord.agencyAddress,
-      telephone = agentRecord.phoneNumber,
-      email = agentRecord.agencyEmail),
-    langForEmail = request.langForEmail,
-    None)
+  private def mergeSubscriptionRequest(request: UpdateSubscriptionRequest, agentRecord: AgentRecord) =
+    SubscriptionRequest(
+      utr = request.utr,
+      knownFacts = request.knownFacts,
+      agency = Agency(
+        name = agentRecord.agencyName,
+        address = agentRecord.agencyAddress,
+        telephone = agentRecord.phoneNumber,
+        email = agentRecord.agencyEmail
+      ),
+      langForEmail = request.langForEmail,
+      None
+    )
 }

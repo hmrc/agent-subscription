@@ -15,15 +15,16 @@ trait EmailStub {
     stubFor(
       post(urlEqualTo("/hmrc/email"))
         .withRequestBody(similarToJson(emailInformationJson))
-        .willReturn(aResponse().withStatus(202)))
+        .willReturn(aResponse().withStatus(202))
+    )
 
   }
 
-  def givenEmailReturns500 = {
+  def givenEmailReturns500 =
     stubFor(
       post(urlEqualTo("/hmrc/email"))
-        .willReturn(aResponse().withStatus(500)))
-  }
+        .willReturn(aResponse().withStatus(500))
+    )
 
   private def similarToJson(value: String) = equalToJson(value.stripMargin, true, true)
 

@@ -18,17 +18,19 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.Logging
 import play.api.libs.json.Json
-import play.api.mvc.{ Action, AnyContent, ControllerComponents }
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class AmlsSubscriptionController @Inject() (des: DesConnector, cc: ControllerComponents, appConfig: AppConfig)(implicit ec: ExecutionContext) extends BackendController(cc) with Logging {
+class AmlsSubscriptionController @Inject() (des: DesConnector, cc: ControllerComponents, appConfig: AppConfig)(implicit
+  ec: ExecutionContext
+) extends BackendController(cc) with Logging {
 
   val appName = appConfig.appName
 
@@ -36,10 +38,9 @@ class AmlsSubscriptionController @Inject() (des: DesConnector, cc: ControllerCom
 
   def getAmlsSubscription(amlsRegistrationNumber: String): Action[AnyContent] = Action.async { implicit request =>
     des.getAmlsSubscriptionStatus(amlsRegistrationNumber).map(amls => Ok(Json.toJson(amls))).recover {
-      case e: UpstreamErrorResponse if is5xx(e) => {
+      case e: UpstreamErrorResponse if is5xx(e) =>
         logger.warn(s"DES return status ${e.statusCode} ${e.message}")
         InternalServerError
-      }
     }
   }
 }

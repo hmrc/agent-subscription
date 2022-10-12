@@ -19,8 +19,8 @@ package uk.gov.hmrc.agentsubscription
 import play.api.libs.functional.syntax._
 import play.api.libs.json.JsonValidationError
 import play.api.libs.json.Reads._
-import play.api.mvc.{ Request, WrappedRequest }
-import uk.gov.hmrc.agentsubscription.auth.{ Authority, Enrolment }
+import play.api.mvc.{Request, WrappedRequest}
+import uk.gov.hmrc.agentsubscription.auth.{Authority, Enrolment}
 
 package object model {
   val postcodeWithoutSpacesRegex = "^[A-Z]{1,2}[0-9][0-9A-Z]?\\s?[0-9][A-Z]{2}$|BFPO\\s?[0-9]{1,5}$"
@@ -30,25 +30,23 @@ package object model {
   val nameMax = 40
   def nameAndAddressRegex(max: Int) = s"^[A-Za-z0-9 \\-,.&'\\/]{0,$max}$$"
 
-  private[model] val telephoneNumberValidation = {
+  private[model] val telephoneNumberValidation =
     filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
       filter[String](JsonValidationError("error.telephone.invalid"))(_.matches(telephoneRegex))
-  }
 
-  private[model] val postcodeValidation = {
-    filter[String](JsonValidationError("error.postcode.invalid"))(_.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex))
-  }
+  private[model] val postcodeValidation =
+    filter[String](JsonValidationError("error.postcode.invalid"))(
+      _.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)
+    )
 
-  private[model] val addressValidation = {
+  private[model] val addressValidation =
     filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
       filter[String](JsonValidationError("error.address.invalid"))(_.matches(nameAndAddressRegex(addressMax)))
-  }
 
-  private[model] val nameValidation = {
+  private[model] val nameValidation =
     filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
       filter[String](JsonValidationError("error.Ampersand"))(_.matches(noAmpersand)) andKeep
       filter[String](JsonValidationError("error.name.invalid"))(_.matches(nameAndAddressRegex(nameMax)))
-  }
 
   private[model] val overseasAddressValidation = {
     val overseasAddressRegex = s"^[A-Za-z0-9 \\-,.&']{0,35}$$"
@@ -78,7 +76,8 @@ package object model {
   }
 
   private[model] val overseasEmailValidation = {
-    val overseasEmailRegex = """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"""
+    val overseasEmailRegex =
+      """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"""
 
     filterNot[String](JsonValidationError("error.email.invalid"))(_.length > 132) andKeep
       filter[String](JsonValidationError("error.email.invalid"))(_.matches(overseasEmailRegex))
@@ -101,4 +100,5 @@ package object model {
 
 case class RequestWithAuthority[+A](authority: Authority, request: Request[A]) extends WrappedRequest[A](request)
 
-case class RequestWithEnrolments[+A](enrolments: List[Enrolment], request: Request[A]) extends WrappedRequest[A](request)
+case class RequestWithEnrolments[+A](enrolments: List[Enrolment], request: Request[A])
+    extends WrappedRequest[A](request)

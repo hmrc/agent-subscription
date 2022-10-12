@@ -1,14 +1,16 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
-import com.github.tomakehurst.wiremock.client.WireMock.{ verify, _ }
+import com.github.tomakehurst.wiremock.client.WireMock.{verify, _}
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Complete, Registered }
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{AttemptingRegistration, Complete, Registered}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs._
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 
-class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesStubs with AuthStub with AgentOverseasApplicationStubs with AgentAssuranceStub with TaxEnrolmentsStubs with EmailStub {
+class SubscriptionControllerForOverseasISpec
+    extends BaseISpec with OverseasDesStubs with AuthStub with AgentOverseasApplicationStubs with AgentAssuranceStub
+    with TaxEnrolmentsStubs with EmailStub {
   private val arn = "TARN0000001"
   private val stubbedGroupId = "groupId"
   private val safeId = SafeId("XE0001234567890")
@@ -19,7 +21,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
   val emailInfo = EmailInformation(
     Seq("agencyemail@domain.com"),
     "agent_services_account_created",
-    Map("agencyName" -> "Agency name", "arn" -> "TARN0000001"))
+    Map("agencyName" -> "Agency name", "arn" -> "TARN0000001")
+  )
 
   "creating a subscription" should {
     "return a successful response containing the ARN" when {
@@ -53,7 +56,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           createKnownFact = 1,
           enrol = 1,
           amls = 1,
-          complete = 1)
+          complete = 1
+        )
       }
 
       "there are no amls details" in {
@@ -84,7 +88,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           deleteKnownFact = 1,
           createKnownFact = 1,
           enrol = 1,
-          complete = 1)
+          complete = 1
+        )
       }
 
       "the application is in the 'registered' state then the DES registration API is not called but the subscription/enrolment is re-attempted" in {
@@ -122,7 +127,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           createKnownFact = 1,
           enrol = 1,
           amls = 1,
-          complete = 1)
+          complete = 1
+        )
       }
 
       "creating amls record fails with 409 Conflict because a record already exists" in {
@@ -152,7 +158,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           createKnownFact = 1,
           enrol = 1,
           amls = 1,
-          complete = 1)
+          complete = 1
+        )
       }
     }
 
@@ -176,7 +183,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
         createKnownFact = 0,
         enrol = 0,
         amls = 0,
-        complete = 0)
+        complete = 0
+      )
 
     }
 
@@ -210,7 +218,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
 
         result.status shouldBe 500
         (result.json \ "statusCode").as[Int] shouldBe 500
-        (result.json \ "message").as[String] shouldBe "JsResultException(errors:List((/agencyName,List(JsonValidationError(List(error.name.invalid),WrappedArray())))))"
+        (result.json \ "message")
+          .as[String] shouldBe "JsResultException(errors:List((/agencyName,List(JsonValidationError(List(error.name.invalid),WrappedArray())))))"
 
         verifyApiCalls(
           attemptingRegistration = 0,
@@ -222,7 +231,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           createKnownFact = 0,
           enrol = 0,
           amls = 0,
-          complete = 0)
+          complete = 0
+        )
       }
 
       "etmp registration fails" in {
@@ -297,7 +307,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           etmpRegistration = 1,
           registered = 1,
           subscription = 1,
-          allocatedPrincipalEnrolment = eacdRetryCount)
+          allocatedPrincipalEnrolment = eacdRetryCount
+        )
       }
 
       "delete known facts via EACD fails" in {
@@ -320,7 +331,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           registered = 1,
           subscription = 1,
           allocatedPrincipalEnrolment = eacdRetryCount,
-          deleteKnownFact = eacdRetryCount)
+          deleteKnownFact = eacdRetryCount
+        )
       }
 
       "create known facts via EACD fails" in {
@@ -345,7 +357,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           subscription = 1,
           allocatedPrincipalEnrolment = eacdRetryCount,
           deleteKnownFact = eacdRetryCount,
-          createKnownFact = eacdRetryCount)
+          createKnownFact = eacdRetryCount
+        )
       }
 
       "enrolment via EACD fails" in {
@@ -372,7 +385,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           allocatedPrincipalEnrolment = eacdRetryCount,
           deleteKnownFact = eacdRetryCount,
           createKnownFact = eacdRetryCount,
-          enrol = eacdRetryCount)
+          enrol = eacdRetryCount
+        )
       }
 
       "creating amls record fails with 500" in {
@@ -402,7 +416,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           createKnownFact = 1,
           enrol = 1,
           amls = 1,
-          complete = 0)
+          complete = 0
+        )
       }
 
       "updating Complete overseas application status fails with 409" in {
@@ -433,7 +448,8 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
           createKnownFact = 1,
           enrol = 1,
           amls = 1,
-          complete = 1)
+          complete = 1
+        )
       }
     }
   }
@@ -463,9 +479,13 @@ class SubscriptionControllerForOverseasISpec extends BaseISpec with OverseasDesS
     createKnownFact: Int = 0,
     enrol: Int = 0,
     amls: Int = 0,
-    complete: Int = 0) = {
+    complete: Int = 0
+  ) = {
     verify(1, getRequestedFor(urlEqualTo(getApplicationUrl)))
-    verify(attemptingRegistration, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/attempting_registration")))
+    verify(
+      attemptingRegistration,
+      putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/attempting_registration"))
+    )
     verify(etmpRegistration, postRequestedFor(urlEqualTo(s"/registration/02.00.00/organisation")))
     verify(registered, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/registered")))
     verify(subscription, postRequestedFor(urlEqualTo(s"/registration/agents/safeId/${safeId.value}")))

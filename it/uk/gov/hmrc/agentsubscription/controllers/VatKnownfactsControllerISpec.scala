@@ -1,8 +1,8 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, DesStubs }
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, Resource }
+import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs}
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
 import uk.gov.hmrc.domain.Vrn
 
 class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub {
@@ -12,20 +12,23 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
   "GET of /vat-known-facts/vrn/:vrn/dateOfRegistration/:dateOfReg" should {
     "return a 401 when the user is not authenticated" in {
       requestIsNotAuthenticated()
-      val response = new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
+      val response =
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
       response.status shouldBe 401
     }
 
     "return a 401 when auth returns unexpected response code in the headers" in {
       requestIsNotAuthenticated(header = "some strange response from auth")
-      val response = new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
+      val response =
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
       response.status shouldBe 401
     }
 
     "return 404 when no match is found in des" in {
       vatKnownfactsRecordDoesNotExist(vrn)
 
-      val response = new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
+      val response =
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
       response.status shouldBe 404
     }
 
@@ -33,7 +36,8 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
       requestIsAuthenticatedWithNoEnrolments()
       vrnIsInvalid(Vrn("0000"))
 
-      val response = new Resource("/agent-subscription/vat-known-facts/vrn/0000/dateOfRegistration/2010-03-31", port).get
+      val response =
+        new Resource("/agent-subscription/vat-known-facts/vrn/0000/dateOfRegistration/2010-03-31", port).get
       response.status shouldBe 400
     }
 
@@ -41,14 +45,16 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
       requestIsAuthenticatedWithNoEnrolments()
       vatKnownfactsRecordFails()
 
-      val response = new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
+      val response =
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
       response.status shouldBe 500
     }
 
     "return 404 when des returns a record for vrn  but the date of registration supplied does not match" in {
       vatKnownfactsRecordExists(vrn)
 
-      val response = new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2012-04-11", port).get
+      val response =
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2012-04-11", port).get
       response.status shouldBe 404
     }
 
@@ -56,7 +62,8 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
       requestIsAuthenticatedWithNoEnrolments()
       vatKnownfactsRecordExists(vrn)
 
-      val response = new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
+      val response =
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
       response.status shouldBe 200
     }
   }

@@ -19,11 +19,11 @@ package uk.gov.hmrc.agentsubscription.connectors
 import com.codahale.metrics.MetricRegistry
 import com.kenshoo.play.metrics.Metrics
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import play.api.libs.json._
 import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, Utr }
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.domain.Vrn
@@ -32,7 +32,7 @@ import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 import uk.gov.hmrc.http.HttpReads.Implicits._
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import play.api.http.Status._
 
@@ -44,9 +44,15 @@ case class Address(
   addressLine3: Option[String] = None,
   addressLine4: Option[String] = None,
   postalCode: String,
-  countryCode: String)
+  countryCode: String
+)
 
-case class DesSubscriptionRequest(agencyName: String, agencyAddress: Address, agencyEmail: String, telephoneNumber: Option[String])
+case class DesSubscriptionRequest(
+  agencyName: String,
+  agencyAddress: Address,
+  agencyEmail: String,
+  telephoneNumber: Option[String]
+)
 
 case class DesRegistrationRequest(requiresNameMatch: Boolean = false, regime: String = "ITSA", isAnAgent: Boolean)
 
@@ -58,7 +64,8 @@ case class BusinessAddress(
   addressLine3: Option[String] = None,
   addressLine4: Option[String] = None,
   postalCode: Option[String],
-  countryCode: String)
+  countryCode: String
+)
 
 object BusinessAddress {
   implicit val format: OFormat[BusinessAddress] = Json.format
@@ -71,7 +78,8 @@ case class DesRegistrationResponse(
   agentReferenceNumber: Option[Arn],
   address: BusinessAddress,
   emailAddress: Option[String],
-  safeId: Option[String])
+  safeId: Option[String]
+)
 
 object DesIndividual {
   implicit val formats: Format[DesIndividual] = Json.format[DesIndividual]
@@ -87,10 +95,7 @@ object DesRegistrationRequest {
 }
 
 @Singleton
-class DesConnector @Inject() (
-  appConfig: AppConfig,
-  http: HttpClient,
-  metrics: Metrics) extends HttpAPIMonitor {
+class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: Metrics) extends HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
 
   val baseUrl = appConfig.desBaseUrl
@@ -103,74 +108,111 @@ class DesConnector @Inject() (
 
   private def explicitHeaders =
     Seq(
-      Environment -> s"$environment",
-      CorrelationId -> UUID.randomUUID().toString,
-      Authorization_ -> s"Bearer $authToken")
+      Environment    -> s"$environment",
+      CorrelationId  -> UUID.randomUUID().toString,
+      Authorization_ -> s"Bearer $authToken"
+    )
 
-  def createOverseasBusinessPartnerRecord(request: OverseasRegistrationRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SafeId] = {
+  def createOverseasBusinessPartnerRecord(
+    request: OverseasRegistrationRequest
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SafeId] =
     monitor("ConsumedAPI-DES-Overseas-CreateRegistration-POST") {
       val url = s"$baseUrl/registration/02.00.00/organisation"
 
-      http.POST[OverseasRegistrationRequest, HttpResponse](url, request, headers = explicitHeaders)(implicitly, implicitly, desHeaders, ec)
+      http
+        .POST[OverseasRegistrationRequest, HttpResponse](url, request, headers = explicitHeaders)(
+          implicitly,
+          implicitly,
+          desHeaders,
+          ec
+        )
         .map(response =>
           response.status match {
             case s if is2xx(s) => (response.json \ "safeId").as[SafeId]
-            case s => throw new RuntimeException(s"Failed to register overseas agent in ETMP for ${s}")
-          })
+            case s             => throw new RuntimeException(s"Failed to register overseas agent in ETMP for $s")
+          }
+        )
     }
-  }
 
-  def subscribeToAgentServices(safeId: SafeId, agencyDetails: OverseasAgencyDetails)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
+  def subscribeToAgentServices(safeId: SafeId, agencyDetails: OverseasAgencyDetails)(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[Arn] =
     monitor("ConsumedAPI-DES-SubscribeOverseasAgent-POST") {
-      http.POST[OverseasAgencyDetails, HttpResponse](desOverseasSubscribeUrl(safeId), agencyDetails, headers = explicitHeaders)(implicitly, implicitly, desHeaders, ec)
+      http
+        .POST[OverseasAgencyDetails, HttpResponse](
+          desOverseasSubscribeUrl(safeId),
+          agencyDetails,
+          headers = explicitHeaders
+        )(implicitly, implicitly, desHeaders, ec)
         .map(response =>
           response.status match {
             case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
-            case s => throw new RuntimeException(s"Failed to create subscription in ETMP for safeId: $safeId status ${s}", UpstreamErrorResponse(response.body, s))
-          })
+            case s =>
+              throw new RuntimeException(
+                s"Failed to create subscription in ETMP for safeId: $safeId status $s",
+                UpstreamErrorResponse(response.body, s)
+              )
+          }
+        )
     }
-  }
 
-  def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Arn] = {
+  def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[Arn] =
     monitor("ConsumedAPI-DES-SubscribeAgent-POST") {
       http
-        .POST[DesSubscriptionRequest, HttpResponse](desSubscribeUrl(utr), request, headers = explicitHeaders)(implicitly, implicitly, desHeaders, ec)
+        .POST[DesSubscriptionRequest, HttpResponse](desSubscribeUrl(utr), request, headers = explicitHeaders)(
+          implicitly,
+          implicitly,
+          desHeaders,
+          ec
+        )
         .map(response =>
           response.status match {
             case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
             case s if s == CONFLICT =>
-              throw new RuntimeException(s"Failed to create subscription in ETMP for $utr status: ${s}", UpstreamErrorResponse(response.body, s))
+              throw new RuntimeException(
+                s"Failed to create subscription in ETMP for $utr status: $s",
+                UpstreamErrorResponse(response.body, s)
+              )
             case s =>
-              throw new RuntimeException(s"Failed to create subscription in ETMP for $utr status: ${s}")
-          })
+              throw new RuntimeException(s"Failed to create subscription in ETMP for $utr status: $s")
+          }
+        )
     }
-  }
 
-  def getRegistration(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DesRegistrationResponse]] = {
+  def getRegistration(
+    utr: Utr
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DesRegistrationResponse]] =
     getRegistrationJson(utr).map {
-      case Some(r) => {
+      case Some(r) =>
         def address: BusinessAddress = (r \ "address").validate[BusinessAddress] match {
           case JsSuccess(value, _) => value
-          case JsError(_) => throw InvalidBusinessAddressException
+          case JsError(_)          => throw InvalidBusinessAddressException
         }
 
         def isAnASAgent = (r \ "isAnASAgent").validate[Boolean] match {
           case JsSuccess(value, _) => value
-          case JsError(_) => throw InvalidIsAnASAgentException
+          case JsError(_)          => throw InvalidIsAnASAgentException
         }
 
-        Some(DesRegistrationResponse(
-          isAnASAgent,
-          (r \ "organisation" \ "organisationName").asOpt[String],
-          (r \ "individual").asOpt[DesIndividual],
-          (r \ "agentReferenceNumber").asOpt[Arn],
-          address,
-          (r \ "agencyDetails" \ "agencyEmail").asOpt[String].orElse((r \ "contactDetails" \ "emailAddress").asOpt[String]),
-          (r \ "safeId").asOpt[String]))
-      }
+        Some(
+          DesRegistrationResponse(
+            isAnASAgent,
+            (r \ "organisation" \ "organisationName").asOpt[String],
+            (r \ "individual").asOpt[DesIndividual],
+            (r \ "agentReferenceNumber").asOpt[Arn],
+            address,
+            (r \ "agencyDetails" \ "agencyEmail")
+              .asOpt[String]
+              .orElse((r \ "contactDetails" \ "emailAddress").asOpt[String]),
+            (r \ "safeId").asOpt[String]
+          )
+        )
       case _ => None
     }
-  }
 
   /** This method uses DES API 1170 (API 4) - Get Agent Record - UTR */
   def getAgentRecordDetails(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AgentRecord] = {
@@ -202,8 +244,10 @@ class DesConnector @Inject() (
     }
   }
 
-  //API #1028 Get Subscription Status
-  def getAmlsSubscriptionStatus(amlsRegistrationNumber: String)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AmlsSubscriptionRecord] = {
+  // API #1028 Get Subscription Status
+  def getAmlsSubscriptionStatus(
+    amlsRegistrationNumber: String
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[AmlsSubscriptionRecord] = {
 
     val url = s"$baseUrl/anti-money-laundering/subscription/$amlsRegistrationNumber/status"
 
@@ -216,12 +260,11 @@ class DesConnector @Inject() (
     monitor("DES-GetAgentRegistration-POST") {
       http.POST[DesRegistrationRequest, Option[JsValue]](
         desRegistrationUrl(utr),
-        DesRegistrationRequest(isAnAgent = false), headers = explicitHeaders)(
-          implicitly[Writes[DesRegistrationRequest]],
-          implicitly[HttpReads[Option[JsValue]]], desHeaders, ec)
-    } recover {
-      case badRequest: BadRequestException =>
-        throw new DesConnectorException(s"400 Bad Request response from DES for utr ${utr.value}", badRequest)
+        DesRegistrationRequest(isAnAgent = false),
+        headers = explicitHeaders
+      )(implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], desHeaders, ec)
+    } recover { case badRequest: BadRequestException =>
+      throw new DesConnectorException(s"400 Bad Request response from DES for utr ${utr.value}", badRequest)
     }
 
   private def desSubscribeUrl(utr: Utr): String =
@@ -233,26 +276,28 @@ class DesConnector @Inject() (
   private def desRegistrationUrl(utr: Utr): String =
     s"$baseUrl/registration/individual/utr/${encodePathSegment(utr.value)}"
 
-  private def desHeaders(implicit hc: HeaderCarrier): HeaderCarrier = {
+  private def desHeaders(implicit hc: HeaderCarrier): HeaderCarrier =
     hc.copy(
       authorization = Some(Authorization(s"Bearer $authToken")),
-      extraHeaders = hc.extraHeaders :+ "Environment" -> environment)
-  }
+      extraHeaders = hc.extraHeaders :+ "Environment" -> environment
+    )
 
-  private def getWithDesHeaders(apiName: String, url: String)(
-    implicit
-    hc: HeaderCarrier, ec: ExecutionContext): Future[JsValue] =
+  private def getWithDesHeaders(apiName: String, url: String)(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[JsValue] =
     monitor(s"ConsumedAPI-DES-$apiName-GET") {
       http
         .GET[HttpResponse](url, headers = explicitHeaders)(implicitly, desHeaders, ec)
         .map(response =>
           response.status match {
             case s if is2xx(s) => response.json
-            case NOT_FOUND => throw new NotFoundException(s"Received Not Found at:$apiName")
-            case BAD_REQUEST => throw new BadRequestException(s"Bad Request at: $apiName")
-            case s => throw UpstreamErrorResponse(s"$apiName", s)
+            case NOT_FOUND     => throw new NotFoundException(s"Received Not Found at:$apiName")
+            case BAD_REQUEST   => throw new BadRequestException(s"Bad Request at: $apiName")
+            case s             => throw UpstreamErrorResponse(s"$apiName", s)
             //
-          })
+          }
+        )
     }
 
 }
@@ -262,7 +307,7 @@ class DesConnectorException(val reason: String, val cause: Throwable) extends Ru
 sealed trait DesResponseJsonException extends RuntimeException {
   def error = this match {
     case InvalidBusinessAddressException => new RuntimeException("Invalid business address found in DES response")
-    case InvalidIsAnASAgentException => new RuntimeException("Invalid IsAnASAgent found in DES response")
+    case InvalidIsAnASAgentException     => new RuntimeException("Invalid IsAnASAgent found in DES response")
   }
 }
 
