@@ -6,8 +6,10 @@ trait TaxEnrolmentsStubs {
 
   val createKnownFactsUrl = "/tax-enrolments/enrolments/HMRC-AS-AGENT~AgentReferenceNumber~"
   val deleteKnownFactsUrl = "/enrolment-store-proxy/enrolment-store/enrolments/HMRC-AS-AGENT~AgentReferenceNumber~"
-  def enrolmentUrl(groupId: String, arn: String) = s"/tax-enrolments/groups/$groupId/enrolments/HMRC-AS-AGENT~AgentReferenceNumber~$arn"
-  def es1Url(arn: String) = s"/enrolment-store-proxy/enrolment-store/enrolments/HMRC-AS-AGENT~AgentReferenceNumber~$arn/groups?type=principal"
+  def enrolmentUrl(groupId: String, arn: String) =
+    s"/tax-enrolments/groups/$groupId/enrolments/HMRC-AS-AGENT~AgentReferenceNumber~$arn"
+  def es1Url(arn: String) =
+    s"/enrolment-store-proxy/enrolment-store/enrolments/HMRC-AS-AGENT~AgentReferenceNumber~$arn/groups?type=principal"
 
   private val arnRegex = "[a-zA-Z]{1}ARN[0-9]{7}"
 
@@ -66,23 +68,30 @@ trait TaxEnrolmentsStubs {
   }
 
   def allocatedPrincipalEnrolmentExists(arn: String, groupId: String): Unit = {
-    stubFor(get(urlEqualTo(es1Url(arn)))
-      .willReturn(aResponse()
-        .withBody(
-          s"""
-             |{
-             |    "principalGroupIds": [ "$groupId" ],
-             |    "delegatedGroupIds": []
-             |}
+    stubFor(
+      get(urlEqualTo(es1Url(arn)))
+        .willReturn(
+          aResponse()
+            .withBody(s"""
+                         |{
+                         |    "principalGroupIds": [ "$groupId" ],
+                         |    "delegatedGroupIds": []
+                         |}
           """.stripMargin)
-        .withStatus(200)))
+            .withStatus(200)
+        )
+    )
     ()
   }
 
   def allocatedPrincipalEnrolmentNotExists(arn: String): Unit = {
-    stubFor(get(urlEqualTo(es1Url(arn)))
-      .willReturn(aResponse()
-        .withStatus(204)))
+    stubFor(
+      get(urlEqualTo(es1Url(arn)))
+        .willReturn(
+          aResponse()
+            .withStatus(204)
+        )
+    )
     ()
   }
 

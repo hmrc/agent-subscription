@@ -17,8 +17,8 @@
 package uk.gov.hmrc.agentsubscription.support
 
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
-import uk.gov.hmrc.auth.core.{ AffinityGroup, Enrolment, EnrolmentIdentifier }
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
+import uk.gov.hmrc.auth.core.{AffinityGroup, Enrolment, EnrolmentIdentifier}
 
 import scala.concurrent.Future
 
@@ -27,11 +27,18 @@ trait AuthData {
   val arn = Arn("arn1")
 
   val agentEnrolment = Set(
-    Enrolment("HMRC-AS-AGENT", Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)), state = "Activated",
-      delegatedAuthRule = None))
+    Enrolment(
+      "HMRC-AS-AGENT",
+      Seq(EnrolmentIdentifier("AgentReferenceNumber", arn.value)),
+      state = "Activated",
+      delegatedAuthRule = None
+    )
+  )
 
-  val agentAffinityWithCredentialsAndGroupId: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
-    val retrievals = new ~(new ~(Some(AffinityGroup.Agent), Some(Credentials("providerId", "providerType"))), Some("groupId"))
+  val agentAffinityWithCredentialsAndGroupId
+    : Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
+    val retrievals =
+      new ~(new ~(Some(AffinityGroup.Agent), Some(Credentials("providerId", "providerType"))), Some("groupId"))
     Future.successful(retrievals)
   }
 
@@ -45,7 +52,8 @@ trait AuthData {
   val individualAffinity: Future[Option[AffinityGroup]] = Future.successful(Some(AffinityGroup.Individual))
 
   val agentIncorrectAffinity: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
-    val retrievals = new ~(new ~(Some(AffinityGroup.Individual), Some(Credentials("providerId", "providerType"))), Some("groupId"))
+    val retrievals =
+      new ~(new ~(Some(AffinityGroup.Individual), Some(Credentials("providerId", "providerType"))), Some("groupId"))
     Future.successful(retrievals)
   }
 
@@ -57,9 +65,15 @@ trait AuthData {
   val failedStubForAgent = Future.failed(new Exception("oh no !"))
 
   val validAgentAffinity: Future[~[Option[AffinityGroup], Option[Credentials]]] =
-    Future successful new ~[Option[AffinityGroup], Option[Credentials]](Some(AffinityGroup.Agent), Some(Credentials("credId", "credType")))
+    Future successful new ~[Option[AffinityGroup], Option[Credentials]](
+      Some(AffinityGroup.Agent),
+      Some(Credentials("credId", "credType"))
+    )
   val invalidAgentAffinity: Future[~[Option[AffinityGroup], Option[Credentials]]] =
-    Future successful new ~[Option[AffinityGroup], Option[Credentials]](Some(AffinityGroup.Individual), Some(Credentials("credId", "credType")))
+    Future successful new ~[Option[AffinityGroup], Option[Credentials]](
+      Some(AffinityGroup.Individual),
+      Some(Credentials("credId", "credType"))
+    )
   val noAffinity: Future[~[Option[AffinityGroup], Option[Credentials]]] =
     Future successful new ~[Option[AffinityGroup], Option[Credentials]](None, Some(Credentials("credId", "credType")))
 

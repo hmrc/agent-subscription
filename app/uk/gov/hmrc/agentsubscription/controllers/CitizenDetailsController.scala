@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json
-import play.api.mvc.{ Action, AnyContent, ControllerComponents }
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.CitizenDetailsConnector
 import uk.gov.hmrc.domain.Nino
@@ -27,7 +27,12 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class CitizenDetailsController @Inject() (citizenDetailsConnector: CitizenDetailsConnector, val authActions: AuthActions, cc: ControllerComponents)(implicit ec: ExecutionContext) extends BackendController(cc) {
+class CitizenDetailsController @Inject() (
+  citizenDetailsConnector: CitizenDetailsConnector,
+  val authActions: AuthActions,
+  cc: ControllerComponents
+)(implicit ec: ExecutionContext)
+    extends BackendController(cc) {
 
   import authActions._
 

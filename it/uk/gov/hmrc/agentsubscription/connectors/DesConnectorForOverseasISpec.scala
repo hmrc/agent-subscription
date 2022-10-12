@@ -9,7 +9,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.OverseasDesStubs
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.HttpClient
 import play.api.test.Helpers._
@@ -36,15 +36,31 @@ class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with 
 
   private val overseasRegistrationRequest = OverseasRegistrationRequest(
     "AGSV",
-    UUID.randomUUID.toString.replaceAll("-", ""), false, false,
+    UUID.randomUUID.toString.replaceAll("-", ""),
+    false,
+    false,
     Organisation("Test Organisation Name"),
-    OverseasBusinessAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
-      Some("Optional Address Line 3"), Some("Optional Address Line 4"), "IE"), ContactDetails("00491234567890", "test@test.example"))
+    OverseasBusinessAddress(
+      "Mandatory Address Line 1",
+      "Mandatory Address Line 2",
+      Some("Optional Address Line 3"),
+      Some("Optional Address Line 4"),
+      "IE"
+    ),
+    ContactDetails("00491234567890", "test@test.example")
+  )
 
   private val overseasSubscriptionRequest = OverseasAgencyDetails(
     "Test Organisation Name",
-    "test@test.example", OverseasAgencyAddress("Mandatory Address Line 1", "Mandatory Address Line 2",
-      Some("Optional Address Line 3"), Some("Optional Address Line 4"), "IE"))
+    "test@test.example",
+    OverseasAgencyAddress(
+      "Mandatory Address Line 1",
+      "Mandatory Address Line 2",
+      Some("Optional Address Line 3"),
+      Some("Optional Address Line 4"),
+      "IE"
+    )
+  )
 
   "subscribeToAgentServices" should {
     "return an ARN when subscription is successful" in {
@@ -90,13 +106,17 @@ class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with 
     "return exception for when an overseas BPR creation fails with NOT_FOUND error" in {
       organisationRegistrationFailsWithNotFound()
 
-      an[RuntimeException] should be thrownBy (await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequest)))
+      an[RuntimeException] should be thrownBy (await(
+        connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequest)
+      ))
     }
 
     "return exception for when an overseas BPR creation fails for an invalid payload" in {
       organisationRegistrationFailsWithInvalidPayload()
 
-      an[RuntimeException] should be thrownBy (await(connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequest.copy(regime = ""))))
+      an[RuntimeException] should be thrownBy (await(
+        connector.createOverseasBusinessPartnerRecord(overseasRegistrationRequest.copy(regime = ""))
+      ))
     }
   }
 }

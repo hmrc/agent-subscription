@@ -3,17 +3,18 @@ package uk.gov.hmrc.agentsubscription.connectors
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ Accepted, AttemptingRegistration, Registered }
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{Accepted, AttemptingRegistration, Registered}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.AgentOverseasApplicationStubs
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
 import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.http.HttpClient
 import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class AgentOverseasApplicationConnectorISpec extends BaseISpec with AgentOverseasApplicationStubs with MetricsTestSupport with MockitoSugar {
+class AgentOverseasApplicationConnectorISpec
+    extends BaseISpec with AgentOverseasApplicationStubs with MetricsTestSupport with MockitoSugar {
 
   private lazy val http = app.injector.instanceOf[HttpClient]
   private val appConfig = app.injector.instanceOf[AppConfig]
@@ -27,25 +28,14 @@ class AgentOverseasApplicationConnectorISpec extends BaseISpec with AgentOversea
   private val agencyDetails = OverseasAgencyDetails(
     "Agency name",
     "agencyemail@domain.com",
-    OverseasAgencyAddress(
-      "Mandatory Address Line 1",
-      "Mandatory Address Line 2",
-      None,
-      None,
-      "IE"))
+    OverseasAgencyAddress("Mandatory Address Line 1", "Mandatory Address Line 2", None, None, "IE")
+  )
 
-  private val businessDetails = TradingDetails(
-    "tradingName",
-    OverseasBusinessAddress(
-      "addressLine1",
-      "addressLine2",
-      None,
-      None,
-      "CC"))
+  private val businessDetails =
+    TradingDetails("tradingName", OverseasBusinessAddress("addressLine1", "addressLine2", None, None, "CC"))
 
-  private val businessContactDetails = OverseasContactDetails(
-    businessTelephone = "BUSINESS PHONE 123456789",
-    businessEmail = "email@domain.com")
+  private val businessContactDetails =
+    OverseasContactDetails(businessTelephone = "BUSINESS PHONE 123456789", businessEmail = "email@domain.com")
 
   "updateApplicationStatus" should {
     val targetAppStatus = AttemptingRegistration
@@ -69,12 +59,16 @@ class AgentOverseasApplicationConnectorISpec extends BaseISpec with AgentOversea
       "receives NotFound" in {
         givenUpdateApplicationStatus(AttemptingRegistration, 404)
 
-        an[RuntimeException] shouldBe thrownBy(await(connector.updateApplicationStatus(targetAppStatus, "currentUserAuthId")))
+        an[RuntimeException] shouldBe thrownBy(
+          await(connector.updateApplicationStatus(targetAppStatus, "currentUserAuthId"))
+        )
       }
       "receives conflict" in {
         givenUpdateApplicationStatus(AttemptingRegistration, 409)
 
-        an[RuntimeException] shouldBe thrownBy(await(connector.updateApplicationStatus(targetAppStatus, "currentUserAuthId")))
+        an[RuntimeException] shouldBe thrownBy(
+          await(connector.updateApplicationStatus(targetAppStatus, "currentUserAuthId"))
+        )
       }
     }
   }
@@ -89,7 +83,8 @@ class AgentOverseasApplicationConnectorISpec extends BaseISpec with AgentOversea
         Some(OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))),
         businessContactDetails,
         businessDetails,
-        agencyDetails)
+        agencyDetails
+      )
     }
 
     "return no safeId for if application has not yet reached registered state" in {
@@ -101,7 +96,8 @@ class AgentOverseasApplicationConnectorISpec extends BaseISpec with AgentOversea
         Some(OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))),
         businessContactDetails,
         businessDetails,
-        agencyDetails)
+        agencyDetails
+      )
     }
 
     "return exception for validation errors" when {

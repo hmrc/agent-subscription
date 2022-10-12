@@ -28,27 +28,46 @@ case class AgentRecord(
   agencyAddress: Address,
   agencyEmail: String,
   businessPostcode: String,
-  phoneNumber: Option[String])
+  phoneNumber: Option[String]
+)
 
 object AgentRecord {
-  implicit val agentRecordReads: Reads[AgentRecord] = (
-    (__ \ "agentReferenceNumber").read[Arn](verifying[Arn](arn => Arn.isValid(arn.value))) and
-    (__ \ "isAnASAgent").read[Boolean] and
-    (__ \ "agencyDetails" \ "agencyName").read[String] and
-    (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine1").read[String] and
-    (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine2").readNullable[String] and
-    (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine3").readNullable[String] and
-    (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine4").readNullable[String] and
-    (__ \ "agencyDetails" \ "agencyAddress" \ "postalCode").read[String] and
-    (__ \ "agencyDetails" \ "agencyAddress" \ "countryCode").read[String] and
-    (__ \ "agencyDetails" \ "agencyEmail").read[String] and
-    (__ \ "addressDetails" \ "postalCode").read[String] and
-    (__ \ "contactDetails" \ "phoneNumber").readNullable[String].or(Reads.pure(None: Option[String])))((arn, isAnASAgent, agencyName, addressLine1,
-      addressLine2, addressLine3, addressLine4,
-      agencyPostcode, countryCode, agencyEmail, businessPostcode, phoneNumber) =>
-      AgentRecord(arn, isAnASAgent, agencyName, Address(
+  implicit val agentRecordReads: Reads[AgentRecord] =
+    ((__ \ "agentReferenceNumber").read[Arn](verifying[Arn](arn => Arn.isValid(arn.value))) and
+      (__ \ "isAnASAgent").read[Boolean] and
+      (__ \ "agencyDetails" \ "agencyName").read[String] and
+      (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine1").read[String] and
+      (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine2").readNullable[String] and
+      (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine3").readNullable[String] and
+      (__ \ "agencyDetails" \ "agencyAddress" \ "addressLine4").readNullable[String] and
+      (__ \ "agencyDetails" \ "agencyAddress" \ "postalCode").read[String] and
+      (__ \ "agencyDetails" \ "agencyAddress" \ "countryCode").read[String] and
+      (__ \ "agencyDetails" \ "agencyEmail").read[String] and
+      (__ \ "addressDetails" \ "postalCode").read[String] and
+      (__ \ "contactDetails" \ "phoneNumber").readNullable[String].or(Reads.pure(None: Option[String])))(
+      (
+        arn,
+        isAnASAgent,
+        agencyName,
         addressLine1,
-        addressLine2, addressLine3, addressLine4,
-        agencyPostcode, countryCode), agencyEmail, businessPostcode, phoneNumber))
+        addressLine2,
+        addressLine3,
+        addressLine4,
+        agencyPostcode,
+        countryCode,
+        agencyEmail,
+        businessPostcode,
+        phoneNumber
+      ) =>
+        AgentRecord(
+          arn,
+          isAnASAgent,
+          agencyName,
+          Address(addressLine1, addressLine2, addressLine3, addressLine4, agencyPostcode, countryCode),
+          agencyEmail,
+          businessPostcode,
+          phoneNumber
+        )
+    )
 
 }

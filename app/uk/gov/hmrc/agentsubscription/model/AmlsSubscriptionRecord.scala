@@ -21,13 +21,13 @@ import play.api.libs.json.Json
 import java.time.LocalDate
 
 case class AmlsSubscriptionRecord(
-                                   formBundleStatus: String,
-                                   safeId: String,
-                                   currentRegYearStartDate: Option[LocalDate],
-                                   currentRegYearEndDate: Option[LocalDate],
-                                   suspended: Option[Boolean],
-                                 )
+  formBundleStatus: String,
+  safeId: String,
+  currentRegYearStartDate: Option[LocalDate],
+  currentRegYearEndDate: Option[LocalDate],
+  suspended: Option[Boolean]
+)
 
-object AmlsSubscriptionRecord{
+object AmlsSubscriptionRecord {
   implicit val amlsSubscriptionRecordFormat = Json.format[AmlsSubscriptionRecord]
 }

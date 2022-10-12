@@ -1,6 +1,6 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
-import uk.gov.hmrc.agentmtdidentifiers.model.{ Arn, MtdItId, Vrn }
+import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
 import uk.gov.hmrc.agentsubscription.model.EmailInformation
 import uk.gov.hmrc.agentsubscription.stubs.EmailStub
 import uk.gov.hmrc.agentsubscription.support.BaseISpec

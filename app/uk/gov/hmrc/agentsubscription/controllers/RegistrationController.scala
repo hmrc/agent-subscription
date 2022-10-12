@@ -20,10 +20,10 @@ import javax.inject._
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{ Action, AnyContent, ControllerComponents }
+import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
-import uk.gov.hmrc.agentsubscription.connectors.{ InvalidBusinessAddressException, InvalidIsAnASAgentException }
+import uk.gov.hmrc.agentsubscription.connectors.{InvalidBusinessAddressException, InvalidIsAnASAgentException}
 import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.agentsubscription.utils.valueOps
@@ -32,35 +32,41 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class RegistrationController @Inject() (service: RegistrationService, authActions: AuthActions, cc: ControllerComponents)(implicit ec: ExecutionContext)
-  extends BackendController(cc) with Logging {
+class RegistrationController @Inject() (
+  service: RegistrationService,
+  authActions: AuthActions,
+  cc: ControllerComponents
+)(implicit ec: ExecutionContext)
+    extends BackendController(cc) with Logging {
 
   import authActions._
 
-  def getRegistration(utr: Utr, postcode: String): Action[AnyContent] = authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider => {
-    if (!Utr.isValid(utr.value))
-      badRequest("INVALID_UTR")
-    else if (!validPostcode(postcode))
-      badRequest("INVALID_POSTCODE")
-    else
-      service.getRegistration(utr, postcode).map(_
-        .map(registrationDetails => Ok(toJson(registrationDetails)))
-        .getOrElse(NotFound))
-        .recover {
-          case InvalidBusinessAddressException =>
-            logger.info(InvalidBusinessAddressException.error.getMessage)
-            NotFound
-          case InvalidIsAnASAgentException =>
-            logger.info(InvalidIsAnASAgentException.error.getMessage)
-            InternalServerError
-        }
-  }
+  def getRegistration(utr: Utr, postcode: String): Action[AnyContent] = authorisedWithAffinityGroupAndCredentials {
+    implicit request => implicit provider =>
+      if (!Utr.isValid(utr.value))
+        badRequest("INVALID_UTR")
+      else if (!validPostcode(postcode))
+        badRequest("INVALID_POSTCODE")
+      else
+        service
+          .getRegistration(utr, postcode)
+          .map(
+            _.map(registrationDetails => Ok(toJson(registrationDetails)))
+              .getOrElse(NotFound)
+          )
+          .recover {
+            case InvalidBusinessAddressException =>
+              logger.info(InvalidBusinessAddressException.error.getMessage)
+              NotFound
+            case InvalidIsAnASAgentException =>
+              logger.info(InvalidIsAnASAgentException.error.getMessage)
+              InternalServerError
+          }
   }
 
   private def badRequest(code: String) =
     BadRequest(Json.obj("code" -> code)).toFuture
 
-  private def validPostcode(postcode: String): Boolean = {
+  private def validPostcode(postcode: String): Boolean =
     postcode.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)
-  }
 }

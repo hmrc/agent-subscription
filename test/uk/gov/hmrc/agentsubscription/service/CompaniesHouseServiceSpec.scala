@@ -17,23 +17,23 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import java.net.URL
-import org.mockito.ArgumentMatchers.{ any, eq => eqs }
-import org.mockito.Mockito.{ verify, when }
+import org.mockito.ArgumentMatchers.{any, eq => eqs}
+import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import play.api.Logging
-import play.api.libs.json.{ JsObject, Json }
+import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
-import uk.gov.hmrc.agentsubscription.audit.{ AuditService, CompaniesHouseOfficerCheck }
+import uk.gov.hmrc.agentsubscription.audit.{AuditService, CompaniesHouseOfficerCheck}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors.CompaniesHouseApiProxyConnector
-import uk.gov.hmrc.agentsubscription.model.{ CompaniesHouseOfficer, Crn }
-import uk.gov.hmrc.agentsubscription.support.{ ResettingMockitoSugar, UnitSpec }
+import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn}
+import uk.gov.hmrc.agentsubscription.support.{ResettingMockitoSugar, UnitSpec}
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually with Logging {
 
@@ -51,7 +51,16 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
   private val authorityUrl = new URL("http://localhost/auth/authority")
   private val hc = HeaderCarrier()
   private val provider = Provider("provId", "provType")
-  private val request = RequestWithAuthority(Authority(authorityUrl, authProviderId = Some(provider.providerId), authProviderType = Some(provider.providerType), "", ""), FakeRequest())
+  private val request = RequestWithAuthority(
+    Authority(
+      authorityUrl,
+      authProviderId = Some(provider.providerId),
+      authProviderType = Some(provider.providerType),
+      "",
+      ""
+    ),
+    FakeRequest()
+  )
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -62,22 +71,27 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
     "audit appropriate values when there is a successful match result" in {
       when(companiesHouseConnector.getCompanyOfficers(any[Crn], any[String])(eqs(hc), any[ExecutionContext]))
         .thenReturn(
-          Future successful (List(CompaniesHouseOfficer("BROWN, David", None), CompaniesHouseOfficer("LEWIS, John", None))))
+          Future successful (List(
+            CompaniesHouseOfficer("BROWN, David", None),
+            CompaniesHouseOfficer("LEWIS, John", None)
+          ))
+        )
 
       val nameToMatch = "Brown"
 
       await(service.knownFactCheck(crn, nameToMatch)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-           |{
-           |  "authProviderId": "${provider.providerId}",
-           |  "authProviderType": "${provider.providerType}",
-           |  "crn": "${crn.value}",
-           |  "nameToMatch": "$nameToMatch",
-           |  "matchDetailsResponse": "match_successful"
-           |}
-           |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "crn": "${crn.value}",
+                  |  "nameToMatch": "$nameToMatch",
+                  |  "matchDetailsResponse": "match_successful"
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CompaniesHouseOfficerCheck, "Check Companies House officers", expectedExtraDetail)(hc, request)
@@ -86,23 +100,23 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
 
     "audit appropriate values when there is no match" in {
       when(companiesHouseConnector.getCompanyOfficers(any[Crn], any[String])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(
-          Future successful (List()))
+        .thenReturn(Future successful (List()))
 
       val nameToMatch = "Lewis"
 
       await(service.knownFactCheck(crn, nameToMatch)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json.parse(
-        s"""
-           |{
-           |  "authProviderId": "${provider.providerId}",
-           |  "authProviderType": "${provider.providerType}",
-           |  "crn": "${crn.value}",
-           |  "nameToMatch": "$nameToMatch",
-           |  "matchDetailsResponse": "no_match"
-           |}
-           |""".stripMargin).asInstanceOf[JsObject]
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "crn": "${crn.value}",
+                  |  "nameToMatch": "$nameToMatch",
+                  |  "matchDetailsResponse": "no_match"
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
           .auditEvent(CompaniesHouseOfficerCheck, "Check Companies House officers", expectedExtraDetail)(hc, request)

@@ -1,6 +1,6 @@
 package uk.gov.hmrc.agentsubscription.stubs
 
-import com.github.tomakehurst.wiremock.client.WireMock.{ aResponse, get, stubFor, urlEqualTo }
+import com.github.tomakehurst.wiremock.client.WireMock.{aResponse, get, stubFor, urlEqualTo}
 
 trait CitizenDetailsStubs {
 
@@ -32,7 +32,9 @@ trait CitizenDetailsStubs {
                          |         "country" : "GREAT BRITAIN",
                          |         "type" : "Residential"
                          |       }
-                         |}""".stripMargin)))
+                         |}""".stripMargin)
+        )
+    )
 
   def givenCitizenDetailsNotFoundForNino(nino: String) =
     stubFor(
@@ -43,6 +45,8 @@ trait CitizenDetailsStubs {
             .withBody(s"""{
                          |  "code" : "INVALID_NINO",
                          |  "message" : "Provided NINO $nino is not valid"
-                         |}""".stripMargin)))
+                         |}""".stripMargin)
+        )
+    )
 
 }

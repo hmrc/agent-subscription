@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.audit
 
-import javax.inject.{ Inject, Singleton }
-import play.api.libs.json.{ JsObject, JsString }
+import javax.inject.{Inject, Singleton}
+import play.api.libs.json.{JsObject, JsString}
 import play.api.mvc.Request
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
@@ -29,21 +29,22 @@ import scala.concurrent.ExecutionContext
 @Singleton
 class AuditService @Inject() (auditConnector: AuditConnector)(implicit val ec: ExecutionContext) {
 
-  def auditEvent(
-    event: AgentSubscriptionEvent,
-    transactionName: String,
-    extraDetail: JsObject)(implicit hc: HeaderCarrier, request: Request[Any]): Unit =
+  def auditEvent(event: AgentSubscriptionEvent, transactionName: String, extraDetail: JsObject)(implicit
+    hc: HeaderCarrier,
+    request: Request[Any]
+  ): Unit =
     send(createEvent(event, transactionName, extraDetail))
 
-  private def createEvent(
-    event: AgentSubscriptionEvent,
-    transactionName: String,
-    extraDetail: JsObject)(implicit hc: HeaderCarrier, request: Request[Any]) =
+  private def createEvent(event: AgentSubscriptionEvent, transactionName: String, extraDetail: JsObject)(implicit
+    hc: HeaderCarrier,
+    request: Request[Any]
+  ) =
     ExtendedDataEvent(
       auditSource = "agent-subscription",
       auditType = event.toString,
       tags = hc.toAuditTags(transactionName, request.path),
-      detail = toJsObject(hc.toAuditDetails()) ++ extraDetail)
+      detail = toJsObject(hc.toAuditDetails()) ++ extraDetail
+    )
 
   private[audit] def toJsObject(fields: Map[String, String]) =
     JsObject(fields.map { case (name, value) => (name, JsString(value)) })
@@ -59,4 +60,3 @@ case object AgentSubscription extends AgentSubscriptionEvent
 case object CheckAgencyStatus extends AgentSubscriptionEvent
 case object OverseasAgentSubscription extends AgentSubscriptionEvent
 case object CompaniesHouseOfficerCheck extends AgentSubscriptionEvent
-

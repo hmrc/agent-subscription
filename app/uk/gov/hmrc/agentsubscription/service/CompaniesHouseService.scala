@@ -16,21 +16,22 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{ Inject, Singleton }
-import play.api.{ LoggerLike, Logging }
-import play.api.libs.json.{ JsObject, Json, OWrites }
-import play.api.mvc.{ AnyContent, Request }
-import uk.gov.hmrc.agentsubscription.audit.{ AuditService, CompaniesHouseOfficerCheck }
+import javax.inject.{Inject, Singleton}
+import play.api.{LoggerLike, Logging}
+import play.api.libs.json.{JsObject, Json, OWrites}
+import play.api.mvc.{AnyContent, Request}
+import uk.gov.hmrc.agentsubscription.audit.{AuditService, CompaniesHouseOfficerCheck}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.connectors.CompaniesHouseApiProxyConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
-import uk.gov.hmrc.agentsubscription.model.{ Crn, MatchDetailsResponse }
+import uk.gov.hmrc.agentsubscription.model.{Crn, MatchDetailsResponse}
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 private object CheckCompaniesHouseOfficersAuditDetail {
-  implicit val writes: OWrites[CheckCompaniesHouseOfficersAuditDetail] = Json.writes[CheckCompaniesHouseOfficersAuditDetail]
+  implicit val writes: OWrites[CheckCompaniesHouseOfficersAuditDetail] =
+    Json.writes[CheckCompaniesHouseOfficersAuditDetail]
 }
 
 private case class CheckCompaniesHouseOfficersAuditDetail(
@@ -38,42 +39,53 @@ private case class CheckCompaniesHouseOfficersAuditDetail(
   authProviderType: Option[String],
   crn: Crn,
   nameToMatch: String,
-  matchDetailsResponse: MatchDetailsResponse)
+  matchDetailsResponse: MatchDetailsResponse
+)
 
 @Singleton
-class CompaniesHouseService @Inject() (companiesHouseConnector: CompaniesHouseApiProxyConnector, auditService: AuditService) extends Logging {
+class CompaniesHouseService @Inject() (
+  companiesHouseConnector: CompaniesHouseApiProxyConnector,
+  auditService: AuditService
+) extends Logging {
 
   protected def getLogger: LoggerLike = logger
 
-  def knownFactCheck(crn: Crn, nameToMatch: String)(
-    implicit
-    hc: HeaderCarrier, provider: Provider, ec: ExecutionContext, request: Request[AnyContent]): Future[MatchDetailsResponse] = {
-    companiesHouseConnector.getCompanyOfficers(crn, nameToMatch).map {
+  def knownFactCheck(crn: Crn, nameToMatch: String)(implicit
+    hc: HeaderCarrier,
+    provider: Provider,
+    ec: ExecutionContext,
+    request: Request[AnyContent]
+  ): Future[MatchDetailsResponse] =
+    companiesHouseConnector.getCompanyOfficers(crn, nameToMatch).flatMap {
       case Nil =>
         getLogger.warn(s"Companies House known fact check failed for $nameToMatch and crn ${crn.value}")
         auditCompaniesHouseCheckResult(crn, nameToMatch, NoMatch)
-        NoMatch
+        Future successful NoMatch
       case _ =>
-        //TODO improve this by i) match the full name (using a fuzzy match) and ii) match date of birth (against CiD record)
+        // TODO improve this by i) match the full name (using a fuzzy match) and ii) match date of birth (against CiD record)
         getLogger.info(s"successful match result for company number ${crn.value}")
         auditCompaniesHouseCheckResult(crn, nameToMatch, Match)
-        Match
+        Future successful Match
     }
-  }
 
-  private def auditCompaniesHouseCheckResult(crn: Crn, nameToMatch: String, matchDetailsResponse: MatchDetailsResponse)(
-    implicit
-    hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Unit = {
+  private def auditCompaniesHouseCheckResult(
+    crn: Crn,
+    nameToMatch: String,
+    matchDetailsResponse: MatchDetailsResponse
+  )(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Unit =
     auditService.auditEvent(
       CompaniesHouseOfficerCheck,
       "Check Companies House officers",
-      toJsObject(CheckCompaniesHouseOfficersAuditDetail(
-        Some(provider.providerId),
-        Some(provider.providerType),
-        crn,
-        nameToMatch,
-        matchDetailsResponse)))
-  }
+      toJsObject(
+        CheckCompaniesHouseOfficersAuditDetail(
+          Some(provider.providerId),
+          Some(provider.providerType),
+          crn,
+          nameToMatch,
+          matchDetailsResponse
+        )
+      )
+    )
 
   private def toJsObject(detail: CheckCompaniesHouseOfficersAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 

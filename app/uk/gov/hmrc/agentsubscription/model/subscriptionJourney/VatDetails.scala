@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
 import java.time.LocalDate
 
-import play.api.libs.json.{ Format, Json }
+import play.api.libs.json.{Format, Json}
 import uk.gov.hmrc.agentmtdidentifiers.model.Vrn
 
 case class VatDetails(vrn: Vrn, regDate: LocalDate)

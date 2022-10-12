@@ -2,12 +2,11 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-
 import play.api.libs.ws.WSClient
-import play.api.test.Helpers.CONTENT_TYPE
-import uk.gov.hmrc.agentsubscription.model.{ DateOfBirth, DesignatoryDetails }
+import play.api.test.Helpers.{AUTHORIZATION, CONTENT_TYPE}
+import uk.gov.hmrc.agentsubscription.model.{DateOfBirth, DesignatoryDetails}
 import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails.Person
-import uk.gov.hmrc.agentsubscription.stubs.{ AuthStub, CitizenDetailsStubs }
+import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, CitizenDetailsStubs}
 import uk.gov.hmrc.agentsubscription.support.BaseISpec
 import uk.gov.hmrc.domain.Nino
 
@@ -29,8 +28,10 @@ class CitizenDetailsControllerISpec extends BaseISpec with CitizenDetailsStubs w
     Await.result(
       ws.url(s"http://localhost:$port/agent-subscription/citizen-details/${nino.value}/designatory-details")
         .withHttpHeaders(CONTENT_TYPE -> "application/json")
+        .withHttpHeaders(AUTHORIZATION -> "Bearer XYZ")
         .get(),
-      duration)
+      duration
+    )
 
   "GET /citizen-details/${nino}/designatory-details" should {
     "return 200 when nino is found in Citizen details and the dob returned matches" in {

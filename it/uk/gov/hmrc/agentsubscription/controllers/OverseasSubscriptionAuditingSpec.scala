@@ -5,15 +5,15 @@ import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.audit.OverseasAgentSubscription
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{ AttemptingRegistration, Complete, Registered }
-import uk.gov.hmrc.agentsubscription.model.{ EmailInformation, OverseasAmlsDetails, SafeId }
-import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{ writeAuditMergedSucceeds, writeAuditSucceeds }
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{AttemptingRegistration, Complete, Registered}
+import uk.gov.hmrc.agentsubscription.model.{EmailInformation, OverseasAmlsDetails, SafeId}
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
 import uk.gov.hmrc.agentsubscription.stubs._
-import uk.gov.hmrc.agentsubscription.support.{ BaseAuditSpec, Resource }
+import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
 
-class OverseasSubscriptionAuditingSpec extends BaseAuditSpec
-  with Eventually with AuthStub with TaxEnrolmentsStubs
-  with AgentAssuranceStub with OverseasDesStubs with AgentOverseasApplicationStubs with EmailStub {
+class OverseasSubscriptionAuditingSpec
+    extends BaseAuditSpec with Eventually with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub
+    with OverseasDesStubs with AgentOverseasApplicationStubs with EmailStub {
 
   implicit val ws = app.injector.instanceOf[WSClient]
 
@@ -25,7 +25,8 @@ class OverseasSubscriptionAuditingSpec extends BaseAuditSpec
   val emailInfo = EmailInformation(
     Seq("agencyemail@domain.com"),
     "agent_services_account_created",
-    Map("agencyName" -> "Agency name", "arn" -> "TARN0000001"))
+    Map("agencyName" -> "Agency name", "arn" -> "TARN0000001")
+  )
 
   "creating an overseas subscription" should {
     "audit an OverseasAgentSubscription event" in {
@@ -50,45 +51,43 @@ class OverseasSubscriptionAuditingSpec extends BaseAuditSpec
 
       result.status shouldBe 201
 
-      DataStreamStub.verifyAuditRequestSent(
-        OverseasAgentSubscription,
-        expectedTags,
-        expectedDetails)
+      DataStreamStub.verifyAuditRequestSent(OverseasAgentSubscription, expectedTags, expectedDetails)
     }
   }
 
-  private def doOverseasSubscriptionRequest() = new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
+  private def doOverseasSubscriptionRequest() =
+    new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
 
   private def expectedDetails: JsObject =
-    Json.parse(
-      s"""
-         |{
-         |  "agencyName": "Agency name",
-         |  "agencyEmail": "agencyemail@domain.com",
-         |  "agencyAddress": {
-         |    "addressLine1": "Mandatory Address Line 1",
-         |    "addressLine2": "Mandatory Address Line 2",
-         |    "countryCode": "IE"
-         |  },
-         |  "agentReferenceNumber": "$arn",
-         |  "agencyEmail": "agencyemail@domain.com",
-         |  "safeId": "${safeId.value}",
-         |  "amlsDetails": {
-         |      "supervisoryBody":"${overseasAmlsDetails.supervisoryBody}",
-         |      "membershipNumber":"${overseasAmlsDetails.membershipNumber.get}"
-         |  }
-         |}
-         |""".stripMargin)
+    Json
+      .parse(s"""
+                |{
+                |  "agencyName": "Agency name",
+                |  "agencyEmail": "agencyemail@domain.com",
+                |  "agencyAddress": {
+                |    "addressLine1": "Mandatory Address Line 1",
+                |    "addressLine2": "Mandatory Address Line 2",
+                |    "countryCode": "IE"
+                |  },
+                |  "agentReferenceNumber": "$arn",
+                |  "agencyEmail": "agencyemail@domain.com",
+                |  "safeId": "${safeId.value}",
+                |  "amlsDetails": {
+                |      "supervisoryBody":"${overseasAmlsDetails.supervisoryBody}",
+                |      "membershipNumber":"${overseasAmlsDetails.membershipNumber.get}"
+                |  }
+                |}
+                |""".stripMargin)
       .asInstanceOf[JsObject]
 
   private def expectedTags: JsObject =
-    Json.parse(
-      s"""
-         |{
-         |  "path": "/agent-subscription/overseas-subscription",
-         |  "transactionName": "Overseas agent subscription"
-         |}
-         |""".stripMargin)
+    Json
+      .parse(s"""
+                |{
+                |  "path": "/agent-subscription/overseas-subscription",
+                |  "transactionName": "Overseas agent subscription"
+                |}
+                |""".stripMargin)
       .asInstanceOf[JsObject]
 
   private val agencyDetailsJson =
@@ -104,4 +103,3 @@ class OverseasSubscriptionAuditingSpec extends BaseAuditSpec
        |}
      """.stripMargin
 }
-

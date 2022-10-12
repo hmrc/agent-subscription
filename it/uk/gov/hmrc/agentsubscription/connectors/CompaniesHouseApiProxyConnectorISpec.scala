@@ -3,15 +3,16 @@ package uk.gov.hmrc.agentsubscription.connectors
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.{ CompaniesHouseDateOfBirth, CompaniesHouseOfficer, Crn }
+import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseDateOfBirth, CompaniesHouseOfficer, Crn}
 import uk.gov.hmrc.agentsubscription.stubs.CompaniesHouseStub
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
-import uk.gov.hmrc.http.{ HeaderCarrier, HttpClient }
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
 import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class CompaniesHouseApiProxyConnectorISpec extends BaseISpec with CompaniesHouseStub with MetricsTestSupport with MockitoSugar {
+class CompaniesHouseApiProxyConnectorISpec
+    extends BaseISpec with CompaniesHouseStub with MetricsTestSupport with MockitoSugar {
   private implicit val hc = HeaderCarrier()
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
@@ -33,7 +34,8 @@ class CompaniesHouseApiProxyConnectorISpec extends BaseISpec with CompaniesHouse
         CompaniesHouseOfficer("FERGUSON, David", Some(CompaniesHouseDateOfBirth(Some(4), 8, 1967))),
         CompaniesHouseOfficer("FERGUSON, Hamish", Some(CompaniesHouseDateOfBirth(None, 4, 1974))),
         CompaniesHouseOfficer("FERGUSON, Iain Blair", Some(CompaniesHouseDateOfBirth(None, 2, 1973))),
-        CompaniesHouseOfficer("FERGUSON, Mark Richard", Some(CompaniesHouseDateOfBirth(None, 10, 1972))))
+        CompaniesHouseOfficer("FERGUSON, Mark Richard", Some(CompaniesHouseDateOfBirth(None, 10, 1972)))
+      )
     }
 
     "return Seq.empty when Unauthorized" in {

@@ -8,7 +8,7 @@ import uk.gov.hmrc.agentsubscription.support.BaseISpec
 
 import java.time.LocalDate
 import scala.concurrent.Await
-import scala.concurrent.duration.{ Duration, SECONDS }
+import scala.concurrent.duration.{Duration, SECONDS}
 
 class AmlsSubscriptionControllerISpec extends BaseISpec with DesStubs {
 
@@ -21,7 +21,8 @@ class AmlsSubscriptionControllerISpec extends BaseISpec with DesStubs {
       ws.url(s"http://localhost:$port/agent-subscription/amls-subscription/$amlsRegNumber")
         .withHttpHeaders(CONTENT_TYPE -> "application/json")
         .get(),
-      duration)
+      duration
+    )
 
   "GET /amls-subscription/:amlsRegistrationNumber" should {
 
@@ -32,7 +33,13 @@ class AmlsSubscriptionControllerISpec extends BaseISpec with DesStubs {
 
       response.status shouldBe 200
 
-      response.json.as[AmlsSubscriptionRecord] shouldBe AmlsSubscriptionRecord("Approved", "xyz", Some(LocalDate.parse("2021-01-01")), Some(LocalDate.parse("2021-12-31")), Some(false))
+      response.json.as[AmlsSubscriptionRecord] shouldBe AmlsSubscriptionRecord(
+        "Approved",
+        "xyz",
+        Some(LocalDate.parse("2021-01-01")),
+        Some(LocalDate.parse("2021-12-31")),
+        Some(false)
+      )
     }
 
     "return NotFound when amls registration number is not known in ETMP" in {

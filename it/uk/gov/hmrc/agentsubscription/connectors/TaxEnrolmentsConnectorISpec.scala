@@ -5,8 +5,8 @@ import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
-import uk.gov.hmrc.agentsubscription.support.{ BaseISpec, MetricsTestSupport }
-import uk.gov.hmrc.http.{ HttpClient, _ }
+import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
+import uk.gov.hmrc.http.{HttpClient, _}
 import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -64,8 +64,8 @@ class TaxEnrolmentsConnectorISpec extends BaseISpec with TaxEnrolmentsStubs with
   }
 
   "addEnrolment" should {
-    val enrolmentRequest = EnrolmentRequest("userId", "principal", "friendlyName",
-      Seq(KnownFact("AgencyPostcode", "AB11BA")))
+    val enrolmentRequest =
+      EnrolmentRequest("userId", "principal", "friendlyName", Seq(KnownFact("AgencyPostcode", "AB11BA")))
 
     "return status 200 after a successful enrolment" in {
       givenCleanMetricRegistry()

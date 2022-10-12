@@ -16,55 +16,56 @@
 
 package uk.gov.hmrc.agentsubscription.auth
 
-import javax.inject.{ Inject, Singleton }
+import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json.toJson
-import play.api.libs.json.{ JsValue, Json, OFormat, Writes }
-import play.api.mvc.Results.{ Forbidden, Unauthorized }
-import play.api.mvc.{ AnyContent, Result, _ }
+import play.api.libs.json.{JsValue, Json, OFormat, Writes}
+import play.api.mvc.Results.{Forbidden, Unauthorized}
+import play.api.mvc.{AnyContent, Result, _}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions._
 import uk.gov.hmrc.agentsubscription.utils.valueOps
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{ affinityGroup, allEnrolments, credentials, groupIdentifier }
-import uk.gov.hmrc.auth.core.retrieve.{ Credentials, ~ }
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{affinityGroup, allEnrolments, credentials, groupIdentifier}
+import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthConnector)(implicit ec: ExecutionContext)
-  extends BackendController(cc) with AuthorisedFunctions {
+    extends BackendController(cc) with AuthorisedFunctions {
 
   private val AuthProvider: AuthProviders = AuthProviders(GovernmentGateway)
 
-  def authorisedWithAffinityGroup(action: SubscriptionAuthAction): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    authorised(AuthProvider)
-      .retrieve(affinityGroup and credentials and groupIdentifier) {
-        case Some(affinityG) ~ Some(Credentials(providerId, _)) ~ Some(groupId) =>
-          if (isAgent(affinityG)) {
-            action(request)(AuthIds(providerId, groupId))
-          } else {
-            NotAnAgent
-          }.toFuture
+  def authorisedWithAffinityGroup(action: SubscriptionAuthAction): Action[JsValue] = Action.async(parse.json) {
+    implicit request =>
+      authorised(AuthProvider)
+        .retrieve(affinityGroup and credentials and groupIdentifier) {
+          case Some(affinityG) ~ Some(Credentials(providerId, _)) ~ Some(groupId) =>
+            if (isAgent(affinityG)) {
+              action(request)(AuthIds(providerId, groupId))
+            } else
+              NotAnAgent.toFuture
 
-        case _ => GenericUnauthorized.toFuture
+          case _ => GenericUnauthorized.toFuture
 
-      } recover {
+        } recover {
         handleFailure()
       }
   }
 
-  def authorisedWithAgentAffinity(action: Request[AnyContent] => Future[Result]): Action[AnyContent] = Action.async { implicit request =>
-    authorised(AuthProvider).retrieve(affinityGroup) {
-      case Some(affinityG) =>
-        if (isAgent(affinityG))
-          action(request)
-        else
-          NotAnAgent.toFuture
-      case _ => GenericUnauthorized.toFuture
-    } recover {
-      handleFailure()
-    }
+  def authorisedWithAgentAffinity(action: Request[AnyContent] => Future[Result]): Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(AuthProvider).retrieve(affinityGroup) {
+        case Some(affinityG) =>
+          if (isAgent(affinityG))
+            action(request)
+          else
+            NotAnAgent.toFuture
+        case _ => GenericUnauthorized.toFuture
+      } recover {
+        handleFailure()
+      }
   }
 
   def overseasAgentAuth(action: OverseasAuthAction): Action[AnyContent] = Action.async { implicit request =>
@@ -79,23 +80,23 @@ class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthCo
             action(request)(AuthIds(providerId, groupId))
         case _ => GenericUnauthorized.toFuture
       } recover {
-        handleFailure()
-      }
+      handleFailure()
+    }
   }
 
-  def authorisedWithAffinityGroupAndCredentials(action: RegistrationAuthAction): Action[AnyContent] = Action.async { implicit request =>
-    authorised(AuthProvider)
-      .retrieve(affinityGroup and credentials) {
-        case Some(affinityG) ~ Some(Credentials(providerId, providerType)) =>
-          if (isAgent(affinityG)) {
-            action(request)(Provider(providerId, providerType))
-          } else {
-            NotAnAgent
-          }.toFuture
+  def authorisedWithAffinityGroupAndCredentials(action: RegistrationAuthAction): Action[AnyContent] = Action.async {
+    implicit request =>
+      authorised(AuthProvider)
+        .retrieve(affinityGroup and credentials) {
+          case Some(affinityG) ~ Some(Credentials(providerId, providerType)) =>
+            if (isAgent(affinityG)) {
+              action(request)(Provider(providerId, providerType))
+            } else
+              NotAnAgent.toFuture
 
-        case _ => GenericUnauthorized.toFuture
+          case _ => GenericUnauthorized.toFuture
 
-      } recover {
+        } recover {
         handleFailure()
       }
   }
@@ -128,9 +129,13 @@ object AuthActions {
     override def writes(body: ErrorBody): JsValue = Json.obj("code" -> body.code, "message" -> body.message)
   }
 
-  val GenericUnauthorized: Result = Unauthorized(toJson(ErrorBody("UNAUTHORIZED", "Bearer token is missing or not authorized.")))
+  val GenericUnauthorized: Result = Unauthorized(
+    toJson(ErrorBody("UNAUTHORIZED", "Bearer token is missing or not authorized."))
+  )
 
-  val AgentCannotSubscribe: Result = Forbidden(toJson(ErrorBody("AGENT_CAN_NOT_SUBSCRIBE", "The user either is not an Agent or already has enrolments")))
+  val AgentCannotSubscribe: Result = Forbidden(
+    toJson(ErrorBody("AGENT_CAN_NOT_SUBSCRIBE", "The user either is not an Agent or already has enrolments"))
+  )
 
   val NotAnAgent: Result = Forbidden(toJson(ErrorBody("USER_NOT_AN_AGENT", "The user is not an Agent")))
 }

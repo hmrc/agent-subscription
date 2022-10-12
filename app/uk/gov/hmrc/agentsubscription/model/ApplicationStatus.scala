@@ -21,14 +21,14 @@ import play.api.libs.json._
 sealed trait ApplicationStatus extends Product with Serializable {
 
   val key: String =
-    this match { //status can only progress in acceding order indicated below
-      case ApplicationStatus.Pending => "pending" //1
-      case ApplicationStatus.Rejected => "rejected" //2
-      case ApplicationStatus.Accepted => "accepted" //2
+    this match { // status can only progress in acceding order indicated below
+      case ApplicationStatus.Pending  => "pending" // 1
+      case ApplicationStatus.Rejected => "rejected" // 2
+      case ApplicationStatus.Accepted => "accepted" // 2
       case ApplicationStatus.AttemptingRegistration =>
-        "attempting_registration" //3
-      case ApplicationStatus.Registered => "registered" //4
-      case ApplicationStatus.Complete => "complete" //5
+        "attempting_registration" // 3
+      case ApplicationStatus.Registered => "registered" // 4
+      case ApplicationStatus.Complete   => "complete" // 5
     }
 }
 
@@ -48,13 +48,13 @@ object ApplicationStatus {
 
   def apply(typeIdentifier: String): ApplicationStatus = typeIdentifier match {
 
-    case ApplicationStatus.Pending.key => ApplicationStatus.Pending
+    case ApplicationStatus.Pending.key  => ApplicationStatus.Pending
     case ApplicationStatus.Rejected.key => ApplicationStatus.Rejected
     case ApplicationStatus.Accepted.key => ApplicationStatus.Accepted
     case ApplicationStatus.AttemptingRegistration.key =>
       ApplicationStatus.AttemptingRegistration
     case ApplicationStatus.Registered.key => ApplicationStatus.Registered
-    case ApplicationStatus.Complete.key => ApplicationStatus.Complete
+    case ApplicationStatus.Complete.key   => ApplicationStatus.Complete
   }
 
   def unapply(arg: ApplicationStatus): Option[String] = Some(arg.key)
@@ -62,12 +62,12 @@ object ApplicationStatus {
   implicit val reads: Reads[ApplicationStatus] = new Reads[ApplicationStatus] {
     override def reads(json: JsValue): JsResult[ApplicationStatus] =
       json match {
-        case JsString(ApplicationStatus.Pending.key) => JsSuccess(Pending)
-        case JsString(ApplicationStatus.Accepted.key) => JsSuccess(Accepted)
-        case JsString(ApplicationStatus.Rejected.key) => JsSuccess(Rejected)
+        case JsString(ApplicationStatus.Pending.key)                => JsSuccess(Pending)
+        case JsString(ApplicationStatus.Accepted.key)               => JsSuccess(Accepted)
+        case JsString(ApplicationStatus.Rejected.key)               => JsSuccess(Rejected)
         case JsString(ApplicationStatus.AttemptingRegistration.key) => JsSuccess(AttemptingRegistration)
-        case JsString(ApplicationStatus.Registered.key) => JsSuccess(Registered)
-        case JsString(ApplicationStatus.Complete.key) => JsSuccess(Complete)
+        case JsString(ApplicationStatus.Registered.key)             => JsSuccess(Registered)
+        case JsString(ApplicationStatus.Complete.key)               => JsSuccess(Complete)
         case invalid => JsError(s"Invalid ApplicationStatus found: $invalid")
       }
   }
