@@ -29,7 +29,7 @@ import uk.gov.hmrc.agentsubscription.audit.{AuditService, CompaniesHouseOfficerC
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors.CompaniesHouseApiProxyConnector
-import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn}
+import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn, ReducedCompanyInformation}
 import uk.gov.hmrc.agentsubscription.support.{ResettingMockitoSugar, UnitSpec}
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -76,6 +76,9 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
             CompaniesHouseOfficer("LEWIS, John", None)
           ))
         )
+
+      when(companiesHouseConnector.getCompany(any[Crn])(eqs(hc), any[ExecutionContext]))
+        .thenReturn(Future successful Some(ReducedCompanyInformation("01234567", "Lambda Microservices", "active")))
 
       val nameToMatch = "Brown"
 

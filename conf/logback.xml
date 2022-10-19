@@ -34,9 +34,6 @@
         </encoder>
     </appender>
 
-    <logger name="reactivemongo" level="debug" />
-    <logger name="reactivemongo.core.actors" level="info" />
-
     <root level="INFO">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>

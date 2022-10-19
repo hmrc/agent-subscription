@@ -34,3 +34,11 @@ object CompaniesHouseOfficer {
     (__ \ "date_of_birth").readNullable[CompaniesHouseDateOfBirth])(CompaniesHouseOfficer.apply _)
 
 }
+
+case class ReducedCompanyInformation(companyNumber: String, companyName: String, companyStatus: String)
+
+object ReducedCompanyInformation {
+  implicit val reads: Reads[ReducedCompanyInformation] = ((__ \ "company_number").read[String] and
+    (__ \ "company_name").read[String] and
+    (__ \ "company_status").read[String])(ReducedCompanyInformation.apply _)
+}
