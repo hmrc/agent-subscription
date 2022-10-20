@@ -48,6 +48,9 @@ class CompaniesHouseService @Inject() (
   auditService: AuditService
 ) extends Logging {
 
+  // https://developer-specs.company-information.service.gov.uk/companies-house-public-data-api/resources/companyprofile?v=latest
+  private lazy val allowedCompanyStatuses = Seq("active", "registered", "open")
+
   protected def getLogger: LoggerLike = logger
 
   def knownFactCheck(crn: Crn, nameToMatch: String)(implicit
@@ -63,9 +66,20 @@ class CompaniesHouseService @Inject() (
         Future successful NoMatch
       case _ =>
         // TODO improve this by i) match the full name (using a fuzzy match) and ii) match date of birth (against CiD record)
-        getLogger.info(s"successful match result for company number ${crn.value}")
-        auditCompaniesHouseCheckResult(crn, nameToMatch, Match)
-        Future successful Match
+        companiesHouseConnector.getCompany(crn) map {
+          case None =>
+            getLogger.info(s"getCompany found nothing for ${crn.value}")
+            NoMatch
+          case Some(companyInformation) =>
+            if (allowedCompanyStatuses.contains(companyInformation.companyStatus)) {
+              getLogger.info(s"successful match result for company number ${crn.value}")
+              auditCompaniesHouseCheckResult(crn, nameToMatch, Match)
+              Match
+            } else {
+              getLogger.info(s"Found company status '${companyInformation.companyStatus}' for ${crn.value}")
+              NotAllowed
+            }
+        }
     }
 
   private def auditCompaniesHouseCheckResult(

@@ -55,6 +55,7 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
     "return OK if a match was found" in {
       requestIsAuthenticatedWithNoEnrolments()
       givenSuccessfulCompaniesHouseResponseMultipleMatches(Crn("SC123456"), "FERGUSON")
+      givenSuccessfulGetCompanyHouseResponse(Crn("SC123456"), companyStatus = "active")
       val response =
         new Resource(s"/agent-subscription/companies-house-api-proxy/company/SC123456/officers/FERGUSON", port).get
       response.status shouldBe 200

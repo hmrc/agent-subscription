@@ -24,7 +24,7 @@ import play.api.http.Status._
 import play.utils.UriEncoding
 import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn}
+import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn, ReducedCompanyInformation}
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
@@ -40,6 +40,8 @@ trait CompaniesHouseApiProxyConnector {
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[Seq[CompaniesHouseOfficer]]
+
+  def getCompany(crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[ReducedCompanyInformation]]
 }
 
 @Singleton
@@ -69,6 +71,26 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (val appConfig: AppConfig, h
           case s =>
             logger.error(s"getCompanyOfficers http status: $s, response:${response.body}")
             Seq.empty
+        }
+      }
+    }
+
+  override def getCompany(
+    crn: Crn
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[ReducedCompanyInformation]] =
+    monitor(s"ConsumedAPI-getCompany-GET") {
+      val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
+      val url = s"$baseUrl/companies-house-api-proxy/company/$encodedCrn"
+      httpClient.GET[HttpResponse](url).map { response =>
+        response.status match {
+          case s if is2xx(s) =>
+            response.json.asOpt[ReducedCompanyInformation]
+          case s if is4xx(s) =>
+            logger.warn(s"getCompany http status: $s, response:${response.body}")
+            Option.empty[ReducedCompanyInformation]
+          case s =>
+            logger.error(s"getCompany http status: $s, response:${response.body}")
+            Option.empty[ReducedCompanyInformation]
         }
       }
     }

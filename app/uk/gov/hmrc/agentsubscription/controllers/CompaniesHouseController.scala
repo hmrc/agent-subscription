@@ -20,7 +20,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.model.Crn
-import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.{Match, NoMatch, RecordNotFound}
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.{Match, NoMatch, NotAllowed, RecordNotFound}
 import uk.gov.hmrc.agentsubscription.service.CompaniesHouseService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -41,6 +41,7 @@ class CompaniesHouseController @Inject() (
       companiesHouseService.knownFactCheck(crn, nameToMatch).map {
         case Match                    => Ok
         case NoMatch | RecordNotFound => NotFound
+        case NotAllowed               => Conflict
         case _                        => InternalServerError
       }
     }
