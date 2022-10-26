@@ -41,7 +41,9 @@ class CitizenDetailsControllerISpec extends BaseISpec with CitizenDetailsStubs w
       val response = doRequest(nino)
       response.status shouldBe 200
 
-      response.json.as[DesignatoryDetails] shouldBe DesignatoryDetails(Some(Person(Some("Matchmaker"), Some(dob))))
+      response.json.as[DesignatoryDetails] shouldBe DesignatoryDetails(
+        Some(Person(Some("Matchmaker"), Some(dob), deceased = Some(false)))
+      )
     }
 
     "return 404 when DesignatoryDetails are not found for a passed in nino" in {

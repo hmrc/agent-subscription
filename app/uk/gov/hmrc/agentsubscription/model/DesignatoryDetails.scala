@@ -24,7 +24,11 @@ case class DesignatoryDetails(person: Option[Person] = None)
 
 object DesignatoryDetails {
 
-  case class Person(lastName: Option[String] = None, dateOfBirth: Option[DateOfBirth] = None)
+  case class Person(
+    lastName: Option[String] = None,
+    dateOfBirth: Option[DateOfBirth] = None,
+    deceased: Option[Boolean] = None
+  )
 
   object Person {
     implicit val format: Format[Person] = Json.format[Person]
