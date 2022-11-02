@@ -20,7 +20,7 @@ import javax.inject.{Inject, Singleton}
 import play.api.{LoggerLike, Logging}
 import play.api.libs.json.{JsObject, Json, OWrites}
 import play.api.mvc.{AnyContent, Request}
-import uk.gov.hmrc.agentsubscription.audit.{AuditService, CompaniesHouseOfficerCheck}
+import uk.gov.hmrc.agentsubscription.audit.{AuditService, CompaniesHouseOfficerCheck, CompaniesHouseStatusCheck}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.connectors.CompaniesHouseApiProxyConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
@@ -42,6 +42,20 @@ private case class CheckCompaniesHouseOfficersAuditDetail(
   matchDetailsResponse: MatchDetailsResponse
 )
 
+private case class CheckCompaniesHouseStatusAuditDetail(
+  authProviderId: Option[String],
+  authProviderType: Option[String],
+  crn: Crn,
+  nameToMatch: String,
+  companyStatus: Option[String],
+  matchDetailsResponse: MatchDetailsResponse
+)
+
+private object CheckCompaniesHouseStatusAuditDetail {
+  implicit val writes: OWrites[CheckCompaniesHouseStatusAuditDetail] =
+    Json.writes[CheckCompaniesHouseStatusAuditDetail]
+}
+
 @Singleton
 class CompaniesHouseService @Inject() (
   companiesHouseConnector: CompaniesHouseApiProxyConnector,
@@ -49,7 +63,8 @@ class CompaniesHouseService @Inject() (
 ) extends Logging {
 
   // https://developer-specs.company-information.service.gov.uk/companies-house-public-data-api/resources/companyprofile?v=latest
-  private lazy val allowedCompanyStatuses = Seq("active", "registered", "open")
+  private lazy val allowedCompanyStatuses =
+    Seq("active", "administration", "voluntary-arrangement", "registered", "open")
 
   protected def getLogger: LoggerLike = logger
 
@@ -62,27 +77,35 @@ class CompaniesHouseService @Inject() (
     companiesHouseConnector.getCompanyOfficers(crn, nameToMatch).flatMap {
       case Nil =>
         getLogger.warn(s"Companies House known fact check failed for $nameToMatch and crn ${crn.value}")
-        auditCompaniesHouseCheckResult(crn, nameToMatch, NoMatch)
+        auditCompaniesHouseOfficersCheckResult(crn, nameToMatch, NoMatch)
         Future successful NoMatch
       case _ =>
         // TODO improve this by i) match the full name (using a fuzzy match) and ii) match date of birth (against CiD record)
         companiesHouseConnector.getCompany(crn) map {
           case None =>
-            getLogger.info(s"getCompany found nothing for ${crn.value}")
+            getLogger.warn(s"Companies House API found nothing for ${crn.value}")
+            auditCompaniesHouseStatusCheckResult(crn, nameToMatch, None, NoMatch)
             NoMatch
           case Some(companyInformation) =>
             if (allowedCompanyStatuses.contains(companyInformation.companyStatus)) {
-              getLogger.info(s"successful match result for company number ${crn.value}")
-              auditCompaniesHouseCheckResult(crn, nameToMatch, Match)
+              getLogger.info(s"Found company of status ${companyInformation.companyStatus} for ${crn.value}")
+              auditCompaniesHouseOfficersCheckResult(crn, nameToMatch, Match)
+              auditCompaniesHouseStatusCheckResult(crn, nameToMatch, Option(companyInformation.companyStatus), Match)
               Match
             } else {
-              getLogger.info(s"Found company status '${companyInformation.companyStatus}' for ${crn.value}")
+              getLogger.warn(s"Found company status '${companyInformation.companyStatus}' for ${crn.value}")
+              auditCompaniesHouseStatusCheckResult(
+                crn,
+                nameToMatch,
+                Option(companyInformation.companyStatus),
+                NotAllowed
+              )
               NotAllowed
             }
         }
     }
 
-  private def auditCompaniesHouseCheckResult(
+  private def auditCompaniesHouseOfficersCheckResult(
     crn: Crn,
     nameToMatch: String,
     matchDetailsResponse: MatchDetailsResponse
@@ -90,17 +113,40 @@ class CompaniesHouseService @Inject() (
     auditService.auditEvent(
       CompaniesHouseOfficerCheck,
       "Check Companies House officers",
-      toJsObject(
-        CheckCompaniesHouseOfficersAuditDetail(
-          Some(provider.providerId),
-          Some(provider.providerType),
-          crn,
-          nameToMatch,
-          matchDetailsResponse
+      Json
+        .toJson(
+          CheckCompaniesHouseOfficersAuditDetail(
+            Some(provider.providerId),
+            Some(provider.providerType),
+            crn,
+            nameToMatch,
+            matchDetailsResponse
+          )
         )
-      )
+        .as[JsObject]
     )
 
-  private def toJsObject(detail: CheckCompaniesHouseOfficersAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
+  private def auditCompaniesHouseStatusCheckResult(
+    crn: Crn,
+    nameToMatch: String,
+    companyStatus: Option[String],
+    matchDetailsResponse: MatchDetailsResponse
+  )(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Unit =
+    auditService.auditEvent(
+      CompaniesHouseStatusCheck,
+      "Check Companies House company status",
+      Json
+        .toJson(
+          CheckCompaniesHouseStatusAuditDetail(
+            Some(provider.providerId),
+            Some(provider.providerType),
+            crn,
+            nameToMatch,
+            companyStatus,
+            matchDetailsResponse
+          )
+        )
+        .as[JsObject]
+    )
 
 }

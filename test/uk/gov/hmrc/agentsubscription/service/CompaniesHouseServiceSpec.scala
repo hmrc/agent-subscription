@@ -25,7 +25,7 @@ import play.api.libs.json.{JsObject, Json}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
-import uk.gov.hmrc.agentsubscription.audit.{AuditService, CompaniesHouseOfficerCheck}
+import uk.gov.hmrc.agentsubscription.audit.{AuditService, CompaniesHouseOfficerCheck, CompaniesHouseStatusCheck}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors.CompaniesHouseApiProxyConnector
@@ -77,14 +77,18 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
           ))
         )
 
+      val companyStatus = "active"
+
       when(companiesHouseConnector.getCompany(any[Crn])(eqs(hc), any[ExecutionContext]))
-        .thenReturn(Future successful Some(ReducedCompanyInformation("01234567", "Lambda Microservices", "active")))
+        .thenReturn(
+          Future successful Some(ReducedCompanyInformation("01234567", "Lambda Microservices", companyStatus))
+        )
 
       val nameToMatch = "Brown"
 
       await(service.knownFactCheck(crn, nameToMatch)(hc, provider, ec, request))
 
-      val expectedExtraDetail = Json
+      val expectedExtraDetailCompanyOfficers = Json
         .parse(s"""
                   |{
                   |  "authProviderId": "${provider.providerId}",
@@ -95,9 +99,30 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
                   |}
                   |""".stripMargin)
         .asInstanceOf[JsObject]
+      val expectedExtraDetailCompanyStatus = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "crn": "${crn.value}",
+                  |  "nameToMatch": "$nameToMatch",
+                  |  "companyStatus": "$companyStatus",
+                  |  "matchDetailsResponse": "match_successful"
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CompaniesHouseOfficerCheck, "Check Companies House officers", expectedExtraDetail)(hc, request)
+          .auditEvent(CompaniesHouseOfficerCheck, "Check Companies House officers", expectedExtraDetailCompanyOfficers)(
+            hc,
+            request
+          )
+        verify(auditService)
+          .auditEvent(
+            CompaniesHouseStatusCheck,
+            "Check Companies House company status",
+            expectedExtraDetailCompanyStatus
+          )(hc, request)
       }
     }
 
