@@ -60,3 +60,4 @@ case object AgentSubscription extends AgentSubscriptionEvent
 case object CheckAgencyStatus extends AgentSubscriptionEvent
 case object OverseasAgentSubscription extends AgentSubscriptionEvent
 case object CompaniesHouseOfficerCheck extends AgentSubscriptionEvent
+case object CompaniesHouseStatusCheck extends AgentSubscriptionEvent
