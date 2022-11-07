@@ -65,26 +65,21 @@ lazy val wartRemoverSettings = {
 
 lazy val compileDeps = Seq(
   ws,
-  "uk.gov.hmrc" %% "bootstrap-backend-play-28" % "7.8.0",
+  "uk.gov.hmrc" %% "bootstrap-backend-play-28" % "7.10.0",
   "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.47.0-play-28",
   "uk.gov.hmrc" %% "domain" % "8.1.0-play-28",
   "com.github.blemale" %% "scaffeine" % "4.0.1",
   "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "4.8.0-play-28",
-  "uk.gov.hmrc" %% "simple-reactivemongo" % "8.1.0-play-28"
+  "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28" % "0.73.0"
 )
 
 def testDeps(scope: String) = Seq(
   "org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0" % scope,
   "org.scalatestplus" %% "mockito-3-12" % "3.2.10.0" % scope,
   "com.github.tomakehurst" % "wiremock-jre8" % "2.26.1" % scope,
-  "uk.gov.hmrc" %% "reactivemongo-test" % "5.1.0-play-28" % scope,
+  "uk.gov.hmrc.mongo" %% "hmrc-mongo-test-play-28" % "0.73.0"  % scope,
   "com.vladsch.flexmark" % "flexmark-all" % "0.35.10" % scope
 )
-
-def tmpMacWorkaround(): Seq[ModuleID] =
-  if (sys.props.get("os.name").fold(false)(_.toLowerCase.contains("mac")))
-    Seq("org.reactivemongo" % "reactivemongo-shaded-native" % "0.18.6-osx-x86-64" % "runtime,test,it")
-  else Seq()
 
 lazy val root = Project("agent-subscription", file("."))
   .settings(
@@ -109,7 +104,7 @@ lazy val root = Project("agent-subscription", file("."))
     resolvers += "HMRC-local-artefacts-maven" at "https://artefacts.tax.service.gov.uk/artifactory/hmrc-releases-local",
     Compile / scalafmtOnCompile := true,
     Test / scalafmtOnCompile := true,
-    libraryDependencies ++= tmpMacWorkaround ++ compileDeps ++ testDeps("test") ++ testDeps("it"),
+    libraryDependencies ++= compileDeps ++ testDeps("test") ++ testDeps("it"),
     libraryDependencies ++= Seq(
       compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.8" cross CrossVersion.full),
       "com.github.ghik" % "silencer-lib" % "1.7.8" % Provided cross CrossVersion.full
