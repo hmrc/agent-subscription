@@ -63,4 +63,45 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
 
   }
 
+  "GET of /companies-house-api-proxy/company/:crn/status" should {
+    "return a 401 when the user is not authenticated" in {
+      requestIsNotAuthenticated()
+      val response =
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get
+      response.status shouldBe 401
+    }
+
+    "return a 401 when auth returns unexpected response code in the headers" in {
+      requestIsNotAuthenticated(header = "some strange response from auth")
+      val response =
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get
+      response.status shouldBe 401
+    }
+
+    "return NotFound if the company does not exist" in {
+      requestIsAuthenticatedWithNoEnrolments()
+      givenUnsuccessfulGetCompanyHouseResponse(crn, 404)
+      val response =
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get
+      response.status shouldBe 404
+    }
+
+    "return NotFound if the Companies House API token has expired" in {
+      requestIsAuthenticatedWithNoEnrolments()
+      givenUnsuccessfulGetCompanyHouseResponse(Crn("NOT-VALID"), 401)
+      val response =
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get
+      response.status shouldBe 404
+    }
+
+    "return OK if a match was found" in {
+      requestIsAuthenticatedWithNoEnrolments()
+      givenSuccessfulGetCompanyHouseResponse(crn, "active")
+      val response =
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get
+      response.status shouldBe 200
+    }
+
+  }
+
 }

@@ -121,6 +121,15 @@ trait CompaniesHouseStub {
         )
     )
 
+  def givenUnsuccessfulGetCompanyHouseResponse(crn: Crn, statusResponse: Int): StubMapping =
+    stubFor(
+      get(urlEqualTo(s"/companies-house-api-proxy/company/${crn.value}"))
+        .willReturn(
+          aResponse()
+            .withStatus(statusResponse)
+        )
+    )
+
   def givenSuccessfulGetCompanyHouseResponse(crn: Crn, companyStatus: String): StubMapping =
     stubFor(
       get(urlEqualTo(s"/companies-house-api-proxy/company/${crn.value}"))
