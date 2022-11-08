@@ -46,7 +46,6 @@ private case class CheckCompaniesHouseStatusAuditDetail(
   authProviderId: Option[String],
   authProviderType: Option[String],
   crn: Crn,
-  nameToMatch: String,
   companyStatus: Option[String],
   matchDetailsResponse: MatchDetailsResponse
 )
@@ -81,27 +80,34 @@ class CompaniesHouseService @Inject() (
         Future successful NoMatch
       case _ =>
         // TODO improve this by i) match the full name (using a fuzzy match) and ii) match date of birth (against CiD record)
-        companiesHouseConnector.getCompany(crn) map {
-          case None =>
-            getLogger.warn(s"Companies House API found nothing for ${crn.value}")
-            auditCompaniesHouseStatusCheckResult(crn, nameToMatch, None, NoMatch)
-            NoMatch
-          case Some(companyInformation) =>
-            if (allowedCompanyStatuses.contains(companyInformation.companyStatus)) {
-              getLogger.info(s"Found company of status ${companyInformation.companyStatus} for ${crn.value}")
-              auditCompaniesHouseOfficersCheckResult(crn, nameToMatch, Match)
-              auditCompaniesHouseStatusCheckResult(crn, nameToMatch, Option(companyInformation.companyStatus), Match)
-              Match
-            } else {
-              getLogger.warn(s"Found company status '${companyInformation.companyStatus}' for ${crn.value}")
-              auditCompaniesHouseStatusCheckResult(
-                crn,
-                nameToMatch,
-                Option(companyInformation.companyStatus),
-                NotAllowed
-              )
-              NotAllowed
-            }
+        companyStatusCheck(crn, Some(nameToMatch))
+    }
+
+  def companyStatusCheck(crn: Crn, maybeNameToMatch: Option[String])(implicit
+    hc: HeaderCarrier,
+    provider: Provider,
+    ec: ExecutionContext,
+    request: Request[AnyContent]
+  ): Future[MatchDetailsResponse] =
+    companiesHouseConnector.getCompany(crn) map {
+      case None =>
+        getLogger.warn(s"Companies House API found nothing for ${crn.value}")
+        auditCompaniesHouseStatusCheckResult(crn, None, NoMatch)
+        NoMatch
+      case Some(companyInformation) =>
+        if (allowedCompanyStatuses.contains(companyInformation.companyStatus)) {
+          getLogger.info(s"Found company of status ${companyInformation.companyStatus} for ${crn.value}")
+          maybeNameToMatch.foreach(nameToMatch => auditCompaniesHouseOfficersCheckResult(crn, nameToMatch, Match))
+          auditCompaniesHouseStatusCheckResult(crn, Option(companyInformation.companyStatus), Match)
+          Match
+        } else {
+          getLogger.warn(s"Found company status '${companyInformation.companyStatus}' for ${crn.value}")
+          auditCompaniesHouseStatusCheckResult(
+            crn,
+            Option(companyInformation.companyStatus),
+            NotAllowed
+          )
+          NotAllowed
         }
     }
 
@@ -128,7 +134,6 @@ class CompaniesHouseService @Inject() (
 
   private def auditCompaniesHouseStatusCheckResult(
     crn: Crn,
-    nameToMatch: String,
     companyStatus: Option[String],
     matchDetailsResponse: MatchDetailsResponse
   )(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Unit =
@@ -141,7 +146,6 @@ class CompaniesHouseService @Inject() (
             Some(provider.providerId),
             Some(provider.providerType),
             crn,
-            nameToMatch,
             companyStatus,
             matchDetailsResponse
           )

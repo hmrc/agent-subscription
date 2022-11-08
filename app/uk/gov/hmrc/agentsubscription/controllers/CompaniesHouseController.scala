@@ -45,4 +45,14 @@ class CompaniesHouseController @Inject() (
         case _                        => InternalServerError
       }
     }
+
+  def statusCheck(crn: Crn): Action[AnyContent] =
+    authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider =>
+      companiesHouseService.companyStatusCheck(crn, None).map {
+        case Match                    => Ok
+        case NoMatch | RecordNotFound => NotFound
+        case NotAllowed               => Conflict
+        case _                        => InternalServerError
+      }
+    }
 }

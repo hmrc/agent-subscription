@@ -105,7 +105,6 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
                   |  "authProviderId": "${provider.providerId}",
                   |  "authProviderType": "${provider.providerType}",
                   |  "crn": "${crn.value}",
-                  |  "nameToMatch": "$nameToMatch",
                   |  "companyStatus": "$companyStatus",
                   |  "matchDetailsResponse": "match_successful"
                   |}
@@ -152,6 +151,71 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
 
       stubbedLogger.logMessages.size shouldBe 1
       stubbedLogger.logMessages.head shouldBe s"Companies House known fact check failed for $nameToMatch and crn ${crn.value}"
+    }
+  }
+
+  "companyStatusCheck" should {
+    "audit appropriate values when there is a successful match result" in {
+
+      val companyStatus = "active"
+
+      when(companiesHouseConnector.getCompany(any[Crn])(eqs(hc), any[ExecutionContext]))
+        .thenReturn(
+          Future successful Some(ReducedCompanyInformation("01234567", "Lambda Microservices", companyStatus))
+        )
+
+      await(service.companyStatusCheck(crn, None)(hc, provider, ec, request))
+
+      val expectedExtraDetailCompanyStatus = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "crn": "${crn.value}",
+                  |  "companyStatus": "$companyStatus",
+                  |  "matchDetailsResponse": "match_successful"
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
+      eventually {
+        verify(auditService)
+          .auditEvent(
+            CompaniesHouseStatusCheck,
+            "Check Companies House company status",
+            expectedExtraDetailCompanyStatus
+          )(hc, request)
+      }
+    }
+
+    "audit appropriate values when there is no match" in {
+
+      when(companiesHouseConnector.getCompany(any[Crn])(eqs(hc), any[ExecutionContext]))
+        .thenReturn(
+          Future successful None
+        )
+
+      await(service.companyStatusCheck(crn, None)(hc, provider, ec, request))
+
+      val expectedExtraDetail = Json
+        .parse(s"""
+                  |{
+                  |  "authProviderId": "${provider.providerId}",
+                  |  "authProviderType": "${provider.providerType}",
+                  |  "crn": "${crn.value}",
+                  |  "matchDetailsResponse": "no_match"
+                  |}
+                  |""".stripMargin)
+        .asInstanceOf[JsObject]
+      eventually {
+        verify(auditService)
+          .auditEvent(CompaniesHouseStatusCheck, "Check Companies House company status", expectedExtraDetail)(
+            hc,
+            request
+          )
+      }
+
+      stubbedLogger.logMessages.size shouldBe 1
+      stubbedLogger.logMessages.head shouldBe s"Companies House API found nothing for ${crn.value}"
     }
   }
 }

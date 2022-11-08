@@ -3,10 +3,10 @@ package uk.gov.hmrc.agentsubscription.connectors
 import com.kenshoo.play.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseDateOfBirth, CompaniesHouseOfficer, Crn}
+import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseDateOfBirth, CompaniesHouseOfficer, Crn, ReducedCompanyInformation}
 import uk.gov.hmrc.agentsubscription.stubs.CompaniesHouseStub
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient}
+import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
 import play.api.test.Helpers._
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -44,6 +44,35 @@ class CompaniesHouseApiProxyConnectorISpec
       val result = await(connector.getCompanyOfficers(crn, "FERGUSON"))
 
       result shouldBe Seq.empty
+    }
+
+  }
+
+  "GET company" should {
+    "return reduced company information when found" in {
+
+      givenSuccessfulGetCompanyHouseResponse(crn, "active")
+      val result = await(connector.getCompany(crn))
+
+      result shouldBe Some(ReducedCompanyInformation(crn.value, "Watford Microbreweries", "active"))
+    }
+
+    "throw exception when Unauthorized" in {
+
+      givenUnsuccessfulGetCompanyHouseResponse(crn, 401)
+
+      intercept[UpstreamErrorResponse] {
+        await(connector.getCompany(crn))
+      }
+    }
+
+    "throw exception when Bad Request" in {
+
+      givenUnsuccessfulGetCompanyHouseResponse(crn, 400)
+
+      intercept[UpstreamErrorResponse] {
+        await(connector.getCompany(crn))
+      }
     }
 
   }

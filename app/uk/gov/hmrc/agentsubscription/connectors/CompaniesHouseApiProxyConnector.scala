@@ -85,6 +85,7 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (val appConfig: AppConfig, h
         response.status match {
           case s if is2xx(s) =>
             response.json.asOpt[ReducedCompanyInformation]
+          case s @ (BAD_REQUEST | UNAUTHORIZED) => throw UpstreamErrorResponse(response.body, s)
           case s if is4xx(s) =>
             logger.warn(s"getCompany http status: $s, response:${response.body}")
             Option.empty[ReducedCompanyInformation]
