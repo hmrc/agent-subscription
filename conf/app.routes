@@ -15,6 +15,8 @@ GET    /citizen-details/:nino/designatory-details     @uk.gov.hmrc.agentsubscrip
 
 GET     /companies-house-api-proxy/company/:crn/officers/:nameToMatch @uk.gov.hmrc.agentsubscription.controllers.CompaniesHouseController.matchCompanyOfficers(crn: uk.gov.hmrc.agentsubscription.model.Crn, nameToMatch: String)
 
+GET     /companies-house-api-proxy/company/:crn/status          @uk.gov.hmrc.agentsubscription.controllers.CompaniesHouseController.statusCheck(crn: uk.gov.hmrc.agentsubscription.model.Crn)
+
 # Find journey record by either primary or mapped auth provider id
 GET     /subscription/journey/id/:authProviderId  @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByAuthId(authProviderId: AuthProviderId)
 
