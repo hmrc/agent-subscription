@@ -26,11 +26,13 @@ import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
+
+import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
 
 @ImplementedBy(classOf[SubscriptionJourneyRepositoryImpl])
 trait SubscriptionJourneyRepository {
@@ -74,17 +76,16 @@ class SubscriptionJourneyRepositoryImpl @Inject() (mongo: MongoComponent)(implic
         ),
         IndexModel(
           ascending("lastModifiedDate"),
-          IndexOptions().unique(false).name("lastModifiedDateTtl")
-        ),
-        IndexModel(
-          ascending("lastModifiedDate"),
           IndexOptions()
             .unique(false)
             .name("lastModifiedDateTtl")
             .expireAfter(appConfig.mongodbSubscriptionJourneyTTL, TimeUnit.SECONDS)
         )
+      ),
+      extraCodecs = Seq(
+        Codecs.playFormatCodec(AuthProviderId.format)
       )
-    ) with SubscriptionJourneyRepository {
+    ) with SubscriptionJourneyRepository with MongoJavatimeFormats {
 
   private def replaceOptions(upsert: Boolean) = new ReplaceOptions().upsert(upsert)
 

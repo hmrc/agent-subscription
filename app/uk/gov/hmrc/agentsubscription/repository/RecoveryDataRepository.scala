@@ -39,7 +39,7 @@ trait RecoveryRepository {
     arn: Arn,
     subscriptionRequest: SubscriptionRequest,
     errorMessage: String
-  ): Future[Option[String]]
+  ): Future[Option[Boolean]]
 }
 
 @Singleton
@@ -59,11 +59,11 @@ class RecoveryRepositoryImpl @Inject() (mongo: MongoComponent)(implicit ec: Exec
     arn: Arn,
     subscriptionRequest: SubscriptionRequest,
     errorMessage: String
-  ): Future[Option[String]] =
+  ): Future[Option[Boolean]] =
     collection
       .insertOne(RecoveryData(authIds, arn, subscriptionRequest, errorMessage))
       .headOption()
-      .map(_.map(result => result.getInsertedId.asString().getValue))
+      .map(_.map(result => result.wasAcknowledged()))
       .recoverWith { case e: MongoWriteException =>
         logger.error(s"Failed to create recovery record for ${arn.value}", e)
         Future.successful(None)
