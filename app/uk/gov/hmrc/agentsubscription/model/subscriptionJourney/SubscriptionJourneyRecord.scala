@@ -46,7 +46,7 @@ final case class SubscriptionJourneyRecord(
 
 object SubscriptionJourneyRecord {
 
-  // import MongoLocalDateTimeFormat._
+  import MongoLocalDateTimeFormat._
 
   implicit val subscriptionJourneyFormat: OFormat[SubscriptionJourneyRecord] =
     ((JsPath \ "authProviderId").format[AuthProviderId] and
