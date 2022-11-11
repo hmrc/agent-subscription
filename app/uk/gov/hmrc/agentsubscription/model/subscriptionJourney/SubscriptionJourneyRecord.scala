@@ -16,14 +16,14 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import java.time.LocalDateTime
-
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, OFormat}
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney.AmlsData
 import uk.gov.hmrc.domain.Nino
+
+import java.time.LocalDateTime
 
 /** A Mongo record which represents the user's current journey in setting up a new MTD Agent Services account, with
   * their existing relationships.

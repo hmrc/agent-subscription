@@ -1,27 +1,18 @@
 package uk.gov.hmrc.agentsubscription.repository
 
-import org.scalatest.concurrent.Eventually
-import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.Application
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.model.SubscriptionRequest
-import uk.gov.hmrc.agentsubscription.support.MongoApp
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
+import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class RecoveryDataRepositoryISpec extends UnitSpec with GuiceOneAppPerSuite with MongoApp with Eventually {
+class RecoveryDataRepositoryISpec extends UnitSpec with DefaultPlayMongoRepositorySupport[RecoveryData] {
 
-  protected def appBuilder: GuiceApplicationBuilder = new GuiceApplicationBuilder()
-    .configure(mongoConfiguration)
-
-  override implicit lazy val app: Application = appBuilder.build()
-
-  private lazy val repo = app.injector.instanceOf[RecoveryRepository]
+  override lazy val repository = new RecoveryRepositoryImpl(mongoComponent)
 
   private val utr = Utr("7000000002")
 
@@ -54,13 +45,13 @@ class RecoveryDataRepositoryISpec extends UnitSpec with GuiceOneAppPerSuite with
 
   "RecoveryDataRepository" should {
     "create a record if Upsert KnownFacts failed" in {
-      val result = await(repo.create(authIds, arn, subscriptionRequestBody, "Failed to Upsert Known Facts"))
-      result shouldBe (())
+      val result = await(repository.create(authIds, arn, subscriptionRequestBody, "Failed to Upsert Known Facts"))
+      result shouldBe Some(true)
     }
 
     "create a record if Allocate Enrolment failed" in {
-      val result = await(repo.create(authIds, arn, subscriptionRequestBody, "Failed to Enrol to HMRC-AS-AGENT"))
-      result shouldBe (())
+      val result = await(repository.create(authIds, arn, subscriptionRequestBody, "Failed to Enrol to HMRC-AS-AGENT"))
+      result shouldBe Some(true)
     }
   }
 }

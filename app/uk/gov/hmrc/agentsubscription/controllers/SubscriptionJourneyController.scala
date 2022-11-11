@@ -18,11 +18,11 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import java.time.{LocalDateTime, ZoneOffset}
 import com.google.inject.Inject
+import com.mongodb.MongoWriteException
 import play.api.Logging
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json.toJson
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
-import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
@@ -69,7 +69,7 @@ class SubscriptionJourneyController @Inject() (
       } else {
         val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
         subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent) recoverWith {
-          case ex: DatabaseException if ex.code.contains(11000) =>
+          case ex: MongoWriteException =>
             logger.error(ex.getMessage(), ex)
             handleConflict(journeyRecord)
         }

@@ -16,21 +16,33 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import java.time.{Instant, LocalDateTime, ZoneOffset}
+import play.api.libs.json.{Format, Reads, Writes, __}
 
-import play.api.libs.json.{Format, JsResult, JsSuccess, JsValue, Json}
+import java.time.{Instant, LocalDateTime, ZoneOffset}
 
 object MongoLocalDateTimeFormat {
 
   // LocalDateTime must be written to DB as ISODate to allow the expiry TTL on createdOn date to work
 
-  implicit val localDateTimeFormats: Format[LocalDateTime] = new Format[LocalDateTime] {
+  final val localDateTimeReads: Reads[LocalDateTime] =
+    Reads
+      .at[String](__ \ "$date" \ "$numberLong")
+      .map { dateTime =>
+        Instant.ofEpochMilli(dateTime.toLong).atZone(ZoneOffset.UTC).toLocalDateTime
+      }
 
-    override def writes(o: LocalDateTime): JsValue =
-      Json.obj("$date" -> o.atZone(ZoneOffset.UTC).toInstant.toEpochMilli)
+  // for data that exists prior to the hmrc-mongo migration - TODO remove this after legacy data expires (30 days)
+  final val legacyDateTimeReads: Reads[LocalDateTime] =
+    Reads
+      .at[String](__)
+      .map(dateTime => LocalDateTime.parse(dateTime))
 
-    override def reads(json: JsValue): JsResult[LocalDateTime] =
-      JsSuccess(LocalDateTime.ofInstant(Instant.ofEpochMilli((json \ "$date").as[Long]), ZoneOffset.UTC))
-  }
+  final val localDateTimeWrites: Writes[LocalDateTime] =
+    Writes
+      .at[String](__ \ "$date" \ "$numberLong")
+      .contramap(_.toInstant(ZoneOffset.UTC).toEpochMilli.toString)
+
+  final implicit val localDateTimeFormat: Format[LocalDateTime] =
+    Format(localDateTimeReads.orElse(legacyDateTimeReads), localDateTimeWrites)
 
 }

@@ -16,103 +16,130 @@
 
 package uk.gov.hmrc.agentsubscription.repository
 
-import javax.inject.{Inject, Singleton}
-import play.api.libs.json.Json
-import play.modules.reactivemongo.ReactiveMongoComponent
-import reactivemongo.api.commands.WriteResult
-import reactivemongo.api.indexes.{Index, IndexType}
-import reactivemongo.bson.{BSONDocument, BSONObjectID}
-import reactivemongo.core.errors.DatabaseException
-import reactivemongo.play.json.ImplicitBSONHandlers._
+import com.google.inject.ImplementedBy
+import com.mongodb.client.model.ReplaceOptions
+import org.mongodb.scala.model.Filters.{equal, or}
+import org.mongodb.scala.model.Indexes._
+import org.mongodb.scala.model.{IndexModel, IndexOptions}
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
-import uk.gov.hmrc.mongo.ReactiveRepository
-import uk.gov.hmrc.mongo.json.ReactiveMongoFormats
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
+import java.util.concurrent.TimeUnit
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
+@ImplementedBy(classOf[SubscriptionJourneyRepositoryImpl])
+trait SubscriptionJourneyRepository {
+
+  def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord): Future[Option[UpsertType]]
+  def updateOnUtr(utr: Utr, record: SubscriptionJourneyRecord): Future[Option[Long]]
+  def findByAuthId(authProviderId: AuthProviderId): Future[Option[SubscriptionJourneyRecord]]
+  def findByContinueId(continueId: String): Future[Option[SubscriptionJourneyRecord]]
+  def findByUtr(utr: Utr): Future[Option[SubscriptionJourneyRecord]]
+  def delete(utr: Utr): Future[Option[Long]]
+}
+
 @Singleton
-class SubscriptionJourneyRepository @Inject() (mongoComponent: ReactiveMongoComponent)
-    extends ReactiveRepository[SubscriptionJourneyRecord, BSONObjectID](
-      "subscription-journey",
-      mongoComponent.mongoConnector.db,
-      SubscriptionJourneyRecord.subscriptionJourneyFormat,
-      ReactiveMongoFormats.objectIdFormats
-    ) {
-
-  private def expireRecordAfterSeconds: Long = 2592000 // 30 days
-
-  @throws(classOf[DatabaseException])
-  def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord)(implicit
-    ec: ExecutionContext
-  ): Future[Unit] =
-    collection
-      .update(ordered = false)
-      .one(Json.obj("authProviderId" -> authProviderId.id), record, upsert = true)
-      .checkResult
-
-  @throws(classOf[DatabaseException])
-  def updateOnUtr(utr: Utr, record: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Unit] =
-    collection
-      .update(ordered = false)
-      .one(Json.obj("businessDetails.utr" -> utr.value), record, upsert = false)
-      .checkResult
-
-  private implicit class WriteResultChecker(future: Future[WriteResult]) {
-    def checkResult(implicit ec: ExecutionContext): Future[Unit] = future.map { writeResult =>
-      if (hasProblems(writeResult)) throw new RuntimeException(writeResult.toString)
-      else ()
-    }
-  }
-
-  private def hasProblems(writeResult: WriteResult): Boolean =
-    !writeResult.ok || writeResult.writeErrors.nonEmpty || writeResult.writeConcernError.isDefined
-
-  override def indexes: Seq[Index] =
-    Seq(
-      Index(key = Seq("authProviderId" -> IndexType.Ascending), name = Some("primaryAuthId"), unique = true),
-      Index(
-        key = Seq("userMappings.authProviderId" -> IndexType.Ascending),
-        name = Some("mappedAuthId"),
-        unique = true,
-        sparse = true
+class SubscriptionJourneyRepositoryImpl @Inject() (mongo: MongoComponent)(implicit
+  ec: ExecutionContext,
+  appConfig: AppConfig
+) extends PlayMongoRepository[SubscriptionJourneyRecord](
+      mongoComponent = mongo,
+      collectionName = "subscription-journey",
+      domainFormat = SubscriptionJourneyRecord.subscriptionJourneyFormat,
+      indexes = Seq(
+        IndexModel(
+          ascending("authProviderId"),
+          IndexOptions().unique(true).name("primaryAuthId")
+        ),
+        IndexModel(
+          ascending("userMappings.authProviderId"),
+          IndexOptions().unique(true).sparse(true).name("mappedAuthId")
+        ),
+        IndexModel(
+          ascending("cleanCredsAuthProviderId"),
+          IndexOptions().unique(true).sparse(true).name("cleanCredsAuthProviderId")
+        ),
+        IndexModel(
+          ascending("businessDetails.utr"),
+          IndexOptions().unique(true).name("utr")
+        ),
+        IndexModel(
+          ascending("continueId"),
+          IndexOptions().unique(true).sparse(true).name("continueId")
+        ),
+        IndexModel(
+          ascending("lastModifiedDate"),
+          IndexOptions()
+            .unique(false)
+            .name("lastModifiedDateTtl")
+            .expireAfter(appConfig.mongodbSubscriptionJourneyTTL, TimeUnit.SECONDS)
+        )
       ),
-      Index(
-        key = Seq("cleanCredsAuthProviderId" -> IndexType.Ascending),
-        name = Some("cleanCredsAuthProviderId"),
-        unique = true,
-        sparse = true
-      ),
-      Index(key = Seq("businessDetails.utr" -> IndexType.Ascending), name = Some("utr"), unique = true),
-      Index(key = Seq("continueId" -> IndexType.Ascending), name = Some("continueId"), unique = true, sparse = true),
-      Index(
-        key = Seq("lastModifiedDate" -> IndexType.Ascending),
-        name = Some("lastModifiedDateTtl"),
-        unique = false,
-        options = BSONDocument("expireAfterSeconds" -> expireRecordAfterSeconds)
+      extraCodecs = Seq(
+        Codecs.playFormatCodec(AuthProviderId.format)
       )
-    )
+    ) with SubscriptionJourneyRepository {
+
+  private def replaceOptions(upsert: Boolean) = new ReplaceOptions().upsert(upsert)
+
+  def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord): Future[Option[UpsertType]] =
+    collection
+      .replaceOne(
+        equal("authProviderId", authProviderId.id),
+        record,
+        replaceOptions(true)
+      )
+      .headOption()
+      .map(
+        _.map(result =>
+          result.getModifiedCount match {
+            case 0L => RecordInserted(result.getUpsertedId.asObjectId().getValue.toString)
+            case 1L => RecordUpdated
+            case x  => throw new RuntimeException(s"Update modified count should not have been $x")
+          }
+        )
+      )
+
+  def updateOnUtr(utr: Utr, record: SubscriptionJourneyRecord): Future[Option[Long]] =
+    collection
+      .replaceOne(
+        equal("businessDetails.utr", utr.value),
+        record
+      )
+      .toFutureOption()
+      .map(_.map(_.getModifiedCount))
 
   def findByAuthId(
     authProviderId: AuthProviderId
-  )(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super
+  ): Future[Option[SubscriptionJourneyRecord]] =
+    collection
       .find(
-        query = "$or" -> Json.arr(
-          Json.obj(fields = "authProviderId" -> authProviderId),
-          Json.obj(fields = "cleanCredsAuthProviderId" -> authProviderId),
-          Json.obj(fields = "userMappings.authProviderId" -> authProviderId)
+        or(
+          equal("authProviderId", authProviderId),
+          equal("cleanCredsAuthProviderId", authProviderId),
+          equal("userMappings.authProviderId", authProviderId)
         )
       )
-      .map(_.headOption)
+      .headOption()
 
-  def findByContinueId(continueId: String)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("continueId" -> continueId).map(_.headOption)
+  def findByContinueId(continueId: String): Future[Option[SubscriptionJourneyRecord]] =
+    collection
+      .find(equal("continueId", continueId))
+      .headOption()
 
-  def findByUtr(utr: Utr)(implicit ec: ExecutionContext): Future[Option[SubscriptionJourneyRecord]] =
-    super.find("businessDetails.utr" -> utr.value).map(_.headOption)
+  def findByUtr(utr: Utr): Future[Option[SubscriptionJourneyRecord]] =
+    collection
+      .find(equal("businessDetails.utr", utr.value))
+      .headOption()
 
-  def delete(utr: Utr)(implicit ec: ExecutionContext): Future[Unit] =
-    remove("businessDetails.utr" -> utr.value).map(_ => ())
+  def delete(utr: Utr): Future[Option[Long]] =
+    collection
+      .deleteOne(equal("businessDetails.utr", utr.value))
+      .toFutureOption()
+      .map(_.map(_.getDeletedCount))
 }

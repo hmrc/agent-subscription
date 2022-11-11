@@ -16,19 +16,20 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
+import com.mongodb.{MongoWriteException, WriteError}
 import org.mockito.ArgumentMatchers.{any, eq => eqs}
 import org.mockito.Mockito._
+import org.mongodb.scala.ServerAddress
+import org.mongodb.scala.bson.BsonDocument
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc.{Result, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import reactivemongo.bson.BSONDocument
-import reactivemongo.core.errors.DatabaseException
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
-import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
+import uk.gov.hmrc.agentsubscription.repository.{RecordUpdated, SubscriptionJourneyRepository}
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -64,7 +65,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
   "Subscription Journey Controller" should {
 
     "return OK with record body when record found by auth id" in {
-      when(mockRepo.findByAuthId(eqs[AuthProviderId](AuthProviderId("minimal")))(any[ExecutionContext]))
+      when(mockRepo.findByAuthId(eqs[AuthProviderId](AuthProviderId("minimal"))))
         .thenReturn(Future.successful(Some(minimalRecord)))
 
       val result: Result = await(controller.findByAuthId(AuthProviderId("minimal")).apply(FakeRequest()))
@@ -72,7 +73,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return NoContent when not found by auth id" in {
-      when(mockRepo.findByAuthId(eqs(AuthProviderId("missing")))(any[ExecutionContext]))
+      when(mockRepo.findByAuthId(eqs(AuthProviderId("missing"))))
         .thenReturn(Future.successful(None))
 
       val result: Result = await(controller.findByAuthId(AuthProviderId("missing")).apply(FakeRequest()))
@@ -80,7 +81,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return OK with record body when record found by utr" in {
-      when(mockRepo.findByUtr(eqs(Utr("minimal")))(any[ExecutionContext]))
+      when(mockRepo.findByUtr(eqs(Utr("minimal"))))
         .thenReturn(Future.successful(Some(minimalRecord)))
 
       val result: Result = await(controller.findByUtr(Utr("minimal")).apply(FakeRequest()))
@@ -88,7 +89,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return NoContent when record not found by utr" in {
-      when(mockRepo.findByUtr(eqs(Utr("missing")))(any[ExecutionContext]))
+      when(mockRepo.findByUtr(eqs(Utr("missing"))))
         .thenReturn(Future.successful(None))
 
       val result: Result = await(controller.findByUtr(Utr("missing")).apply(FakeRequest()))
@@ -96,7 +97,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return OK with record body when record found by continueId" in {
-      when(mockRepo.findByContinueId(eqs("minimal"))(any[ExecutionContext]))
+      when(mockRepo.findByContinueId(eqs("minimal")))
         .thenReturn(Future.successful(Some(minimalRecord)))
 
       val result: Result = await(controller.findByContinueId("minimal").apply(FakeRequest()))
@@ -104,7 +105,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return NoContent when record not found by continueId" in {
-      when(mockRepo.findByContinueId(eqs("missing"))(any[ExecutionContext]))
+      when(mockRepo.findByContinueId(eqs("missing")))
         .thenReturn(Future.successful(None))
 
       val result: Result = await(controller.findByContinueId("missing").apply(FakeRequest()))
@@ -146,8 +147,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return no content when a successful update has been done" in {
-      when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
-        .thenReturn(Future.successful(()))
+      when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord]))
+        .thenReturn(Future.successful(Some(RecordUpdated)))
 
       val request = FakeRequest().withBody[JsValue](Json.toJson(minimalRecord))
 
@@ -164,17 +165,20 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
         newAuthProviderId
       ) // The existing record, modified with the new record's authId
 
-      when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
-        .thenReturn(Future.failed(new DatabaseException {
-          override def originalDocument: Option[BSONDocument] = None
-          override def code: Option[Int] = Some(11000)
-          override def message: String = "duplicate exception"
-        }))
+      when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord]))
+        .thenReturn(
+          Future.failed(
+            new MongoWriteException(
+              new WriteError(1100, "duplicate exception", BsonDocument.apply(Json.toJson(existingRecord).toString())),
+              ServerAddress.apply()
+            )
+          )
+        )
 
-      when(mockRepo.updateOnUtr(any[Utr], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
-        .thenReturn(Future.successful(()))
+      when(mockRepo.updateOnUtr(any[Utr], any[SubscriptionJourneyRecord]))
+        .thenReturn(Future.successful((Some(1L))))
 
-      when(mockRepo.findByUtr(any[Utr])(any[ExecutionContext]))
+      when(mockRepo.findByUtr(any[Utr]))
         .thenReturn(Future.successful(Some(existingRecord)))
 
       val request = FakeRequest().withBody[JsValue](Json.toJson(newRecord))
@@ -211,17 +215,20 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
         businessDetails = newBusinessDetails
       ) // The existing record, modified with the new record's authId and clean credID
 
-      when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
-        .thenReturn(Future.failed(new DatabaseException {
-          override def originalDocument: Option[BSONDocument] = None
-          override def code: Option[Int] = Some(11000)
-          override def message: String = "duplicate exception"
-        }))
+      when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord]))
+        .thenReturn(
+          Future.failed(
+            new MongoWriteException(
+              new WriteError(1100, "duplicate exception", BsonDocument.apply(Json.toJson(existingRecord).toString)),
+              ServerAddress.apply()
+            )
+          )
+        )
 
-      when(mockRepo.updateOnUtr(any[Utr], any[SubscriptionJourneyRecord])(any[ExecutionContext]))
-        .thenReturn(Future.successful(()))
+      when(mockRepo.updateOnUtr(any[Utr], any[SubscriptionJourneyRecord]))
+        .thenReturn(Future.successful((Some(1L))))
 
-      when(mockRepo.findByUtr(any[Utr])(any[ExecutionContext]))
+      when(mockRepo.findByUtr(any[Utr]))
         .thenReturn(Future.successful(Some(existingRecord)))
 
       val request = FakeRequest().withBody[JsValue](Json.toJson(newRecord))

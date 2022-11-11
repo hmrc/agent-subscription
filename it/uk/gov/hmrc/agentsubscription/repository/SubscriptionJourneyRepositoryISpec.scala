@@ -1,25 +1,25 @@
 package uk.gov.hmrc.agentsubscription.repository
 
-import java.time.LocalDate
-import org.scalatest.concurrent.Eventually
 import org.scalatestplus.play.guice.GuiceOneAppPerSuite
-import play.api.Application
-import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
+import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
-import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, AuthProviderId, ContactEmailData, ContactTradingAddressData, ContactTradingNameData, RegisteredDetails}
-import uk.gov.hmrc.agentsubscription.support.MongoApp
-import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
+import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
+import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSuite with MongoApp with Eventually {
+class SubscriptionJourneyRepositoryISpec
+    extends UnitSpec with GuiceOneAppPerSuite with DefaultPlayMongoRepositorySupport[SubscriptionJourneyRecord] {
 
-  protected def appBuilder: GuiceApplicationBuilder = new GuiceApplicationBuilder()
-    .configure(mongoConfiguration)
+  implicit lazy val appConfig = app.injector.instanceOf[AppConfig]
+
+  override lazy val repository = new SubscriptionJourneyRepositoryImpl(mongoComponent)
 
   val validUtr = Utr("2000000000")
   val otherUtr = Utr("0123456789")
@@ -41,10 +41,6 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
     Some("test@gmail.com"),
     Some("safeId")
   )
-
-  override implicit lazy val app: Application = appBuilder.build()
-
-  private lazy val repo = app.injector.instanceOf[SubscriptionJourneyRepository]
 
   val amlsDetails = AmlsDetails(
     "supervisory",
@@ -71,56 +67,50 @@ class SubscriptionJourneyRepositoryISpec extends UnitSpec with GuiceOneAppPerSui
       contactTradingAddressData = Some(ContactTradingAddressData(true, Some(businessAddress)))
     )
 
-  override def beforeEach() {
-    super.beforeEach()
-    await(repo.drop)
-    ()
-  }
-
   "SubscriptionJourneyRepository" should {
 
     "create a SubscriptionJourney record" in {
-      await(repo.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
+      await(repository.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
 
-      await(repo.findByAuthId(AuthProviderId("auth-id"))).head shouldBe subscriptionJourneyRecord
+      await(repository.findByAuthId(AuthProviderId("auth-id"))).head shouldBe subscriptionJourneyRecord
     }
 
     "find a SubscriptionJourney by Utr" in {
-      await(repo.insert(subscriptionJourneyRecord))
+      await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
 
-      await(repo.findByUtr(validUtr)) shouldBe Some(subscriptionJourneyRecord)
+      await(repository.findByUtr(validUtr)) shouldBe Some(subscriptionJourneyRecord)
     }
 
     "return None when there is no SubscriptionJourney record for this Utr" in {
-      await(repo.insert(subscriptionJourneyRecord))
+      await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
 
-      await(repo.findByUtr(Utr("foo"))) shouldBe None
+      await(repository.findByUtr(Utr("foo"))) shouldBe None
     }
 
     "delete a SubscriptionJourney record by Utr" in {
-      await(repo.insert(subscriptionJourneyRecord))
-      await(repo.delete(validUtr))
-      await(repo.findByAuthId(AuthProviderId("auth-id"))) shouldBe empty
+      await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
+      await(repository.delete(validUtr))
+      await(repository.findByAuthId(AuthProviderId("auth-id"))) shouldBe empty
     }
 
     "update a SubscriptionJourney record" in {
       val updatedSubscriptionJourney = subscriptionJourneyRecord
         .copy(businessDetails = subscriptionJourneyRecord.businessDetails.copy(postcode = Postcode("AAABBB")))
 
-      await(repo.insert(subscriptionJourneyRecord))
-      await(repo.upsert(AuthProviderId("auth-id"), updatedSubscriptionJourney))
+      await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
+      await(repository.upsert(AuthProviderId("auth-id"), updatedSubscriptionJourney))
 
-      await(repo.findByAuthId(AuthProviderId("auth-id"))) shouldBe Some(updatedSubscriptionJourney)
+      await(repository.findByAuthId(AuthProviderId("auth-id"))) shouldBe Some(updatedSubscriptionJourney)
     }
 
     "update a SubscriptionJourney record identified by its UTR" in {
       val updatedSubscriptionJourney = subscriptionJourneyRecord
         .copy(authProviderId = AuthProviderId("new-auth-id"))
 
-      await(repo.insert(subscriptionJourneyRecord))
-      await(repo.updateOnUtr(subscriptionJourneyRecord.businessDetails.utr, updatedSubscriptionJourney))
+      await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
+      await(repository.updateOnUtr(subscriptionJourneyRecord.businessDetails.utr, updatedSubscriptionJourney))
 
-      await(repo.findByAuthId(AuthProviderId("new-auth-id"))) shouldBe Some(updatedSubscriptionJourney)
+      await(repository.findByAuthId(AuthProviderId("new-auth-id"))) shouldBe Some(updatedSubscriptionJourney)
     }
 
   }

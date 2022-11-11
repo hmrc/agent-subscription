@@ -207,9 +207,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         thrown shouldBe "Failed to add known facts and enrol in EMAC for utr: 4000000009 and arn: ARN0001"
 
         verify(recoveryRepository)
-          .create(eqs(authIds), eqs(arn), eqs(subscriptionRequest), contains(recoveryMsgContains))(
-            any[ExecutionContext]()
-          )
+          .create(eqs(authIds), eqs(arn), eqs(subscriptionRequest), contains(recoveryMsgContains))
         ()
       }
 
@@ -272,8 +270,8 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
-    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
-      .thenReturn(Future successful [Unit] (()))
+    when(subscriptionJourneyRepository.delete(any[Utr]))
+      .thenReturn(Future successful (Some(1L)))
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful (()))
@@ -334,8 +332,8 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
-    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
-      .thenReturn(Future successful [Unit] (()))
+    when(subscriptionJourneyRepository.delete(any[Utr]))
+      .thenReturn(Future successful (Some(1L)))
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful (()))
@@ -347,11 +345,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES1"))
 
     when(
-      recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any[String]())(
-        any[ExecutionContext]()
-      )
+      recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any[String]())
     )
-      .thenReturn(Future successful (()))
+      .thenReturn(Future successful (Some(true)))
 
     when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful true)
@@ -391,8 +387,8 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
-    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
-      .thenReturn(Future successful [Unit] (()))
+    when(subscriptionJourneyRepository.delete(any[Utr]))
+      .thenReturn(Future successful (Some(1L)))
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful (()))
@@ -406,12 +402,8 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES7"))
 
-    when(
-      recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any[String]())(
-        any[ExecutionContext]()
-      )
-    )
-      .thenReturn(Future successful (()))
+    when(recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any[String]()))
+      .thenReturn(Future successful (Some(true)))
 
     when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful true)
@@ -451,8 +443,8 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
-    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
-      .thenReturn(Future successful [Unit] (()))
+    when(subscriptionJourneyRepository.delete(any[Utr]))
+      .thenReturn(Future successful (Some(1L)))
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful (()))
@@ -470,11 +462,9 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES6"))
 
     when(
-      recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any[String]())(
-        any[ExecutionContext]()
-      )
+      recoveryRepository.create(any[AuthIds](), any[Arn](), any[SubscriptionRequest](), any[String]())
     )
-      .thenReturn(Future successful (()))
+      .thenReturn(Future successful (Some(true)))
 
     when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful true)
@@ -514,8 +504,8 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful Arn(arn))
 
-    when(subscriptionJourneyRepository.delete(any[Utr])(any[ExecutionContext]))
-      .thenReturn(Future successful [Unit] (()))
+    when(subscriptionJourneyRepository.delete(any[Utr]))
+      .thenReturn(Future successful (Some(1L)))
 
     when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
       .thenReturn(Future successful (()))
