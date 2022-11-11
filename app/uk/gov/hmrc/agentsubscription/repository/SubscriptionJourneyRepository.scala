@@ -32,8 +32,6 @@ import java.util.concurrent.TimeUnit
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-import uk.gov.hmrc.mongo.play.json.formats.MongoJavatimeFormats
-
 @ImplementedBy(classOf[SubscriptionJourneyRepositoryImpl])
 trait SubscriptionJourneyRepository {
 
@@ -85,7 +83,7 @@ class SubscriptionJourneyRepositoryImpl @Inject() (mongo: MongoComponent)(implic
       extraCodecs = Seq(
         Codecs.playFormatCodec(AuthProviderId.format)
       )
-    ) with SubscriptionJourneyRepository with MongoJavatimeFormats {
+    ) with SubscriptionJourneyRepository {
 
   private def replaceOptions(upsert: Boolean) = new ReplaceOptions().upsert(upsert)
 
