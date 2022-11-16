@@ -80,6 +80,7 @@ class SubscriptionJourneyRepositoryImpl @Inject() (mongo: MongoComponent)(implic
             .expireAfter(appConfig.mongodbSubscriptionJourneyTTL, TimeUnit.SECONDS)
         )
       ),
+      replaceIndexes = true,
       extraCodecs = Seq(
         Codecs.playFormatCodec(AuthProviderId.format)
       )
