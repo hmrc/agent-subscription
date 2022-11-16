@@ -48,6 +48,8 @@ class RecoveryRepositoryImpl @Inject() (mongo: MongoComponent)(implicit ec: Exec
       mongoComponent = mongo,
       collectionName = "agent-recovery-store",
       domainFormat = RecoveryData.recoveryDataFormat,
+      replaceIndexes = true,
+      extraCodecs = Seq.empty,
       indexes = Seq(
         IndexModel(ascending("arn"), IndexOptions().name("Arn").unique(false)),
         IndexModel(ascending("createdDate"), IndexOptions().name("createDate").unique(false))
