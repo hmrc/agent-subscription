@@ -52,7 +52,9 @@ class SubscriptionAuditingSpec
 
       result.status shouldBe 201
 
-      DataStreamStub.verifyAuditRequestSent(AgentSubscription, expectedTags, expectedDetails(utr))
+      eventually {
+        DataStreamStub.verifyAuditRequestSent(AgentSubscription, expectedTags, expectedDetails(utr))
+      }
     }
   }
 
