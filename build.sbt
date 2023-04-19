@@ -67,7 +67,6 @@ lazy val compileDeps = Seq(
   ws,
   "uk.gov.hmrc" %% "bootstrap-backend-play-28" % "7.10.0",
   "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.47.0-play-28",
-  "uk.gov.hmrc" %% "domain" % "8.1.0-play-28",
   "com.github.blemale" %% "scaffeine" % "4.0.1",
   "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "4.8.0-play-28",
   "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28" % "0.73.0"
@@ -101,7 +100,6 @@ lazy val root = Project("agent-subscription", file("."))
     resolvers ++= Seq(
       Resolver.typesafeRepo("releases"),
     ),
-    resolvers += "HMRC-local-artefacts-maven" at "https://artefacts.tax.service.gov.uk/artifactory/hmrc-releases-local",
     Compile / scalafmtOnCompile := true,
     Test / scalafmtOnCompile := true,
     libraryDependencies ++= compileDeps ++ testDeps("test") ++ testDeps("it"),
