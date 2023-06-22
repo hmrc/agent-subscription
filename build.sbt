@@ -1,6 +1,3 @@
-import uk.gov.hmrc.SbtAutoBuildPlugin
-import uk.gov.hmrc.sbtdistributables.SbtDistributablesPlugin._
-
 lazy val scoverageSettings = {
   import scoverage.ScoverageKeys
   Seq(
@@ -62,28 +59,11 @@ lazy val wartRemoverSettings = {
   )
 }
 
-
-lazy val compileDeps = Seq(
-  ws,
-  "uk.gov.hmrc" %% "bootstrap-backend-play-28" % "7.10.0",
-  "uk.gov.hmrc" %% "agent-mtd-identifiers" % "0.47.0-play-28",
-  "com.github.blemale" %% "scaffeine" % "4.0.1",
-  "uk.gov.hmrc" %% "agent-kenshoo-monitoring" % "4.8.0-play-28",
-  "uk.gov.hmrc.mongo" %% "hmrc-mongo-play-28" % "0.73.0"
-)
-
-def testDeps(scope: String) = Seq(
-  "org.scalatestplus.play" %% "scalatestplus-play" % "5.1.0" % scope,
-  "org.scalatestplus" %% "mockito-3-12" % "3.2.10.0" % scope,
-  "com.github.tomakehurst" % "wiremock-jre8" % "2.26.1" % scope,
-  "uk.gov.hmrc.mongo" %% "hmrc-mongo-test-play-28" % "0.73.0"  % scope,
-  "com.vladsch.flexmark" % "flexmark-all" % "0.35.10" % scope
-)
-
 lazy val root = Project("agent-subscription", file("."))
   .settings(
     name := "agent-subscription",
     organization := "uk.gov.hmrc",
+    majorVersion := 1,
     scalaVersion := "2.12.15",
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
@@ -94,20 +74,18 @@ lazy val root = Project("agent-subscription", file("."))
       "-deprecation",
       "-feature",
       "-unchecked",
-      "-language:implicitConversions",
-      "-P:silencer:pathFilters=views;routes;TestStorage"),
+      "-Wconf:src=target/.*:s", // silence warnings from compiled files
+      "-Wconf:src=routes/.*:s", // silence warnings from routes files
+      "-Wconf:src=*html:w", // silence html warnings as they are wrong
+      "-language:implicitConversions"
+    ),
     PlayKeys.playDefaultPort := 9436,
     resolvers ++= Seq(
       Resolver.typesafeRepo("releases"),
     ),
     Compile / scalafmtOnCompile := true,
     Test / scalafmtOnCompile := true,
-    libraryDependencies ++= compileDeps ++ testDeps("test") ++ testDeps("it"),
-    libraryDependencies ++= Seq(
-      compilerPlugin("com.github.ghik" % "silencer-plugin" % "1.7.8" cross CrossVersion.full),
-      "com.github.ghik" % "silencer-lib" % "1.7.8" % Provided cross CrossVersion.full
-    ),
-    publishingSettings,
+    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
     scoverageSettings,
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     routesImport ++= Seq(
@@ -119,7 +97,6 @@ lazy val root = Project("agent-subscription", file("."))
   )
   .configs(IntegrationTest)
   .settings(
-    majorVersion := 0,
     IntegrationTest / Keys.fork := false,
     Defaults.itSettings,
     IntegrationTest / unmanagedSourceDirectories += baseDirectory(_ / "it").value,
