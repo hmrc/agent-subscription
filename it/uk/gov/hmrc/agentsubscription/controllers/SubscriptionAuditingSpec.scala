@@ -1,13 +1,12 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import java.time.LocalDate
-
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscription
-import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, EmailInformation, RegisteredDetails, SubscriptionRequest}
+import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, EmailInformation, SubscriptionRequest}
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
 import uk.gov.hmrc.agentsubscription.stubs._
 import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
@@ -23,8 +22,13 @@ class SubscriptionAuditingSpec
 
   val amlsDetails: AmlsDetails = AmlsDetails(
     "supervisory",
-    Right(RegisteredDetails("12345", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId")))
+    membershipNumber = Some("12345"),
+    appliedOn = None,
+    membershipExpiresOn = Some(LocalDate.now()),
+    amlsSafeId = Some("amlsSafeId"),
+    agentBPRSafeId = Some("agentBPRSafeId")
   )
+
   val emailInfo = EmailInformation(
     Seq("agency@example.com"),
     "agent_services_account_created",

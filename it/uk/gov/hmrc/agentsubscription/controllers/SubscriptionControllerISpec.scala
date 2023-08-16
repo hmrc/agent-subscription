@@ -1,15 +1,15 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
-import java.time.LocalDate
-
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.json.Json.{stringify, toJson}
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
-import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, KnownFacts, RegisteredDetails, SubscriptionRequest, UpdateSubscriptionRequest, _}
-import uk.gov.hmrc.agentsubscription.stubs.{AgentAssuranceStub, AuthStub, DesStubs, TaxEnrolmentsStubs, _}
+import uk.gov.hmrc.agentsubscription.model._
+import uk.gov.hmrc.agentsubscription.stubs._
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+
+import java.time.LocalDate
 
 class SubscriptionControllerISpec
     extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub with EmailStub
@@ -22,7 +22,11 @@ class SubscriptionControllerISpec
 
   val amlsDetails: AmlsDetails = AmlsDetails(
     "supervisory",
-    Right(RegisteredDetails("12345", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId")))
+    membershipNumber = Some("12345"),
+    appliedOn = None,
+    membershipExpiresOn = Some(LocalDate.now()),
+    amlsSafeId = Some("amlsSafeId"),
+    agentBPRSafeId = Some("agentBPRSafeId")
   )
 
   val emailInfo = EmailInformation(

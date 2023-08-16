@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{Inject, Singleton}
 import play.api.Logging
+import play.api.i18n.Lang
 import play.api.libs.json._
 import play.api.mvc.{AnyContent, Request}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
@@ -25,13 +25,13 @@ import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscription, AuditService, OverseasAgentSubscription}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors._
-import play.api.i18n.Lang
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{AttemptingRegistration, Complete, Registered}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.{RecoveryRepository, SubscriptionJourneyRepository}
 import uk.gov.hmrc.agentsubscription.utils.Retry
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 private object SubscriptionAuditDetail {

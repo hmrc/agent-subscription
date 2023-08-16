@@ -16,12 +16,11 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import java.time.LocalDate
 import org.mockito.ArgumentMatchers.{any, anyString, contains, eq => eqs}
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
-import play.api.libs.json.{JsObject, Json}
 import play.api.i18n.Lang
+import play.api.libs.json.{JsObject, Json}
 import play.api.mvc.AnyContentAsEmpty
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
@@ -34,6 +33,7 @@ import uk.gov.hmrc.agentsubscription.repository.{RecoveryRepository, Subscriptio
 import uk.gov.hmrc.agentsubscription.support.{ResettingMockitoSugar, UnitSpec}
 import uk.gov.hmrc.http.{GatewayTimeoutException, HeaderCarrier}
 
+import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -73,7 +73,11 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     val arn = "ARN0001"
     val amlsDetails = AmlsDetails(
       "supervisory",
-      Right(RegisteredDetails("12345", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId")))
+      membershipNumber = Some("12345"),
+      appliedOn = None,
+      membershipExpiresOn = Some(LocalDate.now()),
+      amlsSafeId = Some("amlsSafeId"),
+      agentBPRSafeId = Some("agentBPRSafeId")
     )
 
     "audit appropriate values" in {
