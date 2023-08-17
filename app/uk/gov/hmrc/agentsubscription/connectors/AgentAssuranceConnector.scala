@@ -19,7 +19,6 @@ package uk.gov.hmrc.agentsubscription.connectors
 import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
 import com.kenshoo.play.metrics.Metrics
-import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.libs.json.{Format, JsObject, Json}
 import play.mvc.Http.Status._
@@ -28,11 +27,11 @@ import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.AgentAssuranceConnector.{CreateAmlsRequest, CreateOverseasAmlsRequest}
 import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, OverseasAmlsDetails}
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.HttpClient
-import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.HttpErrorFunctions._
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{HttpClient, _}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[AgentAssuranceConnectorImpl])

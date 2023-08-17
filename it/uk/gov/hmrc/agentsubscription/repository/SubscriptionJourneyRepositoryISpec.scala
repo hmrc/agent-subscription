@@ -44,7 +44,11 @@ class SubscriptionJourneyRepositoryISpec
 
   val amlsDetails = AmlsDetails(
     "supervisory",
-    Right(RegisteredDetails("123456789", Some(LocalDate.now()), Some("amlsSafeId"), Some("agentBPRSafeId")))
+    membershipNumber = Some("12345"),
+    appliedOn = None,
+    membershipExpiresOn = Some(LocalDate.now()),
+    amlsSafeId = Some("amlsSafeId"),
+    agentBPRSafeId = Some("agentBPRSafeId")
   )
 
   private val subscriptionJourneyRecord =
