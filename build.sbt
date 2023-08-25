@@ -15,7 +15,7 @@ lazy val root = Project("agent-subscription", file("."))
     name := "agent-subscription",
     organization := "uk.gov.hmrc",
     majorVersion := 1,
-    scalaVersion := "2.13.8",
+    scalaVersion := "2.13.10",
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
       "-Xlint:-missing-interpolator,_",
@@ -36,6 +36,8 @@ lazy val root = Project("agent-subscription", file("."))
     Compile / scalafmtOnCompile := true,
     Test / scalafmtOnCompile := true,
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
+    //fix for scoverage compile errors for scala 2.13.10
+    libraryDependencySchemes ++= Seq("org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always),
     scoverageSettings,
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
     routesImport ++= Seq(
