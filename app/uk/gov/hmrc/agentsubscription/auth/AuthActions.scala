@@ -102,8 +102,8 @@ class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthCo
   }
 
   def handleFailure(): PartialFunction[Throwable, Result] = {
-    case _: NoActiveSession ⇒ GenericUnauthorized
-    case _: UnsupportedAuthProvider ⇒ GenericUnauthorized
+    case _: NoActiveSession         => GenericUnauthorized
+    case _: UnsupportedAuthProvider => GenericUnauthorized
   }
 
   private def isAgent(group: AffinityGroup): Boolean = group.toString.contains("Agent")

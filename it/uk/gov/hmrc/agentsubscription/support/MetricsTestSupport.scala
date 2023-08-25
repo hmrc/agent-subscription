@@ -21,8 +21,7 @@ import com.kenshoo.play.metrics.Metrics
 import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
 import play.api.Application
-
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 
 trait MetricsTestSupport {
   self: Suite with Matchers =>

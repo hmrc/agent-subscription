@@ -78,6 +78,7 @@ case class DesRegistrationResponse(
   agentReferenceNumber: Option[Arn],
   address: BusinessAddress,
   emailAddress: Option[String],
+  primaryPhoneNumber: Option[String],
   safeId: Option[String]
 )
 
@@ -208,6 +209,7 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
             (r \ "agencyDetails" \ "agencyEmail")
               .asOpt[String]
               .orElse((r \ "contactDetails" \ "emailAddress").asOpt[String]),
+            (r \ "contactDetails" \ "primaryPhoneNumber").asOpt[String],
             (r \ "safeId").asOpt[String]
           )
         )

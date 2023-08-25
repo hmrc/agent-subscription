@@ -266,6 +266,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               "GB"
             ),
             None,
+            None,
             Some("safeId")
           )
         )
@@ -328,6 +329,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               "GB"
             ),
             None,
+            None,
             Some("safeId")
           )
         )
@@ -382,6 +384,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               Some(businessPostcode),
               "GB"
             ),
+            None,
             None,
             Some("safeId")
           )
@@ -438,6 +441,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               Some(businessPostcode),
               "GB"
             ),
+            None,
             None,
             Some("safeId")
           )
@@ -499,6 +503,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               Some(businessPostcode),
               "GB"
             ),
+            None,
             None,
             Some("safeId")
           )

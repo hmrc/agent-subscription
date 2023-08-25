@@ -219,7 +219,7 @@ class SubscriptionControllerForOverseasISpec
         result.status shouldBe 500
         (result.json \ "statusCode").as[Int] shouldBe 500
         (result.json \ "message")
-          .as[String] shouldBe "JsResultException(errors:List((/agencyName,List(JsonValidationError(List(error.name.invalid),WrappedArray())))))"
+          .as[String] shouldBe "JsResultException(errors:List((/agencyName,List(JsonValidationError(List(error.name.invalid),List())))))"
 
         verifyApiCalls(
           attemptingRegistration = 0,

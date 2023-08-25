@@ -96,7 +96,7 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
         }
         .recover {
           case e: JsResultException =>
-            val errors: Seq[String] = e.errors.flatMap(_._2.map(_.message))
+            val errors = e.errors.flatMap(_._2.map(_.message))
             logger.error(s"The retrieved current application is invalid: $errors")
             throw e
 

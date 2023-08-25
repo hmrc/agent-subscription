@@ -41,6 +41,7 @@ case class Registration(
   isSubscribedToETMP: Boolean,
   address: BusinessAddress,
   emailAddress: Option[String],
+  primaryPhoneNumber: Option[String],
   safeId: Option[String]
 )
 
