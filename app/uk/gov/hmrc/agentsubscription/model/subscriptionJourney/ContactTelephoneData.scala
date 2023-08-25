@@ -14,22 +14,13 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model
+package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.Json.format
-import play.api.libs.json.OFormat
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
+import play.api.libs.json.Json
 
-case class RegistrationDetails(
-  isSubscribedToAgentServices: Boolean,
-  isSubscribedToETMP: Boolean,
-  taxpayerName: Option[String],
-  address: BusinessAddress,
-  emailAddress: Option[String],
-  primaryPhoneNumber: Option[String],
-  safeId: Option[String] = None
-)
+case class ContactTelephoneData(useBusinessTelephone: Boolean, telephoneNumber: Option[String])
 
-object RegistrationDetails {
-  implicit val registrationDetailsObjectFormat: OFormat[RegistrationDetails] = format
+object ContactTelephoneData {
+
+  implicit val format = Json.format[ContactTelephoneData]
 }

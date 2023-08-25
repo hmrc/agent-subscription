@@ -448,7 +448,8 @@ trait DesStubs {
                          |  },
                          |  "agentReferenceNumber": "$arn",
                          |  "contactDetails": {
-                         |        "emailAddress": "agent1@example.com"
+                         |        "emailAddress": "agent1@example.com",
+                         |        "primaryPhoneNumber": "01273111111"
                          |    },
                          |  "agencyDetails": {
                          |      "agencyName": "My Agency",
@@ -493,7 +494,8 @@ trait DesStubs {
                          |  },
                          |  "agentReferenceNumber": "AARN0000002",
                          |  "contactDetails": {
-                         |        "emailAddress": "individual@example.com"
+                         |        "emailAddress": "individual@example.com",
+                         |        "primaryPhoneNumber": "01273111111"
                          |    },
                          |    "safeId": "safeId"
                          |}
@@ -520,7 +522,8 @@ trait DesStubs {
                          |  },
                          |  "isAnASAgent": $isAnASAgent,
                          |  "contactDetails": {
-                         |        "emailAddress": "agent1@example.com"
+                         |        "emailAddress": "agent1@example.com",
+                         |        "primaryPhoneNumber": "01273111111"
                          |    }
                          |}
                """.stripMargin)

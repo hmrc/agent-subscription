@@ -4,7 +4,6 @@ import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentsubscription.model.Crn
 import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, CompaniesHouseStub}
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
-import play.api.test.Helpers._
 
 class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub with AuthStub {
 
@@ -17,14 +16,14 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
     "return a 401 when the user is not authenticated" in {
       requestIsNotAuthenticated()
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/$crn/officers/$name", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/$crn/officers/$name", port).get()
       response.status shouldBe 401
     }
 
     "return a 401 when auth returns unexpected response code in the headers" in {
       requestIsNotAuthenticated(header = "some strange response from auth")
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/$crn/officers/$name", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/$crn/officers/$name", port).get()
       response.status shouldBe 401
     }
 
@@ -32,7 +31,7 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
       requestIsAuthenticatedWithNoEnrolments()
       givenCompaniesHouseOfficersListWithStatus(crn.value, "BROWN", 404)
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/officers/BROWN", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/officers/BROWN", port).get()
       response.status shouldBe 404
     }
 
@@ -40,7 +39,7 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
       requestIsAuthenticatedWithNoEnrolments()
       givenCompaniesHouseOfficersListWithStatus("NOT-VALID", "FERGUSON", 400)
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/NOT-VALID/officers/FERGUSON", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/NOT-VALID/officers/FERGUSON", port).get()
       response.status shouldBe 400
     }
 
@@ -48,7 +47,7 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
       requestIsAuthenticatedWithNoEnrolments()
       givenCompaniesHouseOfficersListWithStatus("SC123456", "FERGUSON", 401)
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/SC123456/officers/FERGUSON", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/SC123456/officers/FERGUSON", port).get()
       response.status shouldBe 404
     }
 
@@ -57,7 +56,7 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
       givenSuccessfulCompaniesHouseResponseMultipleMatches(Crn("SC123456"), "FERGUSON")
       givenSuccessfulGetCompanyHouseResponse(Crn("SC123456"), companyStatus = "active")
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/SC123456/officers/FERGUSON", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/SC123456/officers/FERGUSON", port).get()
       response.status shouldBe 200
     }
 
@@ -67,14 +66,14 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
     "return a 401 when the user is not authenticated" in {
       requestIsNotAuthenticated()
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get()
       response.status shouldBe 401
     }
 
     "return a 401 when auth returns unexpected response code in the headers" in {
       requestIsNotAuthenticated(header = "some strange response from auth")
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get()
       response.status shouldBe 401
     }
 
@@ -82,7 +81,7 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
       requestIsAuthenticatedWithNoEnrolments()
       givenUnsuccessfulGetCompanyHouseResponse(crn, 404)
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get()
       response.status shouldBe 404
     }
 
@@ -90,7 +89,7 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
       requestIsAuthenticatedWithNoEnrolments()
       givenUnsuccessfulGetCompanyHouseResponse(Crn("NOT-VALID"), 401)
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get()
       response.status shouldBe 404
     }
 
@@ -98,7 +97,7 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
       requestIsAuthenticatedWithNoEnrolments()
       givenSuccessfulGetCompanyHouseResponse(crn, "active")
       val response =
-        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get
+        new Resource(s"/agent-subscription/companies-house-api-proxy/company/${crn.value}/status", port).get()
       response.status shouldBe 200
     }
 

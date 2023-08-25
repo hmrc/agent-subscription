@@ -19,6 +19,8 @@ class SubscriptionJourneyRepositoryISpec
 
   implicit lazy val appConfig = app.injector.instanceOf[AppConfig]
 
+  override def checkTtlIndex = false // temporary until we make last modified date field not optional
+
   override lazy val repository = new SubscriptionJourneyRepositoryImpl(mongoComponent)
 
   val validUtr = Utr("2000000000")
@@ -39,6 +41,7 @@ class SubscriptionJourneyRepositoryISpec
     isSubscribedToETMP = false,
     businessAddress,
     Some("test@gmail.com"),
+    Some("01273111111"),
     Some("safeId")
   )
 
@@ -68,7 +71,8 @@ class SubscriptionJourneyRepositoryISpec
       lastModifiedDate = None,
       contactEmailData = Some(ContactEmailData(true, Some("email@email.com"))),
       contactTradingNameData = Some(ContactTradingNameData(true, Some("My Trading Name"))),
-      contactTradingAddressData = Some(ContactTradingAddressData(true, Some(businessAddress)))
+      contactTradingAddressData = Some(ContactTradingAddressData(true, Some(businessAddress))),
+      contactTelephoneData = Some(ContactTelephoneData(true, Some("01273111111")))
     )
 
   "SubscriptionJourneyRepository" should {

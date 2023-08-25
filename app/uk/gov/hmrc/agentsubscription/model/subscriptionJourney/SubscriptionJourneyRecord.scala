@@ -41,6 +41,7 @@ final case class SubscriptionJourneyRecord(
   contactEmailData: Option[ContactEmailData],
   contactTradingNameData: Option[ContactTradingNameData],
   contactTradingAddressData: Option[ContactTradingAddressData],
+  contactTelephoneData: Option[ContactTelephoneData],
   verifiedEmails: Set[String] = Set.empty
 )
 
@@ -60,6 +61,7 @@ object SubscriptionJourneyRecord {
       (JsPath \ "contactEmailData").formatNullable[ContactEmailData] and
       (JsPath \ "contactTradingNameData").formatNullable[ContactTradingNameData] and
       (JsPath \ "contactTradingAddressData").formatNullable[ContactTradingAddressData] and
+      (JsPath \ "contactTelephoneData").formatNullable[ContactTelephoneData] and
       (JsPath \ "verifiedEmails")
         .formatWithDefault[Set[String]](Set.empty[String]))(
       SubscriptionJourneyRecord.apply,

@@ -35,12 +35,12 @@ object DateOfBirth {
 
     override def reads(json: JsValue): JsResult[DateOfBirth] =
       json match {
-        case JsString(s) ⇒
+        case JsString(s) =>
           Try(LocalDate.parse(s, formatter)) match {
-            case Success(date) ⇒ JsSuccess(DateOfBirth(date))
-            case Failure(error) ⇒ JsError(s"Could not parse date as yyyy-MM-dd: ${error.getMessage}")
+            case Success(date)  => JsSuccess(DateOfBirth(date))
+            case Failure(error) => JsError(s"Could not parse date as yyyy-MM-dd: ${error.getMessage}")
           }
-        case other ⇒ JsError(s"Expected string but got $other")
+        case other => JsError(s"Expected string but got $other")
       }
   }
 }

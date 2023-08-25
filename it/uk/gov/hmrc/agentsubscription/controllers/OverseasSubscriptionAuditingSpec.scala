@@ -47,7 +47,7 @@ class OverseasSubscriptionAuditingSpec
       givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
       givenEmailSent(emailInfo)
 
-      val result = doOverseasSubscriptionRequest
+      val result = doOverseasSubscriptionRequest()
 
       result.status shouldBe 201
 

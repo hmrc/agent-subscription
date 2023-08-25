@@ -14,6 +14,8 @@ class RecoveryDataRepositoryISpec extends UnitSpec with DefaultPlayMongoReposito
 
   override lazy val repository = new RecoveryRepositoryImpl(mongoComponent)
 
+  override def checkTtlIndex = false // temporary until we review the RecoveryData collection
+
   private val utr = Utr("7000000002")
 
   private val subscriptionRequest: String =

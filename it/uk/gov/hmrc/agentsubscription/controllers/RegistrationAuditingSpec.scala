@@ -44,7 +44,7 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
 
       val path = encodePathSegments("agent-subscription", "registration", utr.value, "postcode", postcode)
 
-      val response = new Resource(path, port).get
+      val response = new Resource(path, port).get()
       response.status shouldBe 200
 
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe true

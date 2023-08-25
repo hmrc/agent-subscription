@@ -55,6 +55,7 @@ object ApplicationStatus {
       ApplicationStatus.AttemptingRegistration
     case ApplicationStatus.Registered.key => ApplicationStatus.Registered
     case ApplicationStatus.Complete.key   => ApplicationStatus.Complete
+    case other                            => throw new RuntimeException(s"application status $other not known")
   }
 
   def unapply(arg: ApplicationStatus): Option[String] = Some(arg.key)

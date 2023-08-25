@@ -70,7 +70,7 @@ object Http {
 
 class Resource(path: String, port: Int) {
 
-  private def url() = s"http://localhost:$port$path"
+  private def url = s"http://localhost:$port$path"
 
   def get()(implicit hc: HeaderCarrier = HeaderCarrier(), ws: WSClient) =
     Http.get(url, Seq(HeaderNames.AUTHORIZATION -> "Bearer XYZ"))(hc, ws)

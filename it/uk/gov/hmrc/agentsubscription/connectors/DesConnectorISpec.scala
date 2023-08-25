@@ -99,6 +99,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
           Some(Arn("TARN0000001")),
           businessAddress,
           Some("agency@example.com"),
+          Some("01273111111"),
           Some("safeId")
         )
       )
@@ -117,6 +118,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
           Some(Arn("AARN0000002")),
           businessAddress,
           Some("individual@example.com"),
+          Some("01273111111"),
           Some("safeId")
         )
       )
@@ -128,7 +130,16 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
       val registration = await(connector.getRegistration(utr))
 
       registration shouldBe Some(
-        DesRegistrationResponse(isAnASAgent = true, None, None, None, businessAddress, Some("agent1@example.com"), None)
+        DesRegistrationResponse(
+          isAnASAgent = true,
+          None,
+          None,
+          None,
+          businessAddress,
+          Some("agent1@example.com"),
+          Some("01273111111"),
+          None
+        )
       )
     }
 
@@ -145,6 +156,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
           None,
           BusinessAddress("AddressLine1 A", None, None, None, None, "GB"),
           Some("agent1@example.com"),
+          None,
           None
         )
       )
@@ -162,6 +174,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
           None,
           None,
           BusinessAddress("AddressLine1 A", None, None, None, Some("AA1 1AA"), "GB"),
+          None,
           None,
           None
         )

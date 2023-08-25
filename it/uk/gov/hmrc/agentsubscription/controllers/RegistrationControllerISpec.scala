@@ -29,13 +29,13 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
   "GET of /registration/:utr/postcode/:postcode" should {
     "return a 401 when the user is not authenticated" in {
       requestIsNotAuthenticated()
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 401
     }
 
     "return a 401 when auth returns unexpected response code in the headers" in {
       requestIsNotAuthenticated(header = "some strange response from auth")
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 401
     }
 
@@ -43,14 +43,14 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
       requestIsAuthenticatedWithNoEnrolments()
 
       registrationDoesNotExist(Utr("8000000007"))
-      val response = new Resource("/agent-subscription/registration/8000000007/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/8000000007/postcode/AA1%201AA", port).get()
       response.status shouldBe 404
     }
 
     "return 400 when the UTR is invalid" in {
       requestIsAuthenticatedWithNoEnrolments()
       utrIsInvalid()
-      val response = new Resource("/agent-subscription/registration/xyz/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/xyz/postcode/AA1%201AA", port).get()
       response.status shouldBe 400
       (response.json \ "code").as[String] shouldBe "INVALID_UTR"
     }
@@ -58,41 +58,41 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     "return 500 when agent-subscription considers a UTR valid but DES unexpectedly reports it as invalid" in {
       requestIsAuthenticatedWithNoEnrolments()
       utrIsUnexpectedlyInvalid(Utr("7000000002"))
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 500
     }
 
     "return 404 when des returns a match for the utr but the post codes do not match" in {
       requestIsAuthenticatedWithNoEnrolments()
       organisationRegistrationExists(Utr("7000000002"))
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/BB11BB", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/BB11BB", port).get()
       response.status shouldBe 404
     }
 
     "return 404 when des returns a response with no postcode" in {
       requestIsAuthenticatedWithNoEnrolments()
       registrationExistsWithNoPostcode(Utr("7000000002"))
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 404
     }
 
     "return 400 when the post code is invalid" in {
       requestIsAuthenticatedWithNoEnrolments()
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/1A1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/1A1%201AA", port).get()
       response.status shouldBe 400
     }
 
     "return 404 when DES response does not contain addressline1 mandatory field" in {
       requestIsAuthenticatedWithNoEnrolments()
       registrationExistsWithNoAddress(Utr("7000000002"))
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 404
     }
 
     "return 500 when DES response does not contain isAnASAgent mandatory field" in {
       requestIsAuthenticatedWithNoEnrolments()
       registrationExistsWithNoIsAnASAgent(Utr("7000000002"))
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 500
     }
 
@@ -101,7 +101,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
         requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(Utr("7000000002"), true)
         allocatedPrincipalEnrolmentExists("TARN0000001", "SomeAllocatedGroupId")
-        val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+        val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
         response.status shouldBe 200
         (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe true
         (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe true
@@ -114,7 +114,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
         requestIsAuthenticatedWithNoEnrolments()
         organisationRegistrationExists(Utr("7000000002"), true)
         allocatedPrincipalEnrolmentNotExists("TARN0000001")
-        val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+        val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
         response.status shouldBe 200
         (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
         (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe true
@@ -127,7 +127,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     "return 200 when des returns a non-AS Agent for the utr and the postcodes match" in {
       requestIsAuthenticatedWithNoEnrolments()
       organisationRegistrationExists(Utr("7000000002"), false)
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
@@ -139,7 +139,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     "return 200 when des returns an individual for the utr and the postcodes match" in {
       requestIsAuthenticatedWithNoEnrolments()
       individualRegistrationExists(Utr("7000000002"), false)
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
@@ -151,7 +151,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     "return 200 when des returns no organisation name" in {
       requestIsAuthenticatedWithNoEnrolments()
       registrationExistsWithNoOrganisationName(Utr("7000000002"), false)
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false
@@ -161,7 +161,7 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     "return 200 when des returns no email address" in {
       requestIsAuthenticatedWithNoEnrolments()
       registrationExistsWithNoEmail(Utr("7000000002"))
-      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get
+      val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
       (response.json \ "isSubscribedToETMP").as[Boolean] shouldBe false

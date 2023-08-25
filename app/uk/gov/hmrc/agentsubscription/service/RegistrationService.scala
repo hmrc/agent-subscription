@@ -68,6 +68,7 @@ class RegistrationService @Inject() (
               agentReferenceNumber,
               businessAddress,
               email,
+              primaryPhoneNumber,
               safeId
             )
           ) if businessAddress.postalCode.nonEmpty =>
@@ -86,6 +87,7 @@ class RegistrationService @Inject() (
           agentReferenceNumber,
           businessAddress,
           email,
+          primaryPhoneNumber,
           safeId
         )
       case Some(
@@ -96,6 +98,7 @@ class RegistrationService @Inject() (
               agentReferenceNumber,
               businessAddress,
               email,
+              primaryPhoneNumber,
               safeId
             )
           ) if businessAddress.postalCode.nonEmpty =>
@@ -114,9 +117,10 @@ class RegistrationService @Inject() (
           agentReferenceNumber,
           businessAddress,
           email,
+          primaryPhoneNumber,
           safeId
         )
-      case Some(DesRegistrationResponse(isAnASAgent, _, _, agentReferenceNumber, address, _, _)) =>
+      case Some(DesRegistrationResponse(isAnASAgent, _, _, agentReferenceNumber, address, _, _, _)) =>
         if (isAnASAgent) {
           getLogger.warn(
             s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${address.postalCode.nonEmpty}"
@@ -151,6 +155,7 @@ class RegistrationService @Inject() (
     maybeArn: Option[Arn],
     businessAddress: BusinessAddress,
     emailAddress: Option[String],
+    primaryPhoneNumber: Option[String],
     safeId: Option[String]
   )(implicit
     hc: HeaderCarrier,
@@ -175,7 +180,17 @@ class RegistrationService @Inject() (
           Some(isAnASAgent),
           maybeArn
         )
-        Some(RegistrationDetails(isSubscribed, isAnASAgent, taxpayerName, businessAddress, emailAddress, safeId))
+        Some(
+          RegistrationDetails(
+            isSubscribed,
+            isAnASAgent,
+            taxpayerName,
+            businessAddress,
+            emailAddress,
+            primaryPhoneNumber,
+            safeId
+          )
+        )
       }
 
     } else {

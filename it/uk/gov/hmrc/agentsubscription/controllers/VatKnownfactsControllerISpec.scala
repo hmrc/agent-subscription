@@ -13,14 +13,14 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
     "return a 401 when the user is not authenticated" in {
       requestIsNotAuthenticated()
       val response =
-        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get()
       response.status shouldBe 401
     }
 
     "return a 401 when auth returns unexpected response code in the headers" in {
       requestIsNotAuthenticated(header = "some strange response from auth")
       val response =
-        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get()
       response.status shouldBe 401
     }
 
@@ -28,7 +28,7 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
       vatKnownfactsRecordDoesNotExist(vrn)
 
       val response =
-        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get()
       response.status shouldBe 404
     }
 
@@ -37,7 +37,7 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
       vrnIsInvalid(Vrn("0000"))
 
       val response =
-        new Resource("/agent-subscription/vat-known-facts/vrn/0000/dateOfRegistration/2010-03-31", port).get
+        new Resource("/agent-subscription/vat-known-facts/vrn/0000/dateOfRegistration/2010-03-31", port).get()
       response.status shouldBe 400
     }
 
@@ -46,7 +46,7 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
       vatKnownfactsRecordFails()
 
       val response =
-        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get()
       response.status shouldBe 500
     }
 
@@ -54,7 +54,7 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
       vatKnownfactsRecordExists(vrn)
 
       val response =
-        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2012-04-11", port).get
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2012-04-11", port).get()
       response.status shouldBe 404
     }
 
@@ -63,7 +63,7 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
       vatKnownfactsRecordExists(vrn)
 
       val response =
-        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get
+        new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get()
       response.status shouldBe 200
     }
   }

@@ -48,6 +48,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     None,
     None,
     None,
+    None,
     None
   )
 

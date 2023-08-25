@@ -93,6 +93,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
                 "GB"
               ),
               None,
+              None,
               Some("safeId")
             )
           )
@@ -148,6 +149,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
                 "GB"
               ),
               None,
+              None,
               Some("safeId")
             )
           )
@@ -202,6 +204,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
                 "GB"
               ),
               None,
+              None,
               Some("safeId")
             )
           )
@@ -251,6 +254,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
                 "GB"
               ),
               None,
+              None,
               Some("safeId")
             )
           )
@@ -299,6 +303,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
                 Some(postcode),
                 "GB"
               ),
+              None,
               None,
               Some("safeId")
             )
@@ -355,6 +360,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
                 "GB"
               ),
               None,
+              None,
               Some("safeId")
             )
           )
@@ -409,6 +415,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
                 "GB"
               ),
               None,
+              None,
               Some("safeId")
             )
           )
@@ -458,6 +465,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
                 "GB"
               ),
               None,
+              None,
               Some("safeId")
             )
           )
@@ -505,6 +513,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
                 None,
                 "GB"
               ),
+              None,
               None,
               Some("safeId")
             )
@@ -554,6 +563,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
                 None,
                 "GB"
               ),
+              None,
               None,
               Some("safeId")
             )
