@@ -284,7 +284,7 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
     CorrelationId  -> UUID.randomUUID().toString,
     Authorization_ -> s"Bearer $authToken"
   ) ++ hc.sessionId.fold(Seq.empty[(String, String)])(x => Seq(SessionId -> x.value)) ++
-    hc.requestId.fold(Seq.empty[(String, String)])(x => Seq(RequestId -> x.value))
+    hc.requestId.fold(Seq(RequestId -> UUID.randomUUID().toString))(x => Seq(RequestId -> x.value))
 
   private def getWithDesHeaders(apiName: String, url: String)(implicit
     hc: HeaderCarrier,
