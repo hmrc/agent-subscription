@@ -36,6 +36,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import play.api.http.Status._
 
+import java.net.URL
 import java.util.UUID
 
 case class Address(
@@ -95,6 +96,8 @@ object DesRegistrationRequest {
   implicit val formats: Format[DesRegistrationRequest] = Json.format[DesRegistrationRequest]
 }
 
+case class HeadersConfig(hc: HeaderCarrier, explicitHeaders: Seq[(String, String)])
+
 @Singleton
 class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: Metrics) extends HttpAPIMonitor {
   override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
@@ -105,21 +108,18 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
 
   private val Environment = "Environment"
   private val CorrelationId = "CorrelationId"
-  private val Authorization_ = "Authorization"
-  private val SessionId = "x-session-id"
-  private val RequestId = "x-request-id"
 
   def createOverseasBusinessPartnerRecord(
     request: OverseasRegistrationRequest
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SafeId] =
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SafeId] = {
+    val url = s"$baseUrl/registration/02.00.00/organisation"
+    val headersConfig = makeHeadersConfig(url)
     monitor("ConsumedAPI-DES-Overseas-CreateRegistration-POST") {
-      val url = s"$baseUrl/registration/02.00.00/organisation"
-
       http
-        .POST[OverseasRegistrationRequest, HttpResponse](url, request, headers = desHeaders())(
+        .POST[OverseasRegistrationRequest, HttpResponse](url, request, headers = headersConfig.explicitHeaders)(
           implicitly,
           implicitly,
-          desHeaderCarrier,
+          headersConfig.hc,
           ec
         )
         .map(response =>
@@ -129,18 +129,21 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
           }
         )
     }
+  }
 
   def subscribeToAgentServices(safeId: SafeId, agencyDetails: OverseasAgencyDetails)(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
-  ): Future[Arn] =
+  ): Future[Arn] = {
+    val url = desOverseasSubscribeUrl(safeId)
+    val headersConfig = makeHeadersConfig(url)
     monitor("ConsumedAPI-DES-SubscribeOverseasAgent-POST") {
       http
         .POST[OverseasAgencyDetails, HttpResponse](
-          desOverseasSubscribeUrl(safeId),
+          url,
           agencyDetails,
-          headers = desHeaders()
-        )(implicitly, implicitly, desHeaderCarrier, ec)
+          headers = headersConfig.explicitHeaders
+        )(implicitly, implicitly, headersConfig.hc, ec)
         .map(response =>
           response.status match {
             case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
@@ -152,17 +155,20 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
           }
         )
     }
+  }
 
   def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
-  ): Future[Arn] =
+  ): Future[Arn] = {
+    val url = desSubscribeUrl(utr)
+    val headersConfig = makeHeadersConfig(url)
     monitor("ConsumedAPI-DES-SubscribeAgent-POST") {
       http
-        .POST[DesSubscriptionRequest, HttpResponse](desSubscribeUrl(utr), request, headers = desHeaders())(
+        .POST[DesSubscriptionRequest, HttpResponse](url, request, headers = headersConfig.explicitHeaders)(
           implicitly,
           implicitly,
-          desHeaderCarrier,
+          headersConfig.hc,
           ec
         )
         .map(response =>
@@ -178,6 +184,7 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
           }
         )
     }
+  }
 
   def getRegistration(
     utr: Utr
@@ -253,16 +260,21 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
     }
   }
 
-  private def getRegistrationJson(utr: Utr)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] =
+  private def getRegistrationJson(
+    utr: Utr
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] = {
+    val url = desRegistrationUrl(utr)
+    val headersConfig = makeHeadersConfig(url)
     monitor("DES-GetAgentRegistration-POST") {
       http.POST[DesRegistrationRequest, Option[JsValue]](
-        desRegistrationUrl(utr),
+        url,
         DesRegistrationRequest(isAnAgent = false),
-        headers = desHeaders()
-      )(implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], desHeaderCarrier, ec)
+        headers = headersConfig.explicitHeaders
+      )(implicitly[Writes[DesRegistrationRequest]], implicitly[HttpReads[Option[JsValue]]], headersConfig.hc, ec)
     } recover { case badRequest: BadRequestException =>
       throw new DesConnectorException(s"400 Bad Request response from DES for utr ${utr.value}", badRequest)
     }
+  }
 
   private def desSubscribeUrl(utr: Utr): String =
     s"$baseUrl/registration/agents/utr/${encodePathSegment(utr.value)}"
@@ -273,26 +285,37 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
   private def desRegistrationUrl(utr: Utr): String =
     s"$baseUrl/registration/individual/utr/${encodePathSegment(utr.value)}"
 
-  def desHeaderCarrier(implicit hc: HeaderCarrier): HeaderCarrier =
-    hc.copy(
-      authorization = Some(Authorization(s"Bearer $authToken")),
-      extraHeaders = hc.extraHeaders :+ "Environment" -> environment
-    )
+  def makeHeadersConfig(url: String)(implicit hc: HeaderCarrier): HeadersConfig = {
 
-  def desHeaders()(implicit hc: HeaderCarrier): Seq[(String, String)] = Seq(
-    Environment    -> s"$environment",
-    CorrelationId  -> UUID.randomUUID().toString,
-    Authorization_ -> s"Bearer $authToken"
-  ) ++ hc.sessionId.fold(Seq.empty[(String, String)])(x => Seq(SessionId -> x.value)) ++
-    hc.requestId.fold(Seq(RequestId -> UUID.randomUUID().toString))(x => Seq(RequestId -> x.value))
+    val isInternalHost = appConfig.internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
+
+    val baseHeaders = Seq(
+      Environment   -> s"$environment",
+      CorrelationId -> UUID.randomUUID().toString
+    )
+    val additionalHeaders =
+      if (isInternalHost) Seq.empty
+      else
+        Seq(
+          HeaderNames.authorisation -> s"Bearer $authToken",
+          HeaderNames.xRequestId    -> hc.requestId.map(_.value).getOrElse(UUID.randomUUID().toString)
+        ) ++ hc.sessionId.fold(Seq.empty[(String, String)])(x => Seq(HeaderNames.xSessionId -> x.value))
+
+    HeadersConfig(
+      if (isInternalHost) hc.copy(authorization = Some(Authorization(s"Bearer $authToken")))
+      else hc,
+      baseHeaders ++ additionalHeaders
+    )
+  }
 
   private def getWithDesHeaders(apiName: String, url: String)(implicit
     hc: HeaderCarrier,
     ec: ExecutionContext
-  ): Future[JsValue] =
+  ): Future[JsValue] = {
+    val headersConfig = makeHeadersConfig(url)
     monitor(s"ConsumedAPI-DES-$apiName-GET") {
       http
-        .GET[HttpResponse](url, headers = desHeaders())(implicitly, desHeaderCarrier, ec)
+        .GET[HttpResponse](url, headers = headersConfig.explicitHeaders)(implicitly, headersConfig.hc, ec)
         .map(response =>
           response.status match {
             case s if is2xx(s) => response.json
@@ -303,6 +326,8 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
           }
         )
     }
+  }
+
 }
 
 class DesConnectorException(val reason: String, val cause: Throwable) extends RuntimeException(reason, cause)

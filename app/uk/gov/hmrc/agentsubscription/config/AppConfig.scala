@@ -16,11 +16,15 @@
 
 package uk.gov.hmrc.agentsubscription.config
 
+import play.api.Configuration
+
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import scala.util.matching.Regex
+
 @Singleton
-class AppConfig @Inject() (servicesConfig: ServicesConfig) {
+class AppConfig @Inject() (servicesConfig: ServicesConfig, config: Configuration) {
 
   val appName = "agent-subscription"
 
@@ -47,5 +51,7 @@ class AppConfig @Inject() (servicesConfig: ServicesConfig) {
   val mongodbSubscriptionJourneyTTL = servicesConfig.getInt("mongodb.subscriptionjourney.ttl")
 
   val companiesHouseApiProxyBaseUrl = servicesConfig.baseUrl("companies-house-api-proxy")
+
+  val internalHostPatterns: Seq[Regex] = config.get[Seq[String]]("internalServiceHostPatterns").map(_.r)
 
 }
