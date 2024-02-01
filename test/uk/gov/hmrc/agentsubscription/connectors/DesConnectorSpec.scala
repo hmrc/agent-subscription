@@ -21,7 +21,9 @@ import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, RequestId, SessionId}
+import uk.gov.hmrc.http.{Authorization, HeaderCarrier, HeaderNames, HttpClient, RequestId, SessionId}
+
+import java.util.UUID
 
 class DesConnectorSpec extends UnitSpec with MockitoSugar {
 
@@ -32,33 +34,88 @@ class DesConnectorSpec extends UnitSpec with MockitoSugar {
 
   when(appConfig.desAuthToken).thenReturn("testAuthToken")
   when(appConfig.desEnvironment).thenReturn("testEnv")
+  when(appConfig.internalHostPatterns).thenReturn(
+    Seq("^.*\\.service$", "^.*\\.mdtp$", "^localhost$").map(_.r)
+  )
 
   val underTest: DesConnector = new DesConnector(appConfig, httpClient, metrics)
 
   "desHeaders" should {
     "contain correct headers" when {
-      "sessionId and requestId found" in {
-        when(hc.sessionId).thenReturn(Option(SessionId("testSession")))
-        when(hc.requestId).thenReturn(Option(RequestId("testRequestId")))
+      "service is internal (localhost)" in {
 
-        val headersMap = underTest.desHeaders()(hc).toMap
+        val url = "http://localhost:9009/registration/agents/utr/01234567890"
 
-        headersMap should contain("Authorization" -> "Bearer testAuthToken")
+        val hc = HeaderCarrier(
+          authorization = Some(Authorization("Bearer sessionToken")),
+          sessionId = Some(SessionId("session-xyz")),
+          requestId = Some(RequestId("requestId"))
+        )
+
+        val headersConfig = underTest.makeHeadersConfig(url)(hc)
+        val headersMap = headersConfig.explicitHeaders.toMap
+        val headerCarrier = headersConfig.hc
+
         headersMap should contain("Environment" -> "testEnv")
-        headersMap should contain("x-session-id" -> "testSession")
-        headersMap should contain("x-request-id" -> "testRequestId")
+        headersMap should contain key "CorrelationId"
+        UUID.fromString(headersMap("CorrelationId")) should not be null
+        headersMap should not contain key(HeaderNames.authorisation)
+        headersMap should not contain key(HeaderNames.xSessionId)
+        headersMap should not contain key(HeaderNames.xRequestId)
+
+        headerCarrier.authorization.get should be(Authorization("Bearer testAuthToken"))
+        headerCarrier.sessionId.get should be(SessionId("session-xyz"))
+        headerCarrier.requestId.get should be(RequestId("requestId"))
       }
 
-      "sessionId and requestId not found" in {
-        when(hc.sessionId).thenReturn(None)
-        when(hc.requestId).thenReturn(None)
+      "service is internal (mdtp)" in {
 
-        val headersMap = underTest.desHeaders()(hc).toMap
+        val url = "https://agents-external-stubs.protected.mdtp/registration/agents/utr/01234567890"
 
-        headersMap should contain("Authorization" -> "Bearer testAuthToken")
+        val hc = HeaderCarrier(
+          authorization = Some(Authorization("Bearer sessionToken")),
+          sessionId = Some(SessionId("session-xyz")),
+          requestId = Some(RequestId("requestId"))
+        )
+
+        val headersConfig = underTest.makeHeadersConfig(url)(hc)
+        val headersMap = headersConfig.explicitHeaders.toMap
+        val headerCarrier = headersConfig.hc
+
         headersMap should contain("Environment" -> "testEnv")
-        headersMap.contains("x-session-id") shouldBe false
-        headersMap.contains("x-request-id") shouldBe true
+        headersMap should contain key "CorrelationId"
+        UUID.fromString(headersMap("CorrelationId")) should not be null
+        headersMap should not contain key(HeaderNames.authorisation)
+        headersMap should not contain key(HeaderNames.xSessionId)
+        headersMap should not contain key(HeaderNames.xRequestId)
+
+        headerCarrier.authorization.get should be(Authorization("Bearer testAuthToken"))
+        headerCarrier.sessionId.get should be(SessionId("session-xyz"))
+        headerCarrier.requestId.get should be(RequestId("requestId"))
+      }
+
+      "service is external (DES)" in {
+
+        val url = "https://des.ws.ibt.hmrc.gov.uk/registration/agents/utr/01234567890"
+
+        val hc = HeaderCarrier(
+          authorization = Some(Authorization("Bearer sessionToken")),
+          sessionId = Some(SessionId("session-xyz")),
+          requestId = Some(RequestId("requestId"))
+        )
+
+        val headersConfig = underTest.makeHeadersConfig(url)(hc)
+        val headersMap = headersConfig.explicitHeaders.toMap
+        val headerCarrier = headersConfig.hc
+
+        headersMap should contain("Environment" -> "testEnv")
+        headersMap should contain key "CorrelationId"
+        UUID.fromString(headersMap("CorrelationId")) should not be null
+
+        headersMap should contain key (HeaderNames.authorisation)
+        headersMap should contain(HeaderNames.xSessionId -> "session-xyz")
+        headersMap should contain(HeaderNames.xRequestId -> "requestId")
+        headerCarrier == hc should be(true)
       }
     }
   }
