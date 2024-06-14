@@ -1,4 +1,4 @@
-import uk.gov.hmrc.{DefaultBuildSettings, SbtAutoBuildPlugin}
+import uk.gov.hmrc.DefaultBuildSettings
 
 val appName = "agent-subscription"
 
@@ -39,7 +39,7 @@ lazy val microservice = (project in file("."))
     Test / parallelExecution := false,
     CodeCoverageSettings.scoverageSettings
   )
-  .enablePlugins(PlayScala, SbtAutoBuildPlugin, SbtGitVersioning, SbtDistributablesPlugin)
+  .enablePlugins(PlayScala)
   .disablePlugins(JUnitXmlReportPlugin)
 
 

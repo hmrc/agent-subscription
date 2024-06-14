@@ -31,6 +31,7 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import play.api.http.Status._
+import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.net.URL
@@ -96,7 +97,9 @@ object DesRegistrationRequest {
 case class HeadersConfig(hc: HeaderCarrier, explicitHeaders: Seq[(String, String)])
 
 @Singleton
-class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: Metrics) {
+class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metrics: Metrics)(implicit
+  val ec: ExecutionContext
+) extends HttpAPIMonitor {
 
   val baseUrl = appConfig.desBaseUrl
   val environment = appConfig.desEnvironment
@@ -110,22 +113,21 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[SafeId] = {
     val url = s"$baseUrl/registration/02.00.00/organisation"
     val headersConfig = makeHeadersConfig(url)
-    val timer = metrics.defaultRegistry.timer("ConsumedAPI-DES-Overseas-CreateRegistration-POST")
-    timer.time()
-    http
-      .POST[OverseasRegistrationRequest, HttpResponse](url, request, headers = headersConfig.explicitHeaders)(
-        implicitly,
-        implicitly,
-        headersConfig.hc,
-        ec
-      )
-      .map { response =>
-        timer.time().stop()
-        response.status match {
-          case s if is2xx(s) => (response.json \ "safeId").as[SafeId]
-          case s             => throw new RuntimeException(s"Failed to register overseas agent in ETMP for $s")
+    monitor("ConsumedAPI-DES-Overseas-CreateRegistration-POST") {
+      http
+        .POST[OverseasRegistrationRequest, HttpResponse](url, request, headers = headersConfig.explicitHeaders)(
+          implicitly,
+          implicitly,
+          headersConfig.hc,
+          ec
+        )
+        .map { response =>
+          response.status match {
+            case s if is2xx(s) => (response.json \ "safeId").as[SafeId]
+            case s             => throw new RuntimeException(s"Failed to register overseas agent in ETMP for $s")
+          }
         }
-      }
+    }
   }
 
   def subscribeToAgentServices(safeId: SafeId, agencyDetails: OverseasAgencyDetails)(implicit
@@ -134,25 +136,24 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
   ): Future[Arn] = {
     val url = desOverseasSubscribeUrl(safeId)
     val headersConfig = makeHeadersConfig(url)
-    val timer = metrics.defaultRegistry.timer("ConsumedAPI-DES-SubscribeOverseasAgent-POST")
-    timer.time()
-    http
-      .POST[OverseasAgencyDetails, HttpResponse](
-        url,
-        agencyDetails,
-        headers = headersConfig.explicitHeaders
-      )(implicitly, implicitly, headersConfig.hc, ec)
-      .map { response =>
-        timer.time().stop()
-        response.status match {
-          case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
-          case s =>
-            throw new RuntimeException(
-              s"Failed to create subscription in ETMP for safeId: $safeId status $s",
-              UpstreamErrorResponse(response.body, s)
-            )
+    monitor("ConsumedAPI-DES-SubscribeOverseasAgent-POST") {
+      http
+        .POST[OverseasAgencyDetails, HttpResponse](
+          url,
+          agencyDetails,
+          headers = headersConfig.explicitHeaders
+        )(implicitly, implicitly, headersConfig.hc, ec)
+        .map { response =>
+          response.status match {
+            case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
+            case s =>
+              throw new RuntimeException(
+                s"Failed to create subscription in ETMP for safeId: $safeId status $s",
+                UpstreamErrorResponse(response.body, s)
+              )
+          }
         }
-      }
+    }
   }
 
   def subscribeToAgentServices(utr: Utr, request: DesSubscriptionRequest)(implicit
@@ -161,28 +162,27 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
   ): Future[Arn] = {
     val url = desSubscribeUrl(utr)
     val headersConfig = makeHeadersConfig(url)
-    val timer = metrics.defaultRegistry.timer("ConsumedAPI-DES-SubscribeAgent-POST")
-    timer.time()
-    http
-      .POST[DesSubscriptionRequest, HttpResponse](url, request, headers = headersConfig.explicitHeaders)(
-        implicitly,
-        implicitly,
-        headersConfig.hc,
-        ec
-      )
-      .map { response =>
-        timer.time().stop()
-        response.status match {
-          case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
-          case s if s == CONFLICT =>
-            throw new RuntimeException(
-              s"Failed to create subscription in ETMP for $utr status: $s",
-              UpstreamErrorResponse(response.body, s)
-            )
-          case s =>
-            throw new RuntimeException(s"Failed to create subscription in ETMP for $utr status: $s")
+    monitor("ConsumedAPI-DES-SubscribeAgent-POST") {
+      http
+        .POST[DesSubscriptionRequest, HttpResponse](url, request, headers = headersConfig.explicitHeaders)(
+          implicitly,
+          implicitly,
+          headersConfig.hc,
+          ec
+        )
+        .map { response =>
+          response.status match {
+            case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
+            case s if s == CONFLICT =>
+              throw new RuntimeException(
+                s"Failed to create subscription in ETMP for $utr status: $s",
+                UpstreamErrorResponse(response.body, s)
+              )
+            case s =>
+              throw new RuntimeException(s"Failed to create subscription in ETMP for $utr status: $s")
+          }
         }
-      }
+    }
   }
 
   def getRegistration(
@@ -264,26 +264,25 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[JsValue]] = {
     val url = desRegistrationUrl(utr)
     val headersConfig = makeHeadersConfig(url)
-    val timer = metrics.defaultRegistry.timer("DES-GetAgentRegistration-POST")
-    timer.time()
-    http
-      .POST[DesRegistrationRequest, HttpResponse](
-        url,
-        DesRegistrationRequest(isAnAgent = false),
-        headers = headersConfig.explicitHeaders
-      )
-      .map { response =>
-        timer.time().stop()
-        response.status match {
-          case OK        => Option(response.json)
-          case NOT_FOUND => None
-          case error =>
-            throw UpstreamErrorResponse(
-              s"[DES-GetAgentRegistration-POST] returned status: $error",
-              INTERNAL_SERVER_ERROR
-            )
+    monitor("DES-GetAgentRegistration-POST") {
+      http
+        .POST[DesRegistrationRequest, HttpResponse](
+          url,
+          DesRegistrationRequest(isAnAgent = false),
+          headers = headersConfig.explicitHeaders
+        )
+        .map { response =>
+          response.status match {
+            case OK        => Option(response.json)
+            case NOT_FOUND => None
+            case error =>
+              throw UpstreamErrorResponse(
+                s"[DES-GetAgentRegistration-POST] returned status: $error",
+                INTERNAL_SERVER_ERROR
+              )
+          }
         }
-      }
+    }
       .recover { case badRequest: BadRequestException =>
         throw new DesConnectorException(s"400 Bad Request response from DES for utr ${utr.value}", badRequest)
       }
@@ -327,20 +326,19 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: M
   ): Future[JsValue] = {
     val headersConfig = makeHeadersConfig(url)
 
-    val timer = metrics.defaultRegistry.timer(s"ConsumedAPI-DES-$apiName-GET")
-    timer.time()
-    http
-      .GET[HttpResponse](url, headers = headersConfig.explicitHeaders)(implicitly, headersConfig.hc, ec)
-      .map { response =>
-        timer.time().stop()
-        response.status match {
-          case s if is2xx(s) => response.json
-          case NOT_FOUND     => throw new NotFoundException(s"Received Not Found at:$apiName")
-          case BAD_REQUEST   => throw new BadRequestException(s"Bad Request at: $apiName")
-          case s             => throw UpstreamErrorResponse(s"$apiName", s)
-          //
+    monitor(s"ConsumedAPI-DES-$apiName-GET") {
+      http
+        .GET[HttpResponse](url, headers = headersConfig.explicitHeaders)(implicitly, headersConfig.hc, ec)
+        .map { response =>
+          response.status match {
+            case s if is2xx(s) => response.json
+            case NOT_FOUND     => throw new NotFoundException(s"Received Not Found at:$apiName")
+            case BAD_REQUEST   => throw new BadRequestException(s"Bad Request at: $apiName")
+            case s             => throw UpstreamErrorResponse(s"$apiName", s)
+            //
+          }
         }
-      }
+    }
   }
 }
 

@@ -22,6 +22,7 @@ import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, HeaderNames, HttpClient, RequestId, SessionId}
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import java.util.UUID
 

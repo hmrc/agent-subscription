@@ -23,6 +23,7 @@ import play.api.Logging
 import play.api.http.Status.ACCEPTED
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.EmailInformation
+import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
 import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
 import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -36,23 +37,23 @@ trait EmailConnector extends Logging {
   def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit]
 }
 
-class EmailConnectorImpl @Inject() (val appConfig: AppConfig, http: HttpClient, metrics: Metrics)
-    extends EmailConnector {
+class EmailConnectorImpl @Inject() (val appConfig: AppConfig, val http: HttpClient, val metrics: Metrics)(implicit
+  val ec: ExecutionContext
+) extends EmailConnector with HttpAPIMonitor {
 
   val baseUrl = appConfig.emailBaseUrl
 
   def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
     val url = s"$baseUrl/hmrc/email"
-    val timer = metrics.defaultRegistry.timer(s"ConsumedAPI-Send-Email-${emailInformation.templateId}")
-    timer.time()
-    http
-      .POST[EmailInformation, HttpResponse](url, emailInformation)
-      .map { response =>
-        timer.time().stop()
-        response.status match {
-          case ACCEPTED => logger.info(s"sent email success! template: ${emailInformation.templateId}")
-          case e        => logger.warn(s"sent email FAILED with status $e for template: ${emailInformation.templateId}")
+    monitor(s"ConsumedAPI-Send-Email-${emailInformation.templateId}") {
+      http
+        .POST[EmailInformation, HttpResponse](url, emailInformation)
+        .map { response =>
+          response.status match {
+            case ACCEPTED => logger.info(s"sent email success! template: ${emailInformation.templateId}")
+            case e => logger.warn(s"sent email FAILED with status $e for template: ${emailInformation.templateId}")
+          }
         }
-      }
+    }
   }
 }

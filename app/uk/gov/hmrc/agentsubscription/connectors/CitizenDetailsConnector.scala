@@ -21,6 +21,7 @@ import com.google.inject.ImplementedBy
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.DesignatoryDetails
+import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
 import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.http.HttpReads.Implicits._
@@ -37,25 +38,24 @@ trait CitizenDetailsConnector {
 }
 
 @Singleton
-class CitizenDetailsConnectorImpl @Inject() (val appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics)
-    extends CitizenDetailsConnector {
+class CitizenDetailsConnectorImpl @Inject() (val appConfig: AppConfig, httpClient: HttpClient, val metrics: Metrics)(
+  implicit val ec: ExecutionContext
+) extends CitizenDetailsConnector with HttpAPIMonitor {
 
   val baseUrl = appConfig.citizenDetailsBaseUrl
 
   def getDesignatoryDetails(
     nino: Nino
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesignatoryDetails] = {
-    val timer = metrics.defaultRegistry.timer("ConsumedAPI-getDesignatoryDetails-GET")
-    timer.time()
-    val url = s"$baseUrl/citizen-details/${nino.value}/designatory-details"
-    httpClient
-      .GET[HttpResponse](url.toString)
-      .map { response =>
-        timer.time().stop()
-        response.status match {
-          case s if is2xx(s) => response.json.as[DesignatoryDetails]
-          case s             => throw UpstreamErrorResponse(response.body, s)
+  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[DesignatoryDetails] =
+    monitor("ConsumedAPI-getDesignatoryDetails-GET") {
+      val url = s"$baseUrl/citizen-details/${nino.value}/designatory-details"
+      httpClient
+        .GET[HttpResponse](url)
+        .map { response =>
+          response.status match {
+            case s if is2xx(s) => response.json.as[DesignatoryDetails]
+            case s             => throw UpstreamErrorResponse(response.body, s)
+          }
         }
-      }
-  }
+    }
 }
