@@ -16,27 +16,23 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import com.codahale.metrics.MetricRegistry
-import com.kenshoo.play.metrics.Metrics
-import javax.inject.{Inject, Singleton}
 import play.api.Logging
+import play.api.http.Status._
 import play.api.libs.json._
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{Complete, Registered}
 import uk.gov.hmrc.agentsubscription.model._
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
+
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import play.api.http.Status._
 
 @Singleton
 class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: Metrics)
-    extends HttpAPIMonitor with Logging {
-
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+    extends Logging {
 
   val baseUrl: String = appConfig.agentOverseasApplicationBaseUrl
 
@@ -48,6 +44,7 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
     val url = s"$baseUrl/agent-overseas-application/application/${status.key}"
+    val timer = metrics.defaultRegistry.timer("ConsumedAPI-Agent-Overseas-Application-updateStatus-PUT")
 
     val body = status match {
       case Registered => Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
@@ -55,53 +52,54 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
       case _          => Json.obj()
     }
 
-    monitor("ConsumedAPI-Agent-Overseas-Application-updateStatus-PUT") {
-      http
-        .PUT[JsValue, HttpResponse](url, body)
-        .map(response =>
-          response.status match {
-            case NO_CONTENT => true
-            case s =>
-              logger.error(s"Unexpected response: $s from: $url body: ${response.body}")
-              throw new RuntimeException(
-                s"Could not update overseas agent application status to ${status.key} for userId: $authId"
-              )
-          }
-        )
-    }
+    timer.time()
+    http
+      .PUT[JsValue, HttpResponse](url, body)
+      .map { response =>
+        timer.time().stop()
+        response.status match {
+          case NO_CONTENT => true
+          case s =>
+            logger.error(s"Unexpected response: $s from: $url body: ${response.body}")
+            throw new RuntimeException(
+              s"Could not update overseas agent application status to ${status.key} for userId: $authId"
+            )
+        }
+      }
   }
 
   def currentApplication(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CurrentApplication] = {
     val activeStatuses = ApplicationStatus.ActiveStatuses.map(status => s"statusIdentifier=${status.key}").mkString("&")
     val url = s"$baseUrl/agent-overseas-application/application?$activeStatuses"
+    val timer = metrics.defaultRegistry.timer("ConsumedAPI-Agent-Overseas-Application-application-GET")
 
-    monitor("ConsumedAPI-Agent-Overseas-Application-application-GET") {
-      http
-        .GET[HttpResponse](url)
-        .map { response =>
-          val json = response.json.head
-          val status = (json \ "status").as[ApplicationStatus]
+    timer.time()
+    http
+      .GET[HttpResponse](url)
+      .map { response =>
+        timer.time().stop()
+        val json = response.json.head
+        val status = (json \ "status").as[ApplicationStatus]
 
-          val safeId = (json \ "safeId").validateOpt[SafeId] match {
-            case JsSuccess(validSafeId, _) => validSafeId
-            case JsError(errors)           => throw new JsResultException(errors)
-          }
-
-          val amlsDetails = (json \ "amls").asOpt[OverseasAmlsDetails]
-          val businessDetails = (json \ "tradingDetails").as[TradingDetails]
-          val businessContactDetails = (json \ "contactDetails").as[OverseasContactDetails]
-          val agencyDetails = (json \ "agencyDetails").as[OverseasAgencyDetails]
-
-          CurrentApplication(status, safeId, amlsDetails, businessContactDetails, businessDetails, agencyDetails)
+        val safeId = (json \ "safeId").validateOpt[SafeId] match {
+          case JsSuccess(validSafeId, _) => validSafeId
+          case JsError(errors)           => throw new JsResultException(errors)
         }
-        .recover {
-          case e: JsResultException =>
-            val errors = e.errors.flatMap(_._2.map(_.message))
-            logger.error(s"The retrieved current application is invalid: $errors")
-            throw e
 
-          case e => throw new RuntimeException(s"Could not retrieve overseas agent application", e)
-        }
-    }
+        val amlsDetails = (json \ "amls").asOpt[OverseasAmlsDetails]
+        val businessDetails = (json \ "tradingDetails").as[TradingDetails]
+        val businessContactDetails = (json \ "contactDetails").as[OverseasContactDetails]
+        val agencyDetails = (json \ "agencyDetails").as[OverseasAgencyDetails]
+
+        CurrentApplication(status, safeId, amlsDetails, businessContactDetails, businessDetails, agencyDetails)
+      }
+      .recover {
+        case e: JsResultException =>
+          val errors = e.errors.flatMap(_._2.map(_.message))
+          logger.error(s"The retrieved current application is invalid: $errors")
+          throw e
+
+        case e => throw new RuntimeException(s"Could not retrieve overseas agent application", e)
+      }
   }
 }
