@@ -19,14 +19,13 @@ package uk.gov.hmrc.agentsubscription.controllers
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import play.api.mvc.ControllerComponents
-import play.api.test.FakeRequest
-import play.api.test.Helpers
+import play.api.test.{FakeRequest, Helpers}
 import play.api.test.Helpers.defaultAwaitTimeout
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
-import uk.gov.hmrc.agentsubscription.support.{AkkaMaterializerSpec, AuthData, ResettingMockitoSugar, UnitSpec}
+import uk.gov.hmrc.agentsubscription.support.{AuthData, ResettingMockitoSugar, UnitSpec}
 import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
 import uk.gov.hmrc.auth.core.{AffinityGroup, PlayAuthConnector, authorise}
 import uk.gov.hmrc.http.HeaderCarrier
@@ -34,7 +33,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import scala.concurrent.{ExecutionContext, Future}
 
 class RegistrationControllerSpec(implicit val ec: ExecutionContext)
-    extends UnitSpec with AkkaMaterializerSpec with ResettingMockitoSugar with AuthData {
+    extends UnitSpec with ResettingMockitoSugar with AuthData {
 
   private val registrationService = resettingMock[RegistrationService]
   private val authActions = resettingMock[AuthActions]

@@ -23,7 +23,7 @@ import org.mongodb.scala.ServerAddress
 import org.mongodb.scala.bson.BsonDocument
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{Result, Results}
+import play.api.mvc.{ControllerComponents, Result, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
@@ -33,6 +33,7 @@ import uk.gov.hmrc.agentsubscription.repository.{RecordUpdated, SubscriptionJour
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
 
+import java.util.Collections
 import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionJourneyControllerSpec extends UnitSpec with Results with MockitoSugar {
@@ -55,11 +56,11 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
   val mockRepo: SubscriptionJourneyRepository = mock[SubscriptionJourneyRepository]
   import play.api.test.Helpers.stubControllerComponents
 
-  val cc = stubControllerComponents()
+  val cc: ControllerComponents = stubControllerComponents()
 
-  val hc = HeaderCarrier()
+  val hc: HeaderCarrier = HeaderCarrier()
 
-  implicit val ec = ExecutionContext.Implicits.global
+  implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
 
   val controller = new SubscriptionJourneyController(mockRepo, cc)
 
@@ -171,7 +172,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
           Future.failed(
             new MongoWriteException(
               new WriteError(1100, "duplicate exception", BsonDocument.apply(Json.toJson(existingRecord).toString())),
-              ServerAddress.apply()
+              ServerAddress.apply(),
+              Collections.emptySet()
             )
           )
         )
@@ -221,7 +223,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
           Future.failed(
             new MongoWriteException(
               new WriteError(1100, "duplicate exception", BsonDocument.apply(Json.toJson(existingRecord).toString)),
-              ServerAddress.apply()
+              ServerAddress.apply(),
+              Collections.emptySet()
             )
           )
         )

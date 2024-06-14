@@ -16,25 +16,24 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import com.codahale.metrics.MetricRegistry
-import com.kenshoo.play.metrics.Metrics
 import javax.inject.{Inject, Singleton}
 import play.api.Logging
 import play.api.http.Status._
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
+import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
+
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpErrorFunctions._
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 @Singleton
-class MappingConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: Metrics)
-    extends HttpAPIMonitor with Logging {
-
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+class MappingConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metrics: Metrics)(implicit
+  val ec: ExecutionContext
+) extends Logging with HttpAPIMonitor {
 
   val baseUrl = appConfig.agentMappingBaseUrl
 
@@ -44,7 +43,7 @@ class MappingConnector @Inject() (appConfig: AppConfig, http: HttpClient, metric
     monitor("ConsumedAPI-Mapping-CreateMappings-PUT") {
       http
         .PUT[String, HttpResponse](createUrl, "")
-        .map(response =>
+        .map { response =>
           response.status match {
             case s if is2xx(s) =>
               logger.info("mapping was successful"); ()
@@ -54,14 +53,13 @@ class MappingConnector @Inject() (appConfig: AppConfig, http: HttpClient, metric
               logger.error("user has already mapped"); ()
             case s => logger.error("mapping failed for unknown reason, status code: $s"); ()
           }
-        )
+        }
     }
   }
 
   def createMappingDetails(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
 
     val createMappingDetailsUrl = s"$baseUrl/agent-mapping/mappings/task-list/details/arn/${arn.value}"
-
     monitor("ConsumedAPI-Mapping-createOrUpdateMappingDetails-POST") {
       http.PUT[String, HttpResponse](createMappingDetailsUrl, "").map { response =>
         response.status match {

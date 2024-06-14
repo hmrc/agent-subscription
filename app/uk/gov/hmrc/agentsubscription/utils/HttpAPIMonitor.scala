@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,18 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model
+package uk.gov.hmrc.agentsubscription.utils
 
-import play.api.libs.json.{Format, Json}
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-import java.time.LocalDate
+import scala.concurrent.{ExecutionContext, Future}
 
-case class AmlsSubscriptionRecord(
-  formBundleStatus: String,
-  safeId: String,
-  currentRegYearStartDate: Option[LocalDate],
-  currentRegYearEndDate: Option[LocalDate],
-  suspended: Option[Boolean]
-)
+trait HttpAPIMonitor {
 
-object AmlsSubscriptionRecord {
-  implicit val amlsSubscriptionRecordFormat: Format[AmlsSubscriptionRecord] = Json.format[AmlsSubscriptionRecord]
+  val metrics: Metrics
+  implicit val ec: ExecutionContext
+  def monitor[A](str: String)(f: => Future[A]): Future[A] = {
+    val timerContext = metrics.defaultRegistry.timer(s"Timer-$str").time()
+    f.andThen { case _ => timerContext.stop() }
+  }
 }

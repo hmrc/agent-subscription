@@ -16,27 +16,25 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import com.codahale.metrics.MetricRegistry
-import com.kenshoo.play.metrics.Metrics
-import javax.inject.{Inject, Singleton}
 import play.api.Logging
+import play.api.http.Status._
 import play.api.libs.json._
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{Complete, Registered}
 import uk.gov.hmrc.agentsubscription.model._
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
+
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
-import play.api.http.Status._
 
 @Singleton
-class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: Metrics)
-    extends HttpAPIMonitor with Logging {
-
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metrics: Metrics)(
+  implicit val ec: ExecutionContext
+) extends Logging with HttpAPIMonitor {
 
   val baseUrl: String = appConfig.agentOverseasApplicationBaseUrl
 
@@ -48,17 +46,15 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
 
     val url = s"$baseUrl/agent-overseas-application/application/${status.key}"
-
-    val body = status match {
-      case Registered => Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
-      case Complete   => Json.obj("arn" -> JsString(arn.map(_.value).getOrElse("")))
-      case _          => Json.obj()
-    }
-
     monitor("ConsumedAPI-Agent-Overseas-Application-updateStatus-PUT") {
+      val body = status match {
+        case Registered => Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
+        case Complete   => Json.obj("arn" -> JsString(arn.map(_.value).getOrElse("")))
+        case _          => Json.obj()
+      }
       http
         .PUT[JsValue, HttpResponse](url, body)
-        .map(response =>
+        .map { response =>
           response.status match {
             case NO_CONTENT => true
             case s =>
@@ -67,14 +63,13 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
                 s"Could not update overseas agent application status to ${status.key} for userId: $authId"
               )
           }
-        )
+        }
     }
   }
 
   def currentApplication(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CurrentApplication] = {
     val activeStatuses = ApplicationStatus.ActiveStatuses.map(status => s"statusIdentifier=${status.key}").mkString("&")
     val url = s"$baseUrl/agent-overseas-application/application?$activeStatuses"
-
     monitor("ConsumedAPI-Agent-Overseas-Application-application-GET") {
       http
         .GET[HttpResponse](url)
@@ -86,12 +81,10 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
             case JsSuccess(validSafeId, _) => validSafeId
             case JsError(errors)           => throw new JsResultException(errors)
           }
-
           val amlsDetails = (json \ "amls").asOpt[OverseasAmlsDetails]
           val businessDetails = (json \ "tradingDetails").as[TradingDetails]
           val businessContactDetails = (json \ "contactDetails").as[OverseasContactDetails]
           val agencyDetails = (json \ "agencyDetails").as[OverseasAgencyDetails]
-
           CurrentApplication(status, safeId, amlsDetails, businessContactDetails, businessDetails, agencyDetails)
         }
         .recover {

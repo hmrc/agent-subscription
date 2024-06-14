@@ -16,12 +16,13 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import com.kenshoo.play.metrics.Metrics
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.{Authorization, HeaderCarrier, HeaderNames, HttpClient, RequestId, SessionId}
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
+import scala.concurrent.ExecutionContext.Implicits.global
 
 import java.util.UUID
 

@@ -16,20 +16,20 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import com.codahale.metrics.MetricRegistry
-import com.kenshoo.play.metrics.Metrics
 import javax.inject.{Inject, Singleton}
 import play.api.libs.json.Json.format
 import play.api.libs.json.{JsValue, Json, OFormat}
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.HttpClient
 import uk.gov.hmrc.http.HttpReads.Implicits._
+
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import play.api.http.Status._
+import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 case class KnownFact(key: String, value: String)
 
@@ -56,9 +56,9 @@ object EnrolmentRequest {
 }
 
 @Singleton
-class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, metrics: Metrics)
-    extends HttpAPIMonitor {
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metrics: Metrics)(implicit
+  val ec: ExecutionContext
+) extends HttpAPIMonitor {
 
   val taxEnrolmentsBaseUrl = appConfig.taxEnrolmentsBaseUrl
   val espBaseUrl = appConfig.enrolmentStoreProxyBaseUrl
@@ -74,12 +74,12 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, 
       val url = s"""$taxEnrolmentsBaseUrl/tax-enrolments/enrolments/${enrolmentKey(arn)}"""
       http
         .PUT[JsValue, HttpResponse](url, Json.toJson(request))
-        .map(response =>
+        .map { response =>
           response.status match {
             case s if is2xx(s) => s
             case s             => throw UpstreamErrorResponse(response.body, s)
           }
-        )
+        }
     }
   }
 
@@ -90,12 +90,12 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, 
         .DELETE[HttpResponse](s"""$espBaseUrl/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(
             arn.value
           )}""")
-        .map(response =>
+        .map { response =>
           response.status match {
             case s if is2xx(s) => s
             case s             => throw UpstreamErrorResponse(response.body, s)
           }
-        )
+        }
     }
 
   // EACD's ES8 API
@@ -104,16 +104,15 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, 
     ec: ExecutionContext
   ): Future[Integer] = {
     val serviceUrl = s"""$taxEnrolmentsBaseUrl/tax-enrolments/groups/$groupId/enrolments/${enrolmentKey(arn.value)}"""
-
     monitor("ConsumedAPI-EMAC-Enrol-HMRC-AS-AGENT-POST") {
       http
         .POST[JsValue, HttpResponse](serviceUrl, Json.toJson(enrolmentRequest))
-        .map(response =>
+        .map { response =>
           response.status match {
             case s if is2xx(s) => s
             case s             => throw UpstreamErrorResponse(response.body, s)
           }
-        )
+        }
     }
   }
 
@@ -125,14 +124,14 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, 
     monitor("ConsumedAPI-EMAC-GetPrincipalGroupIdFor-HMRC-AS-AGENT-GET") {
       http
         .GET[HttpResponse](url)
-        .map(response =>
+        .map { response =>
           response.status match {
             case OK          => (response.json \ "principalGroupIds").as[Seq[String]].nonEmpty
             case NO_CONTENT  => false
             case BAD_REQUEST => throw new BadRequestException(response.body)
             case s           => throw UpstreamErrorResponse(response.body, s)
           }
-        )
+        }
     }
   }
 

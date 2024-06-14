@@ -1,21 +1,23 @@
-lazy val scoverageSettings = {
-  import scoverage.ScoverageKeys
-  Seq(
-    // Semicolon-separated list of regexs matching classes to exclude
-    ScoverageKeys.coverageExcludedPackages := """uk\.gov\.hmrc\.BuildInfo;.*\.Routes;.*\.RoutesPrefix;.*Filters?;MicroserviceAuditConnector;Module;GraphiteStartUp;.*\.Reverse[^.]*""",
-    ScoverageKeys.coverageMinimumStmtTotal := 80.00,
-    ScoverageKeys.coverageFailOnMinimum := true,
-    ScoverageKeys.coverageHighlighting := true,
-    Test / parallelExecution := false
-  )
-}
+import uk.gov.hmrc.DefaultBuildSettings
 
-lazy val root = Project("agent-subscription", file("."))
+val appName = "agent-subscription"
+
+ThisBuild / majorVersion := 1
+ThisBuild / scalaVersion := "2.13.12"
+
+lazy val microservice = (project in file("."))
   .settings(
-    name := "agent-subscription",
+    name := appName,
     organization := "uk.gov.hmrc",
-    majorVersion := 1,
-    scalaVersion := "2.13.10",
+    PlayKeys.playDefaultPort := 9436,
+    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
+    resolvers ++= Seq(Resolver.typesafeRepo("releases")),
+    routesImport ++= Seq(
+      "uk.gov.hmrc.agentsubscription.model.AuthProviderId",
+      "java.util.UUID",
+      "uk.gov.hmrc.agentmtdidentifiers.model.Utr",
+      "uk.gov.hmrc.agentsubscription.binders.UrlBinders._"
+    ),
     scalacOptions ++= Seq(
       "-Xfatal-warnings",
       "-Xlint:-missing-interpolator,_",
@@ -29,29 +31,24 @@ lazy val root = Project("agent-subscription", file("."))
       "-Wconf:src=*html:w", // silence html warnings as they are wrong
       "-language:implicitConversions"
     ),
-    PlayKeys.playDefaultPort := 9436,
-    resolvers ++= Seq(
-      Resolver.typesafeRepo("releases"),
-    ),
-    Compile / scalafmtOnCompile := true,
-    Test / scalafmtOnCompile := true,
-    libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
-    //fix for scoverage compile errors for scala 2.13.10
-    libraryDependencySchemes ++= Seq("org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always),
-    scoverageSettings,
     Compile / unmanagedResourceDirectories += baseDirectory.value / "resources",
-    routesImport ++= Seq(
-      "uk.gov.hmrc.agentsubscription.model.AuthProviderId",
-      "java.util.UUID",
-      "uk.gov.hmrc.agentmtdidentifiers.model.Utr",
-      "uk.gov.hmrc.agentsubscription.binders.UrlBinders._"
-    )
+    Compile / scalafmtOnCompile := true,
+    Test / scalafmtOnCompile := true
   )
-  .configs(IntegrationTest)
   .settings(
-    IntegrationTest / Keys.fork := false,
-    Defaults.itSettings,
-    IntegrationTest / unmanagedSourceDirectories += baseDirectory(_ / "it").value,
-    IntegrationTest / parallelExecution := false
+    Test / parallelExecution := false,
+    CodeCoverageSettings.scoverageSettings
   )
-  .enablePlugins(PlayScala, SbtDistributablesPlugin)
+  .enablePlugins(PlayScala)
+  .disablePlugins(JUnitXmlReportPlugin)
+
+
+lazy val it = project
+  .enablePlugins(PlayScala)
+  .dependsOn(microservice % "test->test") // the "test->test" allows reusing test code and test dependencies
+  .settings(DefaultBuildSettings.itSettings())
+  .settings(libraryDependencies ++= AppDependencies.test)
+  .settings(
+    Compile / scalafmtOnCompile := true,
+    Test / scalafmtOnCompile := true
+  )

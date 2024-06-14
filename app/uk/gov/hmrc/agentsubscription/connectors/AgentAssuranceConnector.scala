@@ -16,13 +16,11 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
-import com.kenshoo.play.metrics.Metrics
+import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
 import play.api.Logging
 import play.api.libs.json.{Format, JsObject, Json}
 import play.mvc.Http.Status._
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.AgentAssuranceConnector.{CreateAmlsRequest, CreateOverseasAmlsRequest}
@@ -30,6 +28,7 @@ import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, OverseasAmlsDetails}
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -50,10 +49,9 @@ trait AgentAssuranceConnector {
 }
 
 @Singleton
-class AgentAssuranceConnectorImpl @Inject() (val appConfig: AppConfig, http: HttpClient, metrics: Metrics)
-    extends AgentAssuranceConnector with HttpAPIMonitor with Logging {
-
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+class AgentAssuranceConnectorImpl @Inject() (val appConfig: AppConfig, http: HttpClient, val metrics: Metrics)(implicit
+  val ec: ExecutionContext
+) extends AgentAssuranceConnector with Logging with HttpAPIMonitor {
 
   val baseUrl = appConfig.agentAssuranceBaseUrl
 
@@ -83,11 +81,10 @@ class AgentAssuranceConnectorImpl @Inject() (val appConfig: AppConfig, http: Htt
   def updateAmls(utr: Utr, arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[AmlsDetails]] = {
 
     val url = s"$baseUrl/agent-assurance/amls/utr/${utr.value}"
-
-    monitor(s"ConsumedAPI-AgentAssurance-amls-PUT") {
+    monitor("ConsumedAPI-AgentAssurance-amls-PUT") {
       http
         .PUT[JsObject, HttpResponse](url, Json.obj("value" -> arn.value))
-        .map(response =>
+        .map { response =>
           response.status match {
             case s if is2xx(s) => response.json.asOpt[AmlsDetails]
             case NOT_FOUND =>
@@ -98,7 +95,7 @@ class AgentAssuranceConnectorImpl @Inject() (val appConfig: AppConfig, http: Htt
               logger.error(message)
               throw UpstreamErrorResponse(message, s)
           }
-        )
+        }
     }
   }
 
@@ -108,11 +105,10 @@ class AgentAssuranceConnectorImpl @Inject() (val appConfig: AppConfig, http: Htt
   ): Future[Unit] = {
 
     val url = s"$baseUrl/agent-assurance/overseas-agents/amls"
-
     monitor("ConsumedAPI-AgentAssurance-overseas-agents-amls-POST") {
       http
         .POST[CreateOverseasAmlsRequest, HttpResponse](url, CreateOverseasAmlsRequest(arn, amlsDetails))
-        .map(response =>
+        .map { response =>
           response.status match {
             case s if is2xx(s) => ()
             case CONFLICT      => ()
@@ -122,7 +118,7 @@ class AgentAssuranceConnectorImpl @Inject() (val appConfig: AppConfig, http: Htt
               logger.error(message)
               throw UpstreamErrorResponse(message, s)
           }
-        )
+        }
     }
   }
 }

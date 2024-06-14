@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,20 +14,15 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription.model
+package uk.gov.hmrc.agentsubscription.support
 
-import play.api.libs.json.{Format, Json}
+import play.api.inject.guice.GuiceApplicationBuilder
 
-import java.time.LocalDate
-
-case class AmlsSubscriptionRecord(
-  formBundleStatus: String,
-  safeId: String,
-  currentRegYearStartDate: Option[LocalDate],
-  currentRegYearEndDate: Option[LocalDate],
-  suspended: Option[Boolean]
-)
-
-object AmlsSubscriptionRecord {
-  implicit val amlsSubscriptionRecordFormat: Format[AmlsSubscriptionRecord] = Json.format[AmlsSubscriptionRecord]
+abstract class BaseAuditSpec extends BaseISpec {
+  override protected def appBuilder: GuiceApplicationBuilder = super.appBuilder
+    .configure(
+      "auditing.enabled"               -> true,
+      "auditing.consumer.baseUri.host" -> wireMockHost,
+      "auditing.consumer.baseUri.port" -> wireMockPort
+    )
 }

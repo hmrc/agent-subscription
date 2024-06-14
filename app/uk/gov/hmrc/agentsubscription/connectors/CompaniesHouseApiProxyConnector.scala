@@ -16,18 +16,17 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import com.codahale.metrics.MetricRegistry
 import com.google.inject.ImplementedBy
-import com.kenshoo.play.metrics.Metrics
 import play.api.Logging
 import play.api.http.Status._
 import play.utils.UriEncoding
-import uk.gov.hmrc.agent.kenshoo.monitoring.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn, ReducedCompanyInformation}
+import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -45,10 +44,12 @@ trait CompaniesHouseApiProxyConnector {
 }
 
 @Singleton
-class CompaniesHouseApiProxyConnectorImpl @Inject() (val appConfig: AppConfig, httpClient: HttpClient, metrics: Metrics)
-    extends CompaniesHouseApiProxyConnector with HttpAPIMonitor with Logging {
-
-  override val kenshooRegistry: MetricRegistry = metrics.defaultRegistry
+class CompaniesHouseApiProxyConnectorImpl @Inject() (
+  val appConfig: AppConfig,
+  httpClient: HttpClient,
+  val metrics: Metrics
+)(implicit val ec: ExecutionContext)
+    extends CompaniesHouseApiProxyConnector with Logging with HttpAPIMonitor {
 
   val baseUrl = appConfig.companiesHouseApiProxyBaseUrl
 
@@ -56,7 +57,7 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (val appConfig: AppConfig, h
     hc: HeaderCarrier,
     ec: ExecutionContext
   ): Future[Seq[CompaniesHouseOfficer]] =
-    monitor(s"ConsumedAPI-getCompanyOfficers-GET") {
+    monitor("ConsumedAPI-getCompanyOfficers-GET") {
       val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
       val encodedSurname = UriEncoding.encodePathSegment(surname, "UTF-8")
       val url = s"$baseUrl/companies-house-api-proxy/company/$encodedCrn/officers?surname=$encodedSurname"
@@ -78,7 +79,7 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (val appConfig: AppConfig, h
   override def getCompany(
     crn: Crn
   )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[ReducedCompanyInformation]] =
-    monitor(s"ConsumedAPI-getCompany-GET") {
+    monitor("ConsumedAPI-getCompany-GET") {
       val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
       val url = s"$baseUrl/companies-house-api-proxy/company/$encodedCrn"
       httpClient.GET[HttpResponse](url).map { response =>
