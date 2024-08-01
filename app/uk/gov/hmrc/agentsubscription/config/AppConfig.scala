@@ -21,6 +21,7 @@ import play.api.Configuration
 import javax.inject.{Inject, Singleton}
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
+import java.util.Base64
 import scala.util.matching.Regex
 
 @Singleton
@@ -53,5 +54,12 @@ class AppConfig @Inject() (servicesConfig: ServicesConfig, config: Configuration
   val companiesHouseApiProxyBaseUrl = servicesConfig.baseUrl("companies-house-api-proxy")
 
   val internalHostPatterns: Seq[Regex] = config.get[Seq[String]]("internalServiceHostPatterns").map(_.r)
+
+  lazy val cryptoKey: String = Base64.getEncoder.encodeToString(md5(servicesConfig.getString("application.secret")))
+
+  import java.security.MessageDigest
+
+  private def md5(s: String) =
+    MessageDigest.getInstance("MD5").digest(s.getBytes)
 
 }

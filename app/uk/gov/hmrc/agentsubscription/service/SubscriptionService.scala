@@ -27,7 +27,7 @@ import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{AttemptingRegistration, Complete, Registered}
 import uk.gov.hmrc.agentsubscription.model._
-import uk.gov.hmrc.agentsubscription.repository.{RecoveryRepository, SubscriptionJourneyRepository}
+import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
 import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
 
@@ -67,7 +67,6 @@ class SubscriptionService @Inject() (
   desConnector: DesConnector,
   taxEnrolmentsConnector: TaxEnrolmentsConnector,
   auditService: AuditService,
-  recoveryRepository: RecoveryRepository,
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   agentAssuranceConnector: AgentAssuranceConnector,
   agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
@@ -309,12 +308,6 @@ class SubscriptionService @Inject() (
       .recover {
         case e: EnrolmentAlreadyAllocated => throw e
         case e: IllegalStateException =>
-          recoveryRepository.create(
-            authIds,
-            arn,
-            subscriptionRequest,
-            s"Failed to add known facts and enrol due to; ${e.getCause.getClass.getName}: ${e.getCause.getMessage}"
-          )
           throw new IllegalStateException(
             s"Failed to add known facts and enrol in EMAC for utr: ${subscriptionRequest.utr.value} and arn: ${arn.value}",
             e

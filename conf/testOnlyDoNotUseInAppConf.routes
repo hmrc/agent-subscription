@@ -11,3 +11,5 @@
 
 # Add all the application routes to the prod.routes file
 ->         /                          prod.Routes
+GET       /test-only/create-test-data/:arn  uk.gov.hmrc.agentsubscription.controllers.TestOnlyController.create(arn: String)
+GET       /test-only/list-test-data         uk.gov.hmrc.agentsubscription.controllers.TestOnlyController.listTestData
