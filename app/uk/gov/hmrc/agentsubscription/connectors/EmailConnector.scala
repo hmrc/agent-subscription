@@ -41,7 +41,7 @@ class EmailConnectorImpl @Inject() (val appConfig: AppConfig, val http: HttpClie
   val ec: ExecutionContext
 ) extends EmailConnector with HttpAPIMonitor {
 
-  val baseUrl = appConfig.emailBaseUrl
+  val baseUrl: String = appConfig.emailBaseUrl
 
   def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
     val url = s"$baseUrl/hmrc/email"

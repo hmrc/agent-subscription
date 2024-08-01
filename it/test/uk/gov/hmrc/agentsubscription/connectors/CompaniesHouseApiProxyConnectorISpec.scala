@@ -29,7 +29,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 class CompaniesHouseApiProxyConnectorISpec
     extends BaseISpec with CompaniesHouseStub with MetricsTestSupport with MockitoSugar {
-  private implicit val hc = HeaderCarrier()
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
   private lazy val http: HttpClient = app.injector.instanceOf[HttpClient]

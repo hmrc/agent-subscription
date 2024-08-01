@@ -26,7 +26,7 @@ class CTReferenceControllerISpec extends BaseISpec with DesStubs with AuthStub {
   val utr = Utr("7000000002")
   val crn = Crn("SC123456")
 
-  implicit val ws = app.injector.instanceOf[WSClient]
+  implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
   "GET of /corporation-tax-utr/:utr/crn/:crn" should {
     "return a 401 when the user is not authenticated" in {

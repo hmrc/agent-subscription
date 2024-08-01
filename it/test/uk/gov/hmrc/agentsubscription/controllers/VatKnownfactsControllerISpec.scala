@@ -23,7 +23,7 @@ import uk.gov.hmrc.domain.Vrn
 
 class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub {
   private val vrn = Vrn("888913457")
-  implicit val ws = app.injector.instanceOf[WSClient]
+  implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
   "GET of /vat-known-facts/vrn/:vrn/dateOfRegistration/:dateOfReg" should {
     "return a 401 when the user is not authenticated" in {

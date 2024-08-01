@@ -31,7 +31,7 @@ import scala.concurrent.duration._
 
 class CitizenDetailsControllerISpec extends BaseISpec with CitizenDetailsStubs with AuthStub {
 
-  implicit val ws = app.injector.instanceOf[WSClient]
+  implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
   val duration = Duration(5, SECONDS)
 

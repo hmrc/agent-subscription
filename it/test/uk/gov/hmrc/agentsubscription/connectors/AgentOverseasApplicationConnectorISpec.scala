@@ -39,7 +39,7 @@ class AgentOverseasApplicationConnectorISpec
   private lazy val connector: AgentOverseasApplicationConnector =
     new AgentOverseasApplicationConnector(appConfig, http, metrics)
 
-  private implicit val hc = HeaderCarrier()
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val agencyDetails = OverseasAgencyDetails(
     "Agency name",

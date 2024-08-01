@@ -101,9 +101,9 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metric
   val ec: ExecutionContext
 ) extends HttpAPIMonitor {
 
-  val baseUrl = appConfig.desBaseUrl
-  val environment = appConfig.desEnvironment
-  val authToken = appConfig.desAuthToken
+  val baseUrl: String = appConfig.desBaseUrl
+  val environment: String = appConfig.desEnvironment
+  val authToken: String = appConfig.desAuthToken
 
   private val Environment = "Environment"
   private val CorrelationId = "CorrelationId"

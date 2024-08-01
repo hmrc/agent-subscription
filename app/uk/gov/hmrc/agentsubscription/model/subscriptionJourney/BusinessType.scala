@@ -60,7 +60,6 @@ object BusinessType {
     case "sole_trader"     => SoleTrader
     case "partnership"     => Partnership
     case "llp"             => Llp
-
   }
 
   implicit val format: Format[BusinessType] = new Format[BusinessType] {
@@ -71,7 +70,6 @@ object BusinessType {
         case "sole_trader"     => JsSuccess(SoleTrader)
         case "partnership"     => JsSuccess(Partnership)
         case "llp"             => JsSuccess(Llp)
-
       }
       JsSuccess(BusinessType.apply(json.as[String]))
     }
@@ -82,7 +80,6 @@ object BusinessType {
         case SoleTrader     => JsString("sole_trader")
         case Partnership    => JsString("partnership")
         case Llp            => JsString("llp")
-
       }
   }
 }

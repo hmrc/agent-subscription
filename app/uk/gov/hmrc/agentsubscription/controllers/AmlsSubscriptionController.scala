@@ -32,7 +32,7 @@ class AmlsSubscriptionController @Inject() (des: DesConnector, cc: ControllerCom
   ec: ExecutionContext
 ) extends BackendController(cc) with Logging {
 
-  val appName = appConfig.appName
+  val appName: String = appConfig.appName
 
   private def is5xx(u: UpstreamErrorResponse): Boolean = u.statusCode >= 500 && u.statusCode < 600
 

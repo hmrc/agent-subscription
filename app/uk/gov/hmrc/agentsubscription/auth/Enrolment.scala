@@ -37,7 +37,7 @@ case class Authority(
   affinityGroup: String,
   enrolmentsUrl: String
 ) {
-  val absoluteEnrolmentsUrl = new URL(fetchedFrom, enrolmentsUrl).toString
+  val absoluteEnrolmentsUrl: String = new URL(fetchedFrom, enrolmentsUrl).toString
 }
 
 case class UserDetails(authProviderId: Option[String], authProviderType: Option[String], affinityGroup: String)

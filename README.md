@@ -12,8 +12,8 @@ interact with their clients. The domain is Subscriptions to Agent Services follo
 
 ## Running the app locally
 
-    sm --start AGENT_ONBOARDING -r
-    sm --stop AGENT_SUBSCRIPTION
+    sm2 --start AGENT_ONBOARDING
+    sm2 --stop AGENT_SUBSCRIPTION
     sbt run
 
 ## APIs
@@ -29,16 +29,15 @@ It also checks whether any user/group has been allocated the HMRC-AS-AGENT for t
 Possible responses:
 
 #### Not Found
-
 HTTP status 404 with no body will be returned if no business partner found for given known facts (UTR and postcode)
 
 #### Bad Request
 Return 400 if the UTR or postcode are invalid
 
 #### OK
-
 If a business partner was found for given known facts then a 200 OK response will be returned with a JSON body structured as follows:
 
+```json
     {
       "isSubscribedToAgentServices": true,
       "isSubscribedToETMP": true,
@@ -53,6 +52,7 @@ If a business partner was found for given known facts then a 200 OK response wil
       },
       "emailAddress": "agency@example.org" //optional
     }
+```
 
 The `isSubscribedToAgentServices` flag will be true if the following holds:
 - BPR's postcode matches the `postcode` in the url
@@ -65,7 +65,6 @@ Notes:
 1. The Agents team have implemented this through necessity however we believe this should be part of the Business Registration service.    
 2. It is anticipated that additional information will be added to the json response.
 
-
 ### Subscribe Registered Taxpayer to Agent Services
 
     POST /agent-subscription/subscription
@@ -74,6 +73,7 @@ This API allows for an agent to subscribe to Agent Services using their details
     
 Request body:
 
+```json
     {
       "utr": "<SA or CT UTR>",
       "knownFacts": {
@@ -99,6 +99,7 @@ Request body:
         }
       }
     }
+```
 
 Possible responses:
 
@@ -115,10 +116,12 @@ Response 500 if there is an illegal state
 Response: 201 Created with
 
     Location: /agent-subscription/subscription/:arn
+```json
     {
       "arn": <the Agency Registration Number for this agency, as returned to us by DES/ETMP>
     }
-    
+```
+
 ### Subscribe Partially-Subscribed Registered Taxpayer to Agent Services
 
     PUT /agent-subscription/subscription
@@ -128,12 +131,14 @@ and they have not completed the enrollment to HMRC-AS-AGENT.
     
 Request body:
 
+```json
     {
       "utr": "<SA or CT UTR>",
       "knownFacts": {
         "postcode": "<postcode of the agency's registered taxpayer address (NOT their agency address)>"
       }
     }
+```
 
 Possible responses:
 
@@ -150,9 +155,11 @@ Response 500 if there is an illegal state
 Response: 200 OK
 
     Location: /agent-subscription/subscription/:arn
+```json
     {
       "arn": <the Agency Registration Number for this agency, as returned to us by DES/ETMP>
     }
+```
 
 ### Register and Subscribe Overseas Agent to Agent Services
 
@@ -203,11 +210,12 @@ Response 500 if there is an illegal state
 Response: 201 Created with
 
     Location: /agent-subscription/subscription/:arn
+```json
     {
       "arn": <the Agency Registration Number for this agency, as returned to us by DES/ETMP>
     }
+```
 
 ### License
-
 
 This code is open source software licensed under the [Apache 2.0 License]("http://www.apache.org/licenses/LICENSE-2.0.html").

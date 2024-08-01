@@ -87,8 +87,8 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, 
   def deleteKnownFacts(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] =
     monitor("ConsumedAPI-EMAC-DeleteKnownFacts-HMRC-AS-AGENT-DELETE") {
       val url = s"""$espBaseUrl/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(
-        arn.value
-      )}"""
+          arn.value
+        )}"""
       http
         .DELETE[HttpResponse](url)
         .map { response =>

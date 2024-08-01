@@ -34,7 +34,7 @@ class SubscriptionAuditingSpec
 
   val arn = "TARN0000001"
   val groupId = "groupId"
-  implicit val ws = app.injector.instanceOf[WSClient]
+  implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
   val amlsDetails: AmlsDetails = AmlsDetails(
     "supervisory",

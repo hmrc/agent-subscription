@@ -26,7 +26,7 @@ class CompaniesHouseControllerISpec extends BaseISpec with CompaniesHouseStub wi
   val crn = Crn("SC123456")
   val name = "lucas"
 
-  implicit val ws = app.injector.instanceOf[WSClient]
+  implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
   "GET of /companies-house-api-proxy/company/:crn/officers/:name" should {
     "return a 401 when the user is not authenticated" in {

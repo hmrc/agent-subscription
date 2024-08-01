@@ -30,7 +30,7 @@ class MappingConnectorISpec extends BaseISpec with MappingStubs {
 
   val arn = Arn("TARN0000001")
 
-  private implicit val hc = HeaderCarrier()
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "createMappings" should {
     "return unit when mapping is successfully created" in {
