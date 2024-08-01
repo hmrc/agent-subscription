@@ -18,10 +18,8 @@ package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
 import play.api.libs.functional.syntax._
 import play.api.libs.json.{JsPath, Json, OFormat}
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney.AmlsData
-import uk.gov.hmrc.domain.Nino
 
 import java.time.LocalDateTime
 
@@ -42,7 +40,8 @@ final case class SubscriptionJourneyRecord(
   contactTradingNameData: Option[ContactTradingNameData],
   contactTradingAddressData: Option[ContactTradingAddressData],
   contactTelephoneData: Option[ContactTelephoneData],
-  verifiedEmails: Set[String] = Set.empty
+  verifiedEmails: Set[String] = Set.empty,
+  encrypted: Option[Boolean] = None
 )
 
 object SubscriptionJourneyRecord {
@@ -63,7 +62,8 @@ object SubscriptionJourneyRecord {
       (JsPath \ "contactTradingAddressData").formatNullable[ContactTradingAddressData] and
       (JsPath \ "contactTelephoneData").formatNullable[ContactTelephoneData] and
       (JsPath \ "verifiedEmails")
-        .formatWithDefault[Set[String]](Set.empty[String]))(
+        .formatWithDefault[Set[String]](Set.empty[String]) and
+      (JsPath \ "encrypted").formatNullable[Boolean])(
       SubscriptionJourneyRecord.apply,
       unlift(SubscriptionJourneyRecord.unapply)
     )
@@ -76,10 +76,10 @@ object SubscriptionJourneyRecord {
   */
 case class BusinessDetails(
   businessType: BusinessType,
-  utr: Utr, // CT or SA
-  postcode: Postcode,
+  utr: String, // CT or SA
+  postcode: String,
   registration: Option[Registration] = None,
-  nino: Option[Nino] = None,
+  nino: Option[String] = None,
   companyRegistrationNumber: Option[CompanyRegistrationNumber] = None,
   dateOfBirth: Option[DateOfBirth] = None, // if NINO required
   registeredForVat: Option[Boolean] = None,

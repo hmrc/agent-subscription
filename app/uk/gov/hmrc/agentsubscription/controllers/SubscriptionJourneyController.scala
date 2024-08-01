@@ -46,7 +46,7 @@ class SubscriptionJourneyController @Inject() (
   }
 
   def findByUtr(utr: Utr): Action[AnyContent] = Action.async {
-    subscriptionJourneyRepository.findByUtr(utr).map {
+    subscriptionJourneyRepository.findByUtr(utr.value).map {
       case Some(record) => Ok(toJson(record))
       case None         => NoContent
     }
