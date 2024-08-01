@@ -58,7 +58,7 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
           response.status match {
             case NO_CONTENT => true
             case s =>
-              logger.error(s"Unexpected response: $s from: $url body: ${response.body}")
+              logger.error(s"Unexpected response: $s from: $url")
               throw new RuntimeException(
                 s"Could not update overseas agent application status to ${status.key} for userId: $authId"
               )

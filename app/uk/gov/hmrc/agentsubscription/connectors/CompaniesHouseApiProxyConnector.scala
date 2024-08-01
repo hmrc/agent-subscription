@@ -67,10 +67,10 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (
             (response.json \ "items").as[Seq[CompaniesHouseOfficer]]
           case BAD_REQUEST => throw UpstreamErrorResponse(response.body, BAD_REQUEST)
           case s if is4xx(s) =>
-            logger.warn(s"getCompanyOfficers http status: $s, response:${response.body}")
+            logger.warn(s"getCompanyOfficers http status: $s")
             Seq.empty
           case s =>
-            logger.error(s"getCompanyOfficers http status: $s, response:${response.body}")
+            logger.error(s"getCompanyOfficers http status: $s")
             Seq.empty
         }
       }
@@ -88,10 +88,10 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (
             response.json.asOpt[ReducedCompanyInformation]
           case s @ (BAD_REQUEST | UNAUTHORIZED) => throw UpstreamErrorResponse(response.body, s)
           case s if is4xx(s) =>
-            logger.warn(s"getCompany http status: $s, response:${response.body}")
+            logger.warn(s"getCompany http status: $s")
             Option.empty[ReducedCompanyInformation]
           case s =>
-            logger.error(s"getCompany http status: $s, response:${response.body}")
+            logger.error(s"getCompany http status: $s")
             Option.empty[ReducedCompanyInformation]
         }
       }
