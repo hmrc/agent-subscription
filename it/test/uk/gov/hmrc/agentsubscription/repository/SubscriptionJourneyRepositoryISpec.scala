@@ -24,10 +24,13 @@ import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
 import java.time.LocalDate
+import javax.inject.Named
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class SubscriptionJourneyRepositoryISpec
@@ -37,7 +40,7 @@ class SubscriptionJourneyRepositoryISpec
 
   override def checkTtlIndex = false // temporary until we make last modified date field not optional
 
-  override lazy val repository = new SubscriptionJourneyRepositoryImpl(mongoComponent)
+  override protected lazy val repository = new SubscriptionJourneyRepositoryImpl(mongoComponent, aesCrypto)
 
   val validUtr = Utr("2000000000")
   val otherUtr = Utr("0123456789")
@@ -75,9 +78,9 @@ class SubscriptionJourneyRepositoryISpec
       AuthProviderId("auth-id"),
       businessDetails = BusinessDetails(
         businessType = BusinessType.SoleTrader,
-        utr = validUtr,
-        postcode = Postcode("bn12 1hn"),
-        nino = Some(Nino("AE123456C"))
+        utr = validUtr.value,
+        postcode = "bn12 1hn",
+        nino = Some("AE123456C")
       ),
       continueId = Some("XXX"),
       amlsData = None,
@@ -88,38 +91,45 @@ class SubscriptionJourneyRepositoryISpec
       contactEmailData = Some(ContactEmailData(true, Some("email@email.com"))),
       contactTradingNameData = Some(ContactTradingNameData(true, Some("My Trading Name"))),
       contactTradingAddressData = Some(ContactTradingAddressData(true, Some(businessAddress))),
-      contactTelephoneData = Some(ContactTelephoneData(true, Some("01273111111")))
+      contactTelephoneData = Some(ContactTelephoneData(true, Some("01273111111"))),
+      verifiedEmails = Set.empty,
+      encrypted = Some(true)
     )
 
   "SubscriptionJourneyRepository" should {
 
     "create a SubscriptionJourney record" in {
+      implicit val crypto: Encrypter with Decrypter = aesCrypto
       await(repository.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
 
       await(repository.findByAuthId(AuthProviderId("auth-id"))).head shouldBe subscriptionJourneyRecord
     }
 
     "find a SubscriptionJourney by Utr" in {
+      implicit val crypto: Encrypter with Decrypter = aesCrypto
       await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
 
-      await(repository.findByUtr(validUtr)) shouldBe Some(subscriptionJourneyRecord)
+      await(repository.findByUtr(validUtr.value)) shouldBe Some(subscriptionJourneyRecord)
     }
 
     "return None when there is no SubscriptionJourney record for this Utr" in {
+      implicit val crypto: Encrypter with Decrypter = aesCrypto
       await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
 
-      await(repository.findByUtr(Utr("foo"))) shouldBe None
+      await(repository.findByUtr("foo")) shouldBe None
     }
 
     "delete a SubscriptionJourney record by Utr" in {
+      implicit val crypto: Encrypter with Decrypter = aesCrypto
       await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
-      await(repository.delete(validUtr))
+      await(repository.delete(validUtr.value))
       await(repository.findByAuthId(AuthProviderId("auth-id"))) shouldBe empty
     }
 
     "update a SubscriptionJourney record" in {
+      implicit val crypto: Encrypter with Decrypter = aesCrypto
       val updatedSubscriptionJourney = subscriptionJourneyRecord
-        .copy(businessDetails = subscriptionJourneyRecord.businessDetails.copy(postcode = Postcode("AAABBB")))
+        .copy(businessDetails = subscriptionJourneyRecord.businessDetails.copy(postcode = "AAABBB"))
 
       await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
       await(repository.upsert(AuthProviderId("auth-id"), updatedSubscriptionJourney))

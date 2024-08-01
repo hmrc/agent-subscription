@@ -16,8 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{Format, JsResult, JsValue, Json}
 import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 case class Registration(
   taxpayerName: Option[String],
@@ -26,11 +27,40 @@ case class Registration(
   address: BusinessAddress,
   emailAddress: Option[String],
   primaryPhoneNumber: Option[String],
-  safeId: Option[String]
+  safeId: Option[String],
+  encrypted: Option[Boolean] = None
 )
 
 object Registration {
-  implicit val formats: Format[Registration] = Json.format[Registration]
+  def format(implicit crypto: Encrypter with Decrypter): Format[Registration] = {
+    def reads(json: JsValue): JsResult[Registration] =
+      for {
+        isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
+        result = Registration(
+          (json \ "taxpayerName").asOpt[String],
+          (json \ "isSubscribedToAgentServices").as[Boolean],
+          (json \ "isSubscribedToETMP").as[Boolean],
+          (json \ "address").as[BusinessAddress],
+          (json \ "emailAddress").asOpt[String],
+          (json \ "primaryPhoneNumber").asOpt[String],
+          (json \ "safeId").asOpt[String],
+          isEncrypted
+        )
+      } yield result
+
+    def writes(registration: Registration): JsValue =
+        Json.obj(
+            "taxpayerName" -> registration.taxpayerName,
+            "isSubscribedToAgentServices" -> registration.isSubscribedToAgentServices,
+            "isSubscribedToETMP" -> registration.isSubscribedToETMP,
+            "address" -> registration.address,
+            "emailAddress" -> registration.emailAddress,
+            "primaryPhoneNumber" -> registration.primaryPhoneNumber,
+            "safeId" -> registration.safeId,
+            "encrypted" -> registration.encrypted
+        )
+    Format(reads, registration => writes(registration))
+  }
 }
 
 case class UpdateBusinessAddressForm(

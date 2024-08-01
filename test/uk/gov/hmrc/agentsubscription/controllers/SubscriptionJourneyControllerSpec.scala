@@ -41,7 +41,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
   val minimalRecord = SubscriptionJourneyRecord(
     AuthProviderId("cred-1234"),
     None,
-    BusinessDetails(BusinessType.LimitedCompany, Utr("12345"), Postcode("BN25GJ"), None, None, None, None, None, None),
+    BusinessDetails(BusinessType.LimitedCompany, "12345", "BN25GJ", None, None, None, None, None, None),
     None,
     List.empty,
     mappingComplete = false,
@@ -83,7 +83,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return OK with record body when record found by utr" in {
-      when(mockRepo.findByUtr(eqs(Utr("minimal"))))
+      when(mockRepo.findByUtr(eqs("minimal")))
         .thenReturn(Future.successful(Some(minimalRecord)))
 
       val result: Result = await(controller.findByUtr(Utr("minimal")).apply(FakeRequest()))
@@ -91,7 +91,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return NoContent when record not found by utr" in {
-      when(mockRepo.findByUtr(eqs(Utr("missing"))))
+      when(mockRepo.findByUtr(eqs("missing")))
         .thenReturn(Future.successful(None))
 
       val result: Result = await(controller.findByUtr(Utr("missing")).apply(FakeRequest()))
@@ -178,10 +178,10 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
           )
         )
 
-      when(mockRepo.updateOnUtr(any[Utr], any[SubscriptionJourneyRecord]))
+      when(mockRepo.updateOnUtr(any[String], any[SubscriptionJourneyRecord]))
         .thenReturn(Future.successful((Some(1L))))
 
-      when(mockRepo.findByUtr(any[Utr]))
+      when(mockRepo.findByUtr(any[String]))
         .thenReturn(Future.successful(Some(existingRecord)))
 
       val request = FakeRequest().withBody[JsValue](Json.toJson(newRecord))
@@ -198,8 +198,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
       val newAuthProviderId = AuthProviderId("cred-new-clean")
       val newBusinessDetails = BusinessDetails(
         BusinessType.LimitedCompany,
-        Utr("12345"),
-        Postcode("BN65GJ"),
+        "12345",
+        "BN65GJ",
         None,
         None,
         None,
@@ -229,10 +229,10 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
           )
         )
 
-      when(mockRepo.updateOnUtr(any[Utr], any[SubscriptionJourneyRecord]))
+      when(mockRepo.updateOnUtr(any[String], any[SubscriptionJourneyRecord]))
         .thenReturn(Future.successful((Some(1L))))
 
-      when(mockRepo.findByUtr(any[Utr]))
+      when(mockRepo.findByUtr(any[String]))
         .thenReturn(Future.successful(Some(existingRecord)))
 
       val request = FakeRequest().withBody[JsValue](Json.toJson(newRecord))
