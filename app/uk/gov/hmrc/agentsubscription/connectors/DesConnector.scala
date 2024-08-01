@@ -149,7 +149,7 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metric
             case s =>
               throw new RuntimeException(
                 s"Failed to create subscription in ETMP for safeId: $safeId status $s",
-                UpstreamErrorResponse(response.body, s)
+                UpstreamErrorResponse(s"Upstream Error at: $url", s)
               )
           }
         }
@@ -176,7 +176,7 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metric
             case s if s == CONFLICT =>
               throw new RuntimeException(
                 s"Failed to create subscription in ETMP for $utr status: $s",
-                UpstreamErrorResponse(response.body, s)
+                UpstreamErrorResponse(s"Unexpected response: $s from: $url", s)
               )
             case s =>
               throw new RuntimeException(s"Failed to create subscription in ETMP for $utr status: $s")

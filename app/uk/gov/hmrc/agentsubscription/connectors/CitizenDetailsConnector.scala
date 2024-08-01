@@ -42,7 +42,7 @@ class CitizenDetailsConnectorImpl @Inject() (val appConfig: AppConfig, httpClien
   implicit val ec: ExecutionContext
 ) extends CitizenDetailsConnector with HttpAPIMonitor {
 
-  val baseUrl = appConfig.citizenDetailsBaseUrl
+  val baseUrl: String = appConfig.citizenDetailsBaseUrl
 
   def getDesignatoryDetails(
     nino: Nino
@@ -54,7 +54,7 @@ class CitizenDetailsConnectorImpl @Inject() (val appConfig: AppConfig, httpClien
         .map { response =>
           response.status match {
             case s if is2xx(s) => response.json.as[DesignatoryDetails]
-            case s             => throw UpstreamErrorResponse(response.body, s)
+            case s             => throw UpstreamErrorResponse(s"Unexpected response: $s from: $url", s)
           }
         }
     }

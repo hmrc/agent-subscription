@@ -60,8 +60,8 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, 
   val ec: ExecutionContext
 ) extends HttpAPIMonitor {
 
-  val taxEnrolmentsBaseUrl = appConfig.taxEnrolmentsBaseUrl
-  val espBaseUrl = appConfig.enrolmentStoreProxyBaseUrl
+  val taxEnrolmentsBaseUrl: String = appConfig.taxEnrolmentsBaseUrl
+  val espBaseUrl: String = appConfig.enrolmentStoreProxyBaseUrl
 
   // EACD's ES6 API
   def addKnownFacts(arn: String, knownFactKey: String, knownFactValue: String)(implicit
@@ -77,7 +77,7 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, 
         .map { response =>
           response.status match {
             case s if is2xx(s) => s
-            case s             => throw UpstreamErrorResponse(response.body, s)
+            case s             => throw UpstreamErrorResponse(s"Unexpected response: $s from: $url", s)
           }
         }
     }
@@ -86,14 +86,15 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, 
   // EACD's ES7 API
   def deleteKnownFacts(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Integer] =
     monitor("ConsumedAPI-EMAC-DeleteKnownFacts-HMRC-AS-AGENT-DELETE") {
+      val url = s"""$espBaseUrl/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(
+        arn.value
+      )}"""
       http
-        .DELETE[HttpResponse](s"""$espBaseUrl/enrolment-store-proxy/enrolment-store/enrolments/${enrolmentKey(
-            arn.value
-          )}""")
+        .DELETE[HttpResponse](url)
         .map { response =>
           response.status match {
             case s if is2xx(s) => s
-            case s             => throw UpstreamErrorResponse(response.body, s)
+            case s             => throw UpstreamErrorResponse(s"Unexpected response: $s from: $url", s)
           }
         }
     }
@@ -110,7 +111,7 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, 
         .map { response =>
           response.status match {
             case s if is2xx(s) => s
-            case s             => throw UpstreamErrorResponse(response.body, s)
+            case s             => throw UpstreamErrorResponse(s"Unexpected response: $s from: $serviceUrl", s)
           }
         }
     }
@@ -128,8 +129,8 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClient, 
           response.status match {
             case OK          => (response.json \ "principalGroupIds").as[Seq[String]].nonEmpty
             case NO_CONTENT  => false
-            case BAD_REQUEST => throw new BadRequestException(response.body)
-            case s           => throw UpstreamErrorResponse(response.body, s)
+            case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST at: $url")
+            case s           => throw UpstreamErrorResponse(s"Unexpected response: $s from: $url", s)
           }
         }
     }
