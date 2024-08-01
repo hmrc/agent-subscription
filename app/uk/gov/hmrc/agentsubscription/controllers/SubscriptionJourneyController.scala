@@ -95,7 +95,7 @@ class SubscriptionJourneyController @Inject() (
   }
 
   def logUTRError(sjr: SubscriptionJourneyRecord) = {
-    logger.warn(s"Conflict saving SJR with UTR ${sjr.businessDetails.utr} \n ${toJson(sjr).toString()}")
+    logger.warn(s"Conflict saving SJR with UTR ${sjr.businessDetails.utr}")
     new IllegalStateException(s"Could not find existing SJR with UTR = ${sjr.businessDetails.utr}")
   }
 }
