@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,7 +41,7 @@ class EmailConnectorImpl @Inject() (val appConfig: AppConfig, val http: HttpClie
   val ec: ExecutionContext
 ) extends EmailConnector with HttpAPIMonitor {
 
-  val baseUrl = appConfig.emailBaseUrl
+  val baseUrl: String = appConfig.emailBaseUrl
 
   def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
     val url = s"$baseUrl/hmrc/email"

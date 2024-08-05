@@ -31,7 +31,7 @@ class OverseasSubscriptionAuditingSpec
     extends BaseAuditSpec with Eventually with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub
     with OverseasDesStubs with AgentOverseasApplicationStubs with EmailStub {
 
-  implicit val ws = app.injector.instanceOf[WSClient]
+  implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
   private val arn = "TARN0000001"
   private val stubbedGroupId = "groupId"

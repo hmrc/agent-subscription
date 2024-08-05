@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,7 +25,7 @@ import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn, ReducedC
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
+import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import javax.inject.{Inject, Singleton}
@@ -51,7 +51,7 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (
 )(implicit val ec: ExecutionContext)
     extends CompaniesHouseApiProxyConnector with Logging with HttpAPIMonitor {
 
-  val baseUrl = appConfig.companiesHouseApiProxyBaseUrl
+  val baseUrl: String = appConfig.companiesHouseApiProxyBaseUrl
 
   override def getCompanyOfficers(crn: Crn, surname: String)(implicit
     hc: HeaderCarrier,
@@ -65,12 +65,12 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (
         response.status match {
           case s if is2xx(s) =>
             (response.json \ "items").as[Seq[CompaniesHouseOfficer]]
-          case BAD_REQUEST => throw UpstreamErrorResponse(response.body, BAD_REQUEST)
+          case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST at: $url")
           case s if is4xx(s) =>
-            logger.warn(s"getCompanyOfficers http status: $s, response:${response.body}")
+            logger.warn(s"getCompanyOfficers http status: $s")
             Seq.empty
           case s =>
-            logger.error(s"getCompanyOfficers http status: $s, response:${response.body}")
+            logger.error(s"getCompanyOfficers http status: $s")
             Seq.empty
         }
       }
@@ -86,12 +86,12 @@ class CompaniesHouseApiProxyConnectorImpl @Inject() (
         response.status match {
           case s if is2xx(s) =>
             response.json.asOpt[ReducedCompanyInformation]
-          case s @ (BAD_REQUEST | UNAUTHORIZED) => throw UpstreamErrorResponse(response.body, s)
+          case s @ (BAD_REQUEST | UNAUTHORIZED) => throw UpstreamErrorResponse(s"Unexpected response: $s from: $url", s)
           case s if is4xx(s) =>
-            logger.warn(s"getCompany http status: $s, response:${response.body}")
+            logger.warn(s"getCompany http status: $s")
             Option.empty[ReducedCompanyInformation]
           case s =>
-            logger.error(s"getCompany http status: $s, response:${response.body}")
+            logger.error(s"getCompany http status: $s")
             Option.empty[ReducedCompanyInformation]
         }
       }

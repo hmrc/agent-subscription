@@ -34,7 +34,7 @@ class TaxEnrolmentsConnectorISpec extends BaseISpec with TaxEnrolmentsStubs with
   private lazy val appConfig = app.injector.instanceOf[AppConfig]
   private lazy val connector = new TaxEnrolmentsConnector(appConfig, http, metrics)
 
-  private implicit val hc = HeaderCarrier()
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
   private val arn = Arn("AARN1234567")
   private val postcode = "SY12 8RN"
   private val knownFactKey = "TestKnownFactKey"

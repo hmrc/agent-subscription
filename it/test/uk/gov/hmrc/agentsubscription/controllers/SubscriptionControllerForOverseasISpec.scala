@@ -30,7 +30,7 @@ class SubscriptionControllerForOverseasISpec
   private val arn = "TARN0000001"
   private val stubbedGroupId = "groupId"
   private val safeId = SafeId("XE0001234567890")
-  implicit val ws = app.injector.instanceOf[WSClient]
+  implicit val ws: WSClient = app.injector.instanceOf[WSClient]
   private val safeIdJson = s"""{ "safeId": "${safeId.value}"}"""
   private val eacdRetryCount = 3
   private val amlsDetails = OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))

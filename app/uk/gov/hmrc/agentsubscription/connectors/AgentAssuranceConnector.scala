@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ class AgentAssuranceConnectorImpl @Inject() (val appConfig: AppConfig, http: Htt
   val ec: ExecutionContext
 ) extends AgentAssuranceConnector with Logging with HttpAPIMonitor {
 
-  val baseUrl = appConfig.agentAssuranceBaseUrl
+  val baseUrl: String = appConfig.agentAssuranceBaseUrl
 
   override def createAmls(utr: Utr, amlsDetails: AmlsDetails)(implicit
     hc: HeaderCarrier,
@@ -68,9 +68,9 @@ class AgentAssuranceConnectorImpl @Inject() (val appConfig: AppConfig, http: Htt
           response.status match {
             case CREATED     => true
             case FORBIDDEN   => false // 403 -> There is an existing AMLS record for the Utr with Arn set
-            case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST at: $url body: ${response.body}")
+            case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST at: $url")
             case s =>
-              val message = s"Unexpected response: $s from: $url body: ${response.body}"
+              val message = s"Unexpected response: $s from: $url"
               logger.error(message)
               throw UpstreamErrorResponse(message, s)
           }
@@ -89,9 +89,9 @@ class AgentAssuranceConnectorImpl @Inject() (val appConfig: AppConfig, http: Htt
             case s if is2xx(s) => response.json.asOpt[AmlsDetails]
             case NOT_FOUND =>
               None // 404 -> Partially subscribed agents may not have any stored amls details, then updating fails with 404
-            case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST at: $url body: ${response.body}")
+            case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST at: $url")
             case s =>
-              val message = s"Unexpected response: $s from: $url body: ${response.body}"
+              val message = s"Unexpected response: $s from: $url"
               logger.error(message)
               throw UpstreamErrorResponse(message, s)
           }
@@ -112,9 +112,9 @@ class AgentAssuranceConnectorImpl @Inject() (val appConfig: AppConfig, http: Htt
           response.status match {
             case s if is2xx(s) => ()
             case CONFLICT      => ()
-            case BAD_REQUEST   => throw new BadRequestException(s"BAD_REQUEST at: $url body: ${response.body}")
+            case BAD_REQUEST   => throw new BadRequestException(s"BAD_REQUEST at: $url")
             case s =>
-              val message = s"Unexpected response: $s from: $url body: ${response.body}"
+              val message = s"Unexpected response: $s from: $url"
               logger.error(message)
               throw UpstreamErrorResponse(message, s)
           }

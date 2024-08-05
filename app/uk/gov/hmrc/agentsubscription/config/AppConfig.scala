@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,29 +28,29 @@ class AppConfig @Inject() (servicesConfig: ServicesConfig, config: Configuration
 
   val appName = "agent-subscription"
 
-  def getConf(key: String) = servicesConfig.getString(key)
+  def getConf(key: String): String = servicesConfig.getString(key)
 
-  val desBaseUrl = servicesConfig.baseUrl("des")
-  val desEnvironment = getConf("microservice.services.des.environment")
-  val desAuthToken = getConf("microservice.services.des.authorization-token")
+  val desBaseUrl: String = servicesConfig.baseUrl("des")
+  val desEnvironment: String = getConf("microservice.services.des.environment")
+  val desAuthToken: String = getConf("microservice.services.des.authorization-token")
 
-  val taxEnrolmentsBaseUrl = servicesConfig.baseUrl("tax-enrolments")
+  val taxEnrolmentsBaseUrl: String = servicesConfig.baseUrl("tax-enrolments")
 
-  val enrolmentStoreProxyBaseUrl = servicesConfig.baseUrl("enrolment-store-proxy")
+  val enrolmentStoreProxyBaseUrl: String = servicesConfig.baseUrl("enrolment-store-proxy")
 
-  val agentAssuranceBaseUrl = servicesConfig.baseUrl("agent-assurance")
+  val agentAssuranceBaseUrl: String = servicesConfig.baseUrl("agent-assurance")
 
-  val agentOverseasApplicationBaseUrl = servicesConfig.baseUrl("agent-overseas-application")
+  val agentOverseasApplicationBaseUrl: String = servicesConfig.baseUrl("agent-overseas-application")
 
-  val citizenDetailsBaseUrl = servicesConfig.baseUrl("citizen-details")
+  val citizenDetailsBaseUrl: String = servicesConfig.baseUrl("citizen-details")
 
-  val emailBaseUrl = servicesConfig.baseUrl("email")
+  val emailBaseUrl: String = servicesConfig.baseUrl("email")
 
-  val agentMappingBaseUrl = servicesConfig.baseUrl("agent-mapping")
+  val agentMappingBaseUrl: String = servicesConfig.baseUrl("agent-mapping")
 
-  val mongodbSubscriptionJourneyTTL = servicesConfig.getInt("mongodb.subscriptionjourney.ttl")
+  val mongodbSubscriptionJourneyTTL: Long = servicesConfig.getInt("mongodb.subscriptionjourney.ttl")
 
-  val companiesHouseApiProxyBaseUrl = servicesConfig.baseUrl("companies-house-api-proxy")
+  val companiesHouseApiProxyBaseUrl: String = servicesConfig.baseUrl("companies-house-api-proxy")
 
   val internalHostPatterns: Seq[Regex] = config.get[Seq[String]]("internalServiceHostPatterns").map(_.r)
 

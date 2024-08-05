@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,9 +101,9 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metric
   val ec: ExecutionContext
 ) extends HttpAPIMonitor {
 
-  val baseUrl = appConfig.desBaseUrl
-  val environment = appConfig.desEnvironment
-  val authToken = appConfig.desAuthToken
+  val baseUrl: String = appConfig.desBaseUrl
+  val environment: String = appConfig.desEnvironment
+  val authToken: String = appConfig.desAuthToken
 
   private val Environment = "Environment"
   private val CorrelationId = "CorrelationId"
@@ -149,7 +149,7 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metric
             case s =>
               throw new RuntimeException(
                 s"Failed to create subscription in ETMP for safeId: $safeId status $s",
-                UpstreamErrorResponse(response.body, s)
+                UpstreamErrorResponse(s"Upstream Error at: $url", s)
               )
           }
         }
@@ -176,7 +176,7 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metric
             case s if s == CONFLICT =>
               throw new RuntimeException(
                 s"Failed to create subscription in ETMP for $utr status: $s",
-                UpstreamErrorResponse(response.body, s)
+                UpstreamErrorResponse(s"Unexpected response: $s from: $url", s)
               )
             case s =>
               throw new RuntimeException(s"Failed to create subscription in ETMP for $utr status: $s")

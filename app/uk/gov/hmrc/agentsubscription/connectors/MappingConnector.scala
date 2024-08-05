@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ class MappingConnector @Inject() (appConfig: AppConfig, http: HttpClient, val me
   val ec: ExecutionContext
 ) extends Logging with HttpAPIMonitor {
 
-  val baseUrl = appConfig.agentMappingBaseUrl
+  val baseUrl: String = appConfig.agentMappingBaseUrl
 
   // valid status can be CREATED or CONFLICT
   def createMappings(arn: Arn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {

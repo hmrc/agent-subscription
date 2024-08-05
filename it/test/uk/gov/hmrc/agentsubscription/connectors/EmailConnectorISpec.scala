@@ -34,7 +34,7 @@ class EmailConnectorISpec extends BaseISpec with EmailStub {
   val mtdItId = MtdItId("LC762757D")
   val vrn = Vrn("101747641")
 
-  private implicit val hc = HeaderCarrier()
+  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "sendEmail" should {
     val emailInfo = EmailInformation(Seq("abc@xyz.com"), "template-id", Map("param1" -> "foo", "param2" -> "bar"))

@@ -31,7 +31,7 @@ import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport {
-  private implicit val hc = HeaderCarrier(authorization = Some(Authorization("Bearer secret")))
+  private implicit val hc: HeaderCarrier = HeaderCarrier(authorization = Some(Authorization("Bearer secret")))
   val utr = Utr("1234567890")
   val crn = Crn("SC123456")
   val vrn = Vrn("888913457")

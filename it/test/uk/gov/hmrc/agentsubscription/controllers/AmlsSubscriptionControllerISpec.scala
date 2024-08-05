@@ -28,7 +28,7 @@ import scala.concurrent.duration.{Duration, SECONDS}
 
 class AmlsSubscriptionControllerISpec extends BaseISpec with DesStubs {
 
-  implicit val ws = app.injector.instanceOf[WSClient]
+  implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
   val duration = Duration(5, SECONDS)
 

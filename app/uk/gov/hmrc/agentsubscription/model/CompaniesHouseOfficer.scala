@@ -1,5 +1,5 @@
 /*
- * Copyright 2023 HM Revenue & Customs
+ * Copyright 2024 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ object CompaniesHouseOfficer {
 
   implicit val reads: Reads[CompaniesHouseOfficer] = ((__ \ "name").read[String] and
     (__ \ "date_of_birth").readNullable[CompaniesHouseDateOfBirth])(CompaniesHouseOfficer.apply _)
-
 }
 
 case class ReducedCompanyInformation(companyNumber: String, companyName: String, companyStatus: String)

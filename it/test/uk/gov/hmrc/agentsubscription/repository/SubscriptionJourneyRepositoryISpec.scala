@@ -33,7 +33,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class SubscriptionJourneyRepositoryISpec
     extends UnitSpec with GuiceOneAppPerSuite with DefaultPlayMongoRepositorySupport[SubscriptionJourneyRecord] {
 
-  implicit lazy val appConfig = app.injector.instanceOf[AppConfig]
+  implicit lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
   override def checkTtlIndex = false // temporary until we make last modified date field not optional
 
