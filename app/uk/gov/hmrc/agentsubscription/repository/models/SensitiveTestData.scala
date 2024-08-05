@@ -25,14 +25,12 @@ import uk.gov.hmrc.crypto.json.JsonEncryption
 case class SensitiveTestData(arn: String, message: SensitiveString) extends Sensitive[TestData] {
 
   override def decryptedValue: TestData =
-    try
-      TestData(
-        arn = arn,
-        message =
-          try message.decryptedValue
-          catch { case _: Exception => message.toString() }
-      )
-    catch { case _: Exception => TestData(arn, message.toString()) }
+    TestData(
+      arn = arn,
+      message =
+        try message.decryptedValue
+        catch { case e: Exception => message.toString() }
+    )
 
 }
 

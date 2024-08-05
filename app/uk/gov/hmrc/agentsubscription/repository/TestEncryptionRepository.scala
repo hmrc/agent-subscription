@@ -43,6 +43,7 @@ trait TestEncryptionRepository {
   ): Future[Option[Boolean]]
 
   def listTestData: Future[Seq[TestData]]
+  def findTestData(arn: String): Future[Option[TestData]]
 }
 
 @Singleton
@@ -90,6 +91,20 @@ class TestEncryptionRepositoryImpl @Inject() (mongo: MongoComponent, @Named("aes
       .map(_.decryptedValue)
       .collect()
       .toFuture()
+
+  def findTestData(arn: String): Future[Option[TestData]] =
+    collection
+      .find(Filters.equal("arn", arn))
+      .collation(caseInsensitiveCollation)
+      .map(a =>
+        try
+          a.decryptedValue
+        catch {
+          case _: Exception => TestData(arn, a.message.toString())
+        }
+      )
+      .headOption()
+
 }
 
 object TestEncryptionRepositoryImpl {

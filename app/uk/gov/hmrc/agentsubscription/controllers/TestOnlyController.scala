@@ -44,4 +44,10 @@ class TestOnlyController @Inject() (
     } yield Ok(s"""${a.map(r => s"${r.arn} - ${r.message}").mkString("\n")}""")
   }
 
+  def findTestData(arn: String): Action[AnyContent] = Action.async { _ =>
+    for {
+      a <- testEncryptionRepository.findTestData(arn)
+    } yield Ok(a.getOrElse("No data found").toString)
+  }
+
 }
