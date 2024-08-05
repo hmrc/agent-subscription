@@ -41,7 +41,9 @@ class TestOnlyController @Inject() (
   def listTestData: Action[AnyContent] = Action.async { _ =>
     for {
       a <- testEncryptionRepository.listTestData
-    } yield Ok(s"""${a.map(r => s"${r.arn} - ${r.message}").mkString("\n")}""")
+    } yield Ok(
+      s"""${a.map(r => s"${r.arn} - ${r.message} | encryption = ${r.encrypted.contains(true)}").mkString("\n")}"""
+    )
   }
 
   def findTestData(arn: String): Action[AnyContent] = Action.async { _ =>
@@ -49,7 +51,7 @@ class TestOnlyController @Inject() (
       a <- testEncryptionRepository.findTestData(arn)
     } yield Ok(
       a.fold(s"no data found for arn: $arn")(r =>
-        s"${r.arn} - ${r.message} - encryption = ${r.encrypted.contains(true)}"
+        s"${r.arn} - ${r.message} | encryption = ${r.encrypted.contains(true)}"
       )
     )
   }

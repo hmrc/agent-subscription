@@ -66,21 +66,22 @@ class TestEncryptionRepositoryImpl @Inject() (mongo: MongoComponent, @Named("aes
         Future.successful(None)
       }
 
+  private def maybeDecrypt(testData: TestData): TestData =
+    if (testData.encrypted.contains(true)) {
+      testData.copy(message = crypto.decrypt(Crypted(testData.message)).value)
+    } else testData
   def listTestData: Future[Seq[TestData]] =
     collection
       .find(Filters.empty())
       .collect()
       .toFuture()
+      .map(_.map(maybeDecrypt))
 
   def findTestData(arn: String): Future[Option[TestData]] =
     collection
       .find(Filters.equal("arn", arn))
       .headOption()
-      .map {
-        case Some(testData) if testData.encrypted.contains(true) =>
-          Some(testData.copy(message = crypto.decrypt(Crypted(testData.message)).value))
-        case other => other
-      }
+      .map(_.map(maybeDecrypt))
 
 }
 
