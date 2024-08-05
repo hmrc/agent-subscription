@@ -46,6 +46,15 @@ class TestOnlyController @Inject() (
     )
   }
 
+  def updateTestData(arn: String): Action[AnyContent] = Action.async { _ =>
+    val testData = TestData(arn, "updated", encrypted = Some(false))
+    for {
+      a <- testEncryptionRepository.update(testData)
+    } yield Ok(
+      s"update test data for arn: $arn with result: ${a.toString}"
+    )
+  }
+
   def findTestData(arn: String): Action[AnyContent] = Action.async { _ =>
     for {
       a <- testEncryptionRepository.findTestData(arn)

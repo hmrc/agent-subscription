@@ -14,3 +14,4 @@
 GET       /test-only/create-test-data/:arn  uk.gov.hmrc.agentsubscription.controllers.TestOnlyController.create(arn: String)
 GET       /test-only/list-test-data         uk.gov.hmrc.agentsubscription.controllers.TestOnlyController.listTestData
 GET       /test-only/find-test-data/:arn    uk.gov.hmrc.agentsubscription.controllers.TestOnlyController.findTestData(arn: String)
+GET       /test-only/update-test-data/:arn  uk.gov.hmrc.agentsubscription.controllers.TestOnlyController.updateTestData(arn: String)

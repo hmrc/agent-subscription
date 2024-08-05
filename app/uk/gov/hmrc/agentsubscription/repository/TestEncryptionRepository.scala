@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentsubscription.repository
 
 import com.google.inject.ImplementedBy
 import com.mongodb.MongoWriteException
+import org.mongodb.scala.model.Filters.equal
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions}
 import play.api.Logging
@@ -32,6 +33,10 @@ import scala.concurrent.{ExecutionContext, Future}
 @ImplementedBy(classOf[TestEncryptionRepositoryImpl])
 trait TestEncryptionRepository {
   def create(
+    testData: TestData
+  ): Future[Option[Boolean]]
+
+  def update(
     testData: TestData
   ): Future[Option[Boolean]]
 
@@ -66,10 +71,26 @@ class TestEncryptionRepositoryImpl @Inject() (mongo: MongoComponent, @Named("aes
         Future.successful(None)
       }
 
+  def update(
+    testData: TestData
+  ): Future[Option[Boolean]] =
+    collection
+      .replaceOne(
+        equal("arn", testData.arn),
+        testData.copy(encrypted = Some(true), message = crypto.encrypt(PlainText(testData.message)).value)
+      )
+      .headOption()
+      .map(_.map(result => result.wasAcknowledged()))
+      .recoverWith { case e: MongoWriteException =>
+        logger.error(s"Failed to create test record for ${testData.arn}", e)
+        Future.successful(None)
+      }
+
   private def maybeDecrypt(testData: TestData): TestData =
     if (testData.encrypted.contains(true)) {
       testData.copy(message = crypto.decrypt(Crypted(testData.message)).value)
     } else testData
+
   def listTestData: Future[Seq[TestData]] =
     collection
       .find(Filters.empty())
