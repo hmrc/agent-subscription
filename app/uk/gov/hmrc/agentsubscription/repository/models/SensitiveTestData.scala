@@ -22,14 +22,14 @@ import uk.gov.hmrc.crypto.{Decrypter, Encrypter, Sensitive}
 import uk.gov.hmrc.crypto.Sensitive.SensitiveString
 import uk.gov.hmrc.crypto.json.JsonEncryption
 
-case class SensitiveTestData(arn: String, message: SensitiveString) extends Sensitive[TestData] {
+case class SensitiveTestData(arn: String, message: Either[String, SensitiveString], encrypted: Option[Boolean])
+    extends Sensitive[TestData] {
 
   override def decryptedValue: TestData =
     TestData(
       arn = arn,
       message =
-        try message.decryptedValue
-        catch { case e: Exception => message.toString() }
+        if(encrypted.contains(true)) Right(message.decryptedValue) else message.toString()
     )
 
 }
@@ -37,8 +37,12 @@ case class SensitiveTestData(arn: String, message: SensitiveString) extends Sens
 object SensitiveTestData {
   def apply(testData: TestData): SensitiveTestData = SensitiveTestData(
     arn = testData.arn,
-    message = SensitiveString(testData.message)
+    message = SensitiveString(testData.message),
+    encrypted = Some(true)
   )
+
+  def reads[]
+
   implicit def format(implicit crypto: Encrypter with Decrypter): OFormat[SensitiveTestData] = {
     implicit val sensitiveStringFormat: Format[SensitiveString] =
       JsonEncryption.sensitiveEncrypterDecrypter(SensitiveString.apply)
