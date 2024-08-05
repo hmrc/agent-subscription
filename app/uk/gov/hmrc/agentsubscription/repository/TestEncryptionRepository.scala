@@ -18,19 +18,13 @@ package uk.gov.hmrc.agentsubscription.repository
 
 import com.google.inject.ImplementedBy
 import com.mongodb.MongoWriteException
-import com.mongodb.client.model.Collation
-import org.mongodb.scala.model.CollationStrength.SECONDARY
 import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions}
 import play.api.Logging
 import play.api.libs.json._
-import uk.gov.hmrc.agentsubscription.repository.TestEncryptionRepositoryImpl.{caseInsensitiveCollation, sensitiveStringFormat}
-import uk.gov.hmrc.agentsubscription.repository.models.SensitiveTestData
-import uk.gov.hmrc.crypto.Sensitive.SensitiveString
-import uk.gov.hmrc.crypto.json.JsonEncryption
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter, PlainText}
+import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter, PlainText}
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import javax.inject.{Inject, Named, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -38,8 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 @ImplementedBy(classOf[TestEncryptionRepositoryImpl])
 trait TestEncryptionRepository {
   def create(
-    arn: String,
-    message: String
+    testData: TestData
   ): Future[Option[Boolean]]
 
   def listTestData: Future[Seq[TestData]]
@@ -49,77 +42,55 @@ trait TestEncryptionRepository {
 @Singleton
 class TestEncryptionRepositoryImpl @Inject() (mongo: MongoComponent, @Named("aes") crypto: Encrypter with Decrypter)(
   implicit ec: ExecutionContext
-) extends PlayMongoRepository[SensitiveTestData](
+) extends PlayMongoRepository[TestData](
       mongoComponent = mongo,
       collectionName = "test-encryption",
-      domainFormat = SensitiveTestData.format(crypto),
+      domainFormat = TestData.testDataFormat,
       replaceIndexes = true,
-      extraCodecs = Seq(
-        // Sensitive string codec so we can operate on individual string fields
-        Codecs.playFormatCodec(sensitiveStringFormat(crypto))
-      ),
       indexes = Seq(
         IndexModel(ascending("arn"), IndexOptions().name("Arn").unique(true))
       )
     ) with TestEncryptionRepository with Logging {
 
-  // Ensure that we are using a deterministic cryptographic algorithm, or we won't be able to search on encrypted fields
-  require(
-    crypto.encrypt(PlainText("foo")) == crypto.encrypt(PlainText("foo")),
-    s"Crypto algorithm provided is not deterministic."
-  )
-
   implicit val theCrypto: Encrypter with Decrypter = crypto
 
   def create(
-    arn: String,
-    message: String
+    testData: TestData
   ): Future[Option[Boolean]] =
     collection
-      .insertOne(SensitiveTestData(TestData(arn, message)))
+      .insertOne(testData.copy(encrypted = Some(true), message = crypto.encrypt(PlainText(testData.message)).value))
       .headOption()
       .map(_.map(result => result.wasAcknowledged()))
       .recoverWith { case e: MongoWriteException =>
-        logger.error(s"Failed to create test record for $arn", e)
+        logger.error(s"Failed to create test record for ${testData.arn}", e)
         Future.successful(None)
       }
 
   def listTestData: Future[Seq[TestData]] =
     collection
       .find(Filters.empty())
-      .collation(caseInsensitiveCollation)
-      .map(_.decryptedValue)
       .collect()
       .toFuture()
 
   def findTestData(arn: String): Future[Option[TestData]] =
     collection
       .find(Filters.equal("arn", arn))
-      .collation(caseInsensitiveCollation)
-      .map(a =>
-        try
-          a.decryptedValue
-        catch {
-          case _: Exception => TestData(arn, a.message.toString())
-        }
-      )
       .headOption()
+      .map {
+        case Some(testData) if testData.encrypted.contains(true) =>
+          Some(testData.copy(message = crypto.decrypt(Crypted(testData.message)).value))
+        case other => other
+      }
 
-}
-
-object TestEncryptionRepositoryImpl {
-
-  private def caseInsensitiveCollation: Collation =
-    Collation.builder().locale("en").collationStrength(SECONDARY).build()
-  private def sensitiveStringFormat(implicit crypto: Encrypter with Decrypter): Format[SensitiveString] =
-    JsonEncryption.sensitiveEncrypterDecrypter(SensitiveString.apply)
 }
 
 case class TestData(
   arn: String,
-  message: String
+  message: String,
+  encrypted: Option[Boolean]
 )
 
 object TestData {
+
   implicit val testDataFormat: OFormat[TestData] = Json.format[TestData]
 }

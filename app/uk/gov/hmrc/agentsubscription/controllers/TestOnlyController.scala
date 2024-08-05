@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.Logging
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.agentsubscription.repository.TestEncryptionRepository
+import uk.gov.hmrc.agentsubscription.repository.{TestData, TestEncryptionRepository}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import javax.inject.{Inject, Singleton}
@@ -30,8 +30,9 @@ class TestOnlyController @Inject() (
     extends BackendController(cc) with Logging {
 
   def create(arn: String): Action[AnyContent] = Action.async { _ =>
+    val testData = TestData(arn, "test", encrypted = Some(true))
     for {
-      a <- testEncryptionRepository.create(arn, "test")
+      a <- testEncryptionRepository.create(testData)
     } yield Ok(
       s"create test data for arn: $arn with result: ${a.toString}"
     )
@@ -46,7 +47,11 @@ class TestOnlyController @Inject() (
   def findTestData(arn: String): Action[AnyContent] = Action.async { _ =>
     for {
       a <- testEncryptionRepository.findTestData(arn)
-    } yield Ok(a.getOrElse("No data found").toString)
+    } yield Ok(
+      a.fold(s"no data found for arn: $arn")(r =>
+        s"${r.arn} - ${r.message} - encryption = ${r.encrypted.contains(true)}"
+      )
+    )
   }
 
 }
