@@ -18,7 +18,6 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.Logging
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.repository.TestEncryptionRepository
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -27,14 +26,14 @@ import scala.concurrent.ExecutionContext
 @Singleton
 class TestOnlyController @Inject() (
   testEncryptionRepository: TestEncryptionRepository
-)(implicit val ec: ExecutionContext, cc: ControllerComponents, appConfig: AppConfig)
+)(implicit val ec: ExecutionContext, cc: ControllerComponents)
     extends BackendController(cc) with Logging {
 
   def create(arn: String): Action[AnyContent] = Action.async { _ =>
     for {
       a <- testEncryptionRepository.create(arn, "test")
     } yield Ok(
-      s"create test data for arn: $arn with result: ${a.toString} [fieldLevelEncryption.key: ${appConfig.cryptoKey}]"
+      s"create test data for arn: $arn with result: ${a.toString}"
     )
   }
 
