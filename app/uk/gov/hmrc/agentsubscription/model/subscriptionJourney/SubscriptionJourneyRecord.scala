@@ -17,9 +17,12 @@
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Json, OFormat}
+import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney.AmlsData
+import uk.gov.hmrc.crypto.Sensitive.SensitiveString
+import uk.gov.hmrc.crypto.json.JsonEncryption._
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter, Sensitive}
 
 import java.time.LocalDateTime
 
@@ -48,10 +51,10 @@ object SubscriptionJourneyRecord {
 
   import MongoLocalDateTimeFormat._
 
-  implicit val subscriptionJourneyFormat: OFormat[SubscriptionJourneyRecord] =
+  implicit def subscriptionJourneyFormat(crypto: Encrypter with Decrypter): OFormat[SubscriptionJourneyRecord] =
     ((JsPath \ "authProviderId").format[AuthProviderId] and
       (JsPath \ "continueId").formatNullable[String] and
-      (JsPath \ "businessDetails").format[BusinessDetails] and
+      (JsPath \ "businessDetails").format[BusinessDetails](BusinessDetails.format(crypto)) and
       (JsPath \ "amlsData").formatNullable[AmlsData] and
       (JsPath \ "userMappings").format[List[UserMapping]] and
       (JsPath \ "mappingComplete").format[Boolean] and
@@ -87,5 +90,43 @@ case class BusinessDetails(
 ) // if registered for VAT
 
 object BusinessDetails {
-  implicit val format: OFormat[BusinessDetails] = Json.format
+  def format(implicit crypto: Encrypter with Decrypter): OFormat[BusinessDetails] = {
+    implicit val sensitiveStringReads: Reads[Sensitive[String]] =
+      sensitiveDecrypter[String, Sensitive[String]](SensitiveString.apply)
+    def writes(o: BusinessDetails): JsObject = Json.obj() // TODO need to implement
+
+    def reads(json: JsValue): JsResult[BusinessDetails] =
+      for {
+        businessType <- (json \ "businessType").validate[BusinessType]
+        utr <- (json \ "utr")
+                 .validate[Sensitive[String]]
+                 .map(_.decryptedValue)
+                 .recover { case _ => (json \ "utr").as[String] }
+        postcode <- (json \ "postcode")
+                      .validate[Sensitive[String]]
+                      .map(_.decryptedValue)
+                      .recover { case _ => (json \ "postcode").as[String] }
+        registration <- (json \ "registration").validateOpt[Registration] // TODO needs encryption
+        nino <- (json \ "nino")
+                  .validateOpt[Sensitive[String]]
+                  .map(_.map(_.decryptedValue))
+                  .recover { case _ => (json \ "nino").asOpt[String] }
+        companyRegistrationNumber <- (json \ "companyRegistrationNumber").validateOpt[CompanyRegistrationNumber]
+        dateOfBirth               <- (json \ "dateOfBirth").validateOpt[DateOfBirth]
+        registeredForVat          <- (json \ "registeredForVat").validateOpt[Boolean]
+        vatDetails                <- (json \ "vatDetails").validateOpt[VatDetails]
+      } yield BusinessDetails(
+        businessType,
+        utr,
+        postcode,
+        registration,
+        nino,
+        companyRegistrationNumber,
+        dateOfBirth,
+        registeredForVat,
+        vatDetails
+      )
+
+    OFormat(reads, businessDetails => writes(businessDetails))
+  }
 }
