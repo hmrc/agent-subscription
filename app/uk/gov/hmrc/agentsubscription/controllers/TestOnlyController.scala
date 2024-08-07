@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.Logging
 import play.api.mvc.{Action, AnyContent, ControllerComponents}
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
+import uk.gov.hmrc.agentsubscription.model.TestBusinessAddress
 import uk.gov.hmrc.agentsubscription.repository.{TestData, TestEncryptionRepository}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -30,14 +30,14 @@ class TestOnlyController @Inject() (
 )(implicit val ec: ExecutionContext, cc: ControllerComponents)
     extends BackendController(cc) with Logging {
 
-  val fakeBusinessAddress: BusinessAddress = BusinessAddress(
+  val fakeBusinessAddress: TestBusinessAddress = TestBusinessAddress(
     "1 Some Street",
     Some("Some Town"),
     None,
     None,
     Some("BN1 1XX"),
     "GB",
-    Some("true")
+    Some(true)
   )
 
   def create(arn: String): Action[AnyContent] = Action.async { _ =>

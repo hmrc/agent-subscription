@@ -23,7 +23,7 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions}
 import play.api.Logging
 import play.api.libs.json._
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
+import uk.gov.hmrc.agentsubscription.model.TestBusinessAddress
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter}
 import uk.gov.hmrc.mongo.MongoComponent
@@ -104,7 +104,7 @@ class TestEncryptionRepositoryImpl @Inject() (mongo: MongoComponent, @Named("aes
 case class TestData(
   arn: String,
   message: String,
-  businessAddress: BusinessAddress,
+  businessAddress: TestBusinessAddress,
   encrypted: Option[Boolean]
 )
 
@@ -122,25 +122,8 @@ object TestData {
                                       case JsSuccess(value, _) => crypto.decrypt(Crypted(value)).value
                                       case _ => throw new RuntimeException("Failed to decrypt message")
                                     }
-                          businessAddress = (json \ "businessAddress").validate[BusinessAddress] match {
-                                              case JsSuccess(value, _) =>
-                                                BusinessAddress(
-                                                  addressLine1 = crypto.decrypt(Crypted(value.addressLine1)).value,
-                                                  addressLine2 = value.addressLine2.map { f: String =>
-                                                    crypto.decrypt(Crypted(f)).value
-                                                  },
-                                                  addressLine3 = value.addressLine3.map { f: String =>
-                                                    crypto.decrypt(Crypted(f)).value
-                                                  },
-                                                  addressLine4 = value.addressLine4.map { f: String =>
-                                                    crypto.decrypt(Crypted(f)).value
-                                                  },
-                                                  postalCode = value.postalCode.map { f: String =>
-                                                    crypto.decrypt(Crypted(f)).value
-                                                  },
-                                                  countryCode = crypto.decrypt(Crypted(value.countryCode)).value
-                                                )
-                                            }
+                          businessAddress <-
+                            (json \ "businessAddress").validate[TestBusinessAddress](TestBusinessAddress.format)
                         } yield TestData(
                           arn = arn,
                           message = message,
@@ -149,9 +132,10 @@ object TestData {
                         )
                       case _ =>
                         for {
-                          arn             <- (json \ "arn").validate[String]
-                          message         <- (json \ "message").validate[String]
-                          businessAddress <- (json \ "businessAddress").validate[BusinessAddress]
+                          arn     <- (json \ "arn").validate[String]
+                          message <- (json \ "message").validate[String]
+                          businessAddress <-
+                            (json \ "businessAddress").validate[TestBusinessAddress](TestBusinessAddress.format)
                         } yield TestData(
                           arn = arn,
                           message = message,
@@ -166,7 +150,7 @@ object TestData {
         "arn"             -> testData.arn,
         "message"         -> stringEncrypter.writes(testData.message),
         "encrypted"       -> testData.encrypted,
-        "businessAddress" -> testData.businessAddress
+        "businessAddress" -> TestBusinessAddress.format.writes(testData.businessAddress)
       )
 
     Format(reads(_), testData => writes(testData))
