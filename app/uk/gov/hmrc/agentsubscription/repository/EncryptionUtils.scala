@@ -10,7 +10,7 @@ object EncryptionUtils {
       case _                   => throw new RuntimeException(s"Failed to decrypt $fieldName")
     }
 
-  private def decryptOpt(fieldName: String, json: JsValue)(implicit crypto: Encrypter with Decrypter): Option[String] =
+  def decryptOpt(fieldName: String, json: JsValue)(implicit crypto: Encrypter with Decrypter): Option[String] =
     (json \ fieldName).validateOpt[String] match {
       case JsSuccess(value, _) => value.map { f: String => crypto.decrypt(Crypted(f)).value }
       case _                   => throw new RuntimeException(s"Failed to decrypt $fieldName")

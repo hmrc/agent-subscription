@@ -101,40 +101,6 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
 
   private def replaceOptions(upsert: Boolean) = new ReplaceOptions().upsert(upsert)
 
-  def encryptBusinessDetails(businessDetails: BusinessDetails): BusinessDetails =
-    businessDetails.copy(
-      nino = businessDetails.nino.map { n: String =>
-        crypto.encrypt(PlainText(n)).value
-      },
-      utr = crypto.encrypt(PlainText(businessDetails.utr)).value,
-      postcode = crypto.encrypt(PlainText(businessDetails.postcode)).value,
-      registration = businessDetails.registration.map { f =>
-        f.copy(
-          taxpayerName = f.taxpayerName.map { f: String => crypto.encrypt(PlainText(f)).value },
-          emailAddress = f.emailAddress.map { f: String => crypto.encrypt(PlainText(f)).value },
-          address = encryptBusinessAddress(f.address),
-          primaryPhoneNumber = f.primaryPhoneNumber.map { f: String => crypto.encrypt(PlainText(f)).value }
-        )
-      }
-    )
-
-  private def decryptBusinessDetails(businessDetails: BusinessDetails): BusinessDetails =
-    businessDetails.copy(
-      nino = businessDetails.nino.map { n: String =>
-        crypto.decrypt(Crypted(n)).value
-      },
-      utr = crypto.decrypt(Crypted(businessDetails.utr)).value,
-      postcode = crypto.decrypt(Crypted(businessDetails.postcode)).value,
-      registration = businessDetails.registration.map { f =>
-        f.copy(
-          taxpayerName = f.taxpayerName.map { f: String => crypto.decrypt(Crypted(f)).value },
-          emailAddress = f.emailAddress.map { f: String => crypto.decrypt(Crypted(f)).value },
-          address = decryptBusinessAddress(f.address),
-          primaryPhoneNumber = f.primaryPhoneNumber.map { f: String => crypto.decrypt(Crypted(f)).value }
-        )
-      }
-    )
-
   def encryptContactEmailData(contactEmailData: ContactEmailData): ContactEmailData =
     contactEmailData.copy(
       contactEmail = contactEmailData.contactEmail.map { f: String => crypto.encrypt(PlainText(f)).value }
@@ -182,49 +148,6 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
     contactTradingAddressData.copy(
       contactTradingAddress = contactTradingAddressData.contactTradingAddress.map(decryptBusinessAddress)
     )
-
-  def encryptBusinessAddress(businessAddress: BusinessAddress): BusinessAddress =
-    businessAddress.copy(
-      addressLine1 = crypto.encrypt(PlainText(businessAddress.addressLine1)).value,
-      addressLine2 = businessAddress.addressLine2.map { f: String => crypto.encrypt(PlainText(f)).value },
-      addressLine3 = businessAddress.addressLine3.map { f: String => crypto.encrypt(PlainText(f)).value },
-      addressLine4 = businessAddress.addressLine4.map { f: String => crypto.encrypt(PlainText(f)).value },
-      postalCode = businessAddress.postalCode.map { f: String => crypto.encrypt(PlainText(f)).value },
-      countryCode = crypto.encrypt(PlainText(businessAddress.countryCode)).value
-    )
-
-  private def decryptBusinessAddress(businessAddress: BusinessAddress): BusinessAddress =
-    businessAddress.copy(
-      addressLine1 = crypto.decrypt(Crypted(businessAddress.addressLine1)).value,
-      addressLine2 = businessAddress.addressLine2.map { f: String => crypto.decrypt(Crypted(f)).value },
-      addressLine3 = businessAddress.addressLine3.map { f: String => crypto.decrypt(Crypted(f)).value },
-      addressLine4 = businessAddress.addressLine4.map { f: String => crypto.decrypt(Crypted(f)).value },
-      postalCode = businessAddress.postalCode.map { f: String => crypto.decrypt(Crypted(f)).value },
-      countryCode = crypto.decrypt(Crypted(businessAddress.countryCode)).value
-    )
-
-  def encryptRecord(record: SubscriptionJourneyRecord): SubscriptionJourneyRecord =
-    record.copy(
-      encrypted = Some(true),
-      businessDetails = encryptBusinessDetails(record.businessDetails),
-      contactEmailData = record.contactEmailData.map(encryptContactEmailData),
-      contactTradingNameData = record.contactTradingNameData.map(encryptContactTradingNameData),
-      contactTelephoneData = record.contactTelephoneData.map(encryptContactTelephoneData),
-      contactTradingAddressData = record.contactTradingAddressData.map(encryptContactTradingAddressData),
-      verifiedEmails = record.verifiedEmails.map { f: String => crypto.encrypt(PlainText(f)).value }
-    )
-
-  private def decryptRecord(record: SubscriptionJourneyRecord): SubscriptionJourneyRecord =
-    if (record.encrypted.contains(true)) {
-      record.copy(
-        businessDetails = decryptBusinessDetails(record.businessDetails),
-        contactEmailData = record.contactEmailData.map(decryptContactEmailData),
-        contactTradingNameData = record.contactTradingNameData.map(decryptContactTradingNameData),
-        contactTelephoneData = record.contactTelephoneData.map(decryptContactTelephoneData),
-        contactTradingAddressData = record.contactTradingAddressData.map(decryptContactTradingAddressData),
-        verifiedEmails = record.verifiedEmails.map { f: String => crypto.decrypt(Crypted(f)).value }
-      )
-    } else record
 
   def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord): Future[Option[UpsertType]] =
     collection

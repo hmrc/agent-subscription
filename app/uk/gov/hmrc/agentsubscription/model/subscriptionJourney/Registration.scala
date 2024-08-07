@@ -17,8 +17,9 @@
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
 import play.api.libs.json.{Format, JsResult, JsValue, Json}
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
+import uk.gov.hmrc.agentsubscription.model.BusinessAddress
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils._
 
 case class Registration(
   taxpayerName: Option[String],
@@ -37,12 +38,12 @@ object Registration {
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
         result = Registration(
-          (json \ "taxpayerName").asOpt[String],
+          maybeDecryptOpt("taxPayerName", isEncrypted, json),
           (json \ "isSubscribedToAgentServices").as[Boolean],
           (json \ "isSubscribedToETMP").as[Boolean],
           (json \ "address").as[BusinessAddress],
-          (json \ "emailAddress").asOpt[String],
-          (json \ "primaryPhoneNumber").asOpt[String],
+          maybeDecryptOpt("emailAddress", isEncrypted, json),
+          maybeDecryptOpt("primaryPhoneNumber", isEncrypted, json),
           (json \ "safeId").asOpt[String],
           isEncrypted
         )

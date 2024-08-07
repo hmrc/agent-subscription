@@ -57,19 +57,6 @@ case class DesRegistrationRequest(requiresNameMatch: Boolean = false, regime: St
 
 case class DesIndividual(firstName: String, lastName: String)
 
-case class BusinessAddress(
-  addressLine1: String,
-  addressLine2: Option[String],
-  addressLine3: Option[String] = None,
-  addressLine4: Option[String] = None,
-  postalCode: Option[String],
-  countryCode: String
-)
-
-object BusinessAddress {
-  implicit val format: OFormat[BusinessAddress] = Json.format
-}
-
 case class DesRegistrationResponse(
   isAnASAgent: Boolean,
   organisationName: Option[String],
