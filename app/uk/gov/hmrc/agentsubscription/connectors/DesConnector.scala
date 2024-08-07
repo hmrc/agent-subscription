@@ -31,7 +31,10 @@ import uk.gov.hmrc.http.HttpReads.Implicits._
 import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import play.api.http.Status._
+import uk.gov.hmrc.agentsubscription.repository.TestData
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
+import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter, Sensitive}
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.net.URL
@@ -63,10 +66,83 @@ case class BusinessAddress(
   addressLine3: Option[String] = None,
   addressLine4: Option[String] = None,
   postalCode: Option[String],
-  countryCode: String
+  countryCode: String,
+  encrypted: Option[Boolean] = None
 )
 
 object BusinessAddress {
+
+  private def decrypt(fieldName: String, json: JsValue)(implicit crypto: Encrypter with Decrypter): String = {
+    val value = (json \ fieldName).validate[String]
+    value match {
+      case JsSuccess(value, _) => crypto.decrypt(Crypted(value)).value
+      case _                   => throw new RuntimeException(s"Failed to decrypt $fieldName")
+    }
+  }
+
+  def decryptOpt(fieldName: String, json: JsValue)(implicit crypto: Encrypter with Decrypter): Option[String] =
+    (json \ fieldName).validateOpt[String] match {
+      case JsSuccess(value, _) => value.map { f: String => crypto.decrypt(Crypted(f)).value }
+      case _                   => throw new RuntimeException(s"Failed to decrypt $fieldName")
+    }
+
+  def format(implicit crypto: Encrypter with Decrypter): Format[BusinessAddress] = {
+
+    def reads(json: JsValue): JsResult[BusinessAddress] =
+      for {
+        isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
+        businessAddress <- isEncrypted match {
+                             case Some(true) =>
+                               for {
+                                 addressLine1 <- decrypt("addressLine1", json)
+                                 addressLine2 <- decryptOpt("addressLine2", json)
+                                 addressLine3 <- decryptOpt("addressLine3", json)
+                                 addressLine4 <- decryptOpt("addressLine4", json)
+                                 postalCode   <- decryptOpt("postalCode", json)
+                                 countryCode  <- decrypt("countryCode", json)
+                               } yield BusinessAddress(
+                                 addressLine1,
+                                 addressLine2,
+                                 addressLine3,
+                                 addressLine4,
+                                 postalCode,
+                                 countryCode,
+                                 Some(true)
+                               )
+                             case _ =>
+                               for {
+                                 addressLine1 <- (json \ "addressLine1").validate[String]
+                                 addressLine2 <- (json \ "addressLine2").validateOpt[String]
+                                 addressLine3 <- (json \ "addressLine3").validateOpt[String]
+                                 addressLine4 <- (json \ "addressLine4").validateOpt[String]
+                                 postalCode   <- (json \ "postalCode").validateOpt[String]
+                                 countryCode  <- (json \ "countryCode").validate[String]
+                               } yield BusinessAddress(
+                                 addressLine1,
+                                 addressLine2,
+                                 addressLine3,
+                                 addressLine4,
+                                 postalCode,
+                                 countryCode,
+                                 Some(false)
+                               )
+                           }
+      } yield businessAddress
+
+    def writes(businessAddress: BusinessAddress): JsValue =
+      Json.obj(
+        "addressLine1" -> stringEncrypter.writes(businessAddress.addressLine1),
+        "addressLine2" -> businessAddress.addressLine2.map(stringEncrypter.writes),
+        "addressLine3" -> businessAddress.addressLine2.map(stringEncrypter.writes),
+        "addressLine4" -> businessAddress.addressLine2.map(stringEncrypter.writes),
+        "postalCode"   -> businessAddress.addressLine2.map(stringEncrypter.writes),
+        "countryCode"  -> stringEncrypter.writes(businessAddress.countryCode),
+        "encrypted"    -> businessAddress.encrypted
+      )
+
+    Format(reads(_), businessAddress => writes(businessAddress))
+  }
+
   implicit val format: OFormat[BusinessAddress] = Json.format
 }
 

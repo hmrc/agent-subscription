@@ -23,6 +23,7 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions}
 import play.api.Logging
 import play.api.libs.json._
+import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter}
 import uk.gov.hmrc.mongo.MongoComponent
@@ -103,6 +104,7 @@ class TestEncryptionRepositoryImpl @Inject() (mongo: MongoComponent, @Named("aes
 case class TestData(
   arn: String,
   message: String,
+  businessAddress: BusinessAddress,
   encrypted: Option[Boolean]
 )
 
@@ -120,28 +122,51 @@ object TestData {
                                       case JsSuccess(value, _) => crypto.decrypt(Crypted(value)).value
                                       case _ => throw new RuntimeException("Failed to decrypt message")
                                     }
+                          businessAddress = (json \ "businessAddress").validate[BusinessAddress] match {
+                                              case JsSuccess(value, _) =>
+                                                BusinessAddress(
+                                                  addressLine1 = crypto.decrypt(Crypted(value.addressLine1)).value,
+                                                  addressLine2 = value.addressLine2.map { f: String =>
+                                                    crypto.decrypt(Crypted(f)).value
+                                                  },
+                                                  addressLine3 = value.addressLine3.map { f: String =>
+                                                    crypto.decrypt(Crypted(f)).value
+                                                  },
+                                                  addressLine4 = value.addressLine4.map { f: String =>
+                                                    crypto.decrypt(Crypted(f)).value
+                                                  },
+                                                  postalCode = value.postalCode.map { f: String =>
+                                                    crypto.decrypt(Crypted(f)).value
+                                                  },
+                                                  countryCode = crypto.decrypt(Crypted(value.countryCode)).value
+                                                )
+                                            }
                         } yield TestData(
                           arn = arn,
                           message = message,
-                          encrypted = Some(true)
+                          encrypted = Some(true),
+                          businessAddress = businessAddress
                         )
                       case _ =>
                         for {
-                          arn     <- (json \ "arn").validate[String]
-                          message <- (json \ "message").validate[String]
+                          arn             <- (json \ "arn").validate[String]
+                          message         <- (json \ "message").validate[String]
+                          businessAddress <- (json \ "businessAddress").validate[BusinessAddress]
                         } yield TestData(
                           arn = arn,
                           message = message,
-                          encrypted = Some(false)
+                          encrypted = Some(false),
+                          businessAddress = businessAddress
                         )
                     }
       } yield testData
 
     def writes(testData: TestData): JsValue =
       Json.obj(
-        "arn"       -> testData.arn,
-        "message"   -> stringEncrypter.writes(testData.message),
-        "encrypted" -> testData.encrypted
+        "arn"             -> testData.arn,
+        "message"         -> stringEncrypter.writes(testData.message),
+        "encrypted"       -> testData.encrypted,
+        "businessAddress" -> testData.businessAddress
       )
 
     Format(reads(_), testData => writes(testData))
