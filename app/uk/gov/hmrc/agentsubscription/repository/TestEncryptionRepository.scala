@@ -23,9 +23,8 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions}
 import play.api.Logging
 import play.api.libs.json._
-import uk.gov.hmrc.crypto.Sensitive.SensitiveString
-import uk.gov.hmrc.crypto.json.JsonEncryption.{sensitiveEncrypterDecrypter, stringEncrypter}
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter, Sensitive}
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
+import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
@@ -110,9 +109,6 @@ case class TestData(
 object TestData {
   def format(implicit crypto: Encrypter with Decrypter): Format[TestData] = {
 
-    implicit val sensitiveStringFormat: Format[Sensitive[String]] =
-      sensitiveEncrypterDecrypter[String, Sensitive[String]](SensitiveString.apply)
-
     def reads(json: JsValue): JsResult[TestData] =
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
@@ -120,7 +116,10 @@ object TestData {
                       case Some(true) =>
                         for {
                           arn <- (json \ "arn").validate[String]
-                          message = (json \ "message").validate[Sensitive[String]].get.decryptedValue
+                          message = (json \ "message").validate[String] match {
+                                      case JsSuccess(value, _) => crypto.decrypt(Crypted(value)).value
+                                      case _ => throw new RuntimeException("Failed to decrypt message")
+                                    }
                         } yield TestData(
                           arn = arn,
                           message = message,
