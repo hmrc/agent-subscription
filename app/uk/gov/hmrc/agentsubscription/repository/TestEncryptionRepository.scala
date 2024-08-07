@@ -23,11 +23,16 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions}
 import play.api.Logging
 import play.api.libs.json._
-import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter, PlainText}
+import play.api.libs.functional.syntax._
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.BusinessDetails
+import uk.gov.hmrc.crypto.Sensitive.SensitiveString
+import uk.gov.hmrc.crypto.json.JsonEncryption.sensitiveDecrypter
+import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter, PlainText, Sensitive}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import javax.inject.{Inject, Named, Singleton}
+import scala.None.getOrElse
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[TestEncryptionRepositoryImpl])
@@ -113,6 +118,37 @@ case class TestData(
 )
 
 object TestData {
+  def format(implicit crypto: Encrypter with Decrypter): OFormat[TestData] = {
 
-  implicit val testDataFormat: OFormat[TestData] = Json.format[TestData]
+    implicit val sensitiveStringReads: Reads[Sensitive[String]] =
+      sensitiveDecrypter[String, Sensitive[String]](SensitiveString.apply)
+
+    def reads(json: JsValue): JsResult[TestData] =
+      for {
+        isEncrypted <- (json \ "encrypted").asOpt[Boolean]
+        testData <- isEncrypted match {
+          case true =>
+            for {
+              arn <- (json \ "arn").validate[String]
+              message = (json \ "message").validate[Sensitive[String]] match {
+                case JsSuccess(value, _) => value.decryptedValue
+                case JsError(e) => throw new RuntimeException(s"Failed to decrypt message: $e")
+              }
+            } yield JsSuccess(TestData(
+              arn = arn,
+              message = message,
+              encrypted = Some(true)
+            ))
+          case _ =>
+            for {
+              arn <- (json \ "arn").validate[String]
+              message <- (json \ "message").validate[String]
+            } yield JsSuccess(TestData(
+              arn = arn,
+              message = message,
+              encrypted = Some(false)
+            ))
+        }
+      } yield testData.getOrElse(JsError("Failed to parse TestData"))
+  }
 }
