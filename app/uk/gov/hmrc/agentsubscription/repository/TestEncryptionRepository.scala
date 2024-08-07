@@ -23,16 +23,13 @@ import org.mongodb.scala.model.Indexes.ascending
 import org.mongodb.scala.model.{Filters, IndexModel, IndexOptions}
 import play.api.Logging
 import play.api.libs.json._
-import play.api.libs.functional.syntax._
-import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.BusinessDetails
 import uk.gov.hmrc.crypto.Sensitive.SensitiveString
-import uk.gov.hmrc.crypto.json.JsonEncryption.sensitiveDecrypter
-import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter, PlainText, Sensitive}
+import uk.gov.hmrc.crypto.json.JsonEncryption.{sensitiveEncrypterDecrypter, stringEncrypter}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter, Sensitive}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import javax.inject.{Inject, Named, Singleton}
-import scala.None.getOrElse
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[TestEncryptionRepositoryImpl])
@@ -55,7 +52,7 @@ class TestEncryptionRepositoryImpl @Inject() (mongo: MongoComponent, @Named("aes
 ) extends PlayMongoRepository[TestData](
       mongoComponent = mongo,
       collectionName = "test-encryption",
-      domainFormat = TestData.testDataFormat,
+      domainFormat = TestData.format(crypto),
       replaceIndexes = true,
       indexes = Seq(
         IndexModel(ascending("arn"), IndexOptions().name("Arn").unique(true))
@@ -68,7 +65,7 @@ class TestEncryptionRepositoryImpl @Inject() (mongo: MongoComponent, @Named("aes
     testData: TestData
   ): Future[Option[Boolean]] =
     collection
-      .insertOne(testData.copy(encrypted = Some(true), message = crypto.encrypt(PlainText(testData.message)).value))
+      .insertOne(testData.copy(encrypted = Some(true)))
       .headOption()
       .map(_.map(result => result.wasAcknowledged()))
       .recoverWith { case e: MongoWriteException =>
@@ -82,7 +79,7 @@ class TestEncryptionRepositoryImpl @Inject() (mongo: MongoComponent, @Named("aes
     collection
       .replaceOne(
         equal("arn", testData.arn),
-        testData.copy(encrypted = Some(true), message = crypto.encrypt(PlainText(testData.message)).value)
+        testData.copy(encrypted = Some(true))
       )
       .headOption()
       .map(_.map(result => result.wasAcknowledged()))
@@ -91,23 +88,16 @@ class TestEncryptionRepositoryImpl @Inject() (mongo: MongoComponent, @Named("aes
         Future.successful(None)
       }
 
-  private def maybeDecrypt(testData: TestData): TestData =
-    if (testData.encrypted.contains(true)) {
-      testData.copy(message = crypto.decrypt(Crypted(testData.message)).value)
-    } else testData
-
   def listTestData: Future[Seq[TestData]] =
     collection
       .find(Filters.empty())
       .collect()
       .toFuture()
-      .map(_.map(maybeDecrypt))
 
   def findTestData(arn: String): Future[Option[TestData]] =
     collection
       .find(Filters.equal("arn", arn))
       .headOption()
-      .map(_.map(maybeDecrypt))
 
 }
 
@@ -118,37 +108,43 @@ case class TestData(
 )
 
 object TestData {
-  def format(implicit crypto: Encrypter with Decrypter): OFormat[TestData] = {
+  def format(implicit crypto: Encrypter with Decrypter): Format[TestData] = {
 
-    implicit val sensitiveStringReads: Reads[Sensitive[String]] =
-      sensitiveDecrypter[String, Sensitive[String]](SensitiveString.apply)
+    implicit val sensitiveStringFormat: Format[Sensitive[String]] =
+      sensitiveEncrypterDecrypter[String, Sensitive[String]](SensitiveString.apply)
 
     def reads(json: JsValue): JsResult[TestData] =
       for {
-        isEncrypted <- (json \ "encrypted").asOpt[Boolean]
+        isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
         testData <- isEncrypted match {
-          case true =>
-            for {
-              arn <- (json \ "arn").validate[String]
-              message = (json \ "message").validate[Sensitive[String]] match {
-                case JsSuccess(value, _) => value.decryptedValue
-                case JsError(e) => throw new RuntimeException(s"Failed to decrypt message: $e")
-              }
-            } yield JsSuccess(TestData(
-              arn = arn,
-              message = message,
-              encrypted = Some(true)
-            ))
-          case _ =>
-            for {
-              arn <- (json \ "arn").validate[String]
-              message <- (json \ "message").validate[String]
-            } yield JsSuccess(TestData(
-              arn = arn,
-              message = message,
-              encrypted = Some(false)
-            ))
-        }
-      } yield testData.getOrElse(JsError("Failed to parse TestData"))
+                      case Some(true) =>
+                        for {
+                          arn <- (json \ "arn").validate[String]
+                          message = (json \ "message").validate[Sensitive[String]].get.decryptedValue
+                        } yield TestData(
+                          arn = arn,
+                          message = message,
+                          encrypted = Some(true)
+                        )
+                      case _ =>
+                        for {
+                          arn     <- (json \ "arn").validate[String]
+                          message <- (json \ "message").validate[String]
+                        } yield TestData(
+                          arn = arn,
+                          message = message,
+                          encrypted = Some(false)
+                        )
+                    }
+      } yield testData
+
+    def writes(testData: TestData): JsValue =
+      Json.obj(
+        "arn"       -> testData.arn,
+        "message"   -> stringEncrypter.writes(testData.message),
+        "encrypted" -> testData.encrypted
+      )
+
+    Format(reads(_), testData => writes(testData))
   }
 }
