@@ -20,6 +20,7 @@ import play.api.libs.json.{Format, JsResult, JsValue, Json}
 import uk.gov.hmrc.agentsubscription.model.BusinessAddress
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils._
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 
 case class Registration(
   taxpayerName: Option[String],
@@ -36,8 +37,6 @@ object Registration {
 
   def format(implicit crypto: Encrypter with Decrypter): Format[Registration] = {
 
-    implicit val businessAddressReads: Format[BusinessAddress] = BusinessAddress.format(crypto)
-
     def reads(json: JsValue): JsResult[Registration] =
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
@@ -45,7 +44,7 @@ object Registration {
           maybeDecryptOpt("taxPayerName", isEncrypted, json),
           (json \ "isSubscribedToAgentServices").as[Boolean],
           (json \ "isSubscribedToETMP").as[Boolean],
-          (json \ "address").as[BusinessAddress],
+          (json \ "address").as[BusinessAddress](BusinessAddress.format(crypto)),
           maybeDecryptOpt("emailAddress", isEncrypted, json),
           maybeDecryptOpt("primaryPhoneNumber", isEncrypted, json),
           (json \ "safeId").asOpt[String],
@@ -55,12 +54,12 @@ object Registration {
 
     def writes(registration: Registration): JsValue =
         Json.obj(
-            "taxpayerName" -> registration.taxpayerName,
+            "taxpayerName" -> registration.taxpayerName.map(stringEncrypter.writes),
             "isSubscribedToAgentServices" -> registration.isSubscribedToAgentServices,
             "isSubscribedToETMP" -> registration.isSubscribedToETMP,
-            "address" -> registration.address,
-            "emailAddress" -> registration.emailAddress,
-            "primaryPhoneNumber" -> registration.primaryPhoneNumber,
+            "address" -> BusinessAddress.format.writes(registration.address),
+            "emailAddress" -> registration.emailAddress.map(stringEncrypter.writes),
+            "primaryPhoneNumber" -> registration.primaryPhoneNumber.map(stringEncrypter.writes),
             "safeId" -> registration.safeId,
             "encrypted" -> registration.encrypted
         )
