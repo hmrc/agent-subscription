@@ -32,7 +32,7 @@ object ContactEmailData {
         result = ContactEmailData(
                    (json \ "useBusinessEmail").as[Boolean],
                    maybeDecryptOpt("contactEmail", isEncrypted, json),
-                   isEncrypted
+                   (json \ "encrypted").asOpt[Boolean]
                  )
       } yield result
 

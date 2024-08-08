@@ -36,7 +36,7 @@ object ContactTelephoneData {
         result = ContactTelephoneData(
                    (json \ "useBusinessTelephone").as[Boolean],
                    maybeDecryptOpt("telephoneNumber", isEncrypted, json),
-                   isEncrypted
+                   (json \ "encrypted").asOpt[Boolean]
                  )
       } yield result
 
