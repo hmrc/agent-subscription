@@ -24,7 +24,7 @@ import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 case class ContactEmailData(useBusinessEmail: Boolean, contactEmail: Option[String], encrypted: Option[Boolean] = None)
 
 object ContactEmailData {
-  def format(implicit crypto: Encrypter with Decrypter): Format[ContactEmailData] = {
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactEmailData] = {
 
     def reads(json: JsValue): JsResult[ContactEmailData] =
       for {

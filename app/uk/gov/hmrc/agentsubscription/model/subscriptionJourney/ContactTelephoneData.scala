@@ -28,7 +28,7 @@ case class ContactTelephoneData(
 )
 
 object ContactTelephoneData {
-  def format(implicit crypto: Encrypter with Decrypter): Format[ContactTelephoneData] = {
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactTelephoneData] = {
 
     def reads(json: JsValue): JsResult[ContactTelephoneData] =
       for {

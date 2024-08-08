@@ -22,12 +22,12 @@ import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 case class ContactTradingAddressData(useBusinessAddress: Boolean, contactTradingAddress: Option[BusinessAddress])
 
 object ContactTradingAddressData {
-  def format(implicit crypto: Encrypter with Decrypter): Format[ContactTradingAddressData] = {
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactTradingAddressData] = {
 
     def reads(json: JsValue): JsResult[ContactTradingAddressData] = {
       val useBusinessAddress = (json \ "useBusinessAddress").as[Boolean]
       val contactTradingAddress =
-        (json \ "contactTradingAddress").asOpt[BusinessAddress](BusinessAddress.format(crypto))
+        (json \ "contactTradingAddress").asOpt[BusinessAddress](BusinessAddress.databaseFormat(crypto))
       JsSuccess(
         ContactTradingAddressData(
           useBusinessAddress,
@@ -38,8 +38,10 @@ object ContactTradingAddressData {
 
     def writes(contactTradingAddressData: ContactTradingAddressData): JsValue =
       Json.obj(
-        "useBusinessAddress"    -> contactTradingAddressData.useBusinessAddress,
-        "contactTradingAddress" -> contactTradingAddressData.contactTradingAddress.map(BusinessAddress.format.writes)
+        "useBusinessAddress" -> contactTradingAddressData.useBusinessAddress,
+        "contactTradingAddress" -> contactTradingAddressData.contactTradingAddress.map(
+          BusinessAddress.databaseFormat.writes
+        )
       )
 
     Format(reads(_), contactTradingAddressData => writes(contactTradingAddressData))

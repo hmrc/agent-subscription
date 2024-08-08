@@ -31,7 +31,7 @@ case class BusinessAddress(
   encrypted: Option[Boolean] = None
 )
 object BusinessAddress {
-  def format(implicit crypto: Encrypter with Decrypter): Format[BusinessAddress] = {
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[BusinessAddress] = {
 
     def reads(json: JsValue): JsResult[BusinessAddress] =
       for {

@@ -53,7 +53,7 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
 ) extends PlayMongoRepository[SubscriptionJourneyRecord](
       mongoComponent = mongo,
       collectionName = "subscription-journey",
-      domainFormat = SubscriptionJourneyRecord.subscriptionJourneyFormat(crypto),
+      domainFormat = SubscriptionJourneyRecord.databaseFormat(crypto),
       indexes = Seq(
         IndexModel(
           ascending("authProviderId"),

@@ -48,28 +48,52 @@ object SubscriptionJourneyRecord {
 
   import MongoLocalDateTimeFormat._
 
-  def subscriptionJourneyFormat(crypto: Encrypter with Decrypter): OFormat[SubscriptionJourneyRecord] =
-    ((JsPath \ "authProviderId").format[AuthProviderId] and
-      (JsPath \ "continueId").formatNullable[String] and
-      (JsPath \ "businessDetails").format[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
-      (JsPath \ "amlsData").formatNullable[AmlsData] and
-      (JsPath \ "userMappings").format[List[UserMapping]] and
-      (JsPath \ "mappingComplete").format[Boolean] and
-      (JsPath \ "cleanCredsAuthProviderId").formatNullable[AuthProviderId] and
-      (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime] and
-      (JsPath \ "contactEmailData").formatNullable[ContactEmailData](ContactEmailData.format(crypto)) and
-      (JsPath \ "contactTradingNameData").formatNullable[ContactTradingNameData](
-        ContactTradingNameData.format(crypto)
+  def databaseWrites(crypto: Encrypter with Decrypter): Writes[SubscriptionJourneyRecord] =
+    ((JsPath \ "authProviderId").write[AuthProviderId] and
+      (JsPath \ "continueId").writeNullable[String] and
+      (JsPath \ "businessDetails").write[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
+      (JsPath \ "amlsData").writeNullable[AmlsData] and
+      (JsPath \ "userMappings").write[List[UserMapping]] and
+      (JsPath \ "mappingComplete").write[Boolean] and
+      (JsPath \ "cleanCredsAuthProviderId").writeNullable[AuthProviderId] and
+      (JsPath \ "lastModifiedDate").writeNullable[LocalDateTime] and
+      (JsPath \ "contactEmailData").writeNullable[ContactEmailData](ContactEmailData.databaseFormat(crypto)) and
+      (JsPath \ "contactTradingNameData").writeNullable[ContactTradingNameData](
+        ContactTradingNameData.databaseFormat(crypto)
       ) and
-      (JsPath \ "contactTradingAddressData").formatNullable[ContactTradingAddressData](
-        ContactTradingAddressData.format(crypto)
+      (JsPath \ "contactTradingAddressData").writeNullable[ContactTradingAddressData](
+        ContactTradingAddressData.databaseFormat(crypto)
       ) and
-      (JsPath \ "contactTelephoneData").formatNullable[ContactTelephoneData](ContactTelephoneData.format(crypto)) and
-      (JsPath \ "verifiedEmails")
-        .formatWithDefault[Set[String]](Set.empty[String]))(
-      SubscriptionJourneyRecord.apply,
+      (JsPath \ "contactTelephoneData").writeNullable[ContactTelephoneData](
+        ContactTelephoneData.databaseFormat(crypto)
+      ) and
+      (JsPath \ "verifiedEmails").formatWithDefault[Set[String]](Set.empty[String]))(
       unlift(SubscriptionJourneyRecord.unapply)
     )
+
+  def databaseReads(crypto: Encrypter with Decrypter): Reads[SubscriptionJourneyRecord] =
+    ((JsPath \ "authProviderId").read[AuthProviderId] and
+      (JsPath \ "continueId").readNullable[String] and
+      (JsPath \ "businessDetails").read[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
+      (JsPath \ "amlsData").readNullable[AmlsData] and
+      (JsPath \ "userMappings").read[List[UserMapping]] and
+      (JsPath \ "mappingComplete").read[Boolean] and
+      (JsPath \ "cleanCredsAuthProviderId").readNullable[AuthProviderId] and
+      (JsPath \ "lastModifiedDate").readNullable[LocalDateTime] and
+      (JsPath \ "contactEmailData").readNullable[ContactEmailData](ContactEmailData.databaseFormat(crypto)) and
+      (JsPath \ "contactTradingNameData").readNullable[ContactTradingNameData](
+        ContactTradingNameData.databaseFormat(crypto)
+      ) and
+      (JsPath \ "contactTradingAddressData").readNullable[ContactTradingAddressData](
+        ContactTradingAddressData.databaseFormat(crypto)
+      ) and
+      (JsPath \ "contactTelephoneData").readNullable[ContactTelephoneData](
+        ContactTelephoneData.databaseFormat(crypto)
+      ) and
+      (JsPath \ "verifiedEmails").readWithDefault[Set[String]](Set.empty[String]))(SubscriptionJourneyRecord.apply _)
+
+  def databaseFormat(crypto: Encrypter with Decrypter): Format[SubscriptionJourneyRecord] =
+    Format(databaseReads(crypto), sjr => databaseWrites(crypto).writes(sjr))
 
   implicit val writes: Writes[SubscriptionJourneyRecord] = Json.writes[SubscriptionJourneyRecord]
 
