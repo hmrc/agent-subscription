@@ -51,9 +51,9 @@ object BusinessAddress {
       Json.obj(
         "addressLine1" -> stringEncrypter.writes(businessAddress.addressLine1),
         "addressLine2" -> businessAddress.addressLine2.map(stringEncrypter.writes),
-        "addressLine3" -> businessAddress.addressLine2.map(stringEncrypter.writes),
-        "addressLine4" -> businessAddress.addressLine2.map(stringEncrypter.writes),
-        "postalCode"   -> businessAddress.addressLine2.map(stringEncrypter.writes),
+        "addressLine3" -> businessAddress.addressLine3.map(stringEncrypter.writes),
+        "addressLine4" -> businessAddress.addressLine4.map(stringEncrypter.writes),
+        "postalCode"   -> businessAddress.postalCode.map(stringEncrypter.writes),
         "countryCode"  -> stringEncrypter.writes(businessAddress.countryCode),
         "encrypted"    -> Some(true)
       )
