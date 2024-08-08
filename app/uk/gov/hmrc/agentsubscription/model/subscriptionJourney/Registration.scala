@@ -61,7 +61,7 @@ object Registration {
         "emailAddress"                -> registration.emailAddress.map(stringEncrypter.writes),
         "primaryPhoneNumber"          -> registration.primaryPhoneNumber.map(stringEncrypter.writes),
         "safeId"                      -> registration.safeId,
-        "encrypted"                   -> registration.encrypted
+        "encrypted"                   -> Some(true)
       )
     Format(reads(_), registration => writes(registration))
   }

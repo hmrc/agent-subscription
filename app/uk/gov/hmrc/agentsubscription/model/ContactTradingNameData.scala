@@ -21,7 +21,11 @@ import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.maybeDecryptOpt
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
-case class ContactTradingNameData(hasTradingName: Boolean, contactTradingName: Option[String], encrypted: Option[Boolean] = None)
+case class ContactTradingNameData(
+  hasTradingName: Boolean,
+  contactTradingName: Option[String],
+  encrypted: Option[Boolean] = None
+)
 
 object ContactTradingNameData {
   def format(implicit crypto: Encrypter with Decrypter): Format[ContactTradingNameData] = {
@@ -34,13 +38,13 @@ object ContactTradingNameData {
                    maybeDecryptOpt("contactTradingName", isEncrypted, json),
                    isEncrypted
                  )
-        } yield result
+      } yield result
 
-        def writes(contactTradingNameData: ContactTradingNameData): JsValue =
+    def writes(contactTradingNameData: ContactTradingNameData): JsValue =
       Json.obj(
-        "hasTradingName"    -> contactTradingNameData.hasTradingName,
+        "hasTradingName"     -> contactTradingNameData.hasTradingName,
         "contactTradingName" -> contactTradingNameData.contactTradingName.map(stringEncrypter.writes),
-        "encrypted" -> Some(true)
+        "encrypted"          -> Some(true)
       )
 
     Format(reads(_), contactTradingNameData => writes(contactTradingNameData))

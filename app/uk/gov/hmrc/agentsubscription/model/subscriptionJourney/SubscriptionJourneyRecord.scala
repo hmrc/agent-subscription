@@ -58,7 +58,9 @@ object SubscriptionJourneyRecord {
       (JsPath \ "cleanCredsAuthProviderId").formatNullable[AuthProviderId] and
       (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime] and
       (JsPath \ "contactEmailData").formatNullable[ContactEmailData](ContactEmailData.format(crypto)) and
-      (JsPath \ "contactTradingNameData").formatNullable[ContactTradingNameData](ContactTradingNameData.format(crypto)) and
+      (JsPath \ "contactTradingNameData").formatNullable[ContactTradingNameData](
+        ContactTradingNameData.format(crypto)
+      ) and
       (JsPath \ "contactTradingAddressData").formatNullable[ContactTradingAddressData](
         ContactTradingAddressData.format(crypto)
       ) and

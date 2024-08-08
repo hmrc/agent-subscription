@@ -55,7 +55,7 @@ object BusinessAddress {
                                 (json \ "addressLine4").asOpt[String],
                                 (json \ "postalCode").asOpt[String],
                                 (json \ "countryCode").as[String],
-                                Some(false)
+                                (json \ "encrypted").asOpt[Boolean]
                               )
                           }
       } yield businessAddress
@@ -68,7 +68,7 @@ object BusinessAddress {
         "addressLine4" -> businessAddress.addressLine2.map(stringEncrypter.writes),
         "postalCode"   -> businessAddress.addressLine2.map(stringEncrypter.writes),
         "countryCode"  -> stringEncrypter.writes(businessAddress.countryCode),
-        "encrypted"    -> businessAddress.encrypted
+        "encrypted"    -> Some(true)
       )
 
     Format(reads(_), businessAddress => writes(businessAddress))

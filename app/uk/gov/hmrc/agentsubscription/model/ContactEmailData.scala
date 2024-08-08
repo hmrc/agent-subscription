@@ -30,17 +30,17 @@ object ContactEmailData {
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
         result = ContactEmailData(
-          (json \ "useBusinessEmail").as[Boolean],
-          maybeDecryptOpt("contactEmail", isEncrypted, json),
-          isEncrypted
-        )
+                   (json \ "useBusinessEmail").as[Boolean],
+                   maybeDecryptOpt("contactEmail", isEncrypted, json),
+                   isEncrypted
+                 )
       } yield result
 
     def writes(contactEmailData: ContactEmailData): JsValue =
       Json.obj(
-        "useBusinessEmail"    -> contactEmailData.useBusinessEmail,
-        "contactEmail" -> contactEmailData.contactEmail.map(stringEncrypter.writes),
-        "encrypted" -> Some(true)
+        "useBusinessEmail" -> contactEmailData.useBusinessEmail,
+        "contactEmail"     -> contactEmailData.contactEmail.map(stringEncrypter.writes),
+        "encrypted"        -> Some(true)
       )
 
     Format(reads(_), contactEmailData => writes(contactEmailData))
