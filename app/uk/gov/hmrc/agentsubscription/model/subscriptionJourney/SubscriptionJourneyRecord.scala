@@ -48,10 +48,10 @@ object SubscriptionJourneyRecord {
 
   import MongoLocalDateTimeFormat._
 
-  implicit def subscriptionJourneyFormat(crypto: Encrypter with Decrypter): OFormat[SubscriptionJourneyRecord] =
+  def subscriptionJourneyFormat(crypto: Encrypter with Decrypter): OFormat[SubscriptionJourneyRecord] =
     ((JsPath \ "authProviderId").format[AuthProviderId] and
       (JsPath \ "continueId").formatNullable[String] and
-      (JsPath \ "businessDetails").format[BusinessDetails](BusinessDetails.format(crypto)) and
+      (JsPath \ "businessDetails").format[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
       (JsPath \ "amlsData").formatNullable[AmlsData] and
       (JsPath \ "userMappings").format[List[UserMapping]] and
       (JsPath \ "mappingComplete").format[Boolean] and
@@ -70,4 +70,7 @@ object SubscriptionJourneyRecord {
       SubscriptionJourneyRecord.apply,
       unlift(SubscriptionJourneyRecord.unapply)
     )
+
+  implicit val writes: Writes[SubscriptionJourneyRecord] = Json.writes[SubscriptionJourneyRecord]
+
 }

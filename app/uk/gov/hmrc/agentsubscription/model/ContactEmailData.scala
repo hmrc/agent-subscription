@@ -16,8 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{Format, JsResult, JsValue, Json}
-import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.maybeDecryptOpt
+import play.api.libs.json.{Format, JsResult, JsValue, Json, Writes}
+import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.decryptOptString
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 
@@ -31,7 +31,7 @@ object ContactEmailData {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
         result = ContactEmailData(
                    (json \ "useBusinessEmail").as[Boolean],
-                   maybeDecryptOpt("contactEmail", isEncrypted, json),
+                   decryptOptString("contactEmail", isEncrypted, json),
                    (json \ "encrypted").asOpt[Boolean]
                  )
       } yield result
@@ -45,4 +45,6 @@ object ContactEmailData {
 
     Format(reads(_), contactEmailData => writes(contactEmailData))
   }
+
+  implicit val writes: Writes[ContactEmailData] = Json.writes[ContactEmailData]
 }

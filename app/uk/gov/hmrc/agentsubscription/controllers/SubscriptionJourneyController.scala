@@ -45,7 +45,7 @@ class SubscriptionJourneyController @Inject() (
 
   def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async {
     subscriptionJourneyRepository.findByAuthId(authProviderId).map {
-      case Some(record) => Ok(toJson(record))
+      case Some(record) => Ok(toJson(record)(SubscriptionJourneyRecord.writes))
       case None         => NoContent
     }
   }

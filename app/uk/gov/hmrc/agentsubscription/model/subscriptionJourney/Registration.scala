@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.{Format, JsResult, JsValue, Json}
+import play.api.libs.json.{Format, JsResult, JsValue, Json, Writes}
 import uk.gov.hmrc.agentsubscription.model.BusinessAddress
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils._
@@ -41,12 +41,12 @@ object Registration {
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
         result = Registration(
-                   maybeDecryptOpt("taxPayerName", isEncrypted, json),
+                   decryptOptString("taxPayerName", isEncrypted, json),
                    (json \ "isSubscribedToAgentServices").as[Boolean],
                    (json \ "isSubscribedToETMP").as[Boolean],
                    (json \ "address").as[BusinessAddress](BusinessAddress.format(crypto)),
-                   maybeDecryptOpt("emailAddress", isEncrypted, json),
-                   maybeDecryptOpt("primaryPhoneNumber", isEncrypted, json),
+                   decryptOptString("emailAddress", isEncrypted, json),
+                   decryptOptString("primaryPhoneNumber", isEncrypted, json),
                    (json \ "safeId").asOpt[String],
                    isEncrypted
                  )
@@ -65,6 +65,8 @@ object Registration {
       )
     Format(reads(_), registration => writes(registration))
   }
+
+  implicit val writes: Writes[Registration] = Json.writes[Registration]
 }
 
 case class UpdateBusinessAddressForm(

@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{Format, JsResult, JsValue, Json}
+import play.api.libs.json.{Format, JsResult, JsValue, Json, Writes}
 import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils._
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
@@ -36,28 +36,15 @@ object BusinessAddress {
     def reads(json: JsValue): JsResult[BusinessAddress] =
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
-        businessAddress = isEncrypted match {
-                            case Some(true) =>
-                              BusinessAddress(
-                                decrypt("addressLine1", json),
-                                decryptOpt("addressLine2", json),
-                                decryptOpt("addressLine3", json),
-                                decryptOpt("addressLine4", json),
-                                decryptOpt("postalCode", json),
-                                decrypt("countryCode", json),
-                                Some(true)
-                              )
-                            case _ =>
-                              BusinessAddress(
-                                (json \ "addressLine1").as[String],
-                                (json \ "addressLine2").asOpt[String],
-                                (json \ "addressLine3").asOpt[String],
-                                (json \ "addressLine4").asOpt[String],
-                                (json \ "postalCode").asOpt[String],
-                                (json \ "countryCode").as[String],
-                                (json \ "encrypted").asOpt[Boolean]
-                              )
-                          }
+        businessAddress = BusinessAddress(
+                            decryptString("addressLine1", isEncrypted, json),
+                            decryptOptString("addressLine2", isEncrypted, json),
+                            decryptOptString("addressLine3", isEncrypted, json),
+                            decryptOptString("addressLine4", isEncrypted, json),
+                            decryptOptString("postalCode", isEncrypted, json),
+                            decryptString("countryCode", isEncrypted, json),
+                            Some(true)
+                          )
       } yield businessAddress
 
     def writes(businessAddress: BusinessAddress): JsValue =
@@ -73,5 +60,7 @@ object BusinessAddress {
 
     Format(reads(_), businessAddress => writes(businessAddress))
   }
+
+  implicit val writes: Writes[BusinessAddress] = Json.writes[BusinessAddress]
 
 }

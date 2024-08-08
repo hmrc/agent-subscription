@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.{Format, JsResult, JsValue, Json}
+import play.api.libs.json.{Format, JsResult, JsValue, Json, Writes}
 import uk.gov.hmrc.agentsubscription.model.DateOfBirth
-import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.{maybeDecrypt, maybeDecryptOpt}
+import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.{decryptOptString, decryptString}
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 
@@ -42,17 +42,17 @@ case class BusinessDetails(
 
 object BusinessDetails {
 
-  def format(implicit crypto: Encrypter with Decrypter): Format[BusinessDetails] = {
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[BusinessDetails] = {
 
     def reads(json: JsValue): JsResult[BusinessDetails] =
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
         result = BusinessDetails(
                    businessType = (json \ "businessType").as[BusinessType],
-                   utr = maybeDecrypt("utr", isEncrypted, json),
-                   postcode = maybeDecrypt("postcode", isEncrypted, json),
+                   utr = decryptString("utr", isEncrypted, json),
+                   postcode = decryptString("postcode", isEncrypted, json),
                    registration = (json \ "registration").asOpt[Registration](Registration.format(crypto)),
-                   nino = maybeDecryptOpt("nino", isEncrypted, json),
+                   nino = decryptOptString("nino", isEncrypted, json),
                    companyRegistrationNumber = (json \ "companyRegistrationNumber").asOpt[CompanyRegistrationNumber],
                    dateOfBirth = (json \ "dateOfBirth").asOpt[DateOfBirth],
                    registeredForVat = (json \ "registeredForVat").asOpt[Boolean],
@@ -77,4 +77,6 @@ object BusinessDetails {
 
     Format(reads(_), businessDetails => writes(businessDetails))
   }
+
+  implicit val writes: Writes[BusinessDetails] = Json.writes[BusinessDetails]
 }

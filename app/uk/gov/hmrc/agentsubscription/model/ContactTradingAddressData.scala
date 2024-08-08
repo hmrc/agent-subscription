@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{Format, JsResult, JsSuccess, JsValue, Json}
+import play.api.libs.json.{Format, JsResult, JsSuccess, JsValue, Json, Writes}
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 case class ContactTradingAddressData(useBusinessAddress: Boolean, contactTradingAddress: Option[BusinessAddress])
@@ -44,4 +44,5 @@ object ContactTradingAddressData {
 
     Format(reads(_), contactTradingAddressData => writes(contactTradingAddressData))
   }
+  implicit val writes: Writes[ContactTradingAddressData] = Json.writes[ContactTradingAddressData]
 }
