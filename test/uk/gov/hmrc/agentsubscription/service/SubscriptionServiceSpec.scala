@@ -253,7 +253,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
             organisationName = Some("Test Business"),
             None,
             None,
-            BusinessAddress(
+            DesBusinessAddress(
               "AddressLine1 A",
               Some("AddressLine2 A"),
               Some("AddressLine3 A"),
@@ -316,7 +316,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
             organisationName = Some("Test Business"),
             None,
             None,
-            BusinessAddress(
+            DesBusinessAddress(
               "AddressLine1 A",
               Some("AddressLine2 A"),
               Some("AddressLine3 A"),
@@ -367,7 +367,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
             organisationName = Some("Test Business"),
             None,
             None,
-            BusinessAddress(
+            DesBusinessAddress(
               "AddressLine1 A",
               Some("AddressLine2 A"),
               Some("AddressLine3 A"),
@@ -421,7 +421,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
             organisationName = Some("Test Business"),
             None,
             None,
-            BusinessAddress(
+            DesBusinessAddress(
               "AddressLine1 A",
               Some("AddressLine2 A"),
               Some("AddressLine3 A"),
@@ -478,7 +478,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
             organisationName = Some("Test Business"),
             None,
             None,
-            BusinessAddress(
+            DesBusinessAddress(
               "AddressLine1 A",
               Some("AddressLine2 A"),
               Some("AddressLine3 A"),

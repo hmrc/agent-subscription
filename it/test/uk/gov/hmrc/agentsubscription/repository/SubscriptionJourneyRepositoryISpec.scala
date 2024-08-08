@@ -20,7 +20,7 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
+import uk.gov.hmrc.agentsubscription.connectors.DesBusinessAddress
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
@@ -92,8 +92,7 @@ class SubscriptionJourneyRepositoryISpec
       contactTradingNameData = Some(ContactTradingNameData(true, Some("My Trading Name"))),
       contactTradingAddressData = Some(ContactTradingAddressData(true, Some(businessAddress))),
       contactTelephoneData = Some(ContactTelephoneData(true, Some("01273111111"))),
-      verifiedEmails = Set.empty,
-      encrypted = Some(true)
+      verifiedEmails = Set.empty
     )
 
   "SubscriptionJourneyRepository" should {

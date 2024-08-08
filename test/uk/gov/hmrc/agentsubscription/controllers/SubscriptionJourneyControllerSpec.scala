@@ -31,6 +31,7 @@ import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
 import uk.gov.hmrc.agentsubscription.repository.{RecordUpdated, SubscriptionJourneyRepository}
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.util.Collections
@@ -61,6 +62,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
   val hc: HeaderCarrier = HeaderCarrier()
 
   implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
+  implicit val crypto: Encrypter with Decrypter = aesCrypto
 
   val controller = new SubscriptionJourneyController(mockRepo, cc)
 
@@ -242,7 +244,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
       (contentAsJson(result) \ "authProviderId").as[String] shouldBe updatedExistingRecord.authProviderId.id
       (contentAsJson(result) \ "cleanCredsAuthProviderId")
         .asOpt[AuthProviderId] shouldBe updatedExistingRecord.cleanCredsAuthProviderId
-      (contentAsJson(result) \ "businessDetails").as[BusinessDetails] shouldBe updatedExistingRecord.businessDetails
+      (contentAsJson(result) \ "businessDetails")
+        .as[BusinessDetails](BusinessDetails.databaseFormat(crypto)) shouldBe updatedExistingRecord.businessDetails
     }
   }
 
