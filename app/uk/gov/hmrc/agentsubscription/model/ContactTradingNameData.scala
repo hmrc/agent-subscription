@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{Format, JsResult, JsSuccess, JsValue, Json}
+import play.api.libs.json.{Format, JsResult, JsValue, Json}
 import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.maybeDecryptOpt
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
@@ -39,7 +39,8 @@ object ContactTradingNameData {
         def writes(contactTradingNameData: ContactTradingNameData): JsValue =
       Json.obj(
         "hasTradingName"    -> contactTradingNameData.hasTradingName,
-        "contactTradingName" -> contactTradingNameData.contactTradingName.map(stringEncrypter.writes)
+        "contactTradingName" -> contactTradingNameData.contactTradingName.map(stringEncrypter.writes),
+        "encrypted" -> Some(true)
       )
 
     Format(reads(_), contactTradingNameData => writes(contactTradingNameData))

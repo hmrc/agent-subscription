@@ -57,12 +57,12 @@ object SubscriptionJourneyRecord {
       (JsPath \ "mappingComplete").format[Boolean] and
       (JsPath \ "cleanCredsAuthProviderId").formatNullable[AuthProviderId] and
       (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime] and
-      (JsPath \ "contactEmailData").formatNullable[ContactEmailData] and
-      (JsPath \ "contactTradingNameData").formatNullable[ContactTradingNameData] and
+      (JsPath \ "contactEmailData").formatNullable[ContactEmailData](ContactEmailData.format(crypto)) and
+      (JsPath \ "contactTradingNameData").formatNullable[ContactTradingNameData](ContactTradingNameData.format(crypto)) and
       (JsPath \ "contactTradingAddressData").formatNullable[ContactTradingAddressData](
         ContactTradingAddressData.format(crypto)
       ) and
-      (JsPath \ "contactTelephoneData").formatNullable[ContactTelephoneData] and
+      (JsPath \ "contactTelephoneData").formatNullable[ContactTelephoneData](ContactTelephoneData.format(crypto)) and
       (JsPath \ "verifiedEmails")
         .formatWithDefault[Set[String]](Set.empty[String]))(
       SubscriptionJourneyRecord.apply,
