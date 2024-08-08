@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentsubscription.controllers
 import com.google.inject.Inject
 import com.mongodb.MongoWriteException
 import play.api.Logging
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsError, JsSuccess, JsValue}
 import play.api.libs.json.Json.toJson
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
@@ -62,20 +62,25 @@ class SubscriptionJourneyController @Inject() (
   }
 
   def createOrUpdate(authProviderId: AuthProviderId): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    val journeyRecord = request.body.as[SubscriptionJourneyRecord](SubscriptionJourneyRecord.databaseReads(crypto))
+    request.body.validate[SubscriptionJourneyRecord](SubscriptionJourneyRecord.databaseReads(crypto)) match {
+      case JsSuccess(journeyRecord, _) =>
+        val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
 
-    val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
-    if (journeyRecord.authProviderId != authProviderId) {
-      Future.successful(BadRequest("Auth ids in request URL and body do not match"))
-    } else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
-      Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
-    } else {
-      val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
-      subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent) recoverWith {
-        case ex: MongoWriteException =>
-          logger.error(ex.getMessage, ex)
-          handleConflict(journeyRecord)
-      }
+        if (journeyRecord.authProviderId != authProviderId) {
+          Future.successful(BadRequest("Auth ids in request URL and body do not match"))
+        } else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
+          Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
+        } else {
+          val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
+          subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent) recoverWith {
+            case ex: MongoWriteException =>
+              logger.error(ex.getMessage, ex)
+              handleConflict(journeyRecord)
+          }
+        }
+      case JsError(errors) =>
+        logger.warn(s"Failed to parse request body: $errors")
+        Future.successful(BadRequest("Invalid SubscriptionJourneyRecord payload"))
     }
   }
 
