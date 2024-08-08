@@ -16,11 +16,32 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{Format, Json}
+import play.api.libs.json.{Format, JsResult, JsSuccess, JsValue, Json}
+import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.maybeDecryptOpt
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
-case class ContactTradingNameData(hasTradingName: Boolean, contactTradingName: Option[String])
+case class ContactTradingNameData(hasTradingName: Boolean, contactTradingName: Option[String], encrypted: Option[Boolean] = None)
 
 object ContactTradingNameData {
+  def format(implicit crypto: Encrypter with Decrypter): Format[ContactTradingNameData] = {
 
-  implicit val format: Format[ContactTradingNameData] = Json.format[ContactTradingNameData]
+    def reads(json: JsValue): JsResult[ContactTradingNameData] =
+      for {
+        isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
+        result = ContactTradingNameData(
+                   (json \ "hasTradingName").as[Boolean],
+                   maybeDecryptOpt("contactTradingName", isEncrypted, json),
+                   isEncrypted
+                 )
+        } yield result
+
+        def writes(contactTradingNameData: ContactTradingNameData): JsValue =
+      Json.obj(
+        "hasTradingName"    -> contactTradingNameData.hasTradingName,
+        "contactTradingName" -> contactTradingNameData.contactTradingName.map(stringEncrypter.writes)
+      )
+
+    Format(reads(_), contactTradingNameData => writes(contactTradingNameData))
+  }
 }
