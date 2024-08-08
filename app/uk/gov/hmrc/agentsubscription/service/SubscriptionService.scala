@@ -130,7 +130,7 @@ class SubscriptionService @Inject() (
               _,
               _,
               maybeArn,
-              BusinessAddress(_, _, _, _, Some(desPostcode), _),
+              BusinessAddress(_, _, _, _, Some(desPostcode), _, _),
               _,
               _,
               _

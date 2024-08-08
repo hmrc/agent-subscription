@@ -41,29 +41,29 @@ object Registration {
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
         result = Registration(
-          maybeDecryptOpt("taxPayerName", isEncrypted, json),
-          (json \ "isSubscribedToAgentServices").as[Boolean],
-          (json \ "isSubscribedToETMP").as[Boolean],
-          (json \ "address").as[BusinessAddress](BusinessAddress.format(crypto)),
-          maybeDecryptOpt("emailAddress", isEncrypted, json),
-          maybeDecryptOpt("primaryPhoneNumber", isEncrypted, json),
-          (json \ "safeId").asOpt[String],
-          isEncrypted
-        )
+                   maybeDecryptOpt("taxPayerName", isEncrypted, json),
+                   (json \ "isSubscribedToAgentServices").as[Boolean],
+                   (json \ "isSubscribedToETMP").as[Boolean],
+                   (json \ "address").as[BusinessAddress](BusinessAddress.format(crypto)),
+                   maybeDecryptOpt("emailAddress", isEncrypted, json),
+                   maybeDecryptOpt("primaryPhoneNumber", isEncrypted, json),
+                   (json \ "safeId").asOpt[String],
+                   isEncrypted
+                 )
       } yield result
 
     def writes(registration: Registration): JsValue =
-        Json.obj(
-            "taxpayerName" -> registration.taxpayerName.map(stringEncrypter.writes),
-            "isSubscribedToAgentServices" -> registration.isSubscribedToAgentServices,
-            "isSubscribedToETMP" -> registration.isSubscribedToETMP,
-            "address" -> BusinessAddress.format.writes(registration.address),
-            "emailAddress" -> registration.emailAddress.map(stringEncrypter.writes),
-            "primaryPhoneNumber" -> registration.primaryPhoneNumber.map(stringEncrypter.writes),
-            "safeId" -> registration.safeId,
-            "encrypted" -> registration.encrypted
-        )
-    Format(reads, registration => writes(registration))
+      Json.obj(
+        "taxpayerName"                -> registration.taxpayerName.map(stringEncrypter.writes),
+        "isSubscribedToAgentServices" -> registration.isSubscribedToAgentServices,
+        "isSubscribedToETMP"          -> registration.isSubscribedToETMP,
+        "address"                     -> BusinessAddress.format.writes(registration.address),
+        "emailAddress"                -> registration.emailAddress.map(stringEncrypter.writes),
+        "primaryPhoneNumber"          -> registration.primaryPhoneNumber.map(stringEncrypter.writes),
+        "safeId"                      -> registration.safeId,
+        "encrypted"                   -> registration.encrypted
+      )
+    Format(reads(_), registration => writes(registration))
   }
 }
 

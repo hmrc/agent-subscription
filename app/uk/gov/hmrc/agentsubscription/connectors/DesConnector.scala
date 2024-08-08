@@ -32,6 +32,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import play.api.http.Status._
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.net.URL
@@ -174,10 +175,14 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metric
 
   def getRegistration(
     utr: Utr
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DesRegistrationResponse]] =
+  )(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext,
+    crypto: Encrypter with Decrypter
+  ): Future[Option[DesRegistrationResponse]] =
     getRegistrationJson(utr).map {
       case Some(r) =>
-        def address: BusinessAddress = (r \ "address").validate[BusinessAddress] match {
+        def address: BusinessAddress = (r \ "address").validate[BusinessAddress](BusinessAddress.format(crypto)) match {
           case JsSuccess(value, _) => value
           case JsError(_)          => throw InvalidBusinessAddressException
         }

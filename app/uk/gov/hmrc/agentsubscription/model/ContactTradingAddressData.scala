@@ -16,12 +16,32 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{Format, Json}
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
+import play.api.libs.json.{Format, JsResult, JsSuccess, JsValue, Json}
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 case class ContactTradingAddressData(useBusinessAddress: Boolean, contactTradingAddress: Option[BusinessAddress])
 
 object ContactTradingAddressData {
+  def format(implicit crypto: Encrypter with Decrypter): Format[ContactTradingAddressData] = {
 
-  implicit val format: Format[ContactTradingAddressData] = Json.format[ContactTradingAddressData]
+    def reads(json: JsValue): JsResult[ContactTradingAddressData] = {
+      val useBusinessAddress = (json \ "useBusinessAddress").as[Boolean]
+      val contactTradingAddress =
+        (json \ "contactTradingAddress").asOpt[BusinessAddress](BusinessAddress.format(crypto))
+      JsSuccess(
+        ContactTradingAddressData(
+          useBusinessAddress,
+          contactTradingAddress
+        )
+      )
+    }
+
+    def writes(contactTradingAddressData: ContactTradingAddressData): JsValue =
+      Json.obj(
+        "useBusinessAddress"    -> contactTradingAddressData.useBusinessAddress,
+        "contactTradingAddress" -> contactTradingAddressData.contactTradingAddress.map(BusinessAddress.format.writes)
+      )
+
+    Format(reads(_), contactTradingAddressData => writes(contactTradingAddressData))
+  }
 }

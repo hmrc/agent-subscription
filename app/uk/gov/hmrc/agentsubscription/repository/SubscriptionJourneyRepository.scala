@@ -22,10 +22,9 @@ import org.mongodb.scala.model.Filters.{equal, or}
 import org.mongodb.scala.model.Indexes._
 import org.mongodb.scala.model.{IndexModel, IndexOptions}
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
-import uk.gov.hmrc.agentsubscription.model.{AuthProviderId, ContactEmailData, ContactTradingAddressData, ContactTradingNameData}
-import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.{BusinessDetails, ContactTelephoneData, SubscriptionJourneyRecord}
-import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter, PlainText}
+import uk.gov.hmrc.agentsubscription.model.AuthProviderId
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter, PlainText}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
@@ -42,15 +41,6 @@ trait SubscriptionJourneyRepository {
   def findByContinueId(continueId: String): Future[Option[SubscriptionJourneyRecord]]
   def findByUtr(utr: String): Future[Option[SubscriptionJourneyRecord]]
   def delete(utr: String): Future[Option[Long]]
-
-  def encryptBusinessDetails(businessDetails: BusinessDetails): BusinessDetails
-  def encryptContactEmailData(contactEmailData: ContactEmailData): ContactEmailData
-  def encryptContactTradingNameData(contactTradingNameData: ContactTradingNameData): ContactTradingNameData
-  def encryptContactTelephoneData(contactTelephoneData: ContactTelephoneData): ContactTelephoneData
-  def encryptContactTradingAddressData(contactTradingAddressData: ContactTradingAddressData): ContactTradingAddressData
-  def encryptBusinessAddress(businessAddress: BusinessAddress): BusinessAddress
-
-  def encryptRecord(record: SubscriptionJourneyRecord): SubscriptionJourneyRecord
 }
 
 @Singleton
@@ -100,54 +90,6 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
     ) with SubscriptionJourneyRepository {
 
   private def replaceOptions(upsert: Boolean) = new ReplaceOptions().upsert(upsert)
-
-  def encryptContactEmailData(contactEmailData: ContactEmailData): ContactEmailData =
-    contactEmailData.copy(
-      contactEmail = contactEmailData.contactEmail.map { f: String => crypto.encrypt(PlainText(f)).value }
-    )
-
-  private def decryptContactEmailData(contactEmailData: ContactEmailData): ContactEmailData =
-    contactEmailData.copy(
-      contactEmail = contactEmailData.contactEmail.map { f: String => crypto.decrypt(Crypted(f)).value }
-    )
-
-  def encryptContactTradingNameData(contactTradingNameData: ContactTradingNameData): ContactTradingNameData =
-    contactTradingNameData.copy(
-      contactTradingName = contactTradingNameData.contactTradingName.map { f: String =>
-        crypto.encrypt(PlainText(f)).value
-      }
-    )
-
-  private def decryptContactTradingNameData(contactTradingNameData: ContactTradingNameData): ContactTradingNameData =
-    contactTradingNameData.copy(
-      contactTradingName = contactTradingNameData.contactTradingName.map { f: String =>
-        crypto.decrypt(Crypted(f)).value
-      }
-    )
-
-  def encryptContactTelephoneData(contactTelephoneData: ContactTelephoneData): ContactTelephoneData =
-    contactTelephoneData.copy(
-      telephoneNumber = contactTelephoneData.telephoneNumber.map { f: String => crypto.encrypt(PlainText(f)).value }
-    )
-
-  private def decryptContactTelephoneData(contactTelephoneData: ContactTelephoneData): ContactTelephoneData =
-    contactTelephoneData.copy(
-      telephoneNumber = contactTelephoneData.telephoneNumber.map { f: String => crypto.decrypt(Crypted(f)).value }
-    )
-
-  def encryptContactTradingAddressData(
-    contactTradingAddressData: ContactTradingAddressData
-  ): ContactTradingAddressData =
-    contactTradingAddressData.copy(
-      contactTradingAddress = contactTradingAddressData.contactTradingAddress.map(encryptBusinessAddress)
-    )
-
-  private def decryptContactTradingAddressData(
-    contactTradingAddressData: ContactTradingAddressData
-  ): ContactTradingAddressData =
-    contactTradingAddressData.copy(
-      contactTradingAddress = contactTradingAddressData.contactTradingAddress.map(decryptBusinessAddress)
-    )
 
   def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord): Future[Option[UpsertType]] =
     collection

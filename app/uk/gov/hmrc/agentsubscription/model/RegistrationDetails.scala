@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.Json.format
 import play.api.libs.json.OFormat
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
+import uk.gov.hmrc.agentsubscription.model.BusinessAddress
 
 case class RegistrationDetails(
   isSubscribedToAgentServices: Boolean,
