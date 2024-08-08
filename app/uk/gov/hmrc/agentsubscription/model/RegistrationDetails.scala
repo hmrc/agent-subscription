@@ -18,13 +18,13 @@ package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json.Json.format
 import play.api.libs.json.OFormat
-import uk.gov.hmrc.agentsubscription.model.BusinessAddress
+import uk.gov.hmrc.agentsubscription.connectors.DesBusinessAddress
 
 case class RegistrationDetails(
   isSubscribedToAgentServices: Boolean,
   isSubscribedToETMP: Boolean,
   taxpayerName: Option[String],
-  address: BusinessAddress,
+  address: DesBusinessAddress,
   emailAddress: Option[String],
   primaryPhoneNumber: Option[String],
   safeId: Option[String] = None

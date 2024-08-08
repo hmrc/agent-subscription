@@ -23,7 +23,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.{AuditService, CheckAgencyStatus}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.model.{BusinessAddress, RegistrationDetails}
+import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.agentsubscription.postcodesMatch
 import uk.gov.hmrc.http.HeaderCarrier
 
@@ -153,7 +153,7 @@ class RegistrationService @Inject() (
     isAnASAgent: Boolean,
     taxpayerName: Option[String],
     maybeArn: Option[Arn],
-    businessAddress: BusinessAddress,
+    businessAddress: DesBusinessAddress,
     emailAddress: Option[String],
     primaryPhoneNumber: Option[String],
     safeId: Option[String]
