@@ -41,7 +41,7 @@ object Registration {
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
         result = Registration(
-                   decryptOptString("taxPayerName", isEncrypted, json),
+                   decryptOptString("taxpayerName", isEncrypted, json),
                    (json \ "isSubscribedToAgentServices").as[Boolean],
                    (json \ "isSubscribedToETMP").as[Boolean],
                    (json \ "address").as[BusinessAddress](BusinessAddress.databaseFormat(crypto)),
