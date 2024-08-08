@@ -35,7 +35,7 @@ case class Registration(
 
 object Registration {
 
-  def format(implicit crypto: Encrypter with Decrypter): Format[Registration] = {
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[Registration] = {
 
     def reads(json: JsValue): JsResult[Registration] =
       for {
