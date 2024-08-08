@@ -33,7 +33,11 @@ case class Registration(
 )
 
 object Registration {
+
   def format(implicit crypto: Encrypter with Decrypter): Format[Registration] = {
+
+    implicit val businessAddressReads: Format[BusinessAddress] = BusinessAddress.format(crypto)
+
     def reads(json: JsValue): JsResult[Registration] =
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
