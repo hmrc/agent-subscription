@@ -92,7 +92,7 @@ class SubscriptionJourneyRepositoryISpec
       contactTradingAddressData = Some(ContactTradingAddressData(useBusinessAddress = true, Some(businessAddress))),
       contactTelephoneData =
         Some(ContactTelephoneData(useBusinessTelephone = true, Some("01273111111"), encrypted = Some(true))),
-      verifiedEmails = Set.empty
+      verifiedEmails = VerifiedEmails(Set.empty, Some(true))
     )
 
   "SubscriptionJourneyRepository" should {

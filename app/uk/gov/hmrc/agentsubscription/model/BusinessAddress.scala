@@ -43,7 +43,7 @@ object BusinessAddress {
                             decryptOptString("addressLine4", isEncrypted, json),
                             decryptOptString("postalCode", isEncrypted, json),
                             decryptString("countryCode", isEncrypted, json),
-                            Some(true)
+                            isEncrypted
                           )
       } yield businessAddress
 

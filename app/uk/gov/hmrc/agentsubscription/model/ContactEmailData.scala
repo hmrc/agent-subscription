@@ -28,13 +28,10 @@ object ContactEmailData {
 
     def reads(json: JsValue): JsResult[ContactEmailData] =
       for {
-        isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
-        result = ContactEmailData(
-                   (json \ "useBusinessEmail").as[Boolean],
-                   decryptOptString("contactEmail", isEncrypted, json),
-                   (json \ "encrypted").asOpt[Boolean]
-                 )
-      } yield result
+        isEncrypted      <- (json \ "encrypted").validateOpt[Boolean]
+        useBusinessEmail <- (json \ "useBusinessEmail").validate[Boolean]
+        contactEmail = decryptOptString("contactEmail", isEncrypted, json)
+      } yield ContactEmailData(useBusinessEmail, contactEmail, isEncrypted)
 
     def writes(contactEmailData: ContactEmailData): JsValue =
       Json.obj(

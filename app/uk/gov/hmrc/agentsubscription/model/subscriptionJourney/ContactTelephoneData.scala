@@ -32,13 +32,14 @@ object ContactTelephoneData {
 
     def reads(json: JsValue): JsResult[ContactTelephoneData] =
       for {
-        isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
-        result = ContactTelephoneData(
-                   (json \ "useBusinessTelephone").as[Boolean],
-                   decryptOptString("telephoneNumber", isEncrypted, json),
-                   (json \ "encrypted").asOpt[Boolean]
-                 )
-      } yield result
+        isEncrypted          <- (json \ "encrypted").validateOpt[Boolean]
+        useBusinessTelephone <- (json \ "useBusinessTelephone").validate[Boolean]
+        telephoneNumber = decryptOptString("telephoneNumber", isEncrypted, json)
+      } yield ContactTelephoneData(
+        useBusinessTelephone,
+        telephoneNumber,
+        isEncrypted
+      )
 
     def writes(contactTelephoneData: ContactTelephoneData): JsValue =
       Json.obj(

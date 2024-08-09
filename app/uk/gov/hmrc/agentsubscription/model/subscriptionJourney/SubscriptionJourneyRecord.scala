@@ -41,7 +41,7 @@ final case class SubscriptionJourneyRecord(
   contactTradingNameData: Option[ContactTradingNameData],
   contactTradingAddressData: Option[ContactTradingAddressData],
   contactTelephoneData: Option[ContactTelephoneData],
-  verifiedEmails: Set[String] = Set.empty
+  verifiedEmails: VerifiedEmails = VerifiedEmails(verifiedEmails = Set.empty)
 )
 
 object SubscriptionJourneyRecord {
@@ -67,7 +67,9 @@ object SubscriptionJourneyRecord {
       (JsPath \ "contactTelephoneData").writeNullable[ContactTelephoneData](
         ContactTelephoneData.databaseFormat(crypto)
       ) and
-      (JsPath \ "verifiedEmails").formatWithDefault[Set[String]](Set.empty[String]))(
+      (JsPath \ "verifiedEmails").write[VerifiedEmails](
+        VerifiedEmails.databaseFormat(crypto)
+      ))(
       unlift(SubscriptionJourneyRecord.unapply)
     )
 
@@ -90,7 +92,8 @@ object SubscriptionJourneyRecord {
       (JsPath \ "contactTelephoneData").readNullable[ContactTelephoneData](
         ContactTelephoneData.databaseFormat(crypto)
       ) and
-      (JsPath \ "verifiedEmails").readWithDefault[Set[String]](Set.empty[String]))(SubscriptionJourneyRecord.apply _)
+      (JsPath \ "verifiedEmails")
+        .read[VerifiedEmails](VerifiedEmails.databaseFormat(crypto)))(SubscriptionJourneyRecord.apply _)
 
   def databaseFormat(crypto: Encrypter with Decrypter): Format[SubscriptionJourneyRecord] =
     Format(databaseReads(crypto), sjr => databaseWrites(crypto).writes(sjr))

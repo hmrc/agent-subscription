@@ -40,17 +40,23 @@ object Registration {
     def reads(json: JsValue): JsResult[Registration] =
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
-        result = Registration(
-                   decryptOptString("taxpayerName", isEncrypted, json),
-                   (json \ "isSubscribedToAgentServices").as[Boolean],
-                   (json \ "isSubscribedToETMP").as[Boolean],
-                   (json \ "address").as[BusinessAddress](BusinessAddress.databaseFormat(crypto)),
-                   decryptOptString("emailAddress", isEncrypted, json),
-                   decryptOptString("primaryPhoneNumber", isEncrypted, json),
-                   (json \ "safeId").asOpt[String],
-                   isEncrypted
-                 )
-      } yield result
+        taxpayerName = decryptOptString("taxpayerName", isEncrypted, json)
+        isSubscribedToAgentServices = (json \ "isSubscribedToAgentServices").as[Boolean]
+        isSubscribedToETMP = (json \ "isSubscribedToETMP").as[Boolean]
+        address = (json \ "address").as[BusinessAddress](BusinessAddress.databaseFormat(crypto))
+        emailAddress = decryptOptString("emailAddress", isEncrypted, json)
+        primaryPhoneNumber = decryptOptString("primaryPhoneNumber", isEncrypted, json)
+        safeId = (json \ "safeId").asOpt[String]
+      } yield Registration(
+        taxpayerName,
+        isSubscribedToAgentServices,
+        isSubscribedToETMP,
+        address,
+        emailAddress,
+        primaryPhoneNumber,
+        safeId,
+        isEncrypted
+      )
 
     def writes(registration: Registration): JsValue =
       Json.obj(
