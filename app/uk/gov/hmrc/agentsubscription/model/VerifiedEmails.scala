@@ -21,7 +21,7 @@ import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.decryptString
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
-case class VerifiedEmails(verifiedEmails: Set[String] = Set.empty, encrypted: Option[Boolean] = None)
+case class VerifiedEmails(emails: Set[String] = Set.empty, encrypted: Option[Boolean] = None)
 
 object VerifiedEmails {
   def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[VerifiedEmails] = {
@@ -31,21 +31,18 @@ object VerifiedEmails {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
         emails = isEncrypted match {
                    case Some(true) =>
-                     (json \ "verifiedEmails")
-                       .asOpt[Set[String]]
+                     (json \ "emails")
+                       .validate[Set[String]]
                        .getOrElse(Set.empty)
                        .map(decryptString(_, isEncrypted, json))
-                   case _ => json.asOpt[Set[String]].getOrElse(Set.empty)
+                   case _ => (json \ "emails").validate[Set[String]].getOrElse(Set.empty)
                  }
-      } yield VerifiedEmails(
-        verifiedEmails = emails,
-        encrypted = isEncrypted
-      )
+      } yield VerifiedEmails(emails, isEncrypted)
 
     def writes(verifiedEmails: VerifiedEmails): JsValue =
       Json.obj(
-        "verifiedEmails" -> verifiedEmails.verifiedEmails.map(stringEncrypter.writes),
-        "encrypted"      -> Some(true)
+        "emails"    -> verifiedEmails.emails.map(stringEncrypter.writes),
+        "encrypted" -> Some(true)
       )
 
     Format(reads(_), verifiedEmails => writes(verifiedEmails))

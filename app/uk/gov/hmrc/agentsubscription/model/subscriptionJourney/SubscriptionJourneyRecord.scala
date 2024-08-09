@@ -41,7 +41,7 @@ final case class SubscriptionJourneyRecord(
   contactTradingNameData: Option[ContactTradingNameData],
   contactTradingAddressData: Option[ContactTradingAddressData],
   contactTelephoneData: Option[ContactTelephoneData],
-  verifiedEmails: VerifiedEmails = VerifiedEmails(verifiedEmails = Set.empty)
+  verifiedEmails: VerifiedEmails = VerifiedEmails(emails = Set.empty)
 )
 
 object SubscriptionJourneyRecord {
