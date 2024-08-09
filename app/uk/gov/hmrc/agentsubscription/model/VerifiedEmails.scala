@@ -17,9 +17,8 @@
 package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json._
-import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.decryptString
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter}
 
 case class VerifiedEmails(emails: Set[String] = Set.empty, encrypted: Option[Boolean] = None)
 
@@ -32,10 +31,15 @@ object VerifiedEmails {
         emails = isEncrypted match {
                    case Some(true) =>
                      (json \ "emails")
-                       .validate[Set[String]]
-                       .getOrElse(Set.empty)
-                       .map(decryptString(_, isEncrypted, json))
-                   case _ => (json \ "emails").validate[Set[String]].getOrElse(Set.empty)
+                       .validate[Set[String]] match {
+                       case JsSuccess(emails, _) => emails.map(str => crypto.decrypt(Crypted(str)).value)
+                       case JsError(_)           => Set[String]()
+                     }
+                   case _ =>
+                     (json \ "emails").validate[Set[String]] match {
+                       case JsSuccess(emails, _) => emails
+                       case JsError(_)           => Set[String]()
+                     }
                  }
       } yield VerifiedEmails(emails, isEncrypted)
 
