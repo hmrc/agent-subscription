@@ -92,7 +92,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
 
   "getRegistration" should {
     val businessAddress =
-      BusinessAddress(
+      DesBusinessAddress(
         "AddressLine1 A",
         Some("AddressLine2 A"),
         Some("AddressLine3 A"),
@@ -169,7 +169,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
           None,
           None,
           None,
-          BusinessAddress("AddressLine1 A", None, None, None, None, "GB"),
+          DesBusinessAddress("AddressLine1 A", None, None, None, None, "GB"),
           Some("agent1@example.com"),
           None,
           None
@@ -188,7 +188,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
           None,
           None,
           None,
-          BusinessAddress("AddressLine1 A", None, None, None, Some("AA1 1AA"), "GB"),
+          DesBusinessAddress("AddressLine1 A", None, None, None, Some("AA1 1AA"), "GB"),
           None,
           None,
           None

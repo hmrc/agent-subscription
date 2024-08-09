@@ -16,8 +16,11 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.{Format, Json}
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
+import play.api.libs.json.{Format, JsResult, JsValue, Json, Writes}
+import uk.gov.hmrc.agentsubscription.model.BusinessAddress
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils._
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 
 case class Registration(
   taxpayerName: Option[String],
@@ -26,11 +29,50 @@ case class Registration(
   address: BusinessAddress,
   emailAddress: Option[String],
   primaryPhoneNumber: Option[String],
-  safeId: Option[String]
+  safeId: Option[String],
+  encrypted: Option[Boolean] = None
 )
 
 object Registration {
-  implicit val formats: Format[Registration] = Json.format[Registration]
+
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[Registration] = {
+
+    def reads(json: JsValue): JsResult[Registration] =
+      for {
+        isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
+        taxpayerName = decryptOptString("taxpayerName", isEncrypted, json)
+        isSubscribedToAgentServices = (json \ "isSubscribedToAgentServices").as[Boolean]
+        isSubscribedToETMP = (json \ "isSubscribedToETMP").as[Boolean]
+        address = (json \ "address").as[BusinessAddress](BusinessAddress.databaseFormat(crypto))
+        emailAddress = decryptOptString("emailAddress", isEncrypted, json)
+        primaryPhoneNumber = decryptOptString("primaryPhoneNumber", isEncrypted, json)
+        safeId = (json \ "safeId").asOpt[String]
+      } yield Registration(
+        taxpayerName,
+        isSubscribedToAgentServices,
+        isSubscribedToETMP,
+        address,
+        emailAddress,
+        primaryPhoneNumber,
+        safeId,
+        isEncrypted
+      )
+
+    def writes(registration: Registration): JsValue =
+      Json.obj(
+        "taxpayerName"                -> registration.taxpayerName.map(stringEncrypter.writes),
+        "isSubscribedToAgentServices" -> registration.isSubscribedToAgentServices,
+        "isSubscribedToETMP"          -> registration.isSubscribedToETMP,
+        "address"                     -> BusinessAddress.databaseFormat.writes(registration.address),
+        "emailAddress"                -> registration.emailAddress.map(stringEncrypter.writes),
+        "primaryPhoneNumber"          -> registration.primaryPhoneNumber.map(stringEncrypter.writes),
+        "safeId"                      -> registration.safeId,
+        "encrypted"                   -> Some(true)
+      )
+    Format(reads(_), registration => writes(registration))
+  }
+
+  implicit val writes: Writes[Registration] = Json.writes[Registration]
 }
 
 case class UpdateBusinessAddressForm(

@@ -16,26 +16,24 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import javax.inject.{Inject, Singleton}
+import play.api.http.Status._
 import play.api.libs.json._
 import play.utils.UriEncoding
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model._
-import uk.gov.hmrc.domain.Vrn
-import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.HttpClient
-import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
-import uk.gov.hmrc.http.HttpReads.Implicits._
-
-import scala.concurrent.{ExecutionContext, Future}
-import uk.gov.hmrc.http.HttpErrorFunctions._
-import play.api.http.Status._
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
+import uk.gov.hmrc.domain.Vrn
+import uk.gov.hmrc.http.HttpErrorFunctions._
+import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.{HttpClient, _}
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
+import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 
 import java.net.URL
 import java.util.UUID
+import javax.inject.{Inject, Singleton}
+import scala.concurrent.{ExecutionContext, Future}
 
 case class Address(
   addressLine1: String,
@@ -57,7 +55,7 @@ case class DesRegistrationRequest(requiresNameMatch: Boolean = false, regime: St
 
 case class DesIndividual(firstName: String, lastName: String)
 
-case class BusinessAddress(
+case class DesBusinessAddress(
   addressLine1: String,
   addressLine2: Option[String],
   addressLine3: Option[String] = None,
@@ -66,8 +64,8 @@ case class BusinessAddress(
   countryCode: String
 )
 
-object BusinessAddress {
-  implicit val format: OFormat[BusinessAddress] = Json.format
+object DesBusinessAddress {
+  implicit val format: OFormat[DesBusinessAddress] = Json.format
 }
 
 case class DesRegistrationResponse(
@@ -75,7 +73,7 @@ case class DesRegistrationResponse(
   organisationName: Option[String],
   individual: Option[DesIndividual],
   agentReferenceNumber: Option[Arn],
-  address: BusinessAddress,
+  address: DesBusinessAddress,
   emailAddress: Option[String],
   primaryPhoneNumber: Option[String],
   safeId: Option[String]
@@ -187,10 +185,13 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metric
 
   def getRegistration(
     utr: Utr
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[DesRegistrationResponse]] =
+  )(implicit
+    hc: HeaderCarrier,
+    ec: ExecutionContext
+  ): Future[Option[DesRegistrationResponse]] =
     getRegistrationJson(utr).map {
       case Some(r) =>
-        def address: BusinessAddress = (r \ "address").validate[BusinessAddress] match {
+        def address: DesBusinessAddress = (r \ "address").validate[DesBusinessAddress] match {
           case JsSuccess(value, _) => value
           case JsError(_)          => throw InvalidBusinessAddressException
         }

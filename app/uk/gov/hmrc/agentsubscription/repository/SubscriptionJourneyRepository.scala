@@ -21,36 +21,39 @@ import com.mongodb.client.model.ReplaceOptions
 import org.mongodb.scala.model.Filters.{equal, or}
 import org.mongodb.scala.model.Indexes._
 import org.mongodb.scala.model.{IndexModel, IndexOptions}
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter, PlainText}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
 
 import java.util.concurrent.TimeUnit
-import javax.inject.{Inject, Singleton}
+import javax.inject.{Inject, Named, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @ImplementedBy(classOf[SubscriptionJourneyRepositoryImpl])
 trait SubscriptionJourneyRepository {
 
   def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord): Future[Option[UpsertType]]
-  def updateOnUtr(utr: Utr, record: SubscriptionJourneyRecord): Future[Option[Long]]
+  def updateOnUtr(utr: String, record: SubscriptionJourneyRecord): Future[Option[Long]]
   def findByAuthId(authProviderId: AuthProviderId): Future[Option[SubscriptionJourneyRecord]]
   def findByContinueId(continueId: String): Future[Option[SubscriptionJourneyRecord]]
-  def findByUtr(utr: Utr): Future[Option[SubscriptionJourneyRecord]]
-  def delete(utr: Utr): Future[Option[Long]]
+  def findByUtr(utr: String): Future[Option[SubscriptionJourneyRecord]]
+  def delete(utr: String): Future[Option[Long]]
 }
 
 @Singleton
-class SubscriptionJourneyRepositoryImpl @Inject() (mongo: MongoComponent)(implicit
+class SubscriptionJourneyRepositoryImpl @Inject() (
+  mongo: MongoComponent,
+  @Named("aes") crypto: Encrypter with Decrypter
+)(implicit
   ec: ExecutionContext,
   appConfig: AppConfig
 ) extends PlayMongoRepository[SubscriptionJourneyRecord](
       mongoComponent = mongo,
       collectionName = "subscription-journey",
-      domainFormat = SubscriptionJourneyRecord.subscriptionJourneyFormat,
+      domainFormat = SubscriptionJourneyRecord.databaseFormat(crypto),
       indexes = Seq(
         IndexModel(
           ascending("authProviderId"),
@@ -106,10 +109,13 @@ class SubscriptionJourneyRepositoryImpl @Inject() (mongo: MongoComponent)(implic
         )
       )
 
-  def updateOnUtr(utr: Utr, record: SubscriptionJourneyRecord): Future[Option[Long]] =
+  def updateOnUtr(utr: String, record: SubscriptionJourneyRecord): Future[Option[Long]] =
     collection
       .replaceOne(
-        equal("businessDetails.utr", utr.value),
+        equal(
+          "businessDetails.utr",
+          if (record.businessDetails.encrypted.contains(true)) crypto.encrypt(PlainText(utr)).value else utr
+        ),
         record
       )
       .toFutureOption()
@@ -133,14 +139,24 @@ class SubscriptionJourneyRepositoryImpl @Inject() (mongo: MongoComponent)(implic
       .find(equal("continueId", continueId))
       .headOption()
 
-  def findByUtr(utr: Utr): Future[Option[SubscriptionJourneyRecord]] =
+  def findByUtr(utr: String): Future[Option[SubscriptionJourneyRecord]] =
     collection
-      .find(equal("businessDetails.utr", utr.value))
+      .find(
+        or(
+          equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value),
+          equal("businessDetails.utr", utr)
+        )
+      )
       .headOption()
 
-  def delete(utr: Utr): Future[Option[Long]] =
+  def delete(utr: String): Future[Option[Long]] =
     collection
-      .deleteOne(equal("businessDetails.utr", utr.value))
+      .deleteOne(
+        or(
+          equal("businessDetails.utr", utr),
+          equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value)
+        )
+      )
       .toFutureOption()
       .map(_.map(_.getDeletedCount))
 }

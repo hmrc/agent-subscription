@@ -84,7 +84,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               Some("Organisation name"),
               None,
               Some(arn),
-              BusinessAddress(
+              DesBusinessAddress(
                 "AddressLine1 A",
                 Some("AddressLine2 A"),
                 Some("AddressLine3 A"),
@@ -140,7 +140,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               Some("Organisation name"),
               None,
               Some(arn),
-              BusinessAddress(
+              DesBusinessAddress(
                 "AddressLine1 A",
                 Some("AddressLine2 A"),
                 Some("AddressLine3 A"),
@@ -195,7 +195,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               Some("Organisation name"),
               None,
               None,
-              BusinessAddress(
+              DesBusinessAddress(
                 "AddressLine1 A",
                 Some("AddressLine2 A"),
                 Some("AddressLine3 A"),
@@ -245,7 +245,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               Some("Organisation name"),
               None,
               None,
-              BusinessAddress(
+              DesBusinessAddress(
                 "AddressLine1 A",
                 Some("AddressLine2 A"),
                 Some("AddressLine3 A"),
@@ -295,7 +295,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               None,
               Some(DesIndividual("First", "Last")),
               arn,
-              BusinessAddress(
+              DesBusinessAddress(
                 "AddressLine1 A",
                 Some("AddressLine2 A"),
                 Some("AddressLine3 A"),
@@ -351,7 +351,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               None,
               Some(DesIndividual("First", "Last")),
               arn,
-              BusinessAddress(
+              DesBusinessAddress(
                 "AddressLine1 A",
                 Some("AddressLine2 A"),
                 Some("AddressLine3 A"),
@@ -406,7 +406,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               None,
               Some(DesIndividual("First", "Last")),
               None,
-              BusinessAddress(
+              DesBusinessAddress(
                 "AddressLine1 A",
                 Some("AddressLine2 A"),
                 Some("AddressLine3 A"),
@@ -456,7 +456,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               None,
               Some(DesIndividual("First", "Last")),
               None,
-              BusinessAddress(
+              DesBusinessAddress(
                 "AddressLine1 A",
                 Some("AddressLine2 A"),
                 Some("AddressLine3 A"),
@@ -505,7 +505,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               None,
               None,
               None,
-              BusinessAddress(
+              DesBusinessAddress(
                 "AddressLine1 A",
                 Some("AddressLine2 A"),
                 Some("AddressLine3 A"),
@@ -555,7 +555,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
               None,
               None,
               None,
-              BusinessAddress(
+              DesBusinessAddress(
                 "AddressLine1 A",
                 Some("AddressLine2 A"),
                 Some("AddressLine3 A"),
