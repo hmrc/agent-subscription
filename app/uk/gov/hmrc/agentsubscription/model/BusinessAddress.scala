@@ -36,16 +36,21 @@ object BusinessAddress {
     def reads(json: JsValue): JsResult[BusinessAddress] =
       for {
         isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
-        businessAddress = BusinessAddress(
-                            decryptString("addressLine1", isEncrypted, json),
-                            decryptOptString("addressLine2", isEncrypted, json),
-                            decryptOptString("addressLine3", isEncrypted, json),
-                            decryptOptString("addressLine4", isEncrypted, json),
-                            decryptOptString("postalCode", isEncrypted, json),
-                            decryptString("countryCode", isEncrypted, json),
-                            isEncrypted
-                          )
-      } yield businessAddress
+        addressLine1 = decryptString("addressLine1", isEncrypted, json)
+        addressLine2 = decryptOptString("addressLine2", isEncrypted, json)
+        addressLine3 = decryptOptString("addressLine3", isEncrypted, json)
+        addressLine4 = decryptOptString("addressLine4", isEncrypted, json)
+        postalCode = decryptOptString("postalCode", isEncrypted, json)
+        countryCode = decryptString("countryCode", isEncrypted, json)
+      } yield BusinessAddress(
+        addressLine1,
+        addressLine2,
+        addressLine3,
+        addressLine4,
+        postalCode,
+        countryCode,
+        isEncrypted
+      )
 
     def writes(businessAddress: BusinessAddress): JsValue =
       Json.obj(
