@@ -20,11 +20,9 @@ import org.scalatestplus.play.guice.GuiceOneAppPerSuite
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.connectors.BusinessAddress
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
-import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.mongo.test.DefaultPlayMongoRepositorySupport
 
 import java.time.LocalDate
@@ -37,7 +35,7 @@ class SubscriptionJourneyRepositoryISpec
 
   override def checkTtlIndex = false // temporary until we make last modified date field not optional
 
-  override lazy val repository = new SubscriptionJourneyRepositoryImpl(mongoComponent)
+  override protected lazy val repository = new SubscriptionJourneyRepositoryImpl(mongoComponent, aesCrypto)
 
   val validUtr = Utr("2000000000")
   val otherUtr = Utr("0123456789")
@@ -49,7 +47,8 @@ class SubscriptionJourneyRepositoryISpec
       Some("AddressLine3 A"),
       Some("AddressLine4 A"),
       Some("AA11AA"),
-      "GB"
+      "GB",
+      encrypted = Some(true)
     )
   val registration = Registration(
     Some(registrationName),
@@ -73,22 +72,27 @@ class SubscriptionJourneyRepositoryISpec
   private val subscriptionJourneyRecord =
     SubscriptionJourneyRecord(
       AuthProviderId("auth-id"),
+      continueId = Some("XXX"),
       businessDetails = BusinessDetails(
         businessType = BusinessType.SoleTrader,
-        utr = validUtr,
-        postcode = Postcode("bn12 1hn"),
-        nino = Some(Nino("AE123456C"))
+        utr = validUtr.value,
+        postcode = "bn12 1hn",
+        nino = Some("AE123456C"),
+        encrypted = Some(true)
       ),
-      continueId = Some("XXX"),
       amlsData = None,
-      cleanCredsAuthProviderId = None,
-      mappingComplete = false,
       userMappings = List(),
+      mappingComplete = false,
+      cleanCredsAuthProviderId = None,
       lastModifiedDate = None,
-      contactEmailData = Some(ContactEmailData(true, Some("email@email.com"))),
-      contactTradingNameData = Some(ContactTradingNameData(true, Some("My Trading Name"))),
-      contactTradingAddressData = Some(ContactTradingAddressData(true, Some(businessAddress))),
-      contactTelephoneData = Some(ContactTelephoneData(true, Some("01273111111")))
+      contactEmailData =
+        Some(ContactEmailData(useBusinessEmail = true, Some("email@email.com"), encrypted = Some(true))),
+      contactTradingNameData =
+        Some(ContactTradingNameData(hasTradingName = true, Some("My Trading Name"), encrypted = Some(true))),
+      contactTradingAddressData = Some(ContactTradingAddressData(useBusinessAddress = true, Some(businessAddress))),
+      contactTelephoneData =
+        Some(ContactTelephoneData(useBusinessTelephone = true, Some("01273111111"), encrypted = Some(true))),
+      verifiedEmails = VerifiedEmails(Set.empty, Some(true))
     )
 
   "SubscriptionJourneyRepository" should {
@@ -102,24 +106,24 @@ class SubscriptionJourneyRepositoryISpec
     "find a SubscriptionJourney by Utr" in {
       await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
 
-      await(repository.findByUtr(validUtr)) shouldBe Some(subscriptionJourneyRecord)
+      await(repository.findByUtr(validUtr.value)) shouldBe Some(subscriptionJourneyRecord)
     }
 
     "return None when there is no SubscriptionJourney record for this Utr" in {
       await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
 
-      await(repository.findByUtr(Utr("foo"))) shouldBe None
+      await(repository.findByUtr("foo")) shouldBe None
     }
 
     "delete a SubscriptionJourney record by Utr" in {
       await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
-      await(repository.delete(validUtr))
+      await(repository.delete(validUtr.value))
       await(repository.findByAuthId(AuthProviderId("auth-id"))) shouldBe empty
     }
 
     "update a SubscriptionJourney record" in {
       val updatedSubscriptionJourney = subscriptionJourneyRecord
-        .copy(businessDetails = subscriptionJourneyRecord.businessDetails.copy(postcode = Postcode("AAABBB")))
+        .copy(businessDetails = subscriptionJourneyRecord.businessDetails.copy(postcode = "AAABBB"))
 
       await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
       await(repository.upsert(AuthProviderId("auth-id"), updatedSubscriptionJourney))

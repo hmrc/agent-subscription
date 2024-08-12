@@ -40,6 +40,7 @@ import play.api.libs.json.JsValue
 import play.api.mvc.Result
 import play.api.test.Helpers
 import play.api.test.Helpers.defaultAwaitTimeout
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter, SymmetricCryptoFactory}
 
 import scala.concurrent.Future
 
@@ -60,4 +61,7 @@ trait UnitSpec extends AnyWordSpecLike with Matchers with OptionValues with Scal
       case Some(s) if s.contains("charset=") => Some(s.split("; *charset=").drop(1).mkString.trim)
       case _                                 => None
     }
+
+  val aesCrypto: Encrypter with Decrypter =
+    SymmetricCryptoFactory.aesCrypto(secretKey = "hWmZq3t6w9zrCeF5JiNcRfUjXn2r5u7x")
 }

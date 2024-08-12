@@ -16,11 +16,10 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import java.time.{LocalDateTime, ZoneOffset}
 import com.google.inject.Inject
 import com.mongodb.MongoWriteException
 import play.api.Logging
-import play.api.libs.json.JsValue
+import play.api.libs.json.{JsError, JsSuccess, JsValue}
 import play.api.libs.json.Json.toJson
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
@@ -28,14 +27,17 @@ import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.agentsubscription.utils._
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import java.time.{LocalDateTime, ZoneOffset}
+import javax.inject.Named
 import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionJourneyController @Inject() (
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   cc: ControllerComponents
-)(implicit ec: ExecutionContext)
+)(implicit ec: ExecutionContext, @Named("aes") crypto: Encrypter with Decrypter)
     extends BackendController(cc) with Logging {
 
   def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async {
@@ -46,7 +48,7 @@ class SubscriptionJourneyController @Inject() (
   }
 
   def findByUtr(utr: Utr): Action[AnyContent] = Action.async {
-    subscriptionJourneyRepository.findByUtr(utr).map {
+    subscriptionJourneyRepository.findByUtr(utr.value).map {
       case Some(record) => Ok(toJson(record))
       case None         => NoContent
     }
@@ -60,20 +62,25 @@ class SubscriptionJourneyController @Inject() (
   }
 
   def createOrUpdate(authProviderId: AuthProviderId): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    withJsonBody[SubscriptionJourneyRecord] { journeyRecord =>
-      val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
-      if (journeyRecord.authProviderId != authProviderId) {
-        Future.successful(BadRequest("Auth ids in request URL and body do not match"))
-      } else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
-        Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
-      } else {
-        val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
-        subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent) recoverWith {
-          case ex: MongoWriteException =>
-            logger.error(ex.getMessage(), ex)
-            handleConflict(journeyRecord)
+    request.body.validate[SubscriptionJourneyRecord](SubscriptionJourneyRecord.databaseReads(crypto)) match {
+      case JsSuccess(journeyRecord, _) =>
+        val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
+
+        if (journeyRecord.authProviderId != authProviderId) {
+          Future.successful(BadRequest("Auth ids in request URL and body do not match"))
+        } else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
+          Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
+        } else {
+          val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
+          subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent) recoverWith {
+            case ex: MongoWriteException =>
+              logger.error(ex.getMessage, ex)
+              handleConflict(journeyRecord)
+          }
         }
-      }
+      case JsError(errors) =>
+        logger.warn(s"Failed to parse request body: $errors")
+        Future.successful(BadRequest("Invalid SubscriptionJourneyRecord payload"))
     }
   }
 

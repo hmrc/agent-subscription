@@ -17,11 +17,10 @@
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
 import play.api.libs.functional.syntax._
-import play.api.libs.json.{JsPath, Json, OFormat}
-import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney.AmlsData
-import uk.gov.hmrc.domain.Nino
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 import java.time.LocalDateTime
 
@@ -42,50 +41,63 @@ final case class SubscriptionJourneyRecord(
   contactTradingNameData: Option[ContactTradingNameData],
   contactTradingAddressData: Option[ContactTradingAddressData],
   contactTelephoneData: Option[ContactTelephoneData],
-  verifiedEmails: Set[String] = Set.empty
+  verifiedEmails: VerifiedEmails = VerifiedEmails(emails = Set.empty)
 )
 
 object SubscriptionJourneyRecord {
 
   import MongoLocalDateTimeFormat._
 
-  implicit val subscriptionJourneyFormat: OFormat[SubscriptionJourneyRecord] =
-    ((JsPath \ "authProviderId").format[AuthProviderId] and
-      (JsPath \ "continueId").formatNullable[String] and
-      (JsPath \ "businessDetails").format[BusinessDetails] and
-      (JsPath \ "amlsData").formatNullable[AmlsData] and
-      (JsPath \ "userMappings").format[List[UserMapping]] and
-      (JsPath \ "mappingComplete").format[Boolean] and
-      (JsPath \ "cleanCredsAuthProviderId").formatNullable[AuthProviderId] and
-      (JsPath \ "lastModifiedDate").formatNullable[LocalDateTime] and
-      (JsPath \ "contactEmailData").formatNullable[ContactEmailData] and
-      (JsPath \ "contactTradingNameData").formatNullable[ContactTradingNameData] and
-      (JsPath \ "contactTradingAddressData").formatNullable[ContactTradingAddressData] and
-      (JsPath \ "contactTelephoneData").formatNullable[ContactTelephoneData] and
-      (JsPath \ "verifiedEmails")
-        .formatWithDefault[Set[String]](Set.empty[String]))(
-      SubscriptionJourneyRecord.apply,
+  def databaseWrites(crypto: Encrypter with Decrypter): Writes[SubscriptionJourneyRecord] =
+    ((JsPath \ "authProviderId").write[AuthProviderId] and
+      (JsPath \ "continueId").writeNullable[String] and
+      (JsPath \ "businessDetails").write[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
+      (JsPath \ "amlsData").writeNullable[AmlsData] and
+      (JsPath \ "userMappings").write[List[UserMapping]] and
+      (JsPath \ "mappingComplete").write[Boolean] and
+      (JsPath \ "cleanCredsAuthProviderId").writeNullable[AuthProviderId] and
+      (JsPath \ "lastModifiedDate").writeNullable[LocalDateTime] and
+      (JsPath \ "contactEmailData").writeNullable[ContactEmailData](ContactEmailData.databaseFormat(crypto)) and
+      (JsPath \ "contactTradingNameData").writeNullable[ContactTradingNameData](
+        ContactTradingNameData.databaseFormat(crypto)
+      ) and
+      (JsPath \ "contactTradingAddressData").writeNullable[ContactTradingAddressData](
+        ContactTradingAddressData.databaseFormat(crypto)
+      ) and
+      (JsPath \ "contactTelephoneData").writeNullable[ContactTelephoneData](
+        ContactTelephoneData.databaseFormat(crypto)
+      ) and
+      (JsPath \ "verifiedEmails").write[VerifiedEmails](
+        VerifiedEmails.databaseFormat(crypto)
+      ))(
       unlift(SubscriptionJourneyRecord.unapply)
     )
-}
 
-/** Information about the agent's business. They must always provide a business type, UTR and postcode. But other data
-  * points are only required for some business types and if certain conditions are NOT met e.g. if they provide a NINO,
-  * they must provide date of birth if they are registered for vat, they must provide vat details The record is created
-  * once we have the minimum business details
-  */
-case class BusinessDetails(
-  businessType: BusinessType,
-  utr: Utr, // CT or SA
-  postcode: Postcode,
-  registration: Option[Registration] = None,
-  nino: Option[Nino] = None,
-  companyRegistrationNumber: Option[CompanyRegistrationNumber] = None,
-  dateOfBirth: Option[DateOfBirth] = None, // if NINO required
-  registeredForVat: Option[Boolean] = None,
-  vatDetails: Option[VatDetails] = None
-) // if registered for VAT
+  def databaseReads(crypto: Encrypter with Decrypter): Reads[SubscriptionJourneyRecord] =
+    ((JsPath \ "authProviderId").read[AuthProviderId] and
+      (JsPath \ "continueId").readNullable[String] and
+      (JsPath \ "businessDetails").read[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
+      (JsPath \ "amlsData").readNullable[AmlsData] and
+      (JsPath \ "userMappings").read[List[UserMapping]] and
+      (JsPath \ "mappingComplete").read[Boolean] and
+      (JsPath \ "cleanCredsAuthProviderId").readNullable[AuthProviderId] and
+      (JsPath \ "lastModifiedDate").readNullable[LocalDateTime] and
+      (JsPath \ "contactEmailData").readNullable[ContactEmailData](ContactEmailData.databaseFormat(crypto)) and
+      (JsPath \ "contactTradingNameData").readNullable[ContactTradingNameData](
+        ContactTradingNameData.databaseFormat(crypto)
+      ) and
+      (JsPath \ "contactTradingAddressData").readNullable[ContactTradingAddressData](
+        ContactTradingAddressData.databaseFormat(crypto)
+      ) and
+      (JsPath \ "contactTelephoneData").readNullable[ContactTelephoneData](
+        ContactTelephoneData.databaseFormat(crypto)
+      ) and
+      (JsPath \ "verifiedEmails")
+        .read[VerifiedEmails](VerifiedEmails.databaseFormat(crypto)))(SubscriptionJourneyRecord.apply _)
 
-object BusinessDetails {
-  implicit val format: OFormat[BusinessDetails] = Json.format
+  def databaseFormat(crypto: Encrypter with Decrypter): Format[SubscriptionJourneyRecord] =
+    Format(databaseReads(crypto), sjr => databaseWrites(crypto).writes(sjr))
+
+  implicit val writes: Writes[SubscriptionJourneyRecord] = Json.writes[SubscriptionJourneyRecord]
+
 }

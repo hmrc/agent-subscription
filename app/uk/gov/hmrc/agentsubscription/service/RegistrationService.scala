@@ -16,10 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{Inject, Singleton}
-import play.api.{LoggerLike, Logging}
-import play.api.libs.json.{Json, _}
+import play.api.libs.json._
 import play.api.mvc.{AnyContent, Request}
+import play.api.{LoggerLike, Logging}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.{AuditService, CheckAgencyStatus}
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
@@ -28,6 +27,7 @@ import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.agentsubscription.postcodesMatch
 import uk.gov.hmrc.http.HeaderCarrier
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 private object CheckAgencyStatusAuditDetail {
@@ -153,7 +153,7 @@ class RegistrationService @Inject() (
     isAnASAgent: Boolean,
     taxpayerName: Option[String],
     maybeArn: Option[Arn],
-    businessAddress: BusinessAddress,
+    businessAddress: DesBusinessAddress,
     emailAddress: Option[String],
     primaryPhoneNumber: Option[String],
     safeId: Option[String]
