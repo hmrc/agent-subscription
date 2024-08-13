@@ -18,9 +18,10 @@ package uk.gov.hmrc.agentsubscription.repository
 
 import com.google.inject.ImplementedBy
 import com.mongodb.client.model.ReplaceOptions
-import org.mongodb.scala.model.Filters.{equal, or}
+import org.mongodb.scala.model.Filters.{equal, exists, or}
 import org.mongodb.scala.model.Indexes._
 import org.mongodb.scala.model.{IndexModel, IndexOptions}
+import play.api.Logging
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
@@ -41,6 +42,7 @@ trait SubscriptionJourneyRepository {
   def findByContinueId(continueId: String): Future[Option[SubscriptionJourneyRecord]]
   def findByUtr(utr: String): Future[Option[SubscriptionJourneyRecord]]
   def delete(utr: String): Future[Option[Long]]
+  def queryEncryptionStatus(): Future[Unit]
 }
 
 @Singleton
@@ -87,7 +89,7 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
       extraCodecs = Seq(
         Codecs.playFormatCodec(AuthProviderId.format)
       )
-    ) with SubscriptionJourneyRepository {
+    ) with SubscriptionJourneyRepository with Logging {
 
   private def replaceOptions(upsert: Boolean) = new ReplaceOptions().upsert(upsert)
 
@@ -159,4 +161,20 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
       )
       .toFutureOption()
       .map(_.map(_.getDeletedCount))
+
+  private def countJourneysWithEncryption(): Future[Long] =
+    collection.countDocuments(exists("businessDetails.encrypted")).toFuture()
+
+  private def countTotalJourneys(): Future[Long] =
+    collection.countDocuments().toFuture()
+
+  def queryEncryptionStatus(): Future[Unit] =
+    for {
+      journeysWithEncryption <- countJourneysWithEncryption()
+      totalJourneys          <- countTotalJourneys()
+      leftToEncrypt = totalJourneys - journeysWithEncryption
+    } yield logger.warn(
+      "Total subscription journeys saved = " + totalJourneys + ", total with encryption = " + journeysWithEncryption +
+        ", there are " + leftToEncrypt + " left to encrypt or expire."
+    )
 }

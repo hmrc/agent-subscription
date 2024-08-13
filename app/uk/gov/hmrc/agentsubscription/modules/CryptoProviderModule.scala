@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package uk.gov.hmrc.agentsubscription
+package uk.gov.hmrc.agentsubscription.modules
 
 import play.api.inject.{Binding, Module}
 import play.api.{Configuration, Environment}
