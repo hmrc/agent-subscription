@@ -39,7 +39,7 @@ lazy val microservice = (project in file("."))
     Test / parallelExecution := false,
     CodeCoverageSettings.scoverageSettings
   )
-  .enablePlugins(PlayScala)
+  .enablePlugins(PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin)
 
 
