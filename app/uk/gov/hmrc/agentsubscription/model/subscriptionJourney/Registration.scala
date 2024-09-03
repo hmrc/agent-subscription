@@ -16,11 +16,11 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.{Format, JsResult, JsValue, Json, Writes}
+import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.BusinessAddress
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils._
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
+import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 case class Registration(
   taxpayerName: Option[String],
@@ -72,7 +72,7 @@ object Registration {
     Format(reads(_), registration => writes(registration))
   }
 
-  implicit val writes: Writes[Registration] = Json.writes[Registration]
+  implicit val format: OFormat[Registration] = Json.format[Registration]
 }
 
 case class UpdateBusinessAddressForm(

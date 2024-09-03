@@ -42,4 +42,5 @@ object ContactTradingAddressData {
     Format(reads(_), contactTradingAddressData => writes(contactTradingAddressData))
   }
   implicit val writes: Writes[ContactTradingAddressData] = Json.writes[ContactTradingAddressData]
+  implicit val reads: Reads[ContactTradingAddressData] = Json.reads[ContactTradingAddressData]
 }

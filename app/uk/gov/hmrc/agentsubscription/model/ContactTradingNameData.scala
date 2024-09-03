@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{Format, JsResult, JsValue, Json, Writes}
+import play.api.libs.json.{Format, JsResult, JsValue, Json, Reads, Writes}
 import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.decryptOptString
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
@@ -48,4 +48,5 @@ object ContactTradingNameData {
   }
 
   implicit val writes: Writes[ContactTradingNameData] = Json.writes[ContactTradingNameData]
+  implicit val reads: Reads[ContactTradingNameData] = Json.reads[ContactTradingNameData]
 }
