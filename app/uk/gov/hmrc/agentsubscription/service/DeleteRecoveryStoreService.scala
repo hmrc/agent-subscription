@@ -32,7 +32,7 @@ class DeleteRecoveryStoreService @Inject() (
   mongoLockRepository: MongoLockRepository
 )(implicit ec: ExecutionContext)
     extends Logging {
-  private val lockService = LockService(mongoLockRepository, "agentSubscriptionDropAgentRecoveryStore", 1.minute)
+  private val lockService = LockService(mongoLockRepository, "agentSubscriptionDropAgentRecoveryStore", 15.minute)
 
   def dropCollection(): Future[Unit] =
     lockService
