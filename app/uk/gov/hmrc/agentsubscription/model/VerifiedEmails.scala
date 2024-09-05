@@ -53,4 +53,5 @@ object VerifiedEmails {
   }
 
   implicit val writes: Writes[VerifiedEmails] = Json.writes[VerifiedEmails]
+  implicit val reads: Reads[VerifiedEmails] = Json.reads[VerifiedEmails]
 }

@@ -88,4 +88,5 @@ object BusinessDetails {
   }
 
   implicit val writes: Writes[BusinessDetails] = Json.writes[BusinessDetails]
+  implicit val reads: Reads[BusinessDetails] = Json.reads[BusinessDetails]
 }

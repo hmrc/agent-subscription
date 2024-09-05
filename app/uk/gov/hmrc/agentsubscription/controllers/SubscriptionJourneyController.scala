@@ -19,25 +19,23 @@ package uk.gov.hmrc.agentsubscription.controllers
 import com.google.inject.Inject
 import com.mongodb.MongoWriteException
 import play.api.Logging
-import play.api.libs.json.{JsError, JsSuccess, JsValue}
 import play.api.libs.json.Json.toJson
+import play.api.libs.json.{JsError, JsSuccess, JsValue}
 import play.api.mvc.{Action, AnyContent, ControllerComponents, Result}
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.agentsubscription.utils._
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
 import java.time.{LocalDateTime, ZoneOffset}
-import javax.inject.Named
 import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionJourneyController @Inject() (
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   cc: ControllerComponents
-)(implicit ec: ExecutionContext, @Named("aes") crypto: Encrypter with Decrypter)
+)(implicit ec: ExecutionContext)
     extends BackendController(cc) with Logging {
 
   def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async {
@@ -62,7 +60,7 @@ class SubscriptionJourneyController @Inject() (
   }
 
   def createOrUpdate(authProviderId: AuthProviderId): Action[JsValue] = Action.async(parse.json) { implicit request =>
-    request.body.validate[SubscriptionJourneyRecord](SubscriptionJourneyRecord.databaseReads(crypto)) match {
+    request.body.validate[SubscriptionJourneyRecord] match {
       case JsSuccess(journeyRecord, _) =>
         val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
 

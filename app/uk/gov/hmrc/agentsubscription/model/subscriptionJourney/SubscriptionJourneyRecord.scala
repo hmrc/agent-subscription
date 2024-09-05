@@ -99,5 +99,6 @@ object SubscriptionJourneyRecord {
     Format(databaseReads(crypto), sjr => databaseWrites(crypto).writes(sjr))
 
   implicit val writes: Writes[SubscriptionJourneyRecord] = Json.writes[SubscriptionJourneyRecord]
+  implicit val reads: Reads[SubscriptionJourneyRecord] = Json.reads[SubscriptionJourneyRecord]
 
 }
