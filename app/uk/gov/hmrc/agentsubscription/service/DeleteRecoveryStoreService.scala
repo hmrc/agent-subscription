@@ -47,7 +47,7 @@ class DeleteRecoveryStoreService @Inject() (
           mongo.database
             .listCollectionNames()
             .toFuture()
-            .map(x => logger.warn(s"New list of collection names:$x"))
+            .map(listOfCollection => logger.warn(s"New list of collection names:$listOfCollection"))
           logger.warn("agent-recovery-store collection dropped")
 
         case None => logger.warn("agent-recovery-store, lock not obtained")
