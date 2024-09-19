@@ -16,9 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{Format, JsResult, JsValue, Json, Reads, Writes}
-import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils._
-import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 case class BusinessAddress(
@@ -27,46 +27,17 @@ case class BusinessAddress(
   addressLine3: Option[String] = None,
   addressLine4: Option[String] = None,
   postalCode: Option[String],
-  countryCode: String,
-  encrypted: Option[Boolean] = None
+  countryCode: String
 )
 object BusinessAddress {
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[BusinessAddress] = {
-
-    def reads(json: JsValue): JsResult[BusinessAddress] =
-      for {
-        isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
-        addressLine1 = decryptString("addressLine1", isEncrypted, json)
-        addressLine2 = decryptOptString("addressLine2", isEncrypted, json)
-        addressLine3 = decryptOptString("addressLine3", isEncrypted, json)
-        addressLine4 = decryptOptString("addressLine4", isEncrypted, json)
-        postalCode = decryptOptString("postalCode", isEncrypted, json)
-        countryCode = decryptString("countryCode", isEncrypted, json)
-      } yield BusinessAddress(
-        addressLine1,
-        addressLine2,
-        addressLine3,
-        addressLine4,
-        postalCode,
-        countryCode,
-        isEncrypted
-      )
-
-    def writes(businessAddress: BusinessAddress): JsValue =
-      Json.obj(
-        "addressLine1" -> stringEncrypter.writes(businessAddress.addressLine1),
-        "addressLine2" -> businessAddress.addressLine2.map(stringEncrypter.writes),
-        "addressLine3" -> businessAddress.addressLine3.map(stringEncrypter.writes),
-        "addressLine4" -> businessAddress.addressLine4.map(stringEncrypter.writes),
-        "postalCode"   -> businessAddress.postalCode.map(stringEncrypter.writes),
-        "countryCode"  -> stringEncrypter.writes(businessAddress.countryCode),
-        "encrypted"    -> Some(true)
-      )
-
-    Format(reads(_), businessAddress => writes(businessAddress))
-  }
-
-  implicit val writes: Writes[BusinessAddress] = Json.writes[BusinessAddress]
-  implicit val reads: Reads[BusinessAddress] = Json.reads[BusinessAddress]
-
+  implicit val format: OFormat[BusinessAddress] = Json.format[BusinessAddress]
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[BusinessAddress] =
+    (
+      (__ \ "addressLine1").format[String](stringEncrypterDecrypter) and
+        (__ \ "addressLine2").formatNullable[String](stringEncrypterDecrypter) and
+        (__ \ "addressLine3").formatNullable[String](stringEncrypterDecrypter) and
+        (__ \ "addressLine4").formatNullable[String](stringEncrypterDecrypter) and
+        (__ \ "postalCode").formatNullable[String](stringEncrypterDecrypter) and
+        (__ \ "countryCode").format[String](stringEncrypterDecrypter)
+    )(BusinessAddress.apply, unlift(BusinessAddress.unapply))
 }

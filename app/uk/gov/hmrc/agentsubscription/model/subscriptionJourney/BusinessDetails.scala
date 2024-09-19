@@ -16,10 +16,10 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.DateOfBirth
-import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.{decryptOptString, decryptString}
-import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 /** Information about the agent's business. They must always provide a business type, UTR and postcode. But other data
@@ -37,56 +37,21 @@ case class BusinessDetails(
   companyRegistrationNumber: Option[CompanyRegistrationNumber] = None,
   dateOfBirth: Option[DateOfBirth] = None, // if NINO required
   registeredForVat: Option[Boolean] = None,
-  vatDetails: Option[VatDetails] = None,
-  encrypted: Option[Boolean] = None
+  vatDetails: Option[VatDetails] = None
 ) // if registered for VAT
 
 object BusinessDetails {
-
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[BusinessDetails] = {
-
-    def reads(json: JsValue): JsResult[BusinessDetails] =
-      for {
-        isEncrypted  <- (json \ "encrypted").validateOpt[Boolean]
-        businessType <- (json \ "businessType").validate[BusinessType]
-        utr = decryptString("utr", isEncrypted, json)
-        postcode = decryptString("postcode", isEncrypted, json)
-        registration <- (json \ "registration").validateOpt[Registration](Registration.databaseFormat(crypto))
-        nino = decryptOptString("nino", isEncrypted, json)
-        companyRegistrationNumber <- (json \ "companyRegistrationNumber").validateOpt[CompanyRegistrationNumber]
-        dateOfBirth               <- (json \ "dateOfBirth").validateOpt[DateOfBirth]
-        registeredForVat          <- (json \ "registeredForVat").validateOpt[Boolean]
-        vatDetails                <- (json \ "vatDetails").validateOpt[VatDetails]
-      } yield BusinessDetails(
-        businessType,
-        utr,
-        postcode,
-        registration,
-        nino,
-        companyRegistrationNumber,
-        dateOfBirth,
-        registeredForVat,
-        vatDetails,
-        isEncrypted
-      )
-
-    def writes(businessDetails: BusinessDetails): JsValue =
-      Json.obj(
-        "businessType"              -> businessDetails.businessType,
-        "utr"                       -> stringEncrypter.writes(businessDetails.utr),
-        "postcode"                  -> stringEncrypter.writes(businessDetails.postcode),
-        "registration"              -> businessDetails.registration.map(Registration.databaseFormat.writes),
-        "nino"                      -> businessDetails.nino.map(stringEncrypter.writes),
-        "companyRegistrationNumber" -> businessDetails.companyRegistrationNumber,
-        "dateOfBirth"               -> businessDetails.dateOfBirth,
-        "registeredForVat"          -> businessDetails.registeredForVat,
-        "vatDetails"                -> businessDetails.vatDetails,
-        "encrypted"                 -> true
-      )
-
-    Format(reads(_), businessDetails => writes(businessDetails))
-  }
-
-  implicit val writes: Writes[BusinessDetails] = Json.writes[BusinessDetails]
-  implicit val reads: Reads[BusinessDetails] = Json.reads[BusinessDetails]
+  implicit val format: OFormat[BusinessDetails] = Json.format
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[BusinessDetails] =
+    (
+      (__ \ "businessType").format[BusinessType] and
+        (__ \ "utr").format[String](stringEncrypterDecrypter) and
+        (__ \ "postcode").format[String](stringEncrypterDecrypter) and
+        (__ \ "registration").formatNullable[Registration](Registration.databaseFormat) and
+        (__ \ "nino").formatNullable[String](stringEncrypterDecrypter) and
+        (__ \ "companyRegistrationNumber").formatNullable[CompanyRegistrationNumber] and
+        (__ \ "dateOfBirth").formatNullable[DateOfBirth] and
+        (__ \ "registeredForVat").formatNullable[Boolean] and
+        (__ \ "vatDetails").formatNullable[VatDetails]
+    )(BusinessDetails.apply, unlift(BusinessDetails.unapply))
 }

@@ -16,37 +16,21 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{Format, JsResult, JsValue, Json, Reads, Writes}
-import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.decryptOptString
-import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 case class ContactTradingNameData(
   hasTradingName: Boolean,
-  contactTradingName: Option[String],
-  encrypted: Option[Boolean] = None
+  contactTradingName: Option[String]
 )
 
 object ContactTradingNameData {
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactTradingNameData] = {
-
-    def reads(json: JsValue): JsResult[ContactTradingNameData] =
-      for {
-        isEncrypted    <- (json \ "encrypted").validateOpt[Boolean]
-        hasTradingName <- (json \ "hasTradingName").validate[Boolean]
-        contactTradingName = decryptOptString("contactTradingName", isEncrypted, json)
-      } yield ContactTradingNameData(hasTradingName, contactTradingName, isEncrypted)
-
-    def writes(contactTradingNameData: ContactTradingNameData): JsValue =
-      Json.obj(
-        "hasTradingName"     -> contactTradingNameData.hasTradingName,
-        "contactTradingName" -> contactTradingNameData.contactTradingName.map(stringEncrypter.writes),
-        "encrypted"          -> Some(true)
-      )
-
-    Format(reads(_), contactTradingNameData => writes(contactTradingNameData))
-  }
-
-  implicit val writes: Writes[ContactTradingNameData] = Json.writes[ContactTradingNameData]
-  implicit val reads: Reads[ContactTradingNameData] = Json.reads[ContactTradingNameData]
+  implicit val format: OFormat[ContactTradingNameData] = Json.format
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactTradingNameData] =
+    (
+      (__ \ "hasTradingName").format[Boolean] and
+        (__ \ "contactTradingName").formatNullable[String](stringEncrypterDecrypter)
+    )(ContactTradingNameData.apply, unlift(ContactTradingNameData.unapply))
 }

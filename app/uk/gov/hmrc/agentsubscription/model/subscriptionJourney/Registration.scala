@@ -16,10 +16,10 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
+import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.BusinessAddress
-import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils._
-import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 case class Registration(
@@ -29,48 +29,21 @@ case class Registration(
   address: BusinessAddress,
   emailAddress: Option[String],
   primaryPhoneNumber: Option[String],
-  safeId: Option[String],
-  encrypted: Option[Boolean] = None
+  safeId: Option[String]
 )
 
 object Registration {
 
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[Registration] = {
-
-    def reads(json: JsValue): JsResult[Registration] =
-      for {
-        isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
-        taxpayerName = decryptOptString("taxpayerName", isEncrypted, json)
-        isSubscribedToAgentServices = (json \ "isSubscribedToAgentServices").as[Boolean]
-        isSubscribedToETMP = (json \ "isSubscribedToETMP").as[Boolean]
-        address = (json \ "address").as[BusinessAddress](BusinessAddress.databaseFormat(crypto))
-        emailAddress = decryptOptString("emailAddress", isEncrypted, json)
-        primaryPhoneNumber = decryptOptString("primaryPhoneNumber", isEncrypted, json)
-        safeId = (json \ "safeId").asOpt[String]
-      } yield Registration(
-        taxpayerName,
-        isSubscribedToAgentServices,
-        isSubscribedToETMP,
-        address,
-        emailAddress,
-        primaryPhoneNumber,
-        safeId,
-        isEncrypted
-      )
-
-    def writes(registration: Registration): JsValue =
-      Json.obj(
-        "taxpayerName"                -> registration.taxpayerName.map(stringEncrypter.writes),
-        "isSubscribedToAgentServices" -> registration.isSubscribedToAgentServices,
-        "isSubscribedToETMP"          -> registration.isSubscribedToETMP,
-        "address"                     -> BusinessAddress.databaseFormat.writes(registration.address),
-        "emailAddress"                -> registration.emailAddress.map(stringEncrypter.writes),
-        "primaryPhoneNumber"          -> registration.primaryPhoneNumber.map(stringEncrypter.writes),
-        "safeId"                      -> registration.safeId,
-        "encrypted"                   -> Some(true)
-      )
-    Format(reads(_), registration => writes(registration))
-  }
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[Registration] =
+    (
+      (__ \ "taxpayerName").formatNullable[String](stringEncrypterDecrypter) and
+        (__ \ "isSubscribedToAgentServices").format[Boolean] and
+        (__ \ "isSubscribedToETMP").format[Boolean] and
+        (__ \ "address").format[BusinessAddress](BusinessAddress.databaseFormat(crypto)) and
+        (__ \ "emailAddress").formatNullable[String](stringEncrypterDecrypter) and
+        (__ \ "primaryPhoneNumber").formatNullable[String](stringEncrypterDecrypter) and
+        (__ \ "safeId").formatNullable[String]
+    )(Registration.apply, unlift(Registration.unapply))
 
   implicit val format: OFormat[Registration] = Json.format[Registration]
 }

@@ -18,7 +18,7 @@ package uk.gov.hmrc.agentsubscription.repository
 
 import com.google.inject.ImplementedBy
 import com.mongodb.client.model.ReplaceOptions
-import org.mongodb.scala.model.Filters.{equal, exists, or}
+import org.mongodb.scala.model.Filters.{equal, or}
 import org.mongodb.scala.model.Indexes._
 import org.mongodb.scala.model.{IndexModel, IndexOptions}
 import play.api.Logging
@@ -42,7 +42,6 @@ trait SubscriptionJourneyRepository {
   def findByContinueId(continueId: String): Future[Option[SubscriptionJourneyRecord]]
   def findByUtr(utr: String): Future[Option[SubscriptionJourneyRecord]]
   def delete(utr: String): Future[Option[Long]]
-  def queryEncryptionStatus(): Future[Unit]
 }
 
 @Singleton
@@ -114,10 +113,7 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
   def updateOnUtr(utr: String, record: SubscriptionJourneyRecord): Future[Option[Long]] =
     collection
       .replaceOne(
-        equal(
-          "businessDetails.utr",
-          if (record.businessDetails.encrypted.contains(true)) crypto.encrypt(PlainText(utr)).value else utr
-        ),
+        equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value),
         record
       )
       .toFutureOption()
@@ -144,37 +140,15 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
   def findByUtr(utr: String): Future[Option[SubscriptionJourneyRecord]] =
     collection
       .find(
-        or(
-          equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value),
-          equal("businessDetails.utr", utr)
-        )
+        equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value)
       )
       .headOption()
 
   def delete(utr: String): Future[Option[Long]] =
     collection
       .deleteOne(
-        or(
-          equal("businessDetails.utr", utr),
-          equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value)
-        )
+        equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value)
       )
       .toFutureOption()
       .map(_.map(_.getDeletedCount))
-
-  private def countJourneysWithEncryption(): Future[Long] =
-    collection.countDocuments(exists("businessDetails.encrypted")).toFuture()
-
-  private def countTotalJourneys(): Future[Long] =
-    collection.countDocuments().toFuture()
-
-  def queryEncryptionStatus(): Future[Unit] =
-    for {
-      journeysWithEncryption <- countJourneysWithEncryption()
-      totalJourneys          <- countTotalJourneys()
-      leftToEncrypt = totalJourneys - journeysWithEncryption
-    } yield logger.warn(
-      "Total subscription journeys saved = " + totalJourneys + ", total with encryption = " + journeysWithEncryption +
-        ", there are " + leftToEncrypt + " left to encrypt or expire."
-    )
 }

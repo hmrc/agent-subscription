@@ -94,8 +94,11 @@ class SubscriptionJourneyController @Inject() (
                      businessDetails = sjr.businessDetails,
                      cleanCredsAuthProviderId = sjr.cleanCredsAuthProviderId
                    )
-      _      <- subscriptionJourneyRepository.updateOnUtr(utr, updatedSjr)
-      result <- Ok(toJson(updatedSjr)).toFuture
+      modifiedRecordCount <- subscriptionJourneyRepository.updateOnUtr(utr, updatedSjr)
+      result <- modifiedRecordCount match {
+                  case Some(1L) => Ok(toJson(updatedSjr)).toFuture
+                  case _        => logUTRError(updatedSjr).toFailure
+                }
     } yield result
   }
 
