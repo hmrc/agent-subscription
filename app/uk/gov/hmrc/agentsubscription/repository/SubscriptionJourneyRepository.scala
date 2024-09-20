@@ -17,14 +17,15 @@
 package uk.gov.hmrc.agentsubscription.repository
 
 import com.google.inject.ImplementedBy
-import com.mongodb.client.model.ReplaceOptions
+import com.mongodb.client.model.{ReplaceOptions, ReturnDocument}
+import com.mongodb.client.model.Updates._
 import org.mongodb.scala.model.Filters.{equal, or}
 import org.mongodb.scala.model.Indexes._
-import org.mongodb.scala.model.{IndexModel, IndexOptions}
+import org.mongodb.scala.model.{FindOneAndUpdateOptions, IndexModel, IndexOptions}
 import play.api.Logging
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
-import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.{BusinessDetails, SubscriptionJourneyRecord}
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter, PlainText}
 import uk.gov.hmrc.mongo.MongoComponent
 import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
@@ -37,7 +38,12 @@ import scala.concurrent.{ExecutionContext, Future}
 trait SubscriptionJourneyRepository {
 
   def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord): Future[Option[UpsertType]]
-  def updateOnUtr(utr: String, record: SubscriptionJourneyRecord): Future[Option[Long]]
+  def updateOnUtr(
+    utr: String,
+    authProviderId: AuthProviderId,
+    businessDetails: BusinessDetails,
+    cleanCredsAuthProviderId: Option[AuthProviderId]
+  ): Future[Option[SubscriptionJourneyRecord]]
   def findByAuthId(authProviderId: AuthProviderId): Future[Option[SubscriptionJourneyRecord]]
   def findByContinueId(continueId: String): Future[Option[SubscriptionJourneyRecord]]
   def findByUtr(utr: String): Future[Option[SubscriptionJourneyRecord]]
@@ -110,14 +116,23 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
         )
       )
 
-  def updateOnUtr(utr: String, record: SubscriptionJourneyRecord): Future[Option[Long]] =
+  def updateOnUtr(
+    utr: String,
+    authProviderId: AuthProviderId,
+    businessDetails: BusinessDetails,
+    cleanCredsAuthProviderId: Option[AuthProviderId]
+  ): Future[Option[SubscriptionJourneyRecord]] =
     collection
-      .replaceOne(
+      .findOneAndUpdate(
         equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value),
-        record
+        combine(
+          set("authProviderId", Codecs.toBson(authProviderId)),
+          set("businessDetails", Codecs.toBson(businessDetails)(BusinessDetails.databaseFormat(crypto))),
+          set("cleanCredsAuthProviderId", Codecs.toBson(cleanCredsAuthProviderId))
+        ),
+        new FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
       )
       .toFutureOption()
-      .map(_.map(_.getModifiedCount))
 
   def findByAuthId(
     authProviderId: AuthProviderId

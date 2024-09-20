@@ -131,7 +131,14 @@ class SubscriptionJourneyRepositoryISpec
         .copy(authProviderId = AuthProviderId("new-auth-id"))
 
       await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
-      await(repository.updateOnUtr(subscriptionJourneyRecord.businessDetails.utr, updatedSubscriptionJourney))
+      await(
+        repository.updateOnUtr(
+          subscriptionJourneyRecord.businessDetails.utr,
+          updatedSubscriptionJourney.authProviderId,
+          updatedSubscriptionJourney.businessDetails,
+          updatedSubscriptionJourney.cleanCredsAuthProviderId
+        )
+      ) shouldBe Some(updatedSubscriptionJourney)
 
       await(repository.findByAuthId(AuthProviderId("new-auth-id"))) shouldBe Some(updatedSubscriptionJourney)
     }

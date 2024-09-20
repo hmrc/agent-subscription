@@ -193,8 +193,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
           )
         )
 
-      when(mockRepo.updateOnUtr(any[String], any[SubscriptionJourneyRecord]))
-        .thenReturn(Future.successful((Some(1L))))
+      when(mockRepo.updateOnUtr(any[String], any[AuthProviderId], any[BusinessDetails], any[Option[AuthProviderId]]))
+        .thenReturn(Future.successful((Some(newRecord))))
 
       when(mockRepo.findByUtr(any[String]))
         .thenReturn(Future.successful(Some(existingRecord)))
@@ -244,8 +244,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
           )
         )
 
-      when(mockRepo.updateOnUtr(any[String], any[SubscriptionJourneyRecord]))
-        .thenReturn(Future.successful((Some(1L))))
+      when(mockRepo.updateOnUtr(any[String], any[AuthProviderId], any[BusinessDetails], any[Option[AuthProviderId]]))
+        .thenReturn(Future.successful((Some(newRecord))))
 
       when(mockRepo.findByUtr(any[String]))
         .thenReturn(Future.successful(Some(existingRecord)))

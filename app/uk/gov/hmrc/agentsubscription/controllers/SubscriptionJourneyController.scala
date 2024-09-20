@@ -87,23 +87,18 @@ class SubscriptionJourneyController @Inject() (
   def handleConflict(sjr: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Result] = {
     val utr = sjr.businessDetails.utr
     for {
-      optExistingSjr <- subscriptionJourneyRepository.findByUtr(utr)
-      existingSjr    <- optExistingSjr.fold[Future[SubscriptionJourneyRecord]](logUTRError(sjr).toFailure)(_.toFuture)
-      updatedSjr = existingSjr.copy(
-                     authProviderId = sjr.authProviderId,
-                     businessDetails = sjr.businessDetails,
-                     cleanCredsAuthProviderId = sjr.cleanCredsAuthProviderId
-                   )
-      modifiedRecordCount <- subscriptionJourneyRepository.updateOnUtr(utr, updatedSjr)
-      result <- modifiedRecordCount match {
-                  case Some(1L) => Ok(toJson(updatedSjr)).toFuture
-                  case _        => logUTRError(updatedSjr).toFailure
+      modifiedRecord <-
+        subscriptionJourneyRepository
+          .updateOnUtr(utr, sjr.authProviderId, sjr.businessDetails, sjr.cleanCredsAuthProviderId)
+      result <- modifiedRecord match {
+                  case Some(record: SubscriptionJourneyRecord) => Ok(toJson(record)).toFuture
+                  case _                                       => logUTRError(utr).toFailure
                 }
     } yield result
   }
 
-  def logUTRError(sjr: SubscriptionJourneyRecord): IllegalStateException = {
-    logger.warn(s"Conflict saving SJR with UTR ${sjr.businessDetails.utr}")
-    new IllegalStateException(s"Could not find existing SJR with UTR = ${sjr.businessDetails.utr}")
+  private def logUTRError(utr: String): IllegalStateException = {
+    logger.warn(s"Conflict saving SJR with UTR $utr")
+    new IllegalStateException(s"Could not find existing SJR with UTR = $utr")
   }
 }
