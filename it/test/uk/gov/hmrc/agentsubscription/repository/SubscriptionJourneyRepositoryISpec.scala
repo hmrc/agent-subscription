@@ -47,8 +47,7 @@ class SubscriptionJourneyRepositoryISpec
       Some("AddressLine3 A"),
       Some("AddressLine4 A"),
       Some("AA11AA"),
-      "GB",
-      encrypted = Some(true)
+      "GB"
     )
   val registration = Registration(
     Some(registrationName),
@@ -77,22 +76,18 @@ class SubscriptionJourneyRepositoryISpec
         businessType = BusinessType.SoleTrader,
         utr = validUtr.value,
         postcode = "bn12 1hn",
-        nino = Some("AE123456C"),
-        encrypted = Some(true)
+        nino = Some("AE123456C")
       ),
       amlsData = None,
       userMappings = List(),
       mappingComplete = false,
       cleanCredsAuthProviderId = None,
       lastModifiedDate = None,
-      contactEmailData =
-        Some(ContactEmailData(useBusinessEmail = true, Some("email@email.com"), encrypted = Some(true))),
-      contactTradingNameData =
-        Some(ContactTradingNameData(hasTradingName = true, Some("My Trading Name"), encrypted = Some(true))),
+      contactEmailData = Some(ContactEmailData(useBusinessEmail = true, Some("email@email.com"))),
+      contactTradingNameData = Some(ContactTradingNameData(hasTradingName = true, Some("My Trading Name"))),
       contactTradingAddressData = Some(ContactTradingAddressData(useBusinessAddress = true, Some(businessAddress))),
-      contactTelephoneData =
-        Some(ContactTelephoneData(useBusinessTelephone = true, Some("01273111111"), encrypted = Some(true))),
-      verifiedEmails = VerifiedEmails(Set.empty, Some(true))
+      contactTelephoneData = Some(ContactTelephoneData(useBusinessTelephone = true, Some("01273111111"))),
+      verifiedEmails = VerifiedEmails(Set.empty)
     )
 
   "SubscriptionJourneyRepository" should {
@@ -136,7 +131,14 @@ class SubscriptionJourneyRepositoryISpec
         .copy(authProviderId = AuthProviderId("new-auth-id"))
 
       await(repository.upsert(AuthProviderId("auth-id"), subscriptionJourneyRecord))
-      await(repository.updateOnUtr(subscriptionJourneyRecord.businessDetails.utr, updatedSubscriptionJourney))
+      await(
+        repository.updateOnUtr(
+          subscriptionJourneyRecord.businessDetails.utr,
+          updatedSubscriptionJourney.authProviderId,
+          updatedSubscriptionJourney.businessDetails,
+          updatedSubscriptionJourney.cleanCredsAuthProviderId
+        )
+      ) shouldBe Some(updatedSubscriptionJourney)
 
       await(repository.findByAuthId(AuthProviderId("new-auth-id"))) shouldBe Some(updatedSubscriptionJourney)
     }

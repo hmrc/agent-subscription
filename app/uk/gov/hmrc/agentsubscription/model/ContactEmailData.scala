@@ -16,33 +16,18 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{Format, JsResult, JsValue, Json, Reads, Writes}
-import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.decryptOptString
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
-import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 
-case class ContactEmailData(useBusinessEmail: Boolean, contactEmail: Option[String], encrypted: Option[Boolean] = None)
+case class ContactEmailData(useBusinessEmail: Boolean, contactEmail: Option[String])
 
 object ContactEmailData {
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactEmailData] = {
-
-    def reads(json: JsValue): JsResult[ContactEmailData] =
-      for {
-        isEncrypted      <- (json \ "encrypted").validateOpt[Boolean]
-        useBusinessEmail <- (json \ "useBusinessEmail").validate[Boolean]
-        contactEmail = decryptOptString("contactEmail", isEncrypted, json)
-      } yield ContactEmailData(useBusinessEmail, contactEmail, isEncrypted)
-
-    def writes(contactEmailData: ContactEmailData): JsValue =
-      Json.obj(
-        "useBusinessEmail" -> contactEmailData.useBusinessEmail,
-        "contactEmail"     -> contactEmailData.contactEmail.map(stringEncrypter.writes),
-        "encrypted"        -> Some(true)
-      )
-
-    Format(reads(_), contactEmailData => writes(contactEmailData))
-  }
-
-  implicit val writes: Writes[ContactEmailData] = Json.writes[ContactEmailData]
-  implicit val reads: Reads[ContactEmailData] = Json.reads[ContactEmailData]
+  implicit val format: OFormat[ContactEmailData] = Json.format
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactEmailData] =
+    (
+      (__ \ "useBusinessEmail").format[Boolean] and
+        (__ \ "contactEmail").formatNullable[String](stringEncrypterDecrypter)
+    )(ContactEmailData.apply, unlift(ContactEmailData.unapply))
 }

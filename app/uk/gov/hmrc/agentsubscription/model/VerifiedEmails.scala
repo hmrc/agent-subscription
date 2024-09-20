@@ -20,33 +20,20 @@ import play.api.libs.json._
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
 import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter}
 
-case class VerifiedEmails(emails: Set[String] = Set.empty, encrypted: Option[Boolean] = None)
+case class VerifiedEmails(emails: Set[String] = Set.empty)
 
 object VerifiedEmails {
   def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[VerifiedEmails] = {
 
     def reads(json: JsValue): JsResult[VerifiedEmails] =
-      for {
-        isEncrypted <- (json \ "encrypted").validateOpt[Boolean]
-        emails = isEncrypted match {
-                   case Some(true) =>
-                     (json \ "emails")
-                       .validate[Set[String]] match {
-                       case JsSuccess(emails, _) => emails.map(str => crypto.decrypt(Crypted(str)).value)
-                       case JsError(_)           => Set[String]()
-                     }
-                   case _ =>
-                     (json \ "emails").validate[Set[String]] match {
-                       case JsSuccess(emails, _) => emails
-                       case JsError(_)           => Set[String]()
-                     }
-                 }
-      } yield VerifiedEmails(emails, isEncrypted)
+      (json \ "emails").validate[Set[String]] match {
+        case JsSuccess(emails, _) => JsSuccess(VerifiedEmails(emails.map(str => crypto.decrypt(Crypted(str)).value)))
+        case JsError(_)           => JsSuccess(VerifiedEmails())
+      }
 
     def writes(verifiedEmails: VerifiedEmails): JsValue =
       Json.obj(
-        "emails"    -> verifiedEmails.emails.map(stringEncrypter.writes),
-        "encrypted" -> Some(true)
+        "emails" -> verifiedEmails.emails.map(stringEncrypter.writes)
       )
 
     Format(reads(_), verifiedEmails => writes(verifiedEmails))

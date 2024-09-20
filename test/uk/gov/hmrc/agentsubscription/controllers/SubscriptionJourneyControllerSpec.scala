@@ -27,8 +27,8 @@ import play.api.mvc.{ControllerComponents, Result, Results}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
+import uk.gov.hmrc.agentsubscription.model.{AuthProviderId, VerifiedEmails}
 import uk.gov.hmrc.agentsubscription.repository.{RecordUpdated, SubscriptionJourneyRepository}
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
@@ -39,19 +39,32 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class SubscriptionJourneyControllerSpec extends UnitSpec with Results with MockitoSugar {
 
-  val minimalRecord = SubscriptionJourneyRecord(
-    AuthProviderId("cred-1234"),
-    None,
-    BusinessDetails(BusinessType.LimitedCompany, "12345", "BN25GJ", None, None, None, None, None, None),
-    None,
-    List.empty,
+  val minimalBusinessDetails: BusinessDetails = BusinessDetails(
+    businessType = BusinessType.LimitedCompany,
+    utr = "12345",
+    postcode = "BN25GJ",
+    registration = None,
+    nino = None,
+    companyRegistrationNumber = None,
+    dateOfBirth = None,
+    registeredForVat = None,
+    vatDetails = None
+  )
+
+  val minimalRecord: SubscriptionJourneyRecord = SubscriptionJourneyRecord(
+    authProviderId = AuthProviderId("cred-1234"),
+    continueId = None,
+    businessDetails = minimalBusinessDetails,
+    amlsData = None,
+    userMappings = List.empty,
     mappingComplete = false,
-    None,
-    None,
-    None,
-    None,
-    None,
-    None
+    cleanCredsAuthProviderId = None,
+    lastModifiedDate = None,
+    contactEmailData = None,
+    contactTradingNameData = None,
+    contactTradingAddressData = None,
+    contactTelephoneData = None,
+    verifiedEmails = VerifiedEmails(Set.empty)
   )
 
   val mockRepo: SubscriptionJourneyRepository = mock[SubscriptionJourneyRepository]
@@ -180,8 +193,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
           )
         )
 
-      when(mockRepo.updateOnUtr(any[String], any[SubscriptionJourneyRecord]))
-        .thenReturn(Future.successful((Some(1L))))
+      when(mockRepo.updateOnUtr(any[String], any[AuthProviderId], any[BusinessDetails], any[Option[AuthProviderId]]))
+        .thenReturn(Future.successful((Some(newRecord))))
 
       when(mockRepo.findByUtr(any[String]))
         .thenReturn(Future.successful(Some(existingRecord)))
@@ -199,15 +212,15 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
       ) // The existing record in the repo
       val newAuthProviderId = AuthProviderId("cred-new-clean")
       val newBusinessDetails = BusinessDetails(
-        BusinessType.LimitedCompany,
-        "12345",
-        "BN65GJ",
-        None,
-        None,
-        None,
-        None,
-        None,
-        None
+        businessType = BusinessType.LimitedCompany,
+        utr = "12345",
+        postcode = "BN65GJ",
+        registration = None,
+        nino = None,
+        companyRegistrationNumber = None,
+        dateOfBirth = None,
+        registeredForVat = None,
+        vatDetails = None
       )
       val newRecord = minimalRecord.copy(
         authProviderId = newAuthProviderId,
@@ -231,8 +244,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
           )
         )
 
-      when(mockRepo.updateOnUtr(any[String], any[SubscriptionJourneyRecord]))
-        .thenReturn(Future.successful((Some(1L))))
+      when(mockRepo.updateOnUtr(any[String], any[AuthProviderId], any[BusinessDetails], any[Option[AuthProviderId]]))
+        .thenReturn(Future.successful((Some(newRecord))))
 
       when(mockRepo.findByUtr(any[String]))
         .thenReturn(Future.successful(Some(existingRecord)))
@@ -245,7 +258,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
       (contentAsJson(result) \ "cleanCredsAuthProviderId")
         .asOpt[AuthProviderId] shouldBe updatedExistingRecord.cleanCredsAuthProviderId
       (contentAsJson(result) \ "businessDetails")
-        .as[BusinessDetails](BusinessDetails.databaseFormat(crypto)) shouldBe updatedExistingRecord.businessDetails
+        .as[BusinessDetails] shouldBe updatedExistingRecord.businessDetails
     }
   }
 

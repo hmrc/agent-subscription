@@ -16,41 +16,21 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.{Format, JsResult, JsValue, Json, Reads, Writes}
-import uk.gov.hmrc.agentsubscription.repository.EncryptionUtils.decryptOptString
-import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
+import play.api.libs.functional.syntax._
+import play.api.libs.json._
+import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
 import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
 
 case class ContactTelephoneData(
   useBusinessTelephone: Boolean,
-  telephoneNumber: Option[String],
-  encrypted: Option[Boolean] = None
+  telephoneNumber: Option[String]
 )
 
 object ContactTelephoneData {
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactTelephoneData] = {
-
-    def reads(json: JsValue): JsResult[ContactTelephoneData] =
-      for {
-        isEncrypted          <- (json \ "encrypted").validateOpt[Boolean]
-        useBusinessTelephone <- (json \ "useBusinessTelephone").validate[Boolean]
-        telephoneNumber = decryptOptString("telephoneNumber", isEncrypted, json)
-      } yield ContactTelephoneData(
-        useBusinessTelephone,
-        telephoneNumber,
-        isEncrypted
-      )
-
-    def writes(contactTelephoneData: ContactTelephoneData): JsValue =
-      Json.obj(
-        "useBusinessTelephone" -> contactTelephoneData.useBusinessTelephone,
-        "telephoneNumber"      -> contactTelephoneData.telephoneNumber.map(stringEncrypter.writes),
-        "encrypted"            -> Some(true)
-      )
-
-    Format(reads(_), contactTelephoneData => writes(contactTelephoneData))
-  }
-
-  implicit val writes: Writes[ContactTelephoneData] = Json.writes[ContactTelephoneData]
-  implicit val reads: Reads[ContactTelephoneData] = Json.reads[ContactTelephoneData]
+  implicit val format: OFormat[ContactTelephoneData] = Json.format[ContactTelephoneData]
+  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactTelephoneData] =
+    (
+      (__ \ "useBusinessTelephone").format[Boolean] and
+        (__ \ "telephoneNumber").formatNullable[String](stringEncrypterDecrypter)
+    )(ContactTelephoneData.apply, unlift(ContactTelephoneData.unapply))
 }
