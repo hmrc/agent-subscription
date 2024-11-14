@@ -159,8 +159,6 @@ class SubscriptionJourneyRepositoryISpec
         existingSubscriptionJourneyWithCleanCreds
           .copy(authProviderId = AuthProviderId("new-auth-id"), cleanCredsAuthProviderId = None)
       )
-
-      // await(repository.findByAuthId(AuthProviderId("new-auth-id"))) shouldBe Some(updatedSubscriptionJourney)
     }
 
   }
