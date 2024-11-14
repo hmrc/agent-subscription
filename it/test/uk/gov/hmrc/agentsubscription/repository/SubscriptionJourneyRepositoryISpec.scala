@@ -143,5 +143,25 @@ class SubscriptionJourneyRepositoryISpec
       await(repository.findByAuthId(AuthProviderId("new-auth-id"))) shouldBe Some(updatedSubscriptionJourney)
     }
 
+    "unset cleanCredAuthProviderId if not supplied and previously set when updateOnUtr" in {
+      val existingSubscriptionJourneyWithCleanCreds = subscriptionJourneyRecord
+        .copy(cleanCredsAuthProviderId = Some(AuthProviderId("clean1")))
+
+      await(repository.upsert(AuthProviderId("auth-id"), existingSubscriptionJourneyWithCleanCreds))
+      await(
+        repository.updateOnUtr(
+          subscriptionJourneyRecord.businessDetails.utr,
+          AuthProviderId("new-auth-id"),
+          existingSubscriptionJourneyWithCleanCreds.businessDetails,
+          None
+        )
+      ) shouldBe Some(
+        existingSubscriptionJourneyWithCleanCreds
+          .copy(authProviderId = AuthProviderId("new-auth-id"), cleanCredsAuthProviderId = None)
+      )
+
+      // await(repository.findByAuthId(AuthProviderId("new-auth-id"))) shouldBe Some(updatedSubscriptionJourney)
+    }
+
   }
 }

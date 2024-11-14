@@ -121,18 +121,20 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
     authProviderId: AuthProviderId,
     businessDetails: BusinessDetails,
     cleanCredsAuthProviderId: Option[AuthProviderId]
-  ): Future[Option[SubscriptionJourneyRecord]] =
+  ): Future[Option[SubscriptionJourneyRecord]] = {
+    val maybeSetCleanCreds = cleanCredsAuthProviderId.map(id => set("cleanCredsAuthProviderId", Codecs.toBson(id)))
     collection
       .findOneAndUpdate(
         equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value),
         combine(
           set("authProviderId", Codecs.toBson(authProviderId)),
           set("businessDetails", Codecs.toBson(businessDetails)(BusinessDetails.databaseFormat(crypto))),
-          set("cleanCredsAuthProviderId", Codecs.toBson(cleanCredsAuthProviderId))
+          maybeSetCleanCreds.getOrElse(unset("cleanCredsAuthProviderId"))
         ),
         new FindOneAndUpdateOptions().upsert(false).returnDocument(ReturnDocument.AFTER)
       )
       .toFutureOption()
+  }
 
   def findByAuthId(
     authProviderId: AuthProviderId
