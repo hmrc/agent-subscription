@@ -335,9 +335,10 @@ class DesConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metric
           response.status match {
             case s if is2xx(s) => response.json
             case NOT_FOUND     => throw new NotFoundException(s"Received Not Found at:$apiName")
-            case BAD_REQUEST   =>  logger.error(s"Failure due to ${response.json}")
-                                          throw new BadRequestException(s"Bad Request at: $apiName")
-            case s             => throw UpstreamErrorResponse(s"$apiName", s)
+            case BAD_REQUEST =>
+              logger.error(s"Failure due to ${response.json}")
+              throw new BadRequestException(s"Bad Request at: $apiName")
+            case s => throw UpstreamErrorResponse(s"$apiName", s)
             //
           }
         }

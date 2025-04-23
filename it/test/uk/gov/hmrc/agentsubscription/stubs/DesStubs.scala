@@ -673,6 +673,7 @@ trait DesStubs {
         .willReturn(
           aResponse()
             .withStatus(status)
+            .withBody(notFoundResponse)
         )
     )
 
