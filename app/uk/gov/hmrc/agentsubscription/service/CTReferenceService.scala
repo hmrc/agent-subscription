@@ -16,22 +16,22 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{Inject, Singleton}
 import play.api.Logging
+import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
-import uk.gov.hmrc.agentsubscription.model.{Crn, MatchDetailsResponse}
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.agentsubscription.model.{Crn, MatchDetailsResponse}
+import uk.gov.hmrc.http.{BadRequestException, NotFoundException}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class CTReferenceService @Inject() (desConnector: DesConnector) extends Logging {
+class CTReferenceService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext) extends Logging {
 
   def matchCorporationTaxUtrWithCrn(utr: Utr, crn: Crn)(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext
+    rh: RequestHeader
   ): Future[MatchDetailsResponse] =
     desConnector
       .getCorporationTaxUtr(crn)

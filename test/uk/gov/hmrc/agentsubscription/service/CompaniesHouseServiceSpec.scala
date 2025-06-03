@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import java.net.URL
-import org.mockito.ArgumentMatchers.{any, eq => eqs}
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import play.api.Logging
 import play.api.libs.json.{JsObject, Json}
+import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
@@ -31,15 +31,15 @@ import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors.CompaniesHouseApiProxyConnector
 import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn, ReducedCompanyInformation}
 import uk.gov.hmrc.agentsubscription.support.{ResettingMockitoSugar, UnitSpec}
-import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ExecutionContext, Future}
+import java.net.URL
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually with Logging {
 
   private val companiesHouseConnector = resettingMock[CompaniesHouseApiProxyConnector]
   private val auditService = resettingMock[AuditService]
-  private val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
 
   val stubbedLogger = new LoggerLikeStub()
   val service: CompaniesHouseService = new CompaniesHouseService(companiesHouseConnector, auditService) {
@@ -49,7 +49,6 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
   private val crn = Crn("01234567")
 
   private val authorityUrl = new URL("http://localhost/auth/authority")
-  private val hc = HeaderCarrier()
   private val provider = Provider("provId", "provType")
   private val request = RequestWithAuthority(
     Authority(
@@ -69,7 +68,7 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
 
   "knownFactCheck" should {
     "audit appropriate values when there is a successful match result" in {
-      when(companiesHouseConnector.getCompanyOfficers(any[Crn], any[String])(eqs(hc), any[ExecutionContext]))
+      when(companiesHouseConnector.getCompanyOfficers(any[Crn], any[String])(any[RequestHeader]))
         .thenReturn(
           Future successful (List(
             CompaniesHouseOfficer("BROWN, David", None),
@@ -79,14 +78,14 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
 
       val companyStatus = "active"
 
-      when(companiesHouseConnector.getCompany(any[Crn])(eqs(hc), any[ExecutionContext]))
+      when(companiesHouseConnector.getCompany(any[Crn])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(ReducedCompanyInformation("01234567", "Lambda Microservices", companyStatus))
         )
 
       val nameToMatch = "Brown"
 
-      await(service.knownFactCheck(crn, nameToMatch)(hc, provider, ec, request))
+      await(service.knownFactCheck(crn, nameToMatch)(request, provider))
 
       val expectedExtraDetailCompanyOfficers = Json
         .parse(s"""
@@ -113,7 +112,6 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
       eventually {
         verify(auditService)
           .auditEvent(CompaniesHouseOfficerCheck, "Check Companies House officers", expectedExtraDetailCompanyOfficers)(
-            hc,
             request
           )
         verify(auditService)
@@ -121,17 +119,17 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
             CompaniesHouseStatusCheck,
             "Check Companies House company status",
             expectedExtraDetailCompanyStatus
-          )(hc, request)
+          )(request)
       }
     }
 
     "audit appropriate values when there is no match" in {
-      when(companiesHouseConnector.getCompanyOfficers(any[Crn], any[String])(eqs(hc), any[ExecutionContext]))
+      when(companiesHouseConnector.getCompanyOfficers(any[Crn], any[String])(any[RequestHeader]))
         .thenReturn(Future successful (List()))
 
       val nameToMatch = "Lewis"
 
-      await(service.knownFactCheck(crn, nameToMatch)(hc, provider, ec, request))
+      await(service.knownFactCheck(crn, nameToMatch)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -146,7 +144,7 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CompaniesHouseOfficerCheck, "Check Companies House officers", expectedExtraDetail)(hc, request)
+          .auditEvent(CompaniesHouseOfficerCheck, "Check Companies House officers", expectedExtraDetail)(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -159,12 +157,12 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
 
       val companyStatus = "active"
 
-      when(companiesHouseConnector.getCompany(any[Crn])(eqs(hc), any[ExecutionContext]))
+      when(companiesHouseConnector.getCompany(any[Crn])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(ReducedCompanyInformation("01234567", "Lambda Microservices", companyStatus))
         )
 
-      await(service.companyStatusCheck(crn, None)(hc, provider, ec, request))
+      await(service.companyStatusCheck(crn, None)(request, provider))
 
       val expectedExtraDetailCompanyStatus = Json
         .parse(s"""
@@ -183,18 +181,18 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
             CompaniesHouseStatusCheck,
             "Check Companies House company status",
             expectedExtraDetailCompanyStatus
-          )(hc, request)
+          )(request)
       }
     }
 
     "audit appropriate values when there is no match" in {
 
-      when(companiesHouseConnector.getCompany(any[Crn])(eqs(hc), any[ExecutionContext]))
+      when(companiesHouseConnector.getCompany(any[Crn])(any[RequestHeader]))
         .thenReturn(
           Future successful None
         )
 
-      await(service.companyStatusCheck(crn, None)(hc, provider, ec, request))
+      await(service.companyStatusCheck(crn, None)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -209,7 +207,6 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
       eventually {
         verify(auditService)
           .auditEvent(CompaniesHouseStatusCheck, "Check Companies House company status", expectedExtraDetail)(
-            hc,
             request
           )
       }

@@ -21,7 +21,7 @@ import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import play.api.i18n.Lang
 import play.api.libs.json.{JsObject, Json}
-import play.api.mvc.AnyContentAsEmpty
+import play.api.mvc.{AnyContentAsEmpty, RequestHeader}
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
@@ -31,11 +31,11 @@ import uk.gov.hmrc.agentsubscription.connectors.{Address => _, EnrolmentRequest,
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.agentsubscription.support.{ResettingMockitoSugar, UnitSpec}
-import uk.gov.hmrc.http.{GatewayTimeoutException, HeaderCarrier}
+import uk.gov.hmrc.http.GatewayTimeoutException
 
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 
 class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
@@ -60,7 +60,6 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     emailConnector,
     mappingConnector
   )
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
     FakeRequest("POST", "/agent-subscription/subscription")
@@ -131,7 +130,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(AgentSubscription, "Agent services subscription", expectedExtraDetail)(hc, fakeRequest)
+          .auditEvent(AgentSubscription, "Agent services subscription", expectedExtraDetail)(fakeRequest)
       }
     }
 
@@ -167,12 +166,12 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       await(service.createSubscription(subscriptionRequest, authIds))
 
       verify(taxEnrolmentConnector)
-        .addKnownFacts(eqs(arn.value), eqs("AgencyPostcode"), eqs(agencyPostcode))(eqs(hc), any[ExecutionContext])
+        .addKnownFacts(eqs(arn.value), eqs("AgencyPostcode"), eqs(agencyPostcode))(any[RequestHeader])
 
       val expectedEnrolmentRequest =
         EnrolmentRequest(authIds.userId, "principal", "Test Agency", Seq(KnownFact("AgencyPostcode", agencyPostcode)))
       verify(taxEnrolmentConnector)
-        .enrol(anyString, eqs(arn), eqs(expectedEnrolmentRequest))(eqs(hc), any[ExecutionContext])
+        .enrol(anyString, eqs(arn), eqs(expectedEnrolmentRequest))(any[RequestHeader])
     }
 
     "fail after retrying 3 times to add known facts and enrol" when {
@@ -245,7 +244,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     arn: String,
     amlsDetails: AmlsDetails
   ) = {
-    when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
+    when(desConnector.getRegistration(eqs(businessUtr))(any[RequestHeader]))
       .thenReturn(
         Future successful Some(
           DesRegistrationResponse(
@@ -268,37 +267,37 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         )
       )
 
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
+    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(any[RequestHeader]))
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
       .thenReturn(Future successful (Some(1L)))
 
-    when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(mappingConnector.createMappings(any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful (()))
 
-    when(mappingConnector.createMappingDetails(any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(mappingConnector.createMappingDetails(any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful [Unit] (()))
 
-    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)
 
-    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(204))
 
-    when(taxEnrolmentConnector.addKnownFacts(eqs(arn), anyString, anyString)(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.addKnownFacts(eqs(arn), anyString, anyString)(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(200))
 
-    when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(200))
 
-    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(any[RequestHeader]))
       .thenReturn(Future successful true)
 
-    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful Some(amlsDetails))
 
-    when(emailConnector.sendEmail(any[EmailInformation])(any[HeaderCarrier], any[ExecutionContext]))
+    when(emailConnector.sendEmail(any[EmailInformation])(any[RequestHeader]))
       .thenReturn(Future successful [Unit] (()))
   }
 
@@ -308,7 +307,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     arn: String,
     amlsDetails: AmlsDetails
   ) = {
-    when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
+    when(desConnector.getRegistration(eqs(businessUtr))(any[RequestHeader]))
       .thenReturn(
         Future successful Some(
           DesRegistrationResponse(
@@ -331,25 +330,25 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         )
       )
 
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
+    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(any[RequestHeader]))
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
       .thenReturn(Future successful (Some(1L)))
 
-    when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(mappingConnector.createMappings(any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful (()))
 
-    when(mappingConnector.createMappingDetails(any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(mappingConnector.createMappingDetails(any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful [Unit] (()))
 
-    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES1"))
 
-    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(any[RequestHeader]))
       .thenReturn(Future successful true)
 
-    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful Some(amlsDetails))
   }
 
@@ -359,7 +358,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     arn: String,
     amlsDetails: AmlsDetails
   ) = {
-    when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
+    when(desConnector.getRegistration(eqs(businessUtr))(any[RequestHeader]))
       .thenReturn(
         Future successful Some(
           DesRegistrationResponse(
@@ -382,28 +381,28 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         )
       )
 
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
+    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(any[RequestHeader]))
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
       .thenReturn(Future successful (Some(1L)))
 
-    when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(mappingConnector.createMappings(any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful (()))
 
-    when(mappingConnector.createMappingDetails(any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(mappingConnector.createMappingDetails(any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful [Unit] (()))
 
-    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)
 
-    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES7"))
 
-    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(any[RequestHeader]))
       .thenReturn(Future successful true)
 
-    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful Some(amlsDetails))
   }
 
@@ -413,7 +412,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     arn: String,
     amlsDetails: AmlsDetails
   ) = {
-    when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
+    when(desConnector.getRegistration(eqs(businessUtr))(any[RequestHeader]))
       .thenReturn(
         Future successful Some(
           DesRegistrationResponse(
@@ -436,31 +435,31 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         )
       )
 
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
+    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(any[RequestHeader]))
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
       .thenReturn(Future successful (Some(1L)))
 
-    when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(mappingConnector.createMappings(any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful (()))
 
-    when(mappingConnector.createMappingDetails(any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(mappingConnector.createMappingDetails(any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful [Unit] (()))
 
-    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)
 
-    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(204))
 
-    when(taxEnrolmentConnector.addKnownFacts(eqs(arn), anyString, anyString)(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.addKnownFacts(eqs(arn), anyString, anyString)(any[RequestHeader]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES6"))
 
-    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(any[RequestHeader]))
       .thenReturn(Future successful true)
 
-    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful Some(amlsDetails))
   }
 
@@ -470,7 +469,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     arn: String,
     amlsDetails: AmlsDetails
   ) = {
-    when(desConnector.getRegistration(eqs(businessUtr))(eqs(hc), any[ExecutionContext]))
+    when(desConnector.getRegistration(eqs(businessUtr))(any[RequestHeader]))
       .thenReturn(
         Future successful Some(
           DesRegistrationResponse(
@@ -493,34 +492,34 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         )
       )
 
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(eqs(hc), any[ExecutionContext]))
+    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(any[RequestHeader]))
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
       .thenReturn(Future successful (Some(1L)))
 
-    when(mappingConnector.createMappings(any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(mappingConnector.createMappings(any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful (()))
 
-    when(mappingConnector.createMappingDetails(any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(mappingConnector.createMappingDetails(any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful [Unit] (()))
 
-    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)
 
-    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(204))
 
-    when(taxEnrolmentConnector.addKnownFacts(eqs(arn), anyString, anyString)(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.addKnownFacts(eqs(arn), anyString, anyString)(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(200))
 
-    when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(eqs(hc), any[ExecutionContext]))
+    when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(any[RequestHeader]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES8"))
 
-    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(any[RequestHeader]))
       .thenReturn(Future successful true)
 
-    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(eqs(hc), any[ExecutionContext]))
+    when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful Some(amlsDetails))
   }
 }

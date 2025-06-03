@@ -109,6 +109,32 @@ trait DesStubs {
         )
     )
 
+  def subscriptionFails(utr: Utr, request: SubscriptionRequest, status: Int): StubMapping =
+    stubFor(
+      post(urlEqualTo(s"/registration/agents/utr/${utr.value}"))
+        .withRequestBody(
+          equalToJson(s"""
+                         |{
+                         |  "agencyName": "${request.agency.name}",
+                         |  "agencyAddress": {
+                         |    "addressLine1": "${request.agency.address.addressLine1}",
+                         |    ${request.agency.address.addressLine2.map(l => s""""addressLine2":"$l",""") getOrElse ""}
+                         |    ${request.agency.address.addressLine3.map(l => s""""addressLine3":"$l",""") getOrElse ""}
+                         |    ${request.agency.address.addressLine4.map(l => s""""addressLine4":"$l",""") getOrElse ""}
+                         |    "postalCode": "${request.agency.address.postcode}",
+                         |    "countryCode": "${request.agency.address.countryCode}"
+                         |  },
+                         |  "telephoneNumber": "${request.agency.telephone.get}",
+                         |  "agencyEmail": "${request.agency.email}"
+                         |}
+              """.stripMargin)
+        )
+        .willReturn(
+          aResponse()
+            .withStatus(status)
+        )
+    )
+
   def subscriptionSucceedsWithoutTelephoneNo(utr: Utr, request: SubscriptionRequest): StubMapping =
     stubFor(
       post(urlEqualTo(s"/registration/agents/utr/${utr.value}"))

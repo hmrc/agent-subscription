@@ -17,7 +17,7 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import play.api.libs.json._
-import play.api.mvc.{AnyContent, Request}
+import play.api.mvc.RequestHeader
 import play.api.{LoggerLike, Logging}
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.audit.{AuditService, CheckAgencyStatus}
@@ -25,7 +25,6 @@ import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.agentsubscription.postcodesMatch
-import uk.gov.hmrc.http.HeaderCarrier
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -50,14 +49,13 @@ class RegistrationService @Inject() (
   desConnector: DesConnector,
   taxEnrolmentsConnector: TaxEnrolmentsConnector,
   auditService: AuditService
-) extends Logging {
+)(implicit ec: ExecutionContext)
+    extends Logging {
   protected def getLogger: LoggerLike = logger
 
   def getRegistration(utr: Utr, postcode: String)(implicit
-    hc: HeaderCarrier,
-    provider: Provider,
-    ec: ExecutionContext,
-    request: Request[AnyContent]
+    rh: RequestHeader,
+    provider: Provider
   ): Future[Option[RegistrationDetails]] =
     desConnector.getRegistration(utr) flatMap {
       case Some(
@@ -158,10 +156,8 @@ class RegistrationService @Inject() (
     primaryPhoneNumber: Option[String],
     safeId: Option[String]
   )(implicit
-    hc: HeaderCarrier,
-    provider: Provider,
-    ec: ExecutionContext,
-    request: Request[AnyContent]
+    rh: RequestHeader,
+    provider: Provider
   ): Future[Option[RegistrationDetails]] = {
     val knownFactsMatched = desPostcode.exists(postcodesMatch(_, postcode))
 
@@ -206,7 +202,7 @@ class RegistrationService @Inject() (
     isSubscribedToAgentServices: Option[Boolean],
     isAnAsAgentInDes: Option[Boolean],
     agentReferenceNumber: Option[Arn]
-  )(implicit hc: HeaderCarrier, provider: Provider, request: Request[AnyContent]): Unit =
+  )(implicit rh: RequestHeader, provider: Provider): Unit =
     auditService.auditEvent(
       CheckAgencyStatus,
       "Check agency status",

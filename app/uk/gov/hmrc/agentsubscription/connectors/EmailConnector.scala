@@ -16,38 +16,34 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import com.google.inject.ImplementedBy
-
-import javax.inject.Inject
 import play.api.Logging
 import play.api.http.Status.ACCEPTED
+import play.api.libs.json.Json
+import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.EmailInformation
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
-import uk.gov.hmrc.http.{HeaderCarrier, HttpResponse}
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.agentsubscription.utils.RequestSupport.hc
 import uk.gov.hmrc.http.HttpReads.Implicits._
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{HttpResponse, StringContextOps}
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
+import javax.inject.Inject
 import scala.concurrent.{ExecutionContext, Future}
 
-@ImplementedBy(classOf[EmailConnectorImpl])
-trait EmailConnector extends Logging {
-  def appConfig: AppConfig
-  def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit]
-}
-
-class EmailConnectorImpl @Inject() (val appConfig: AppConfig, val http: HttpClient, val metrics: Metrics)(implicit
+class EmailConnector @Inject() (appConfig: AppConfig, http: HttpClientV2, val metrics: Metrics)(implicit
   val ec: ExecutionContext
-) extends EmailConnector with HttpAPIMonitor {
+) extends HttpAPIMonitor with Logging {
 
   val baseUrl: String = appConfig.emailBaseUrl
 
-  def sendEmail(emailInformation: EmailInformation)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
-    val url = s"$baseUrl/hmrc/email"
+  def sendEmail(emailInformation: EmailInformation)(implicit rh: RequestHeader): Future[Unit] =
     monitor(s"ConsumedAPI-Send-Email-${emailInformation.templateId}") {
       http
-        .POST[EmailInformation, HttpResponse](url, emailInformation)
+        .post(url"$baseUrl/hmrc/email")
+        .withBody(Json.toJson(emailInformation))
+        .execute[HttpResponse]
         .map { response =>
           response.status match {
             case ACCEPTED => logger.info(s"sent email success! template: ${emailInformation.templateId}")
@@ -55,5 +51,4 @@ class EmailConnectorImpl @Inject() (val appConfig: AppConfig, val http: HttpClie
           }
         }
     }
-  }
 }

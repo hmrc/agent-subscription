@@ -16,20 +16,21 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
-import uk.gov.hmrc.http.{HttpClient, _}
-import play.api.test.Helpers._
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class TaxEnrolmentsConnectorISpec extends BaseISpec with TaxEnrolmentsStubs with MetricsTestSupport with MockitoSugar {
 
-  private lazy val http = app.injector.instanceOf[HttpClient]
+  private lazy val http = app.injector.instanceOf[HttpClientV2]
   private lazy val metrics = app.injector.instanceOf[Metrics]
   private lazy val appConfig = app.injector.instanceOf[AppConfig]
   private lazy val connector = new TaxEnrolmentsConnector(appConfig, http, metrics)

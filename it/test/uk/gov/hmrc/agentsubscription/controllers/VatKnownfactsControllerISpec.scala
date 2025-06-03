@@ -42,6 +42,7 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
 
     "return 404 when no match is found in des" in {
       vatKnownfactsRecordDoesNotExist(vrn)
+      requestIsAuthenticatedWithNoEnrolments()
 
       val response =
         new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2010-03-31", port).get()
@@ -68,6 +69,7 @@ class VatKnownfactsControllerISpec extends BaseISpec with DesStubs with AuthStub
 
     "return 404 when des returns a record for vrn  but the date of registration supplied does not match" in {
       vatKnownfactsRecordExists(vrn)
+      requestIsAuthenticatedWithNoEnrolments()
 
       val response =
         new Resource("/agent-subscription/vat-known-facts/vrn/888913457/dateOfRegistration/2012-04-11", port).get()

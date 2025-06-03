@@ -22,11 +22,8 @@ import play.api.libs.json.Json
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.connectors.AgentAssuranceConnector.{CreateAmlsRequest, CreateOverseasAmlsRequest}
 import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, OverseasAmlsDetails}
-import uk.gov.hmrc.http.HeaderCarrier
 
 trait AgentAssuranceStub {
-
-  implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val createUrl: String = s"/agent-assurance/amls"
 

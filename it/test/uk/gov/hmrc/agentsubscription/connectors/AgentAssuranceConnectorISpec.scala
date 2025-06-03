@@ -24,7 +24,7 @@ import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, OverseasAmlsDetails}
 import uk.gov.hmrc.agentsubscription.stubs.AgentAssuranceStub
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
-import uk.gov.hmrc.http.HttpClient
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -35,10 +35,10 @@ class AgentAssuranceConnectorISpec extends BaseISpec with AgentAssuranceStub wit
   val arn = Arn("TARN0000001")
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
-  private lazy val http: HttpClient = app.injector.instanceOf[HttpClient]
+  private lazy val http: HttpClientV2 = app.injector.instanceOf[HttpClientV2]
   private lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
-  private lazy val connector: AgentAssuranceConnector = new AgentAssuranceConnectorImpl(appConfig, http, metrics)
+  private lazy val connector: AgentAssuranceConnector = new AgentAssuranceConnector(appConfig, http, metrics)
 
   val amlsDetails: AmlsDetails = AmlsDetails(
     "supervisory",

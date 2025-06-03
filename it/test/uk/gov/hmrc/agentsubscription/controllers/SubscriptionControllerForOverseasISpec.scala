@@ -219,7 +219,7 @@ class SubscriptionControllerForOverseasISpec
         requestIsAuthenticatedWithNoEnrolments(affinityGroup = "Individual")
         doSubscriptionRequest.status shouldBe 403
 
-        verify(0, getRequestedFor(urlEqualTo(getApplicationUrl)))
+        verify(0, getRequestedFor(urlEqualTo(getApplicationUrl.toString)))
       }
     }
 
@@ -497,7 +497,7 @@ class SubscriptionControllerForOverseasISpec
     amls: Int = 0,
     complete: Int = 0
   ) = {
-    verify(1, getRequestedFor(urlEqualTo(getApplicationUrl)))
+    verify(1, getRequestedFor(urlEqualTo(getApplicationUrl.toString)))
     verify(
       attemptingRegistration,
       putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/attempting_registration"))

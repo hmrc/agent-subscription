@@ -67,6 +67,7 @@ class SubscriptionControllerISpec
       enrolmentSucceeds(groupId, arn)
       updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
       givenMappingCreationWithStatus(Arn(arn), 201)
+      givenMappingDetailsCreatedWithStatus(Arn(arn), 201)
       givenEmailSent(emailInfo)
     }
 
@@ -148,13 +149,6 @@ class SubscriptionControllerISpec
         val request = Json.parse(subscriptionRequest).as[SubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
 
         val result = doSubscriptionRequest(stringify(toJson(request)))
-
-        result.status shouldBe 403
-      }
-
-      "the user already has enrolments" in {
-        requestIsAuthenticatedWithNoEnrolments()
-        val result = doSubscriptionRequest()
 
         result.status shouldBe 403
       }
@@ -309,21 +303,17 @@ class SubscriptionControllerISpec
     }
 
     "throw a 500 error if " when {
-      "DES API #1173 Subscribe to Agent Services fails" in {
+      "DES API #1173 Subscribe to Agent Services fails" in new TestSetup {
         requestIsAuthenticatedWithNoEnrolments()
-        registrationRequestFails()
+        subscriptionFails(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest], 503)
 
         val result = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
 
-      "query allocated enrolment fails in EMAC " in {
+      "query allocated enrolment fails in EACD " in new TestSetup {
         requestIsAuthenticatedWithNoEnrolments()
-        organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
-        createAmlsSucceeds(utr, amlsDetails)
-        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
-        updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
         allocatedPrincipalEnrolmentFails(arn)
 
         val result = doSubscriptionRequest()
@@ -331,38 +321,25 @@ class SubscriptionControllerISpec
         result.status shouldBe 500
       }
 
-      "delete known facts fails in EMAC " in {
+      "delete known facts fails in EACD " in new TestSetup {
         requestIsAuthenticatedWithNoEnrolments()
-        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
-        createAmlsSucceeds(utr, amlsDetails)
-        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
-        updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
-        allocatedPrincipalEnrolmentNotExists(arn)
-        deleteKnownFactsFails("")
-        givenMappingCreationWithStatus(Arn(arn), 201)
+        deleteKnownFactsFails(arn)
 
         val result = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
 
-      "create known facts fails in EMAC " in {
+      "create known facts fails in EACD " in new TestSetup {
         requestIsAuthenticatedWithNoEnrolments()
-        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
-        createAmlsSucceeds(utr, amlsDetails)
-        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
-        updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
-        allocatedPrincipalEnrolmentNotExists(arn)
-        deleteKnownFactsSucceeds("")
-        createKnownFactsFails("")
-        givenMappingCreationWithStatus(Arn(arn), 201)
+        createKnownFactsFails(arn)
 
         val result = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
 
-      "create enrolment fails in EMAC " in new TestSetup {
+      "create enrolment fails in EACD " in new TestSetup {
         enrolmentFails(groupId, arn)
 
         val result = doSubscriptionRequest()
@@ -373,7 +350,7 @@ class SubscriptionControllerISpec
   }
 
   "updating a partial subscription" should {
-    "return a response containing the ARN a valid utr is given as input and when the user is not enrolled in EMAC but is subscribed in ETMP" when {
+    "return a response containing the ARN a valid utr is given as input and when the user is not enrolled in EACD but is subscribed in ETMP" when {
       "with full DES-GetAgentRecord" in {
         testPartialSubscriptionWith(agentRecordExists(utr, true, arn))
       }

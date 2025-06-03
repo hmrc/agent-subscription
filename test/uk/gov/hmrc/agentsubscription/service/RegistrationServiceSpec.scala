@@ -16,12 +16,12 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import java.net.URL
 import org.mockito.ArgumentMatchers.{any, eq => eqs}
 import org.mockito.Mockito.{verify, when}
 import org.scalatest.concurrent.Eventually
 import org.slf4j.{Logger, Marker}
 import play.api.libs.json.{JsObject, Json}
+import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import play.api.{LoggerLike, MarkerContext}
@@ -32,10 +32,11 @@ import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.support.{ResettingMockitoSugar, UnitSpec}
-import uk.gov.hmrc.http.HeaderCarrier
 
+import java.net.URL
 import scala.collection.mutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
 class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
 
@@ -49,8 +50,6 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
   }
 
   private val authorityUrl = new URL("http://localhost/auth/authority")
-  private val hc = HeaderCarrier()
-  private val ec: ExecutionContext = scala.concurrent.ExecutionContext.global
   private val provider = Provider("provId", "provType")
   private val request = RequestWithAuthority(
     Authority(
@@ -76,7 +75,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val postcode = "AA1 1AA"
       val arn = Arn("TARN0000001")
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(
             DesRegistrationResponse(
@@ -99,10 +98,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           )
         )
 
-      when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
+      when(teConnector.hasPrincipalGroupIds(eqs(arn))(any[RequestHeader]))
         .thenReturn(Future successful true)
 
-      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
+      await(service.getRegistration(utr, postcode)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -120,7 +119,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -132,7 +131,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val postcode = "AA1 1AA"
       val arn = Arn("TARN0000001")
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(
             DesRegistrationResponse(
@@ -155,10 +154,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           )
         )
 
-      when(teConnector.hasPrincipalGroupIds(eqs(arn))(eqs(hc), any[ExecutionContext]))
+      when(teConnector.hasPrincipalGroupIds(eqs(arn))(any[RequestHeader]))
         .thenReturn(Future successful false)
 
-      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
+      await(service.getRegistration(utr, postcode)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -176,7 +175,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -187,7 +186,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(
             DesRegistrationResponse(
@@ -210,7 +209,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           )
         )
 
-      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
+      await(service.getRegistration(utr, postcode)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -227,7 +226,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 0
@@ -237,7 +236,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val utr = Utr("4000000009")
       val suppliedPostcode = "AA1 1AA"
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(
             DesRegistrationResponse(
@@ -260,7 +259,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           )
         )
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, request))
+      await(service.getRegistration(utr, suppliedPostcode)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -276,7 +275,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 0
@@ -287,7 +286,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val postcode = "AA1 1AA"
       val arn = Some(Arn("AARN0000002"))
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(
             DesRegistrationResponse(
@@ -310,10 +309,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           )
         )
 
-      when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
+      when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(any[RequestHeader]))
         .thenReturn(Future successful true)
 
-      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
+      await(service.getRegistration(utr, postcode)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -331,7 +330,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -343,7 +342,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val postcode = "AA1 1AA"
       val arn = Some(Arn("AARN0000002"))
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(
             DesRegistrationResponse(
@@ -366,10 +365,10 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           )
         )
 
-      when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(eqs(hc), any[ExecutionContext]))
+      when(teConnector.hasPrincipalGroupIds(eqs(arn.get))(any[RequestHeader]))
         .thenReturn(Future successful false)
 
-      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
+      await(service.getRegistration(utr, postcode)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -387,7 +386,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -398,7 +397,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(
             DesRegistrationResponse(
@@ -421,7 +420,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           )
         )
 
-      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
+      await(service.getRegistration(utr, postcode)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -438,7 +437,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 0
@@ -448,7 +447,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val utr = Utr("4000000009")
       val suppliedPostcode = "AA1 1AA"
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(
             DesRegistrationResponse(
@@ -471,7 +470,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           )
         )
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, request))
+      await(service.getRegistration(utr, suppliedPostcode)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -487,7 +486,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 0
@@ -497,7 +496,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val utr = Utr("4000000009")
       val suppliedPostcode = "AA1 1AA"
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(
             DesRegistrationResponse(
@@ -520,7 +519,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           )
         )
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, requestWithoutAuthProvider))
+      await(service.getRegistration(utr, suppliedPostcode)(requestWithoutAuthProvider, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -536,7 +535,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, requestWithoutAuthProvider)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(requestWithoutAuthProvider)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -547,7 +546,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val utr = Utr("4000000009")
       val suppliedPostcode = "AA1 1AA"
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext]))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader]))
         .thenReturn(
           Future successful Some(
             DesRegistrationResponse(
@@ -570,7 +569,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           )
         )
 
-      await(service.getRegistration(utr, suppliedPostcode)(hc, provider, ec, requestWithoutAuthProvider))
+      await(service.getRegistration(utr, suppliedPostcode)(requestWithoutAuthProvider, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -587,7 +586,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, requestWithoutAuthProvider)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(requestWithoutAuthProvider)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -598,8 +597,8 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
 
-      when(desConnector.getRegistration(any[Utr])(eqs(hc), any[ExecutionContext])).thenReturn(Future successful None)
-      await(service.getRegistration(utr, postcode)(hc, provider, ec, request))
+      when(desConnector.getRegistration(any[Utr])(any[RequestHeader])).thenReturn(Future successful None)
+      await(service.getRegistration(utr, postcode)(request, provider))
 
       val expectedExtraDetail = Json
         .parse(s"""
@@ -614,7 +613,7 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(hc, request)
+          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
