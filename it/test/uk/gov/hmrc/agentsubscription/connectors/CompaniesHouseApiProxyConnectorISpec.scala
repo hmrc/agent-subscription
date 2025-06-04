@@ -19,9 +19,13 @@ package uk.gov.hmrc.agentsubscription.connectors
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseDateOfBirth, CompaniesHouseOfficer, Crn, ReducedCompanyInformation}
+import uk.gov.hmrc.agentsubscription.model.CompaniesHouseDateOfBirth
+import uk.gov.hmrc.agentsubscription.model.CompaniesHouseOfficer
+import uk.gov.hmrc.agentsubscription.model.Crn
+import uk.gov.hmrc.agentsubscription.model.ReducedCompanyInformation
 import uk.gov.hmrc.agentsubscription.stubs.CompaniesHouseStub
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
+import uk.gov.hmrc.agentsubscription.support.BaseISpec
+import uk.gov.hmrc.agentsubscription.support.MetricsTestSupport
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
@@ -29,14 +33,21 @@ import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class CompaniesHouseApiProxyConnectorISpec
-    extends BaseISpec with CompaniesHouseStub with MetricsTestSupport with MockitoSugar {
+extends BaseISpec
+with CompaniesHouseStub
+with MetricsTestSupport
+with MockitoSugar {
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
   private lazy val http: HttpClientV2 = app.injector.instanceOf[HttpClientV2]
   private lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   private lazy val connector: CompaniesHouseApiProxyConnector =
-    new CompaniesHouseApiProxyConnector(appConfig, http, metrics)
+    new CompaniesHouseApiProxyConnector(
+      appConfig,
+      http,
+      metrics
+    )
 
   val crn = Crn("01234567")
 
@@ -47,7 +58,14 @@ class CompaniesHouseApiProxyConnectorISpec
       val result = await(connector.getCompanyOfficers(crn, "FERGUSON"))
 
       result shouldBe List(
-        CompaniesHouseOfficer("FERGUSON, David", Some(CompaniesHouseDateOfBirth(Some(4), 8, 1967))),
+        CompaniesHouseOfficer(
+          "FERGUSON, David",
+          Some(CompaniesHouseDateOfBirth(
+            Some(4),
+            8,
+            1967
+          ))
+        ),
         CompaniesHouseOfficer("FERGUSON, Hamish", Some(CompaniesHouseDateOfBirth(None, 4, 1974))),
         CompaniesHouseOfficer("FERGUSON, Iain Blair", Some(CompaniesHouseDateOfBirth(None, 2, 1973))),
         CompaniesHouseOfficer("FERGUSON, Mark Richard", Some(CompaniesHouseDateOfBirth(None, 10, 1972)))
@@ -56,7 +74,11 @@ class CompaniesHouseApiProxyConnectorISpec
 
     "return Seq.empty when Unauthorized" in {
 
-      givenCompaniesHouseOfficersListWithStatus(crn.value, "FERGUSON", 401)
+      givenCompaniesHouseOfficersListWithStatus(
+        crn.value,
+        "FERGUSON",
+        401
+      )
       val result = await(connector.getCompanyOfficers(crn, "FERGUSON"))
 
       result shouldBe Seq.empty
@@ -70,7 +92,11 @@ class CompaniesHouseApiProxyConnectorISpec
       givenSuccessfulGetCompanyHouseResponse(crn, "active")
       val result = await(connector.getCompany(crn))
 
-      result shouldBe Some(ReducedCompanyInformation(crn.value, "Watford Microbreweries", "active"))
+      result shouldBe Some(ReducedCompanyInformation(
+        crn.value,
+        "Watford Microbreweries",
+        "active"
+      ))
     }
 
     "throw exception when Unauthorized" in {
@@ -92,4 +118,5 @@ class CompaniesHouseApiProxyConnectorISpec
     }
 
   }
+
 }

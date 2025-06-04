@@ -21,7 +21,9 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.stubs.MappingStubs
 import uk.gov.hmrc.agentsubscription.support.BaseISpec
 
-class MappingConnectorISpec extends BaseISpec with MappingStubs {
+class MappingConnectorISpec
+extends BaseISpec
+with MappingStubs {
 
   val connector: MappingConnector = app.injector.instanceOf[MappingConnector]
 

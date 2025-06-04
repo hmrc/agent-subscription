@@ -20,9 +20,16 @@ import play.api.libs.json._
 import play.api.libs.json.Reads
 import play.api.libs.functional.syntax._
 
-case class CompaniesHouseDateOfBirth(day: Option[Int], month: Int, year: Int)
+case class CompaniesHouseDateOfBirth(
+  day: Option[Int],
+  month: Int,
+  year: Int
+)
 
-case class CompaniesHouseOfficer(name: String, dateOfBirth: Option[CompaniesHouseDateOfBirth])
+case class CompaniesHouseOfficer(
+  name: String,
+  dateOfBirth: Option[CompaniesHouseDateOfBirth]
+)
 
 object CompaniesHouseDateOfBirth {
   implicit val format: Format[CompaniesHouseDateOfBirth] = Json.format[CompaniesHouseDateOfBirth]
@@ -30,14 +37,20 @@ object CompaniesHouseDateOfBirth {
 
 object CompaniesHouseOfficer {
 
-  implicit val reads: Reads[CompaniesHouseOfficer] = ((__ \ "name").read[String] and
-    (__ \ "date_of_birth").readNullable[CompaniesHouseDateOfBirth])(CompaniesHouseOfficer.apply _)
+  implicit val reads: Reads[CompaniesHouseOfficer] =
+    ((__ \ "name").read[String] and
+      (__ \ "date_of_birth").readNullable[CompaniesHouseDateOfBirth])(CompaniesHouseOfficer.apply _)
 }
 
-case class ReducedCompanyInformation(companyNumber: String, companyName: String, companyStatus: String)
+case class ReducedCompanyInformation(
+  companyNumber: String,
+  companyName: String,
+  companyStatus: String
+)
 
 object ReducedCompanyInformation {
-  implicit val reads: Reads[ReducedCompanyInformation] = ((__ \ "company_number").read[String] and
-    (__ \ "company_name").read[String] and
-    (__ \ "company_status").read[String])(ReducedCompanyInformation.apply _)
+  implicit val reads: Reads[ReducedCompanyInformation] =
+    ((__ \ "company_number").read[String] and
+      (__ \ "company_name").read[String] and
+      (__ \ "company_status").read[String])(ReducedCompanyInformation.apply _)
 }

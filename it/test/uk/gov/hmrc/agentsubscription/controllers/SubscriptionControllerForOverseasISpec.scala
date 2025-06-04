@@ -16,17 +16,27 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import com.github.tomakehurst.wiremock.client.WireMock.{verify, _}
+import com.github.tomakehurst.wiremock.client.WireMock.verify
+import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{AttemptingRegistration, Complete, Registered}
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs._
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentsubscription.support.BaseISpec
+import uk.gov.hmrc.agentsubscription.support.Resource
 
 class SubscriptionControllerForOverseasISpec
-    extends BaseISpec with OverseasDesStubs with AuthStub with AgentOverseasApplicationStubs with AgentAssuranceStub
-    with TaxEnrolmentsStubs with EmailStub {
+extends BaseISpec
+with OverseasDesStubs
+with AuthStub
+with AgentOverseasApplicationStubs
+with AgentAssuranceStub
+with TaxEnrolmentsStubs
+with EmailStub {
+
   private val arn = "TARN0000001"
   private val stubbedGroupId = "groupId"
   private val safeId = SafeId("XE0001234567890")
@@ -47,14 +57,22 @@ class SubscriptionControllerForOverseasISpec
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
-        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        givenUpdateApplicationStatus(
+          Registered,
+          204,
+          safeIdJson
+        )
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(stubbedGroupId, arn)
         createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
-        givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
+        givenUpdateApplicationStatus(
+          Complete,
+          204,
+          s"""{"arn" : "$arn"}"""
+        )
         givenEmailSent(emailInfo)
 
         val result = doSubscriptionRequest
@@ -81,13 +99,21 @@ class SubscriptionControllerForOverseasISpec
         givenValidApplication("accepted", hasAmls = false)
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
-        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        givenUpdateApplicationStatus(
+          Registered,
+          204,
+          safeIdJson
+        )
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(stubbedGroupId, arn)
-        givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
+        givenUpdateApplicationStatus(
+          Complete,
+          204,
+          s"""{"arn" : "$arn"}"""
+        )
         givenEmailSent(emailInfo)
 
         val result = doSubscriptionRequest
@@ -125,7 +151,11 @@ class SubscriptionControllerForOverseasISpec
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(stubbedGroupId, arn)
         createOverseasAmlsSucceeds(Arn(arn), amlsDetails)
-        givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
+        givenUpdateApplicationStatus(
+          Complete,
+          204,
+          s"""{"arn" : "$arn"}"""
+        )
         givenEmailSent(emailInfo)
 
         val result = doSubscriptionRequest
@@ -156,7 +186,11 @@ class SubscriptionControllerForOverseasISpec
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(stubbedGroupId, arn)
         createOverseasAmlsFailsWithStatus(409)
-        givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
+        givenUpdateApplicationStatus(
+          Complete,
+          204,
+          s"""{"arn" : "$arn"}"""
+        )
         givenEmailSent(emailInfo)
 
         val result = doSubscriptionRequest
@@ -281,7 +315,11 @@ class SubscriptionControllerForOverseasISpec
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
-        givenUpdateApplicationStatus(Registered, 409, safeIdJson)
+        givenUpdateApplicationStatus(
+          Registered,
+          409,
+          safeIdJson
+        )
 
         val result = doSubscriptionRequest
 
@@ -295,7 +333,11 @@ class SubscriptionControllerForOverseasISpec
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
-        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        givenUpdateApplicationStatus(
+          Registered,
+          204,
+          safeIdJson
+        )
         subscriptionAlreadyExists(safeId.value, agencyDetailsJson)
 
         val result = doSubscriptionRequest
@@ -310,7 +352,11 @@ class SubscriptionControllerForOverseasISpec
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
-        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        givenUpdateApplicationStatus(
+          Registered,
+          204,
+          safeIdJson
+        )
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentFails(arn)
 
@@ -332,7 +378,11 @@ class SubscriptionControllerForOverseasISpec
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
-        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        givenUpdateApplicationStatus(
+          Registered,
+          204,
+          safeIdJson
+        )
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsFails(arn)
@@ -356,7 +406,11 @@ class SubscriptionControllerForOverseasISpec
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
-        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        givenUpdateApplicationStatus(
+          Registered,
+          204,
+          safeIdJson
+        )
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
@@ -382,7 +436,11 @@ class SubscriptionControllerForOverseasISpec
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
-        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        givenUpdateApplicationStatus(
+          Registered,
+          204,
+          safeIdJson
+        )
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
@@ -410,7 +468,11 @@ class SubscriptionControllerForOverseasISpec
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
-        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        givenUpdateApplicationStatus(
+          Registered,
+          204,
+          safeIdJson
+        )
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)
@@ -441,7 +503,11 @@ class SubscriptionControllerForOverseasISpec
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
-        givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+        givenUpdateApplicationStatus(
+          Registered,
+          204,
+          safeIdJson
+        )
         subscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsSucceeds(arn)

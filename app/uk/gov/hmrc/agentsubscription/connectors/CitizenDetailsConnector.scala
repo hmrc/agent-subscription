@@ -25,16 +25,25 @@ import uk.gov.hmrc.domain.Nino
 import uk.gov.hmrc.http.HttpErrorFunctions.is2xx
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{HttpResponse, StringContextOps, UpstreamErrorResponse}
+import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.StringContextOps
+import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject.Inject
+import javax.inject.Singleton
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 @Singleton
-class CitizenDetailsConnector @Inject() (appConfig: AppConfig, http: HttpClientV2, val metrics: Metrics)(implicit
+class CitizenDetailsConnector @Inject() (
+  appConfig: AppConfig,
+  http: HttpClientV2,
+  val metrics: Metrics
+)(implicit
   val ec: ExecutionContext
-) extends HttpAPIMonitor {
+)
+extends HttpAPIMonitor {
 
   val baseUrl: String = appConfig.citizenDetailsBaseUrl
 
@@ -45,8 +54,9 @@ class CitizenDetailsConnector @Inject() (appConfig: AppConfig, http: HttpClientV
       http.get(url"$baseUrl/citizen-details/${nino.value}/designatory-details").execute[HttpResponse].map { response =>
         response.status match {
           case s if is2xx(s) => response.json.as[DesignatoryDetails]
-          case s             => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
+          case s => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
         }
       }
     }
+
 }

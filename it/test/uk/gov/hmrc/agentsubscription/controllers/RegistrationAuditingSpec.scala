@@ -21,12 +21,21 @@ import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.audit.CheckAgencyStatus
-import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DataStreamStub, DesStubs, TaxEnrolmentsStubs}
-import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.writeAuditMergedSucceeds
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.writeAuditSucceeds
+import uk.gov.hmrc.agentsubscription.stubs.AuthStub
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
+import uk.gov.hmrc.agentsubscription.stubs.DesStubs
+import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
+import uk.gov.hmrc.agentsubscription.support.BaseAuditSpec
+import uk.gov.hmrc.agentsubscription.support.Resource
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegments
 
-class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub with TaxEnrolmentsStubs {
+class RegistrationAuditingSpec
+extends BaseAuditSpec
+with DesStubs
+with AuthStub
+with TaxEnrolmentsStubs {
 
   private val utr = Utr("2000000000")
   private val postcode = "AA1 1AA"
@@ -39,10 +48,20 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
       writeAuditSucceeds()
 
       requestIsAuthenticatedWithNoEnrolments()
-      organisationRegistrationExists(utr, isAnASAgent = true, arn)
+      organisationRegistrationExists(
+        utr,
+        isAnASAgent = true,
+        arn
+      )
       allocatedPrincipalEnrolmentExists(arn, "groupId")
 
-      val path = encodePathSegments("agent-subscription", "registration", utr.value, "postcode", postcode)
+      val path = encodePathSegments(
+        "agent-subscription",
+        "registration",
+        utr.value,
+        "postcode",
+        postcode
+      )
 
       val response = new Resource(path, port).get()
       response.status shouldBe 200
@@ -51,34 +70,40 @@ class RegistrationAuditingSpec extends BaseAuditSpec with DesStubs with AuthStub
       (response.json \ "taxpayerName").as[String] shouldBe "My Agency"
 
       eventually {
-        DataStreamStub.verifyAuditRequestSent(CheckAgencyStatus, expectedTags(path), expectedDetails(utr, postcode))
+        DataStreamStub.verifyAuditRequestSent(
+          CheckAgencyStatus,
+          expectedTags(path),
+          expectedDetails(utr, postcode)
+        )
       }
     }
   }
 
-  private def expectedDetails(utr: Utr, postcode: String): JsObject =
-    Json
-      .parse(s"""
-                |{
-                |  "authProviderId": "12345",
-                |  "authProviderType": "GovernmentGateway",
-                |  "utr": "${utr.value}",
-                |  "postcode": "$postcode",
-                |  "knownFactsMatched": true,
-                |  "isSubscribedToAgentServices": true,
-                |  "isAnAsAgentInDes" : true,
-                |  "agentReferenceNumber": "$arn"
-                |}
-                |""".stripMargin)
-      .asInstanceOf[JsObject]
+  private def expectedDetails(
+    utr: Utr,
+    postcode: String
+  ): JsObject = Json
+    .parse(s"""
+              |{
+              |  "authProviderId": "12345",
+              |  "authProviderType": "GovernmentGateway",
+              |  "utr": "${utr.value}",
+              |  "postcode": "$postcode",
+              |  "knownFactsMatched": true,
+              |  "isSubscribedToAgentServices": true,
+              |  "isAnAsAgentInDes" : true,
+              |  "agentReferenceNumber": "$arn"
+              |}
+              |""".stripMargin)
+    .asInstanceOf[JsObject]
 
-  private def expectedTags(path: String): JsObject =
-    Json
-      .parse(s"""
-                |{
-                |  "path": "$path",
-                |  "transactionName": "Check agency status"
-                |}
-                |""".stripMargin)
-      .asInstanceOf[JsObject]
+  private def expectedTags(path: String): JsObject = Json
+    .parse(s"""
+              |{
+              |  "path": "$path",
+              |  "transactionName": "Check agency status"
+              |}
+              |""".stripMargin)
+    .asInstanceOf[JsObject]
+
 }

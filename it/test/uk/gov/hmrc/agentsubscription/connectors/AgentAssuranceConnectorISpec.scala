@@ -19,17 +19,24 @@ package uk.gov.hmrc.agentsubscription.connectors
 import java.time.LocalDate
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.{AmlsDetails, OverseasAmlsDetails}
+import uk.gov.hmrc.agentsubscription.model.AmlsDetails
+import uk.gov.hmrc.agentsubscription.model.OverseasAmlsDetails
 import uk.gov.hmrc.agentsubscription.stubs.AgentAssuranceStub
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
+import uk.gov.hmrc.agentsubscription.support.BaseISpec
+import uk.gov.hmrc.agentsubscription.support.MetricsTestSupport
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class AgentAssuranceConnectorISpec extends BaseISpec with AgentAssuranceStub with MetricsTestSupport with MockitoSugar {
+class AgentAssuranceConnectorISpec
+extends BaseISpec
+with AgentAssuranceStub
+with MetricsTestSupport
+with MockitoSugar {
 
   val utr = Utr("7000000002")
   val arn = Arn("TARN0000001")
@@ -38,7 +45,12 @@ class AgentAssuranceConnectorISpec extends BaseISpec with AgentAssuranceStub wit
   private lazy val http: HttpClientV2 = app.injector.instanceOf[HttpClientV2]
   private lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
-  private lazy val connector: AgentAssuranceConnector = new AgentAssuranceConnector(appConfig, http, metrics)
+  private lazy val connector: AgentAssuranceConnector =
+    new AgentAssuranceConnector(
+      appConfig,
+      http,
+      metrics
+    )
 
   val amlsDetails: AmlsDetails = AmlsDetails(
     "supervisory",
@@ -76,7 +88,11 @@ class AgentAssuranceConnectorISpec extends BaseISpec with AgentAssuranceStub wit
 
     "return a successful response" in {
 
-      updateAmlsSucceeds(utr, arn, amlsDetails)
+      updateAmlsSucceeds(
+        utr,
+        arn,
+        amlsDetails
+      )
 
       val result = await(connector.updateAmls(utr, arn))
 
@@ -120,4 +136,5 @@ class AgentAssuranceConnectorISpec extends BaseISpec with AgentAssuranceStub wit
       an[Exception] should be thrownBy (await(connector.createOverseasAmls(arn, overseasAmlsDetails)))
     }
   }
+
 }

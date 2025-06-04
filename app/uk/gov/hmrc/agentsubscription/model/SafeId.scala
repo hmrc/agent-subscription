@@ -16,14 +16,18 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{JsPath, Reads}
-import uk.gov.hmrc.domain.{SimpleObjectWrites, TaxIdentifier}
+import play.api.libs.json.JsPath
+import play.api.libs.json.Reads
+import uk.gov.hmrc.domain.SimpleObjectWrites
+import uk.gov.hmrc.domain.TaxIdentifier
 
-case class SafeId(value: String) extends TaxIdentifier
+case class SafeId(value: String)
+extends TaxIdentifier
 
 object SafeId {
+
   implicit val writes: SimpleObjectWrites[SafeId] = new SimpleObjectWrites[SafeId](_.value)
 
-  implicit val reads: Reads[SafeId] =
-    JsPath.read[String](safeIdValidation).map(SafeId.apply)
+  implicit val reads: Reads[SafeId] = JsPath.read[String](safeIdValidation).map(SafeId.apply)
+
 }

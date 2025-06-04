@@ -17,19 +17,28 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import com.github.tomakehurst.wiremock.client.WireMock._
-import play.api.libs.json.Json.{stringify, toJson}
+import play.api.libs.json.Json.stringify
+import play.api.libs.json.Json.toJson
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs._
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentsubscription.support.BaseISpec
+import uk.gov.hmrc.agentsubscription.support.Resource
 
 import java.time.LocalDate
 
 class SubscriptionControllerISpec
-    extends BaseISpec with DesStubs with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub with EmailStub
-    with MappingStubs {
+extends BaseISpec
+with DesStubs
+with AuthStub
+with TaxEnrolmentsStubs
+with AgentAssuranceStub
+with EmailStub
+with MappingStubs {
+
   val utr = Utr("7000000002")
 
   val arn = "TARN0000001"
@@ -58,14 +67,22 @@ class SubscriptionControllerISpec
 
     class TestSetup {
       requestIsAuthenticatedWithNoEnrolments()
-      organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
+      organisationRegistrationExists(
+        utr,
+        isAnASAgent = false,
+        arn = arn
+      )
       createAmlsSucceeds(utr, amlsDetails)
       subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
       allocatedPrincipalEnrolmentNotExists(arn)
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(groupId, arn)
-      updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
+      updateAmlsSucceeds(
+        utr,
+        Arn(arn),
+        amlsDetails
+      )
       givenMappingCreationWithStatus(Arn(arn), 201)
       givenMappingDetailsCreatedWithStatus(Arn(arn), 201)
       givenEmailSent(emailInfo)
@@ -83,7 +100,11 @@ class SubscriptionControllerISpec
       }
 
       "addressLine2, addressLine3 and addressLine4 are missing" in new TestSetup {
-        val fields = Seq(address \ "addressLine2", address \ "addressLine3", address \ "addressLine4")
+        val fields = Seq(
+          address \ "addressLine2",
+          address \ "addressLine3",
+          address \ "addressLine4"
+        )
         subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
 
         val result = doSubscriptionRequest(removeFields(fields))
@@ -96,7 +117,11 @@ class SubscriptionControllerISpec
       }
 
       "BPR has isAnAsAgent=true and there is no previous allocation for HMRC-AS-AGENT for the arn" in new TestSetup {
-        organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
+        organisationRegistrationExists(
+          utr,
+          isAnASAgent = true,
+          arn = arn
+        )
 
         val result = doSubscriptionRequest()
 
@@ -121,7 +146,11 @@ class SubscriptionControllerISpec
     }
 
     "return Conflict if already subscribed (both ETMP has isAnAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in new TestSetup {
-      organisationRegistrationExists(utr, isAnASAgent = true, arn = arn)
+      organisationRegistrationExists(
+        utr,
+        isAnASAgent = true,
+        arn = arn
+      )
       allocatedPrincipalEnrolmentExists(arn, "someGroupId")
 
       val result = doSubscriptionRequest()
@@ -285,7 +314,11 @@ class SubscriptionControllerISpec
       "store amls fails with 400 error from agent assurance" in {
 
         requestIsAuthenticatedWithNoEnrolments()
-        organisationRegistrationExists(utr, isAnASAgent = false, arn = arn)
+        organisationRegistrationExists(
+          utr,
+          isAnASAgent = false,
+          arn = arn
+        )
         createAmlsFailsWithStatus(400)
 
         val result = doSubscriptionRequest()
@@ -294,7 +327,11 @@ class SubscriptionControllerISpec
       }
 
       "create amls succeeds but update amls fails with 400 error from agent assurance" in new TestSetup {
-        updateAmlsFailsWithStatus(utr, Arn(arn), 400)
+        updateAmlsFailsWithStatus(
+          utr,
+          Arn(arn),
+          400
+        )
 
         val result = doSubscriptionRequest()
 
@@ -305,7 +342,11 @@ class SubscriptionControllerISpec
     "throw a 500 error if " when {
       "DES API #1173 Subscribe to Agent Services fails" in new TestSetup {
         requestIsAuthenticatedWithNoEnrolments()
-        subscriptionFails(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest], 503)
+        subscriptionFails(
+          utr,
+          Json.parse(subscriptionRequest).as[SubscriptionRequest],
+          503
+        )
 
         val result = doSubscriptionRequest()
 
@@ -371,7 +412,11 @@ class SubscriptionControllerISpec
         createKnownFactsSucceeds(arn)
         enrolmentSucceeds(groupId, arn)
         createAmlsSucceeds(utr, amlsDetails)
-        updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
+        updateAmlsSucceeds(
+          utr,
+          Arn(arn),
+          amlsDetails
+        )
 
         val result = doUpdateSubscriptionRequest()
 
@@ -388,7 +433,11 @@ class SubscriptionControllerISpec
       agentRecordExists(utr, true, arn)
       allocatedPrincipalEnrolmentExists(arn, "someGroupId")
       createAmlsSucceeds(utr, amlsDetails)
-      updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
+      updateAmlsSucceeds(
+        utr,
+        Arn(arn),
+        amlsDetails
+      )
 
       val result = doUpdateSubscriptionRequest()
 
@@ -412,8 +461,7 @@ class SubscriptionControllerISpec
       "postcodes don't match" in {
         requestIsAuthenticatedWithNoEnrolments()
         agentRecordExists(utr)
-        val request =
-          Json.parse(updateSubscriptionRequest).as[UpdateSubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
+        val request = Json.parse(updateSubscriptionRequest).as[UpdateSubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
 
         val result = doUpdateSubscriptionRequest(stringify(toJson(request)))
 
@@ -479,7 +527,11 @@ class SubscriptionControllerISpec
         agentRecordExists(utr, true, arn)
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
-        updateAmlsSucceeds(utr, Arn(arn), amlsDetails)
+        updateAmlsSucceeds(
+          utr,
+          Arn(arn),
+          amlsDetails
+        )
         allocatedPrincipalEnrolmentFails(arn)
       }
 
@@ -529,10 +581,10 @@ class SubscriptionControllerISpec
     }
   }
 
-  private def doSubscriptionRequest(request: String = subscriptionRequest) =
-    new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
-  private def doUpdateSubscriptionRequest(request: String = updateSubscriptionRequest) =
-    new Resource(s"/agent-subscription/subscription", port).putAsJson(request)
+  private def doSubscriptionRequest(request: String = subscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
+  private def doUpdateSubscriptionRequest(
+    request: String = updateSubscriptionRequest
+  ) = new Resource(s"/agent-subscription/subscription", port).putAsJson(request)
 
   private def removeFields(fields: Seq[JsPath]): String = {
     val request = Json.parse(subscriptionRequest).as[JsObject]
@@ -541,7 +593,10 @@ class SubscriptionControllerISpec
     stringify(filtered)
   }
 
-  private def removeFields(jsObject: JsObject, fields: Seq[JsPath]): JsObject = {
+  private def removeFields(
+    jsObject: JsObject,
+    fields: Seq[JsPath]
+  ): JsObject = {
     val transformer = fields.map(field => field.json.prune).reduce((a, b) => a andThen b)
     jsObject.transform(transformer).get
   }
@@ -553,14 +608,16 @@ class SubscriptionControllerISpec
     stringify(filtered)
   }
 
-  private def replaceFields(jsObject: JsObject, fields: Seq[(JsPath, String, String)]): JsObject = {
+  private def replaceFields(
+    jsObject: JsObject,
+    fields: Seq[(JsPath, String, String)]
+  ): JsObject = {
     val transformer = fields
       .map(field => field._1.json.update(__.read[JsObject].map(o => o ++ Json.obj(field._2 -> field._3))))
       .reduce((a, b) => a andThen b)
     jsObject.transform(transformer) match {
       case s: JsSuccess[JsObject] => s.get
-      case e: JsError =>
-        throw new RuntimeException(s"Unable to transform JSON: $e")
+      case e: JsError => throw new RuntimeException(s"Unable to transform JSON: $e")
     }
   }
 
@@ -626,4 +683,5 @@ class SubscriptionControllerISpec
        |  }
        |}
     """.stripMargin
+
 }

@@ -20,32 +20,42 @@ import play.api.i18n.Lang
 import play.api.libs.functional.syntax._
 import play.api.libs.json.Reads._
 import play.api.libs.json._
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 
 object Address {
+
   implicit val writes: Writes[Address] = Json.writes[Address]
-  implicit val reads: Reads[Address] = ((__ \ "addressLine1").read[String](addressValidation) and
-    (__ \ "addressLine2").readNullable[String](addressValidation) and
-    (__ \ "addressLine3").readNullable[String](addressValidation) and
-    (__ \ "addressLine4").readNullable[String](addressValidation) and
-    (__ \ "postcode").read[String](postcodeValidation) and
-    (__ \ "countryCode").read[String])(Address.apply _)
+  implicit val reads: Reads[Address] =
+    ((__ \ "addressLine1").read[String](addressValidation) and
+      (__ \ "addressLine2").readNullable[String](addressValidation) and
+      (__ \ "addressLine3").readNullable[String](addressValidation) and
+      (__ \ "addressLine4").readNullable[String](addressValidation) and
+      (__ \ "postcode").read[String](postcodeValidation) and
+      (__ \ "countryCode").read[String])(Address.apply _)
+
 }
 
 object Agency {
+
   implicit val writes: Writes[Agency] = Json.writes[Agency]
-  implicit val reads: Reads[Agency] = ((__ \ "name").read[String](nameValidation) and
-    (__ \ "address").read[Address] and
-    (__ \ "telephone").readNullable[String](telephoneNumberValidation) and
-    (__ \ "email").read[String](email))(Agency.apply _)
+  implicit val reads: Reads[Agency] =
+    ((__ \ "name").read[String](nameValidation) and
+      (__ \ "address").read[Address] and
+      (__ \ "telephone").readNullable[String](telephoneNumberValidation) and
+      (__ \ "email").read[String](email))(Agency.apply _)
+
 }
 
 object KnownFacts {
+
   implicit val writes: OWrites[KnownFacts] = Json.writes[KnownFacts]
   implicit val reads: Reads[KnownFacts] = (__ \ "postcode").read(postcodeValidation).map(KnownFacts.apply)
+
 }
 
 object SubscriptionRequest {
+
   implicit val writes: Writes[SubscriptionRequest] = Json.format[SubscriptionRequest]
   implicit val reads: Reads[SubscriptionRequest] =
     ((__ \ "utr").read[Utr](verifying[Utr](utr => Utr.isValid(utr.value))) and
@@ -53,6 +63,7 @@ object SubscriptionRequest {
       (__ \ "agency").read[Agency] and
       (__ \ "langForEmail").readNullable[Lang] and
       (__ \ "amlsDetails").readNullable[AmlsDetails])(SubscriptionRequest.apply _)
+
 }
 
 case class Address(
@@ -64,7 +75,12 @@ case class Address(
   countryCode: String
 )
 
-case class Agency(name: String, address: Address, telephone: Option[String], email: String)
+case class Agency(
+  name: String,
+  address: Address,
+  telephone: Option[String],
+  email: String
+)
 
 case class KnownFacts(postcode: String)
 
@@ -81,12 +97,18 @@ object SubscriptionResponse {
   implicit val format: OFormat[SubscriptionResponse] = Json.format
 }
 
-case class UpdateSubscriptionRequest(utr: Utr, knownFacts: KnownFacts, langForEmail: Option[Lang])
+case class UpdateSubscriptionRequest(
+  utr: Utr,
+  knownFacts: KnownFacts,
+  langForEmail: Option[Lang]
+)
 
 object UpdateSubscriptionRequest {
+
   implicit val writes: Writes[UpdateSubscriptionRequest] = Json.writes[UpdateSubscriptionRequest]
   implicit val reads: Reads[UpdateSubscriptionRequest] =
     ((__ \ "utr").read[Utr](verifying[Utr](utr => Utr.isValid(utr.value))) and
       (__ \ "knownFacts").read[KnownFacts] and
       (__ \ "langForEmail").readNullable[Lang])(UpdateSubscriptionRequest.apply _)
+
 }

@@ -18,27 +18,33 @@ package uk.gov.hmrc.agentsubscription.model
 
 import play.api.libs.json._
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypter
-import uk.gov.hmrc.crypto.{Crypted, Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.Crypted
+import uk.gov.hmrc.crypto.Decrypter
+import uk.gov.hmrc.crypto.Encrypter
 
 case class VerifiedEmails(emails: Set[String] = Set.empty)
 
 object VerifiedEmails {
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[VerifiedEmails] = {
+
+  def databaseFormat(implicit
+    crypto: Encrypter
+      with Decrypter
+  ): Format[VerifiedEmails] = {
 
     def reads(json: JsValue): JsResult[VerifiedEmails] =
       (json \ "emails").validate[Set[String]] match {
         case JsSuccess(emails, _) => JsSuccess(VerifiedEmails(emails.map(str => crypto.decrypt(Crypted(str)).value)))
-        case JsError(_)           => JsSuccess(VerifiedEmails())
+        case JsError(_) => JsSuccess(VerifiedEmails())
       }
 
-    def writes(verifiedEmails: VerifiedEmails): JsValue =
-      Json.obj(
-        "emails" -> verifiedEmails.emails.map(stringEncrypter.writes)
-      )
+    def writes(verifiedEmails: VerifiedEmails): JsValue = Json.obj(
+      "emails" -> verifiedEmails.emails.map(stringEncrypter.writes)
+    )
 
     Format(reads(_), verifiedEmails => writes(verifiedEmails))
   }
 
   implicit val writes: Writes[VerifiedEmails] = Json.writes[VerifiedEmails]
   implicit val reads: Reads[VerifiedEmails] = Json.reads[VerifiedEmails]
+
 }

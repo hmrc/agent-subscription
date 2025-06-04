@@ -63,7 +63,14 @@ object AgentRecord {
           arn,
           isAnASAgent,
           agencyName,
-          Address(addressLine1, addressLine2, addressLine3, addressLine4, agencyPostcode, countryCode),
+          Address(
+            addressLine1,
+            addressLine2,
+            addressLine3,
+            addressLine4,
+            agencyPostcode,
+            countryCode
+          ),
           agencyEmail,
           businessPostcode,
           phoneNumber

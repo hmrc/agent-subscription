@@ -16,43 +16,61 @@
 
 package uk.gov.hmrc.agentsubscription.auth
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
+import javax.inject.Singleton
 import play.api.libs.json.Json.toJson
-import play.api.libs.json.{JsValue, Json, OFormat, Writes}
-import play.api.mvc.Results.{Forbidden, Unauthorized}
-import play.api.mvc.{AnyContent, Result, _}
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json
+import play.api.libs.json.OFormat
+import play.api.libs.json.Writes
+import play.api.mvc.Results.Forbidden
+import play.api.mvc.Results.Unauthorized
+import play.api.mvc.AnyContent
+import play.api.mvc.Result
+import play.api.mvc._
 import uk.gov.hmrc.agentsubscription.auth.AuthActions._
 import uk.gov.hmrc.agentsubscription.utils.valueOps
 import uk.gov.hmrc.auth.core.AuthProvider.GovernmentGateway
 import uk.gov.hmrc.auth.core._
-import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.{affinityGroup, allEnrolments, credentials, groupIdentifier}
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.affinityGroup
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.allEnrolments
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.credentials
+import uk.gov.hmrc.auth.core.retrieve.v2.Retrievals.groupIdentifier
+import uk.gov.hmrc.auth.core.retrieve.Credentials
+import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 @Singleton
-class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthConnector)(implicit ec: ExecutionContext)
-    extends BackendController(cc) with AuthorisedFunctions {
+class AuthActions @Inject() (
+  cc: ControllerComponents,
+  val authConnector: AuthConnector
+)(implicit ec: ExecutionContext)
+extends BackendController(cc)
+with AuthorisedFunctions {
 
   private val AuthProvider: AuthProviders = AuthProviders(GovernmentGateway)
 
-  def authorisedWithAffinityGroup(action: SubscriptionAuthAction): Action[JsValue] = Action.async(parse.json) {
-    implicit request =>
-      authorised(AuthProvider)
-        .retrieve(affinityGroup and credentials and groupIdentifier) {
-          case Some(affinityG) ~ Some(Credentials(providerId, _)) ~ Some(groupId) =>
-            if (isAgent(affinityG)) {
-              action(request)(AuthIds(providerId, groupId))
-            } else
-              NotAnAgent.toFuture
+  def authorisedWithAffinityGroup(action: SubscriptionAuthAction): Action[JsValue] =
+    Action.async(parse.json) {
+      implicit request =>
+        authorised(AuthProvider)
+          .retrieve(affinityGroup and credentials and groupIdentifier) {
+            case Some(affinityG) ~ Some(Credentials(providerId, _)) ~ Some(groupId) =>
+              if (isAgent(affinityG)) {
+                action(request)(AuthIds(providerId, groupId))
+              }
+              else
+                NotAnAgent.toFuture
 
-          case _ => GenericUnauthorized.toFuture
+            case _ => GenericUnauthorized.toFuture
 
-        } recover {
-        handleFailure()
-      }
-  }
+          } recover {
+          handleFailure()
+        }
+    }
 
   def authorisedWithAgentAffinity(action: Request[AnyContent] => Future[Result]): Action[AnyContent] = Action.async {
     implicit request =>
@@ -91,7 +109,8 @@ class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthCo
           case Some(affinityG) ~ Some(Credentials(providerId, providerType)) =>
             if (isAgent(affinityG)) {
               action(request)(Provider(providerId, providerType))
-            } else
+            }
+            else
               NotAnAgent.toFuture
 
           case _ => GenericUnauthorized.toFuture
@@ -102,11 +121,12 @@ class AuthActions @Inject() (cc: ControllerComponents, val authConnector: AuthCo
   }
 
   def handleFailure(): PartialFunction[Throwable, Result] = {
-    case _: NoActiveSession         => GenericUnauthorized
+    case _: NoActiveSession => GenericUnauthorized
     case _: UnsupportedAuthProvider => GenericUnauthorized
   }
 
   private def isAgent(group: AffinityGroup): Boolean = group.toString.contains("Agent")
+
 }
 
 object AuthActions {
@@ -115,19 +135,29 @@ object AuthActions {
   type OverseasAuthAction = Request[AnyContent] => AuthIds => Future[Result]
   type RegistrationAuthAction = Request[AnyContent] => Provider => Future[Result]
 
-  case class Provider(providerId: String, providerType: String)
+  case class Provider(
+    providerId: String,
+    providerType: String
+  )
 
-  case class AuthIds(userId: String, groupId: String)
+  case class AuthIds(
+    userId: String,
+    groupId: String
+  )
 
   object AuthIds {
     implicit val authIdsFormat: OFormat[AuthIds] = Json.format[AuthIds]
   }
 
-  case class ErrorBody(code: String, message: String)
+  case class ErrorBody(
+    code: String,
+    message: String
+  )
 
-  implicit val errorBodyWrites: Writes[ErrorBody] = new Writes[ErrorBody] {
-    override def writes(body: ErrorBody): JsValue = Json.obj("code" -> body.code, "message" -> body.message)
-  }
+  implicit val errorBodyWrites: Writes[ErrorBody] =
+    new Writes[ErrorBody] {
+      override def writes(body: ErrorBody): JsValue = Json.obj("code" -> body.code, "message" -> body.message)
+    }
 
   val GenericUnauthorized: Result = Unauthorized(
     toJson(ErrorBody("UNAUTHORIZED", "Bearer token is missing or not authorized."))
@@ -138,4 +168,5 @@ object AuthActions {
   )
 
   val NotAnAgent: Result = Forbidden(toJson(ErrorBody("USER_NOT_AN_AGENT", "The user is not an Agent")))
+
 }

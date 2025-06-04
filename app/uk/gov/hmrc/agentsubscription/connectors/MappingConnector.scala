@@ -29,13 +29,21 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject.Inject
+import javax.inject.Singleton
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 @Singleton
-class MappingConnector @Inject() (appConfig: AppConfig, http: HttpClientV2, val metrics: Metrics)(implicit
+class MappingConnector @Inject() (
+  appConfig: AppConfig,
+  http: HttpClientV2,
+  val metrics: Metrics
+)(implicit
   val ec: ExecutionContext
-) extends Logging with HttpAPIMonitor {
+)
+extends Logging
+with HttpAPIMonitor {
 
   val baseUrl: String = appConfig.agentMappingBaseUrl
 
@@ -47,12 +55,9 @@ class MappingConnector @Inject() (appConfig: AppConfig, http: HttpClientV2, val 
         .execute[HttpResponse]
         .map { response =>
           response.status match {
-            case s if is2xx(s) =>
-              logger.info("mapping was successful"); ()
-            case FORBIDDEN =>
-              logger.error("user is forbidden to perform mapping"); ()
-            case CONFLICT =>
-              logger.error("user has already mapped"); ()
+            case s if is2xx(s) => logger.info("mapping was successful"); ()
+            case FORBIDDEN => logger.error("user is forbidden to perform mapping"); ()
+            case CONFLICT => logger.error("user has already mapped"); ()
             case s => logger.error("mapping failed for unknown reason, status code: $s"); ()
           }
         }
@@ -65,11 +70,12 @@ class MappingConnector @Inject() (appConfig: AppConfig, http: HttpClientV2, val 
         .execute[HttpResponse]
         .map {
           _.status match {
-            case CREATED   => logger.info("creating mapping details from subscription journey record was successful")
-            case OK        => logger.info(s"user mappings were empty")
+            case CREATED => logger.info("creating mapping details from subscription journey record was successful")
+            case OK => logger.info(s"user mappings were empty")
             case NOT_FOUND => logger.warn(s"no user mappings found for this auth provider")
-            case e         => logger.warn(s"create user mappings failed with status $e")
+            case e => logger.warn(s"create user mappings failed with status $e")
           }
         }
     }
+
 }

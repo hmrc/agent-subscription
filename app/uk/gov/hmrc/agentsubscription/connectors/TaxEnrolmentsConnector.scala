@@ -18,7 +18,8 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import play.api.http.Status._
 import play.api.libs.json.Json.format
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.Json
+import play.api.libs.json.OFormat
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
@@ -30,14 +31,22 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject.Inject
+import javax.inject.Singleton
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
-case class KnownFact(key: String, value: String)
+case class KnownFact(
+  key: String,
+  value: String
+)
 
 case class Legacy(previousVerifiers: Seq[KnownFact])
 
-case class KnownFactsRequest(verifiers: Seq[KnownFact], legacy: Option[Legacy])
+case class KnownFactsRequest(
+  verifiers: Seq[KnownFact],
+  legacy: Option[Legacy]
+)
 
 object KnownFact {
   implicit val formatKf: OFormat[KnownFact] = format
@@ -51,22 +60,36 @@ object KnownFactsRequest {
   implicit val formatKFR: OFormat[KnownFactsRequest] = format
 }
 
-case class EnrolmentRequest(userId: String, `type`: String, friendlyName: String, verifiers: Seq[KnownFact])
+case class EnrolmentRequest(
+  userId: String,
+  `type`: String,
+  friendlyName: String,
+  verifiers: Seq[KnownFact]
+)
 
 object EnrolmentRequest {
   implicit val formats: OFormat[EnrolmentRequest] = format
 }
 
 @Singleton
-class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClientV2, val metrics: Metrics)(implicit
+class TaxEnrolmentsConnector @Inject() (
+  appConfig: AppConfig,
+  http: HttpClientV2,
+  val metrics: Metrics
+)(implicit
   val ec: ExecutionContext
-) extends HttpAPIMonitor {
+)
+extends HttpAPIMonitor {
 
   val taxEnrolmentsBaseUrl: String = appConfig.taxEnrolmentsBaseUrl
   val espBaseUrl: String = appConfig.enrolmentStoreProxyBaseUrl
 
   // EACD's ES6 API
-  def addKnownFacts(arn: String, knownFactKey: String, knownFactValue: String)(implicit
+  def addKnownFacts(
+    arn: String,
+    knownFactKey: String,
+    knownFactValue: String
+  )(implicit
     rh: RequestHeader
   ): Future[Integer] = {
     val request = KnownFactsRequest(List(KnownFact(knownFactKey, knownFactValue)), None)
@@ -79,7 +102,7 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClientV2
         .map { response =>
           response.status match {
             case s if is2xx(s) => s
-            case s             => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
+            case s => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
           }
         }
     }
@@ -96,13 +119,17 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClientV2
         .map { response =>
           response.status match {
             case s if is2xx(s) => s
-            case s             => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
+            case s => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
           }
         }
     }
 
   // EACD's ES8 API
-  def enrol(groupId: String, arn: Arn, enrolmentRequest: EnrolmentRequest)(implicit
+  def enrol(
+    groupId: String,
+    arn: Arn,
+    enrolmentRequest: EnrolmentRequest
+  )(implicit
     rh: RequestHeader
   ): Future[Integer] =
     monitor("ConsumedAPI-EMAC-Enrol-HMRC-AS-AGENT-POST") {
@@ -113,7 +140,7 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClientV2
         .map { response =>
           response.status match {
             case s if is2xx(s) => s
-            case s             => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
+            case s => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
           }
         }
     }
@@ -128,10 +155,10 @@ class TaxEnrolmentsConnector @Inject() (appConfig: AppConfig, http: HttpClientV2
         .execute[HttpResponse]
         .map { response =>
           response.status match {
-            case OK          => (response.json \ "principalGroupIds").as[Seq[String]].nonEmpty
-            case NO_CONTENT  => false
+            case OK => (response.json \ "principalGroupIds").as[Seq[String]].nonEmpty
+            case NO_CONTENT => false
             case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST")
-            case s           => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
+            case s => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
           }
         }
     }

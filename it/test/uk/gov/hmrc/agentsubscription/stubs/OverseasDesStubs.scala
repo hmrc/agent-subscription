@@ -84,7 +84,10 @@ trait OverseasDesStubs {
     ()
   }
 
-  def subscriptionSucceeds(safeId: String, requestJson: String): Unit = {
+  def subscriptionSucceeds(
+    safeId: String,
+    requestJson: String
+  ): Unit = {
     stubFor(
       maybeWithDesHeaderCheck(subscriptionRequest(safeId, requestJson))
         .willReturn(
@@ -100,7 +103,10 @@ trait OverseasDesStubs {
     ()
   }
 
-  def subscriptionAlreadyExists(safeId: String, requestJson: String): Unit = {
+  def subscriptionAlreadyExists(
+    safeId: String,
+    requestJson: String
+  ): Unit = {
     stubFor(
       maybeWithDesHeaderCheck(subscriptionRequest(safeId, requestJson))
         .willReturn(
@@ -112,7 +118,10 @@ trait OverseasDesStubs {
     ()
   }
 
-  def agencyNotRegistered(safeId: String, requestJson: String): Unit = {
+  def agencyNotRegistered(
+    safeId: String,
+    requestJson: String
+  ): Unit = {
     stubFor(
       maybeWithDesHeaderCheck(subscriptionRequest(safeId, requestJson))
         .willReturn(
@@ -124,21 +133,23 @@ trait OverseasDesStubs {
     ()
   }
 
-  private def registrationRequest(json: String) =
-    post(urlEqualTo(s"/registration/02.00.00/organisation"))
-      .withRequestBody(equalToJson(json))
+  private def registrationRequest(json: String) = post(urlEqualTo(s"/registration/02.00.00/organisation"))
+    .withRequestBody(equalToJson(json))
 
-  private def subscriptionRequest(safeId: String, json: String) =
-    post(urlEqualTo(s"/registration/agents/safeId/$safeId"))
-      .withRequestBody(equalToJson(json))
+  private def subscriptionRequest(
+    safeId: String,
+    json: String
+  ) = post(urlEqualTo(s"/registration/agents/safeId/$safeId"))
+    .withRequestBody(equalToJson(json))
 
-  private val notFoundResponse =
-    errorResponse("NOT_FOUND", "The remote endpoint has indicated that no data can be found.")
-  private val invalidPayloadResponse =
-    errorResponse("INVALID_PAYLOAD", "Submission has not passed validation. Invalid Payload.")
+  private val notFoundResponse = errorResponse("NOT_FOUND", "The remote endpoint has indicated that no data can be found.")
+  private val invalidPayloadResponse = errorResponse("INVALID_PAYLOAD", "Submission has not passed validation. Invalid Payload.")
   private val conflictResponse = errorResponse("CONFLICT", "Duplicate submission")
 
-  private def errorResponse(code: String, reason: String) =
+  private def errorResponse(
+    code: String,
+    reason: String
+  ) =
     s"""
        |{
        |  "code": "$code",
@@ -146,18 +157,20 @@ trait OverseasDesStubs {
        |}
      """.stripMargin
 
-  private def maybeWithDesHeaderCheck(mappingBuilder: MappingBuilder): MappingBuilder =
-    maybeWithOptionalAuthorizationHeaderCheck(maybeWithEnvironmentHeaderCheck(mappingBuilder))
+  private def maybeWithDesHeaderCheck(mappingBuilder: MappingBuilder): MappingBuilder = maybeWithOptionalAuthorizationHeaderCheck(
+    maybeWithEnvironmentHeaderCheck(mappingBuilder)
+  )
 
   private def maybeWithOptionalAuthorizationHeaderCheck(mappingBuilder: MappingBuilder): MappingBuilder =
     expectedBearerToken match {
       case Some(token) => mappingBuilder.withHeader("Authorization", equalTo(s"Bearer $token"))
-      case None        => mappingBuilder
+      case None => mappingBuilder
     }
 
   private def maybeWithEnvironmentHeaderCheck(mappingBuilder: MappingBuilder): MappingBuilder =
     expectedEnvironment match {
       case Some(environment) => mappingBuilder.withHeader("Environment", equalTo(environment))
-      case None              => mappingBuilder
+      case None => mappingBuilder
     }
+
 }

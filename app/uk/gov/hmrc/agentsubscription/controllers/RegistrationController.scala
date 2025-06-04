@@ -20,10 +20,13 @@ import javax.inject._
 import play.api.Logging
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJson
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import play.api.mvc.Action
+import play.api.mvc.AnyContent
+import play.api.mvc.ControllerComponents
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
-import uk.gov.hmrc.agentsubscription.connectors.{InvalidBusinessAddressException, InvalidIsAnASAgentException}
+import uk.gov.hmrc.agentsubscription.connectors.InvalidBusinessAddressException
+import uk.gov.hmrc.agentsubscription.connectors.InvalidIsAnASAgentException
 import uk.gov.hmrc.agentsubscription.model.postcodeWithoutSpacesRegex
 import uk.gov.hmrc.agentsubscription.service.RegistrationService
 import uk.gov.hmrc.agentsubscription.utils.valueOps
@@ -37,11 +40,15 @@ class RegistrationController @Inject() (
   authActions: AuthActions,
   cc: ControllerComponents
 )(implicit ec: ExecutionContext)
-    extends BackendController(cc) with Logging {
+extends BackendController(cc)
+with Logging {
 
   import authActions._
 
-  def getRegistration(utr: Utr, postcode: String): Action[AnyContent] = authorisedWithAffinityGroupAndCredentials {
+  def getRegistration(
+    utr: Utr,
+    postcode: String
+  ): Action[AnyContent] = authorisedWithAffinityGroupAndCredentials {
     implicit request => implicit provider =>
       if (!Utr.isValid(utr.value))
         badRequest("INVALID_UTR")
@@ -64,9 +71,8 @@ class RegistrationController @Inject() (
           }
   }
 
-  private def badRequest(code: String) =
-    BadRequest(Json.obj("code" -> code)).toFuture
+  private def badRequest(code: String) = BadRequest(Json.obj("code" -> code)).toFuture
 
-  private def validPostcode(postcode: String): Boolean =
-    postcode.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)
+  private def validPostcode(postcode: String): Boolean = postcode.replaceAll("\\s", "").matches(postcodeWithoutSpacesRegex)
+
 }

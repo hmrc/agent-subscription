@@ -16,11 +16,14 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import uk.gov.hmrc.domain.{SimpleObjectReads, SimpleObjectWrites}
+import uk.gov.hmrc.domain.SimpleObjectReads
+import uk.gov.hmrc.domain.SimpleObjectWrites
 
 case class Postcode(value: String)
 
 object Postcode {
+
   implicit val utrReads: SimpleObjectReads[Postcode] = new SimpleObjectReads[Postcode]("value", Postcode.apply)
   implicit val utrWrites: SimpleObjectWrites[Postcode] = new SimpleObjectWrites[Postcode](_.value)
+
 }

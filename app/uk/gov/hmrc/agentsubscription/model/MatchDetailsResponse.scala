@@ -16,26 +16,38 @@
 
 package uk.gov.hmrc.agentsubscription.model
 
-import play.api.libs.json.{JsString, JsValue, Writes}
+import play.api.libs.json.JsString
+import play.api.libs.json.JsValue
+import play.api.libs.json.Writes
 
 sealed trait MatchDetailsResponse
 
 object MatchDetailsResponse {
-  case object Match extends MatchDetailsResponse
-  case object NoMatch extends MatchDetailsResponse
-  case object RecordNotFound extends MatchDetailsResponse
-  case object InvalidIdentifier extends MatchDetailsResponse
-  case object NotAllowed extends MatchDetailsResponse
-  case object UnknownError extends MatchDetailsResponse
 
-  implicit val matchDetailsWrites: Writes[MatchDetailsResponse] = new Writes[MatchDetailsResponse] {
-    override def writes(o: MatchDetailsResponse): JsValue = o match {
-      case Match             => JsString("match_successful")
-      case NoMatch           => JsString("no_match")
-      case RecordNotFound    => JsString("record_not_found")
-      case InvalidIdentifier => JsString("invalid_identifier")
-      case NotAllowed        => JsString("not_allowed")
-      case UnknownError      => JsString("unknown_error")
+  case object Match
+  extends MatchDetailsResponse
+  case object NoMatch
+  extends MatchDetailsResponse
+  case object RecordNotFound
+  extends MatchDetailsResponse
+  case object InvalidIdentifier
+  extends MatchDetailsResponse
+  case object NotAllowed
+  extends MatchDetailsResponse
+  case object UnknownError
+  extends MatchDetailsResponse
+
+  implicit val matchDetailsWrites: Writes[MatchDetailsResponse] =
+    new Writes[MatchDetailsResponse] {
+      override def writes(o: MatchDetailsResponse): JsValue =
+        o match {
+          case Match => JsString("match_successful")
+          case NoMatch => JsString("no_match")
+          case RecordNotFound => JsString("record_not_found")
+          case InvalidIdentifier => JsString("invalid_identifier")
+          case NotAllowed => JsString("not_allowed")
+          case UnknownError => JsString("unknown_error")
+        }
     }
-  }
+
 }

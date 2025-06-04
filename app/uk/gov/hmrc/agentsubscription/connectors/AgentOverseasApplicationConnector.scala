@@ -22,7 +22,8 @@ import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{Complete, Registered}
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.utils.RequestSupport.hc
@@ -31,13 +32,21 @@ import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject.Inject
+import javax.inject.Singleton
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 @Singleton
-class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: HttpClientV2, val metrics: Metrics)(
+class AgentOverseasApplicationConnector @Inject() (
+  appConfig: AppConfig,
+  http: HttpClientV2,
+  val metrics: Metrics
+)(
   implicit val ec: ExecutionContext
-) extends Logging with HttpAPIMonitor {
+)
+extends Logging
+with HttpAPIMonitor {
 
   val baseUrl: String = appConfig.agentOverseasApplicationBaseUrl
 
@@ -48,11 +57,12 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
     arn: Option[Arn] = None
   )(implicit rh: RequestHeader): Future[Boolean] =
     monitor("ConsumedAPI-Agent-Overseas-Application-updateStatus-PUT") {
-      val body = status match {
-        case Registered => Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
-        case Complete   => Json.obj("arn" -> JsString(arn.map(_.value).getOrElse("")))
-        case _          => Json.obj()
-      }
+      val body =
+        status match {
+          case Registered => Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
+          case Complete => Json.obj("arn" -> JsString(arn.map(_.value).getOrElse("")))
+          case _ => Json.obj()
+        }
       http
         .put(url"$baseUrl/agent-overseas-application/application/${status.key}")
         .withBody(body)
@@ -71,23 +81,32 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
 
   def currentApplication(implicit rh: RequestHeader): Future[CurrentApplication] = {
     val activeStatuses = ApplicationStatus.ActiveStatuses.map(status => s"statusIdentifier=${status.key}").mkString("&")
+    val url = s"$baseUrl/agent-overseas-application/application?$activeStatuses"
     monitor("ConsumedAPI-Agent-Overseas-Application-application-GET") {
       http
-        .get(url"$baseUrl/agent-overseas-application/application?$activeStatuses")
+        .get(url"$url")
         .execute[HttpResponse]
         .map { response =>
           val json = response.json.head
           val status = (json \ "status").as[ApplicationStatus]
 
-          val safeId = (json \ "safeId").validateOpt[SafeId] match {
-            case JsSuccess(validSafeId, _) => validSafeId
-            case JsError(errors)           => throw new JsResultException(errors)
-          }
+          val safeId =
+            (json \ "safeId").validateOpt[SafeId] match {
+              case JsSuccess(validSafeId, _) => validSafeId
+              case JsError(errors) => throw new JsResultException(errors)
+            }
           val amlsDetails = (json \ "amls").asOpt[OverseasAmlsDetails]
           val businessDetails = (json \ "tradingDetails").as[TradingDetails]
           val businessContactDetails = (json \ "contactDetails").as[OverseasContactDetails]
           val agencyDetails = (json \ "agencyDetails").as[OverseasAgencyDetails]
-          CurrentApplication(status, safeId, amlsDetails, businessContactDetails, businessDetails, agencyDetails)
+          CurrentApplication(
+            status,
+            safeId,
+            amlsDetails,
+            businessContactDetails,
+            businessDetails,
+            agencyDetails
+          )
         }
         .recover {
           case e: JsResultException =>
@@ -99,4 +118,5 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
         }
     }
   }
+
 }

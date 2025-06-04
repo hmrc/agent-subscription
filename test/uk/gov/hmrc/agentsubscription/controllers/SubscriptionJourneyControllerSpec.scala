@@ -16,28 +16,40 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import com.mongodb.{MongoWriteException, WriteError}
-import org.mockito.ArgumentMatchers.{any, eq => eqs}
+import com.mongodb.MongoWriteException
+import com.mongodb.WriteError
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{eq => eqs}
 import org.mockito.Mockito._
 import org.mongodb.scala.ServerAddress
 import org.mongodb.scala.bson.BsonDocument
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.libs.json.{JsValue, Json}
-import play.api.mvc.{ControllerComponents, Result, Results}
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json
+import play.api.mvc.ControllerComponents
+import play.api.mvc.Result
+import play.api.mvc.Results
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney._
-import uk.gov.hmrc.agentsubscription.model.{AuthProviderId, VerifiedEmails}
-import uk.gov.hmrc.agentsubscription.repository.{RecordUpdated, SubscriptionJourneyRepository}
+import uk.gov.hmrc.agentsubscription.model.AuthProviderId
+import uk.gov.hmrc.agentsubscription.model.VerifiedEmails
+import uk.gov.hmrc.agentsubscription.repository.RecordUpdated
+import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.Decrypter
+import uk.gov.hmrc.crypto.Encrypter
 import uk.gov.hmrc.http.HeaderCarrier
 
 import java.util.Collections
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
-class SubscriptionJourneyControllerSpec extends UnitSpec with Results with MockitoSugar {
+class SubscriptionJourneyControllerSpec
+extends UnitSpec
+with Results
+with MockitoSugar {
 
   val minimalBusinessDetails: BusinessDetails = BusinessDetails(
     businessType = BusinessType.LimitedCompany,
@@ -75,7 +87,8 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
   val hc: HeaderCarrier = HeaderCarrier()
 
   implicit val ec: ExecutionContext = ExecutionContext.Implicits.global
-  implicit val crypto: Encrypter with Decrypter = aesCrypto
+  implicit val crypto: Encrypter
+    with Decrypter = aesCrypto
 
   val controller = new SubscriptionJourneyController(mockRepo, cc)
 
@@ -151,8 +164,20 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
 
       val recordWithDupes = minimalRecord.copy(
         userMappings = List(
-          UserMapping(AuthProviderId("xxx"), None, List.empty, 0, ""),
-          UserMapping(AuthProviderId("xxx"), None, List.empty, 0, "")
+          UserMapping(
+            AuthProviderId("xxx"),
+            None,
+            List.empty,
+            0,
+            ""
+          ),
+          UserMapping(
+            AuthProviderId("xxx"),
+            None,
+            List.empty,
+            0,
+            ""
+          )
         )
       )
 
@@ -176,24 +201,30 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     "return 200 with authProviderID updated when there is already an existing record" in {
       val existingRecord = minimalRecord // The existing record in the repo
       val newAuthProviderId = AuthProviderId("cred-new")
-      val newRecord =
-        minimalRecord.copy(authProviderId = newAuthProviderId) // The new record (that we're trying to store)
-      val updatedExistingRecord = existingRecord.copy(authProviderId =
-        newAuthProviderId
-      ) // The existing record, modified with the new record's authId
+      val newRecord = minimalRecord.copy(authProviderId = newAuthProviderId) // The new record (that we're trying to store)
+      val updatedExistingRecord = existingRecord.copy(authProviderId = newAuthProviderId) // The existing record, modified with the new record's authId
 
       when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord]))
         .thenReturn(
           Future.failed(
             new MongoWriteException(
-              new WriteError(1100, "duplicate exception", BsonDocument.apply(Json.toJson(existingRecord).toString())),
+              new WriteError(
+                1100,
+                "duplicate exception",
+                BsonDocument.apply(Json.toJson(existingRecord).toString())
+              ),
               ServerAddress.apply(),
               Collections.emptySet()
             )
           )
         )
 
-      when(mockRepo.updateOnUtr(any[String], any[AuthProviderId], any[BusinessDetails], any[Option[AuthProviderId]]))
+      when(mockRepo.updateOnUtr(
+        any[String],
+        any[AuthProviderId],
+        any[BusinessDetails],
+        any[Option[AuthProviderId]]
+      ))
         .thenReturn(Future.successful((Some(newRecord))))
 
       when(mockRepo.findByUtr(any[String]))
@@ -207,9 +238,7 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
     }
 
     "return 200 with authProviderID, cleanCredsAuthProviderID and businessDetails updated when there is already an existing record" in {
-      val existingRecord = minimalRecord.copy(cleanCredsAuthProviderId =
-        Some(AuthProviderId("existing-clean-creds"))
-      ) // The existing record in the repo
+      val existingRecord = minimalRecord.copy(cleanCredsAuthProviderId = Some(AuthProviderId("existing-clean-creds"))) // The existing record in the repo
       val newAuthProviderId = AuthProviderId("cred-new-clean")
       val newBusinessDetails = BusinessDetails(
         businessType = BusinessType.LimitedCompany,
@@ -237,14 +266,23 @@ class SubscriptionJourneyControllerSpec extends UnitSpec with Results with Mocki
         .thenReturn(
           Future.failed(
             new MongoWriteException(
-              new WriteError(1100, "duplicate exception", BsonDocument.apply(Json.toJson(existingRecord).toString)),
+              new WriteError(
+                1100,
+                "duplicate exception",
+                BsonDocument.apply(Json.toJson(existingRecord).toString)
+              ),
               ServerAddress.apply(),
               Collections.emptySet()
             )
           )
         )
 
-      when(mockRepo.updateOnUtr(any[String], any[AuthProviderId], any[BusinessDetails], any[Option[AuthProviderId]]))
+      when(mockRepo.updateOnUtr(
+        any[String],
+        any[AuthProviderId],
+        any[BusinessDetails],
+        any[Option[AuthProviderId]]
+      ))
         .thenReturn(Future.successful((Some(newRecord))))
 
       when(mockRepo.findByUtr(any[String]))

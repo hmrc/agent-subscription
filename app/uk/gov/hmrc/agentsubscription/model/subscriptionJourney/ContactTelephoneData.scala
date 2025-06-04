@@ -19,7 +19,8 @@ package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.Decrypter
+import uk.gov.hmrc.crypto.Encrypter
 
 case class ContactTelephoneData(
   useBusinessTelephone: Boolean,
@@ -27,10 +28,15 @@ case class ContactTelephoneData(
 )
 
 object ContactTelephoneData {
+
   implicit val format: OFormat[ContactTelephoneData] = Json.format[ContactTelephoneData]
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactTelephoneData] =
+  def databaseFormat(implicit
+    crypto: Encrypter
+      with Decrypter
+  ): Format[ContactTelephoneData] =
     (
       (__ \ "useBusinessTelephone").format[Boolean] and
         (__ \ "telephoneNumber").formatNullable[String](stringEncrypterDecrypter)
     )(ContactTelephoneData.apply, unlift(ContactTelephoneData.unapply))
+
 }

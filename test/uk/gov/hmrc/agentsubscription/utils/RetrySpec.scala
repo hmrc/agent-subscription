@@ -18,12 +18,14 @@ package uk.gov.hmrc.agentsubscription.utils
 
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
-import uk.gov.hmrc.http.{BadGatewayException, GatewayTimeoutException}
+import uk.gov.hmrc.http.BadGatewayException
+import uk.gov.hmrc.http.GatewayTimeoutException
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class RetrySpec extends UnitSpec {
+class RetrySpec
+extends UnitSpec {
 
   "RetrySpec" should {
     "return result when the operation succeeds" in {

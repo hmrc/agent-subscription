@@ -22,38 +22,44 @@ import uk.gov.hmrc.agentsubscription.connectors.DesConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.domain.Vrn
-import uk.gov.hmrc.http.{BadRequestException, NotFoundException}
+import uk.gov.hmrc.http.BadRequestException
+import uk.gov.hmrc.http.NotFoundException
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject.Inject
+import javax.inject.Singleton
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 @Singleton
-class VatKnownfactsService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext) extends Logging {
+class VatKnownfactsService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext)
+extends Logging {
 
-  def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String)(implicit
+  def matchVatKnownfacts(
+    vrn: Vrn,
+    vatRegistrationDate: String
+  )(implicit
     rh: RequestHeader
-  ): Future[MatchDetailsResponse] =
-    desConnector
-      .getVatKnownfacts(vrn)
-      .map { dateOfReg =>
-        if (dateOfReg == vatRegistrationDate)
-          Match
-        else {
-          logger.warn(
-            "The supplied VAT registration date does not match with the date of registration from DES records"
-          )
-          NoMatch
-        }
+  ): Future[MatchDetailsResponse] = desConnector
+    .getVatKnownfacts(vrn)
+    .map { dateOfReg =>
+      if (dateOfReg == vatRegistrationDate)
+        Match
+      else {
+        logger.warn(
+          "The supplied VAT registration date does not match with the date of registration from DES records"
+        )
+        NoMatch
       }
-      .recover {
-        case ex: NotFoundException =>
-          logger.warn(s"No records found for the vrn ${vrn.value}", ex)
-          RecordNotFound
-        case ex: BadRequestException =>
-          logger.warn(s"The vrn ${vrn.value} supplied is invalid", ex)
-          InvalidIdentifier
-        case ex =>
-          logger.warn(s"Some exception occured ${ex.getMessage}")
-          UnknownError
-      }
+    }
+    .recover {
+      case ex: NotFoundException =>
+        logger.warn(s"No records found for the vrn ${vrn.value}", ex)
+        RecordNotFound
+      case ex: BadRequestException =>
+        logger.warn(s"The vrn ${vrn.value} supplied is invalid", ex)
+        InvalidIdentifier
+      case ex =>
+        logger.warn(s"Some exception occured ${ex.getMessage}")
+        UnknownError
+    }
 }

@@ -19,10 +19,17 @@ package uk.gov.hmrc.play.encoding
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-class UriPathEncodingSpec extends AnyWordSpecLike with Matchers {
+class UriPathEncodingSpec
+extends AnyWordSpecLike
+with Matchers {
+
   "encodePathSegments" should {
     "separate segments with forward slashes" in {
-      UriPathEncoding.encodePathSegments("one", "two", "three") shouldBe "/one/two/three"
+      UriPathEncoding.encodePathSegments(
+        "one",
+        "two",
+        "three"
+      ) shouldBe "/one/two/three"
     }
 
     "escape spaces using URL path encoding not form encoding" in {
@@ -43,4 +50,5 @@ class UriPathEncodingSpec extends AnyWordSpecLike with Matchers {
       UriPathEncoding.encodePathSegment("../bad") shouldBe "..%2Fbad"
     }
   }
+
 }

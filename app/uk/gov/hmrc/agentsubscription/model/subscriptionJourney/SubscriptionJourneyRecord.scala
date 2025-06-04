@@ -20,12 +20,12 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscriptionfrontend.models.subscriptionJourney.AmlsData
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.Decrypter
+import uk.gov.hmrc.crypto.Encrypter
 
 import java.time.LocalDateTime
 
-/** A Mongo record which represents the user's current journey in setting up a new MTD Agent Services account, with
-  * their existing relationships.
+/** A Mongo record which represents the user's current journey in setting up a new MTD Agent Services account, with their existing relationships.
   */
 
 final case class SubscriptionJourneyRecord(
@@ -48,7 +48,8 @@ object SubscriptionJourneyRecord {
 
   import MongoLocalDateTimeFormat._
 
-  def databaseWrites(crypto: Encrypter with Decrypter): Writes[SubscriptionJourneyRecord] =
+  def databaseWrites(crypto: Encrypter
+    with Decrypter): Writes[SubscriptionJourneyRecord] =
     ((JsPath \ "authProviderId").write[AuthProviderId] and
       (JsPath \ "continueId").writeNullable[String] and
       (JsPath \ "businessDetails").write[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
@@ -73,7 +74,8 @@ object SubscriptionJourneyRecord {
       unlift(SubscriptionJourneyRecord.unapply)
     )
 
-  def databaseReads(crypto: Encrypter with Decrypter): Reads[SubscriptionJourneyRecord] =
+  def databaseReads(crypto: Encrypter
+    with Decrypter): Reads[SubscriptionJourneyRecord] =
     ((JsPath \ "authProviderId").read[AuthProviderId] and
       (JsPath \ "continueId").readNullable[String] and
       (JsPath \ "businessDetails").read[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
@@ -95,8 +97,8 @@ object SubscriptionJourneyRecord {
       (JsPath \ "verifiedEmails")
         .read[VerifiedEmails](VerifiedEmails.databaseFormat(crypto)))(SubscriptionJourneyRecord.apply _)
 
-  def databaseFormat(crypto: Encrypter with Decrypter): Format[SubscriptionJourneyRecord] =
-    Format(databaseReads(crypto), sjr => databaseWrites(crypto).writes(sjr))
+  def databaseFormat(crypto: Encrypter
+    with Decrypter): Format[SubscriptionJourneyRecord] = Format(databaseReads(crypto), sjr => databaseWrites(crypto).writes(sjr))
 
   implicit val writes: Writes[SubscriptionJourneyRecord] = Json.writes[SubscriptionJourneyRecord]
   implicit val reads: Reads[SubscriptionJourneyRecord] = Json.reads[SubscriptionJourneyRecord]

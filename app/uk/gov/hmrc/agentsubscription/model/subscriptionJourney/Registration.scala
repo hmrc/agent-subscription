@@ -20,7 +20,8 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.BusinessAddress
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.Decrypter
+import uk.gov.hmrc.crypto.Encrypter
 
 case class Registration(
   taxpayerName: Option[String],
@@ -34,7 +35,10 @@ case class Registration(
 
 object Registration {
 
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[Registration] =
+  def databaseFormat(implicit
+    crypto: Encrypter
+      with Decrypter
+  ): Format[Registration] =
     (
       (__ \ "taxpayerName").formatNullable[String](stringEncrypterDecrypter) and
         (__ \ "isSubscribedToAgentServices").format[Boolean] and
@@ -46,6 +50,7 @@ object Registration {
     )(Registration.apply, unlift(Registration.unapply))
 
   implicit val format: OFormat[Registration] = Json.format[Registration]
+
 }
 
 case class UpdateBusinessAddressForm(
@@ -57,12 +62,11 @@ case class UpdateBusinessAddressForm(
 )
 
 object UpdateBusinessAddressForm {
-  def apply(businessAddress: BusinessAddress): UpdateBusinessAddressForm =
-    UpdateBusinessAddressForm(
-      businessAddress.addressLine1,
-      businessAddress.addressLine2,
-      businessAddress.addressLine3,
-      businessAddress.addressLine4,
-      businessAddress.postalCode.getOrElse(throw new Exception("Postcode is mandatory"))
-    )
+  def apply(businessAddress: BusinessAddress): UpdateBusinessAddressForm = UpdateBusinessAddressForm(
+    businessAddress.addressLine1,
+    businessAddress.addressLine2,
+    businessAddress.addressLine3,
+    businessAddress.addressLine4,
+    businessAddress.postalCode.getOrElse(throw new Exception("Postcode is mandatory"))
+  )
 }
