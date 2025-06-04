@@ -17,26 +17,26 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseDateOfBirth, CompaniesHouseOfficer, Crn, ReducedCompanyInformation}
 import uk.gov.hmrc.agentsubscription.stubs.CompaniesHouseStub
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
-import uk.gov.hmrc.http.{HeaderCarrier, HttpClient, UpstreamErrorResponse}
-import play.api.test.Helpers._
+import uk.gov.hmrc.http.UpstreamErrorResponse
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class CompaniesHouseApiProxyConnectorISpec
     extends BaseISpec with CompaniesHouseStub with MetricsTestSupport with MockitoSugar {
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
-  private lazy val http: HttpClient = app.injector.instanceOf[HttpClient]
+  private lazy val http: HttpClientV2 = app.injector.instanceOf[HttpClientV2]
   private lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   private lazy val connector: CompaniesHouseApiProxyConnector =
-    new CompaniesHouseApiProxyConnectorImpl(appConfig, http, metrics)
+    new CompaniesHouseApiProxyConnector(appConfig, http, metrics)
 
   val crn = Crn("01234567")
 

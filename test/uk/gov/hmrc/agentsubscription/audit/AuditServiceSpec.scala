@@ -24,13 +24,14 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
-import uk.gov.hmrc.http.{Authorization, HeaderCarrier, RequestId, SessionId}
+import uk.gov.hmrc.http.HeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
 import uk.gov.hmrc.play.audit.model.{DataEvent, ExtendedDataEvent}
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuditServiceSpec(implicit val ec: ExecutionContext) extends UnitSpec with MockitoSugar with Eventually {
+class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
   "auditEvent" should {
     "send an event with the correct fields" in {
       val mockConnector = mock[AuditConnector]
@@ -38,18 +39,19 @@ class AuditServiceSpec(implicit val ec: ExecutionContext) extends UnitSpec with 
         .thenReturn(Future successful AuditResult.Success)
       val service = new AuditService(mockConnector)
 
-      val hc = HeaderCarrier(
-        authorization = Some(Authorization("dummy bearer token")),
-        sessionId = Some(SessionId("dummy session id")),
-        requestId = Some(RequestId("dummy request id")),
-        trueClientPort = Some("12345")
-      )
-
       val detail = Json.obj(
         "agencyName"    -> "Test Agency",
         "agencyAddress" -> Json.obj("addressLine1" -> "1 Test Street", "addressLine2" -> "Test village")
       )
-      service.auditEvent(AgentSubscription, "transaction name", detail)(hc, FakeRequest("GET", "/path"))
+      service.auditEvent(AgentSubscription, "transaction name", detail)(
+        FakeRequest("GET", "/path")
+          .withHeaders(
+            "Authorisation"    -> "dummy bearer token",
+            "X-Session-ID"     -> "dummy session id",
+            "X-Request-ID"     -> "dummy request id",
+            "True-Client-Port" -> "12345"
+          )
+      )
 
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[ExtendedDataEvent])
@@ -73,8 +75,6 @@ class AuditServiceSpec(implicit val ec: ExecutionContext) extends UnitSpec with 
       }
     }
 
-    // According to Graeme Blackwood the deviceID should be in the tags not the detail,
-    // and the fact that AuditExtensions puts it into detail instead is a play-auditing bug
     "include the deviceID in the tags not the detail" in {
       pending
       val mockConnector = mock[AuditConnector]
@@ -82,9 +82,9 @@ class AuditServiceSpec(implicit val ec: ExecutionContext) extends UnitSpec with 
         .thenReturn(Future successful AuditResult.Success)
       val service = new AuditService(mockConnector)
 
-      val hc = HeaderCarrier(deviceID = Some("device ID"))
+//      val hc = HeaderCarrier(deviceID = Some("device ID"))
 
-      service.auditEvent(AgentSubscription, "transaction name", Json.obj())(hc, FakeRequest("GET", "/path"))
+      service.auditEvent(AgentSubscription, "transaction name", Json.obj())(FakeRequest("GET", "/path"))
 
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[DataEvent])

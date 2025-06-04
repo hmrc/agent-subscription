@@ -19,6 +19,8 @@ package uk.gov.hmrc.agentsubscription.support
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
+import play.api.mvc.{AnyContent, Request}
+import play.api.test.FakeRequest
 
 abstract class BaseISpec extends UnitSpec with GuiceOneServerPerSuite with WireMockSupport {
   override implicit lazy val app: Application = appBuilder
@@ -42,4 +44,6 @@ abstract class BaseISpec extends UnitSpec with GuiceOneServerPerSuite with WireM
         "microservice.services.companies-house-api-proxy.port"  -> wireMockPort,
         "microservice.services.companies-house-api-proxy.host"  -> wireMockHost
       )
+
+  implicit val fakeRequest: Request[AnyContent] = FakeRequest().withHeaders("Authorization" -> "Bearer secret")
 }

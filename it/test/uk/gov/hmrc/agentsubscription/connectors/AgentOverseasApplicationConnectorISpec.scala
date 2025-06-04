@@ -17,14 +17,13 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{Accepted, AttemptingRegistration, Registered}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.AgentOverseasApplicationStubs
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
-import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.http.HttpClient
-import play.api.test.Helpers._
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -32,14 +31,12 @@ import scala.concurrent.ExecutionContext.Implicits.global
 class AgentOverseasApplicationConnectorISpec
     extends BaseISpec with AgentOverseasApplicationStubs with MetricsTestSupport with MockitoSugar {
 
-  private lazy val http = app.injector.instanceOf[HttpClient]
+  private lazy val http = app.injector.instanceOf[HttpClientV2]
   private val appConfig = app.injector.instanceOf[AppConfig]
   private val metrics = app.injector.instanceOf[Metrics]
 
   private lazy val connector: AgentOverseasApplicationConnector =
     new AgentOverseasApplicationConnector(appConfig, http, metrics)
-
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val agencyDetails = OverseasAgencyDetails(
     "Agency name",

@@ -16,84 +16,77 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import com.google.inject.ImplementedBy
 import play.api.Logging
 import play.api.http.Status._
+import play.api.mvc.RequestHeader
 import play.utils.UriEncoding
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn, ReducedCompanyInformation}
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
+import uk.gov.hmrc.agentsubscription.utils.RequestSupport.hc
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, HttpClient, HttpResponse, UpstreamErrorResponse}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{BadRequestException, HttpResponse, StringContextOps, UpstreamErrorResponse}
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
-@ImplementedBy(classOf[CompaniesHouseApiProxyConnectorImpl])
-trait CompaniesHouseApiProxyConnector {
-
-  def appConfig: AppConfig
-  def getCompanyOfficers(crn: Crn, surname: String)(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext
-  ): Future[Seq[CompaniesHouseOfficer]]
-
-  def getCompany(crn: Crn)(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[ReducedCompanyInformation]]
-}
-
 @Singleton
-class CompaniesHouseApiProxyConnectorImpl @Inject() (
-  val appConfig: AppConfig,
-  httpClient: HttpClient,
+class CompaniesHouseApiProxyConnector @Inject() (
+  appConfig: AppConfig,
+  http: HttpClientV2,
   val metrics: Metrics
 )(implicit val ec: ExecutionContext)
-    extends CompaniesHouseApiProxyConnector with Logging with HttpAPIMonitor {
+    extends Logging with HttpAPIMonitor {
 
   val baseUrl: String = appConfig.companiesHouseApiProxyBaseUrl
 
-  override def getCompanyOfficers(crn: Crn, surname: String)(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext
+  def getCompanyOfficers(crn: Crn, surname: String)(implicit
+    rh: RequestHeader
   ): Future[Seq[CompaniesHouseOfficer]] =
     monitor("ConsumedAPI-getCompanyOfficers-GET") {
       val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
       val encodedSurname = UriEncoding.encodePathSegment(surname, "UTF-8")
-      val url = s"$baseUrl/companies-house-api-proxy/company/$encodedCrn/officers?surname=$encodedSurname"
-      httpClient.GET[HttpResponse](url).map { response =>
-        response.status match {
-          case s if is2xx(s) =>
-            (response.json \ "items").as[Seq[CompaniesHouseOfficer]]
-          case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST at: $url")
-          case s if is4xx(s) =>
-            logger.warn(s"getCompanyOfficers http status: $s")
-            Seq.empty
-          case s =>
-            logger.error(s"getCompanyOfficers http status: $s")
-            Seq.empty
+      http
+        .get(url"$baseUrl/companies-house-api-proxy/company/$encodedCrn/officers?surname=$encodedSurname")
+        .execute[HttpResponse]
+        .map { response =>
+          response.status match {
+            case s if is2xx(s) =>
+              (response.json \ "items").as[Seq[CompaniesHouseOfficer]]
+            case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST")
+            case s if is4xx(s) =>
+              logger.warn(s"getCompanyOfficers http status: $s")
+              Seq.empty
+            case s =>
+              logger.error(s"getCompanyOfficers http status: $s")
+              Seq.empty
+          }
         }
-      }
     }
 
-  override def getCompany(
+  def getCompany(
     crn: Crn
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Option[ReducedCompanyInformation]] =
+  )(implicit rh: RequestHeader): Future[Option[ReducedCompanyInformation]] =
     monitor("ConsumedAPI-getCompany-GET") {
       val encodedCrn = UriEncoding.encodePathSegment(crn.value, "UTF-8")
-      val url = s"$baseUrl/companies-house-api-proxy/company/$encodedCrn"
-      httpClient.GET[HttpResponse](url).map { response =>
-        response.status match {
-          case s if is2xx(s) =>
-            response.json.asOpt[ReducedCompanyInformation]
-          case s @ (BAD_REQUEST | UNAUTHORIZED) => throw UpstreamErrorResponse(s"Unexpected response: $s from: $url", s)
-          case s if is4xx(s) =>
-            logger.warn(s"getCompany http status: $s")
-            Option.empty[ReducedCompanyInformation]
-          case s =>
-            logger.error(s"getCompany http status: $s")
-            Option.empty[ReducedCompanyInformation]
+      http
+        .get(url"$baseUrl/companies-house-api-proxy/company/$encodedCrn")
+        .execute[HttpResponse]
+        .map { response =>
+          response.status match {
+            case s if is2xx(s) =>
+              response.json.asOpt[ReducedCompanyInformation]
+            case s @ (BAD_REQUEST | UNAUTHORIZED) => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
+            case s if is4xx(s) =>
+              logger.warn(s"getCompany http status: $s")
+              Option.empty[ReducedCompanyInformation]
+            case s =>
+              logger.error(s"getCompany http status: $s")
+              Option.empty[ReducedCompanyInformation]
+          }
         }
-      }
     }
 }

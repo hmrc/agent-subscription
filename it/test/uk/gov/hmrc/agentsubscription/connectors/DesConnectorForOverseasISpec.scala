@@ -17,7 +17,6 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import java.util.UUID
-
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
@@ -27,13 +26,12 @@ import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.OverseasDesStubs
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
 import uk.gov.hmrc.http._
-import uk.gov.hmrc.http.HttpClient
 import play.api.test.Helpers._
+import uk.gov.hmrc.http.client.HttpClientV2
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with MetricsTestSupport with MockitoSugar {
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   private val bearerToken = "secret"
   private val environment = "test"
@@ -44,7 +42,7 @@ class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with 
   override protected def expectedEnvironment = Some(environment)
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
-  private lazy val http: HttpClient = app.injector.instanceOf[HttpClient]
+  private lazy val http: HttpClientV2 = app.injector.instanceOf[HttpClientV2]
   private lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   private lazy val connector: DesConnector =

@@ -16,40 +16,38 @@
 
 package uk.gov.hmrc.agentsubscription.audit
 
-import javax.inject.{Inject, Singleton}
 import play.api.libs.json.{JsObject, JsString}
-import play.api.mvc.Request
+import play.api.mvc.RequestHeader
+import uk.gov.hmrc.agentsubscription.utils.RequestSupport.hc
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
-import uk.gov.hmrc.http.HeaderCarrier
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.ExecutionContext
 
 @Singleton
 class AuditService @Inject() (auditConnector: AuditConnector)(implicit val ec: ExecutionContext) {
 
   def auditEvent(event: AgentSubscriptionEvent, transactionName: String, extraDetail: JsObject)(implicit
-    hc: HeaderCarrier,
-    request: Request[Any]
+    rh: RequestHeader
   ): Unit =
     send(createEvent(event, transactionName, extraDetail))
 
   private def createEvent(event: AgentSubscriptionEvent, transactionName: String, extraDetail: JsObject)(implicit
-    hc: HeaderCarrier,
-    request: Request[Any]
+    rh: RequestHeader
   ) =
     ExtendedDataEvent(
       auditSource = "agent-subscription",
       auditType = event.toString,
-      tags = hc.toAuditTags(transactionName, request.path),
+      tags = hc.toAuditTags(transactionName, rh.path),
       detail = toJsObject(hc.toAuditDetails()) ++ extraDetail
     )
 
   private[audit] def toJsObject(fields: Map[String, String]) =
     JsObject(fields.map { case (name, value) => (name, JsString(value)) })
 
-  private def send(event: ExtendedDataEvent)(implicit hc: HeaderCarrier, ec: ExecutionContext): Unit = {
+  private def send(event: ExtendedDataEvent)(implicit rh: RequestHeader): Unit = {
     auditConnector.sendExtendedEvent(event).map(_ => ())
     ()
   }

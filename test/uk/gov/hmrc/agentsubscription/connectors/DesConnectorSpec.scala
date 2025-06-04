@@ -20,17 +20,18 @@ import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
-import uk.gov.hmrc.http.{Authorization, HeaderCarrier, HeaderNames, HttpClient, RequestId, SessionId}
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.http.{Authorization, HeaderCarrier, HeaderNames, RequestId, SessionId}
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
-import scala.concurrent.ExecutionContext.Implicits.global
 
 import java.util.UUID
+import scala.concurrent.ExecutionContext.Implicits.global
 
 class DesConnectorSpec extends UnitSpec with MockitoSugar {
 
   val appConfig: AppConfig = mock[AppConfig]
   val hc: HeaderCarrier = mock[HeaderCarrier]
-  val httpClient: HttpClient = mock[HttpClient]
+  val httpClient: HttpClientV2 = mock[HttpClientV2]
   val metrics: Metrics = mock[Metrics]
 
   when(appConfig.desAuthToken).thenReturn("testAuthToken")

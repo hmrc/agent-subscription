@@ -19,7 +19,7 @@ package uk.gov.hmrc.agentsubscription.service
 import play.api.Logging
 import play.api.i18n.Lang
 import play.api.libs.json._
-import play.api.mvc.{AnyContent, Request}
+import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription._
 import uk.gov.hmrc.agentsubscription.audit.{AgentSubscription, AuditService, OverseasAgentSubscription}
@@ -29,7 +29,7 @@ import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{AttemptingRegistra
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
-import uk.gov.hmrc.http.{HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.NotFoundException
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
@@ -72,7 +72,8 @@ class SubscriptionService @Inject() (
   agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
   emailConnector: EmailConnector,
   mappingConnector: MappingConnector
-) extends Logging {
+)(implicit ec: ExecutionContext)
+    extends Logging {
 
   private def desRequest(subscriptionRequest: SubscriptionRequest) = {
     val address = subscriptionRequest.agency.address
@@ -92,8 +93,7 @@ class SubscriptionService @Inject() (
   }
 
   private def sendEmail(email: String, agencyName: String, arn: Arn, langForEmail: Option[Lang])(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext
+    rh: RequestHeader
   ): Future[Unit] = {
     val defaultTemplate = "agent_services_account_created" // english -- default and always for overseas agents
     val welshTemplate = "agent_services_account_created_cy" // welsh (for uk agents)
@@ -105,9 +105,7 @@ class SubscriptionService @Inject() (
   }
 
   def createSubscription(subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext,
-    request: Request[Any]
+    rh: RequestHeader
   ): Future[Option[Arn]] = {
 
     def subscribeAndMap(maybeArn: Option[Arn], utr: Utr, isAnAsAgent: Boolean): Future[Arn] =
@@ -171,9 +169,7 @@ class SubscriptionService @Inject() (
   }
 
   def updateSubscription(updateSubscriptionRequest: UpdateSubscriptionRequest, authIds: AuthIds)(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext,
-    request: Request[Any]
+    rh: RequestHeader
   ): Future[Option[Arn]] =
     desConnector
       .getAgentRecordDetails(updateSubscriptionRequest.utr)
@@ -211,7 +207,7 @@ class SubscriptionService @Inject() (
 
   def createOverseasSubscription(
     authIds: AuthIds
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext, request: Request[AnyContent]): Future[Option[Arn]] = {
+  )(implicit rh: RequestHeader): Future[Option[Arn]] = {
     val userId = authIds.userId
 
     agentOverseasApplicationConnector.currentApplication.flatMap {
@@ -253,7 +249,7 @@ class SubscriptionService @Inject() (
     safeId: SafeId,
     amlsDetailsOpt: Option[OverseasAmlsDetails],
     agencyDetails: OverseasAgencyDetails
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext) =
+  )(implicit rh: RequestHeader) =
     for {
       arn <- desConnector.subscribeToAgentServices(safeId, agencyDetails)
       _   <- addKnownFactsAndEnrolOverseas(arn, agencyDetails, authIds)
@@ -286,8 +282,7 @@ class SubscriptionService @Inject() (
   private def toJsObject(detail: SubscriptionAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
   private def addKnownFactsAndEnrolOverseas(arn: Arn, agencyDetails: OverseasAgencyDetails, authIds: AuthIds)(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext
+    rh: RequestHeader
   ): Future[Unit] = {
     val knownFactKey = "CountryCode"
     val knownFactValue = agencyDetails.agencyAddress.countryCode
@@ -297,8 +292,7 @@ class SubscriptionService @Inject() (
   }
 
   private def addKnownFactsAndEnrolUk(arn: Arn, subscriptionRequest: SubscriptionRequest, authIds: AuthIds)(implicit
-    hc: HeaderCarrier,
-    ec: ExecutionContext
+    rh: RequestHeader
   ): Future[Unit] = {
     val knownFactKey = "AgencyPostcode"
     val knownFactValue = subscriptionRequest.agency.address.postcode
@@ -321,7 +315,7 @@ class SubscriptionService @Inject() (
     knownFactValue: String,
     friendlyName: String,
     authIds: AuthIds
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Unit] = {
+  )(implicit rh: RequestHeader): Future[Unit] = {
     val enrolRequest = EnrolmentRequest(
       userId = authIds.userId,
       `type` = "principal",

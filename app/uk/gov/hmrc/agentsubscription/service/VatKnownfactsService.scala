@@ -16,21 +16,22 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import javax.inject.{Inject, Singleton}
 import play.api.Logging
+import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
 import uk.gov.hmrc.domain.Vrn
-import uk.gov.hmrc.http.{BadRequestException, HeaderCarrier, NotFoundException}
+import uk.gov.hmrc.http.{BadRequestException, NotFoundException}
 
+import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
 class VatKnownfactsService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext) extends Logging {
 
   def matchVatKnownfacts(vrn: Vrn, vatRegistrationDate: String)(implicit
-    hc: HeaderCarrier
+    rh: RequestHeader
   ): Future[MatchDetailsResponse] =
     desConnector
       .getVatKnownfacts(vrn)

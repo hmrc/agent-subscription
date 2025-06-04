@@ -19,20 +19,23 @@ package uk.gov.hmrc.agentsubscription.connectors
 import play.api.Logging
 import play.api.http.Status._
 import play.api.libs.json._
+import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{Complete, Registered}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
+import uk.gov.hmrc.agentsubscription.utils.RequestSupport.hc
 import uk.gov.hmrc.http.HttpReads.Implicits._
-import uk.gov.hmrc.http.{HttpClient, _}
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import javax.inject.{Inject, Singleton}
 import scala.concurrent.{ExecutionContext, Future}
 
 @Singleton
-class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: HttpClient, val metrics: Metrics)(
+class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: HttpClientV2, val metrics: Metrics)(
   implicit val ec: ExecutionContext
 ) extends Logging with HttpAPIMonitor {
 
@@ -43,9 +46,7 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
     authId: String,
     safeId: Option[SafeId] = None,
     arn: Option[Arn] = None
-  )(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[Boolean] = {
-
-    val url = s"$baseUrl/agent-overseas-application/application/${status.key}"
+  )(implicit rh: RequestHeader): Future[Boolean] =
     monitor("ConsumedAPI-Agent-Overseas-Application-updateStatus-PUT") {
       val body = status match {
         case Registered => Json.obj("safeId" -> JsString(safeId.map(_.value).getOrElse("")))
@@ -53,26 +54,27 @@ class AgentOverseasApplicationConnector @Inject() (appConfig: AppConfig, http: H
         case _          => Json.obj()
       }
       http
-        .PUT[JsValue, HttpResponse](url, body)
+        .put(url"$baseUrl/agent-overseas-application/application/${status.key}")
+        .withBody(body)
+        .execute[HttpResponse]
         .map { response =>
           response.status match {
             case NO_CONTENT => true
             case s =>
-              logger.error(s"Unexpected response: $s from: $url")
+              logger.error(s"Unexpected response: $s")
               throw new RuntimeException(
                 s"Could not update overseas agent application status to ${status.key} for userId: $authId"
               )
           }
         }
     }
-  }
 
-  def currentApplication(implicit hc: HeaderCarrier, ec: ExecutionContext): Future[CurrentApplication] = {
+  def currentApplication(implicit rh: RequestHeader): Future[CurrentApplication] = {
     val activeStatuses = ApplicationStatus.ActiveStatuses.map(status => s"statusIdentifier=${status.key}").mkString("&")
-    val url = s"$baseUrl/agent-overseas-application/application?$activeStatuses"
     monitor("ConsumedAPI-Agent-Overseas-Application-application-GET") {
       http
-        .GET[HttpResponse](url)
+        .get(url"$baseUrl/agent-overseas-application/application?$activeStatuses")
+        .execute[HttpResponse]
         .map { response =>
           val json = response.json.head
           val status = (json \ "status").as[ApplicationStatus]

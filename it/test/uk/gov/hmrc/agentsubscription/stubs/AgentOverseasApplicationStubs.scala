@@ -22,7 +22,7 @@ import uk.gov.hmrc.agentsubscription.model.ApplicationStatus
 trait AgentOverseasApplicationStubs {
 
   val getApplicationUrl =
-    s"/agent-overseas-application/application?statusIdentifier=pending&statusIdentifier=accepted&statusIdentifier=attempting_registration&statusIdentifier=registered&statusIdentifier=complete"
+    s"/agent-overseas-application/application?statusIdentifier=pending%26statusIdentifier=accepted%26statusIdentifier=attempting_registration%26statusIdentifier=registered%26statusIdentifier=complete"
 
   def givenUpdateApplicationStatus(
     appStatus: ApplicationStatus,

@@ -16,21 +16,16 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.stubs.MappingStubs
 import uk.gov.hmrc.agentsubscription.support.BaseISpec
-import uk.gov.hmrc.http.HeaderCarrier
-import play.api.test.Helpers._
-
-import scala.concurrent.ExecutionContext.Implicits.global
 
 class MappingConnectorISpec extends BaseISpec with MappingStubs {
 
   val connector: MappingConnector = app.injector.instanceOf[MappingConnector]
 
   val arn = Arn("TARN0000001")
-
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
 
   "createMappings" should {
     "return unit when mapping is successfully created" in {

@@ -42,6 +42,7 @@ class CTReferenceControllerISpec extends BaseISpec with DesStubs with AuthStub {
     }
 
     "return 404 when no match is found in des" in {
+      requestIsAuthenticatedWithNoEnrolments()
       ctUtrRecordDoesNotExist(crn)
 
       val response = new Resource("/agent-subscription/corporation-tax-utr/7000000002/crn/SC123456", port).get()
@@ -63,6 +64,7 @@ class CTReferenceControllerISpec extends BaseISpec with DesStubs with AuthStub {
     }
 
     "return 404 when des returns a record for the crn but the ct utr supplied does not match" in {
+      requestIsAuthenticatedWithNoEnrolments()
       ctUtrRecordExists(crn)
 
       val response = new Resource("/agent-subscription/corporation-tax-utr/8000000007/crn/SC123456", port).get()

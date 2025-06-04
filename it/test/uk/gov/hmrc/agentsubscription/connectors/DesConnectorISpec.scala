@@ -16,7 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import uk.gov.hmrc.play.bootstrap.metrics.Metrics
+import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model
@@ -24,14 +24,15 @@ import uk.gov.hmrc.agentsubscription.model.{AgentRecord, AmlsSubscriptionRecord,
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
 import uk.gov.hmrc.domain.Vrn
-import uk.gov.hmrc.http.{HttpClient, _}
-import play.api.test.Helpers._
+import uk.gov.hmrc.http._
+import uk.gov.hmrc.http.client.HttpClientV2
+import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport {
-  private implicit val hc: HeaderCarrier = HeaderCarrier(authorization = Some(Authorization("Bearer secret")))
+
   val utr = Utr("1234567890")
   val crn = Crn("SC123456")
   val vrn = Vrn("888913457")
@@ -44,7 +45,7 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
   override protected def expectedEnvironment = Some(environment)
 
   private lazy val metrics = app.injector.instanceOf[Metrics]
-  private lazy val http: HttpClient = app.injector.instanceOf[HttpClient]
+  private lazy val http: HttpClientV2 = app.injector.instanceOf[HttpClientV2]
   private lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   private lazy val connector: DesConnector =
