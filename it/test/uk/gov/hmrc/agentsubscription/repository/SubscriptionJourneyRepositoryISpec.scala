@@ -29,7 +29,9 @@ import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class SubscriptionJourneyRepositoryISpec
-    extends UnitSpec with GuiceOneAppPerSuite with DefaultPlayMongoRepositorySupport[SubscriptionJourneyRecord] {
+extends UnitSpec
+with GuiceOneAppPerSuite
+with DefaultPlayMongoRepositorySupport[SubscriptionJourneyRecord] {
 
   implicit lazy val appConfig: AppConfig = app.injector.instanceOf[AppConfig]
 
@@ -40,15 +42,14 @@ class SubscriptionJourneyRepositoryISpec
   val validUtr = Utr("2000000000")
   val otherUtr = Utr("0123456789")
   val registrationName = "My Agency"
-  val businessAddress =
-    BusinessAddress(
-      "AddressLine1 A",
-      Some("AddressLine2 A"),
-      Some("AddressLine3 A"),
-      Some("AddressLine4 A"),
-      Some("AA11AA"),
-      "GB"
-    )
+  val businessAddress = BusinessAddress(
+    "AddressLine1 A",
+    Some("AddressLine2 A"),
+    Some("AddressLine3 A"),
+    Some("AddressLine4 A"),
+    Some("AA11AA"),
+    "GB"
+  )
   val registration = Registration(
     Some(registrationName),
     isSubscribedToAgentServices = false,
@@ -68,27 +69,26 @@ class SubscriptionJourneyRepositoryISpec
     agentBPRSafeId = Some("agentBPRSafeId")
   )
 
-  private val subscriptionJourneyRecord =
-    SubscriptionJourneyRecord(
-      AuthProviderId("auth-id"),
-      continueId = Some("XXX"),
-      businessDetails = BusinessDetails(
-        businessType = BusinessType.SoleTrader,
-        utr = validUtr.value,
-        postcode = "bn12 1hn",
-        nino = Some("AE123456C")
-      ),
-      amlsData = None,
-      userMappings = List(),
-      mappingComplete = false,
-      cleanCredsAuthProviderId = None,
-      lastModifiedDate = None,
-      contactEmailData = Some(ContactEmailData(useBusinessEmail = true, Some("email@email.com"))),
-      contactTradingNameData = Some(ContactTradingNameData(hasTradingName = true, Some("My Trading Name"))),
-      contactTradingAddressData = Some(ContactTradingAddressData(useBusinessAddress = true, Some(businessAddress))),
-      contactTelephoneData = Some(ContactTelephoneData(useBusinessTelephone = true, Some("01273111111"))),
-      verifiedEmails = VerifiedEmails(Set.empty)
-    )
+  private val subscriptionJourneyRecord = SubscriptionJourneyRecord(
+    AuthProviderId("auth-id"),
+    continueId = Some("XXX"),
+    businessDetails = BusinessDetails(
+      businessType = BusinessType.SoleTrader,
+      utr = validUtr.value,
+      postcode = "bn12 1hn",
+      nino = Some("AE123456C")
+    ),
+    amlsData = None,
+    userMappings = List(),
+    mappingComplete = false,
+    cleanCredsAuthProviderId = None,
+    lastModifiedDate = None,
+    contactEmailData = Some(ContactEmailData(useBusinessEmail = true, Some("email@email.com"))),
+    contactTradingNameData = Some(ContactTradingNameData(hasTradingName = true, Some("My Trading Name"))),
+    contactTradingAddressData = Some(ContactTradingAddressData(useBusinessAddress = true, Some(businessAddress))),
+    contactTelephoneData = Some(ContactTelephoneData(useBusinessTelephone = true, Some("01273111111"))),
+    verifiedEmails = VerifiedEmails(Set.empty)
+  )
 
   "SubscriptionJourneyRepository" should {
 
@@ -162,4 +162,5 @@ class SubscriptionJourneyRepositoryISpec
     }
 
   }
+
 }

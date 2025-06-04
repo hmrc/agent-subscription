@@ -17,26 +17,43 @@
 package uk.gov.hmrc.agentsubscription.auth
 
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{reset, when}
+import org.mockito.Mockito.reset
+import org.mockito.Mockito.when
 import org.mockito.stubbing.OngoingStubbing
 import org.scalatest.BeforeAndAfterEach
 import org.scalatestplus.mockito.MockitoSugar
-import play.api.libs.json.{JsValue, Json}
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json
 import play.api.mvc.Results.Ok
-import play.api.mvc.{AnyContent, ControllerComponents, Request, Result}
+import play.api.mvc.AnyContent
+import play.api.mvc.ControllerComponents
+import play.api.mvc.Request
+import play.api.mvc.Result
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentsubscription.auth.AuthActions.{OverseasAuthAction, RegistrationAuthAction, SubscriptionAuthAction}
-import uk.gov.hmrc.agentsubscription.support.{AuthData, UnitSpec}
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.OverseasAuthAction
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.RegistrationAuthAction
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.SubscriptionAuthAction
+import uk.gov.hmrc.agentsubscription.support.AuthData
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.auth.core.authorise.Predicate
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, Retrieval, ~}
+import uk.gov.hmrc.auth.core.retrieve.Credentials
+import uk.gov.hmrc.auth.core.retrieve.Retrieval
+import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.http.HeaderCarrier
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 class AuthActionsSpec(implicit val ec: ExecutionContext)
-    extends UnitSpec with MockitoSugar with BeforeAndAfterEach with AuthData {
-  import uk.gov.hmrc.auth.core.{Enrolment, authorise, _}
+extends UnitSpec
+with MockitoSugar
+with BeforeAndAfterEach
+with AuthData {
+
+  import uk.gov.hmrc.auth.core.Enrolment
+  import uk.gov.hmrc.auth.core.authorise
+  import uk.gov.hmrc.auth.core._
 
   val mockPlayAuthConnector = mock[PlayAuthConnector]
   val mockCC = mock[ControllerComponents]
@@ -50,25 +67,23 @@ class AuthActionsSpec(implicit val ec: ExecutionContext)
 
   private def agentAuthStub(
     returnValue: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]]
-  ): OngoingStubbing[Future[Option[AffinityGroup] ~ Option[Credentials] ~ Option[String]]] =
-    when(
-      mockPlayAuthConnector
-        .authorise(
-          any[authorise.Predicate](),
-          any[Retrieval[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]]]()
-        )(any[HeaderCarrier](), any[ExecutionContext]())
-    )
-      .thenReturn(returnValue)
+  ): OngoingStubbing[Future[Option[AffinityGroup] ~ Option[Credentials] ~ Option[String]]] = when(
+    mockPlayAuthConnector
+      .authorise(
+        any[authorise.Predicate](),
+        any[Retrieval[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]]]()
+      )(any[HeaderCarrier](), any[ExecutionContext]())
+  )
+    .thenReturn(returnValue)
 
-  private def agentAuthStubWithAffinity(returnValue: Future[Option[AffinityGroup]]) =
-    when(
-      mockPlayAuthConnector
-        .authorise(any[authorise.Predicate](), any[Retrieval[Option[AffinityGroup]]]())(
-          any[HeaderCarrier](),
-          any[ExecutionContext]()
-        )
-    )
-      .thenReturn(returnValue)
+  private def agentAuthStubWithAffinity(returnValue: Future[Option[AffinityGroup]]) = when(
+    mockPlayAuthConnector
+      .authorise(any[authorise.Predicate](), any[Retrieval[Option[AffinityGroup]]]())(
+        any[HeaderCarrier](),
+        any[ExecutionContext]()
+      )
+  )
+    .thenReturn(returnValue)
 
   override def beforeEach(): Unit = reset(mockPlayAuthConnector)
 
@@ -159,8 +174,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext)
       )
         .thenReturn(validAgentAffinity)
 
-      val response: Result =
-        await(mockAuthActions.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
 
       status(response) shouldBe OK
     }
@@ -174,8 +188,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext)
       )
         .thenReturn(invalidAgentAffinity)
 
-      val response: Result =
-        await(mockAuthActions.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
 
       status(response) shouldBe 403
     }
@@ -189,8 +202,7 @@ class AuthActionsSpec(implicit val ec: ExecutionContext)
       )
         .thenReturn(noAffinity)
 
-      val response: Result =
-        await(mockAuthActions.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
+      val response: Result = await(mockAuthActions.authorisedWithAffinityGroupAndCredentials(registrationAction).apply(fakeRequest))
 
       status(response) shouldBe UNAUTHORIZED
     }
@@ -280,14 +292,16 @@ class AuthActionsSpec(implicit val ec: ExecutionContext)
       thrown.getMessage shouldBe "unexpected error"
     }
 
-    def mockAuthRetrieval(affinityGroup: Option[AffinityGroup], enrolments: Enrolments) = {
+    def mockAuthRetrieval(
+      affinityGroup: Option[AffinityGroup],
+      enrolments: Enrolments
+    ) = {
       val retrievedCredentials = Credentials("credId", "credType")
       val retrievedGroupId = Some("groupId")
 
       type Retrievals = ~[~[~[Enrolments, Option[AffinityGroup]], Credentials], Option[String]]
 
-      val retrievalResponse: Future[Retrievals] =
-        Future successful new ~(new ~(new ~(enrolments, affinityGroup), retrievedCredentials), retrievedGroupId)
+      val retrievalResponse: Future[Retrievals] = Future successful new ~(new ~(new ~(enrolments, affinityGroup), retrievedCredentials), retrievedGroupId)
 
       when(
         mockPlayAuthConnector

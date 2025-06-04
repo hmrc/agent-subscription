@@ -24,15 +24,20 @@ trait MappingStubs {
 
   me: WireMockSupport =>
 
-  def givenMappingCreationWithStatus(arn: Arn, status: Int) =
-    stubFor(
-      put(urlEqualTo(s"/agent-mapping/mappings/task-list/arn/${arn.value}"))
-        .willReturn(aResponse().withStatus(status))
-    )
+  def givenMappingCreationWithStatus(
+    arn: Arn,
+    status: Int
+  ) = stubFor(
+    put(urlEqualTo(s"/agent-mapping/mappings/task-list/arn/${arn.value}"))
+      .willReturn(aResponse().withStatus(status))
+  )
 
-  def givenMappingDetailsCreatedWithStatus(arn: Arn, status: Int) =
-    stubFor(
-      put(urlEqualTo(s"/agent-mapping/mappings/task-list/details/arn/${arn.value}"))
-        .willReturn(aResponse().withStatus(status))
-    )
+  def givenMappingDetailsCreatedWithStatus(
+    arn: Arn,
+    status: Int
+  ) = stubFor(
+    put(urlEqualTo(s"/agent-mapping/mappings/task-list/details/arn/${arn.value}"))
+      .willReturn(aResponse().withStatus(status))
+  )
+
 }

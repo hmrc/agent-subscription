@@ -17,27 +17,41 @@
 package uk.gov.hmrc.agentsubscription.repository
 
 import com.google.inject.ImplementedBy
-import com.mongodb.client.model.{ReplaceOptions, ReturnDocument}
+import com.mongodb.client.model.ReplaceOptions
+import com.mongodb.client.model.ReturnDocument
 import com.mongodb.client.model.Updates._
-import org.mongodb.scala.model.Filters.{equal, or}
+import org.mongodb.scala.model.Filters.equal
+import org.mongodb.scala.model.Filters.or
 import org.mongodb.scala.model.Indexes._
-import org.mongodb.scala.model.{FindOneAndUpdateOptions, IndexModel, IndexOptions}
+import org.mongodb.scala.model.FindOneAndUpdateOptions
+import org.mongodb.scala.model.IndexModel
+import org.mongodb.scala.model.IndexOptions
 import play.api.Logging
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
-import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.{BusinessDetails, SubscriptionJourneyRecord}
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter, PlainText}
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.BusinessDetails
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
+import uk.gov.hmrc.crypto.Decrypter
+import uk.gov.hmrc.crypto.Encrypter
+import uk.gov.hmrc.crypto.PlainText
 import uk.gov.hmrc.mongo.MongoComponent
-import uk.gov.hmrc.mongo.play.json.{Codecs, PlayMongoRepository}
+import uk.gov.hmrc.mongo.play.json.Codecs
+import uk.gov.hmrc.mongo.play.json.PlayMongoRepository
 
 import java.util.concurrent.TimeUnit
-import javax.inject.{Inject, Named, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject.Inject
+import javax.inject.Named
+import javax.inject.Singleton
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 @ImplementedBy(classOf[SubscriptionJourneyRepositoryImpl])
 trait SubscriptionJourneyRepository {
 
-  def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord): Future[Option[UpsertType]]
+  def upsert(
+    authProviderId: AuthProviderId,
+    record: SubscriptionJourneyRecord
+  ): Future[Option[UpsertType]]
   def updateOnUtr(
     utr: String,
     authProviderId: AuthProviderId,
@@ -48,73 +62,80 @@ trait SubscriptionJourneyRepository {
   def findByContinueId(continueId: String): Future[Option[SubscriptionJourneyRecord]]
   def findByUtr(utr: String): Future[Option[SubscriptionJourneyRecord]]
   def delete(utr: String): Future[Option[Long]]
+
 }
 
 @Singleton
 class SubscriptionJourneyRepositoryImpl @Inject() (
   mongo: MongoComponent,
-  @Named("aes") crypto: Encrypter with Decrypter
+  @Named("aes") crypto: Encrypter
+    with Decrypter
 )(implicit
   ec: ExecutionContext,
   appConfig: AppConfig
-) extends PlayMongoRepository[SubscriptionJourneyRecord](
-      mongoComponent = mongo,
-      collectionName = "subscription-journey",
-      domainFormat = SubscriptionJourneyRecord.databaseFormat(crypto),
-      indexes = Seq(
-        IndexModel(
-          ascending("authProviderId"),
-          IndexOptions().unique(true).name("primaryAuthId")
-        ),
-        IndexModel(
-          ascending("userMappings.authProviderId"),
-          IndexOptions().unique(true).sparse(true).name("mappedAuthId")
-        ),
-        IndexModel(
-          ascending("cleanCredsAuthProviderId"),
-          IndexOptions().unique(true).sparse(true).name("cleanCredsAuthProviderId")
-        ),
-        IndexModel(
-          ascending("businessDetails.utr"),
-          IndexOptions().unique(true).name("utr")
-        ),
-        IndexModel(
-          ascending("continueId"),
-          IndexOptions().unique(true).sparse(true).name("continueId")
-        ),
-        IndexModel(
-          ascending("lastModifiedDate"),
-          IndexOptions()
-            .unique(false)
-            .name("lastModifiedDateTtl")
-            .expireAfter(appConfig.mongodbSubscriptionJourneyTTL, TimeUnit.SECONDS)
-        )
-      ),
-      replaceIndexes = true,
-      extraCodecs = Seq(
-        Codecs.playFormatCodec(AuthProviderId.format)
-      )
-    ) with SubscriptionJourneyRepository with Logging {
+)
+extends PlayMongoRepository[SubscriptionJourneyRecord](
+  mongoComponent = mongo,
+  collectionName = "subscription-journey",
+  domainFormat = SubscriptionJourneyRecord.databaseFormat(crypto),
+  indexes = Seq(
+    IndexModel(
+      ascending("authProviderId"),
+      IndexOptions().unique(true).name("primaryAuthId")
+    ),
+    IndexModel(
+      ascending("userMappings.authProviderId"),
+      IndexOptions().unique(true).sparse(true).name("mappedAuthId")
+    ),
+    IndexModel(
+      ascending("cleanCredsAuthProviderId"),
+      IndexOptions().unique(true).sparse(true).name("cleanCredsAuthProviderId")
+    ),
+    IndexModel(
+      ascending("businessDetails.utr"),
+      IndexOptions().unique(true).name("utr")
+    ),
+    IndexModel(
+      ascending("continueId"),
+      IndexOptions().unique(true).sparse(true).name("continueId")
+    ),
+    IndexModel(
+      ascending("lastModifiedDate"),
+      IndexOptions()
+        .unique(false)
+        .name("lastModifiedDateTtl")
+        .expireAfter(appConfig.mongodbSubscriptionJourneyTTL, TimeUnit.SECONDS)
+    )
+  ),
+  replaceIndexes = true,
+  extraCodecs = Seq(
+    Codecs.playFormatCodec(AuthProviderId.format)
+  )
+)
+with SubscriptionJourneyRepository
+with Logging {
 
   private def replaceOptions(upsert: Boolean) = new ReplaceOptions().upsert(upsert)
 
-  def upsert(authProviderId: AuthProviderId, record: SubscriptionJourneyRecord): Future[Option[UpsertType]] =
-    collection
-      .replaceOne(
-        equal("authProviderId", authProviderId.id),
-        record,
-        replaceOptions(true)
+  def upsert(
+    authProviderId: AuthProviderId,
+    record: SubscriptionJourneyRecord
+  ): Future[Option[UpsertType]] = collection
+    .replaceOne(
+      equal("authProviderId", authProviderId.id),
+      record,
+      replaceOptions(true)
+    )
+    .headOption()
+    .map(
+      _.map(result =>
+        result.getModifiedCount match {
+          case 0L => RecordInserted(result.getUpsertedId.asObjectId().getValue.toString)
+          case 1L => RecordUpdated
+          case x => throw new RuntimeException(s"Update modified count should not have been $x")
+        }
       )
-      .headOption()
-      .map(
-        _.map(result =>
-          result.getModifiedCount match {
-            case 0L => RecordInserted(result.getUpsertedId.asObjectId().getValue.toString)
-            case 1L => RecordUpdated
-            case x  => throw new RuntimeException(s"Update modified count should not have been $x")
-          }
-        )
-      )
+    )
 
   def updateOnUtr(
     utr: String,
@@ -138,34 +159,31 @@ class SubscriptionJourneyRepositoryImpl @Inject() (
 
   def findByAuthId(
     authProviderId: AuthProviderId
-  ): Future[Option[SubscriptionJourneyRecord]] =
-    collection
-      .find(
-        or(
-          equal("authProviderId", authProviderId),
-          equal("cleanCredsAuthProviderId", authProviderId),
-          equal("userMappings.authProviderId", authProviderId)
-        )
+  ): Future[Option[SubscriptionJourneyRecord]] = collection
+    .find(
+      or(
+        equal("authProviderId", authProviderId),
+        equal("cleanCredsAuthProviderId", authProviderId),
+        equal("userMappings.authProviderId", authProviderId)
       )
-      .headOption()
+    )
+    .headOption()
 
-  def findByContinueId(continueId: String): Future[Option[SubscriptionJourneyRecord]] =
-    collection
-      .find(equal("continueId", continueId))
-      .headOption()
+  def findByContinueId(continueId: String): Future[Option[SubscriptionJourneyRecord]] = collection
+    .find(equal("continueId", continueId))
+    .headOption()
 
-  def findByUtr(utr: String): Future[Option[SubscriptionJourneyRecord]] =
-    collection
-      .find(
-        equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value)
-      )
-      .headOption()
+  def findByUtr(utr: String): Future[Option[SubscriptionJourneyRecord]] = collection
+    .find(
+      equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value)
+    )
+    .headOption()
 
-  def delete(utr: String): Future[Option[Long]] =
-    collection
-      .deleteOne(
-        equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value)
-      )
-      .toFutureOption()
-      .map(_.map(_.getDeletedCount))
+  def delete(utr: String): Future[Option[Long]] = collection
+    .deleteOne(
+      equal("businessDetails.utr", crypto.encrypt(PlainText(utr)).value)
+    )
+    .toFutureOption()
+    .map(_.map(_.getDeletedCount))
+
 }

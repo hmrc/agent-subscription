@@ -18,5 +18,7 @@ package uk.gov.hmrc.agentsubscription.repository
 
 sealed trait UpsertType
 
-final case class RecordInserted(id: String) extends UpsertType
-final case object RecordUpdated extends UpsertType
+final case class RecordInserted(id: String)
+extends UpsertType
+final case object RecordUpdated
+extends UpsertType

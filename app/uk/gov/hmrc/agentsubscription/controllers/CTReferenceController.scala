@@ -16,8 +16,11 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import javax.inject.{Inject, Singleton}
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import javax.inject.Inject
+import javax.inject.Singleton
+import play.api.mvc.Action
+import play.api.mvc.AnyContent
+import play.api.mvc.ControllerComponents
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.model.Crn
@@ -28,19 +31,28 @@ import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class CTReferenceController @Inject() (service: CTReferenceService, authActions: AuthActions, cc: ControllerComponents)(
+class CTReferenceController @Inject() (
+  service: CTReferenceService,
+  authActions: AuthActions,
+  cc: ControllerComponents
+)(
   implicit ec: ExecutionContext
-) extends BackendController(cc) {
+)
+extends BackendController(cc) {
 
   import authActions._
 
-  def matchCorporationTaxUtr(ctUtr: Utr, crn: Crn): Action[AnyContent] = authorisedWithAgentAffinity {
+  def matchCorporationTaxUtr(
+    ctUtr: Utr,
+    crn: Crn
+  ): Action[AnyContent] = authorisedWithAgentAffinity {
     implicit request =>
       service.matchCorporationTaxUtrWithCrn(ctUtr, crn).map {
-        case Match                    => Ok
+        case Match => Ok
         case NoMatch | RecordNotFound => NotFound
-        case InvalidIdentifier        => BadRequest
-        case _                        => InternalServerError
+        case InvalidIdentifier => BadRequest
+        case _ => InternalServerError
       }
   }
+
 }

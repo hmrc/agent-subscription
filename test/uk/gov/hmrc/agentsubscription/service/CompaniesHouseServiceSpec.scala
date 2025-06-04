@@ -17,34 +17,46 @@
 package uk.gov.hmrc.agentsubscription.service
 
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
 import org.scalatest.concurrent.Eventually
 import play.api.Logging
-import play.api.libs.json.{JsObject, Json}
+import play.api.libs.json.JsObject
+import play.api.libs.json.Json
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
-import uk.gov.hmrc.agentsubscription.audit.{AuditService, CompaniesHouseOfficerCheck, CompaniesHouseStatusCheck}
+import uk.gov.hmrc.agentsubscription.audit.AuditService
+import uk.gov.hmrc.agentsubscription.audit.CompaniesHouseOfficerCheck
+import uk.gov.hmrc.agentsubscription.audit.CompaniesHouseStatusCheck
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors.CompaniesHouseApiProxyConnector
-import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn, ReducedCompanyInformation}
-import uk.gov.hmrc.agentsubscription.support.{ResettingMockitoSugar, UnitSpec}
+import uk.gov.hmrc.agentsubscription.model.CompaniesHouseOfficer
+import uk.gov.hmrc.agentsubscription.model.Crn
+import uk.gov.hmrc.agentsubscription.model.ReducedCompanyInformation
+import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 
 import java.net.URL
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually with Logging {
+class CompaniesHouseServiceSpec
+extends UnitSpec
+with ResettingMockitoSugar
+with Eventually
+with Logging {
 
   private val companiesHouseConnector = resettingMock[CompaniesHouseApiProxyConnector]
   private val auditService = resettingMock[AuditService]
 
   val stubbedLogger = new LoggerLikeStub()
-  val service: CompaniesHouseService = new CompaniesHouseService(companiesHouseConnector, auditService) {
-    override def getLogger: LoggerLikeStub = stubbedLogger
-  }
+  val service: CompaniesHouseService =
+    new CompaniesHouseService(companiesHouseConnector, auditService) {
+      override def getLogger: LoggerLikeStub = stubbedLogger
+    }
 
   private val crn = Crn("01234567")
 
@@ -80,7 +92,11 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
 
       when(companiesHouseConnector.getCompany(any[Crn])(any[RequestHeader]))
         .thenReturn(
-          Future successful Some(ReducedCompanyInformation("01234567", "Lambda Microservices", companyStatus))
+          Future successful Some(ReducedCompanyInformation(
+            "01234567",
+            "Lambda Microservices",
+            companyStatus
+          ))
         )
 
       val nameToMatch = "Brown"
@@ -111,7 +127,11 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CompaniesHouseOfficerCheck, "Check Companies House officers", expectedExtraDetailCompanyOfficers)(
+          .auditEvent(
+            CompaniesHouseOfficerCheck,
+            "Check Companies House officers",
+            expectedExtraDetailCompanyOfficers
+          )(
             request
           )
         verify(auditService)
@@ -144,7 +164,11 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CompaniesHouseOfficerCheck, "Check Companies House officers", expectedExtraDetail)(request)
+          .auditEvent(
+            CompaniesHouseOfficerCheck,
+            "Check Companies House officers",
+            expectedExtraDetail
+          )(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -159,7 +183,11 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
 
       when(companiesHouseConnector.getCompany(any[Crn])(any[RequestHeader]))
         .thenReturn(
-          Future successful Some(ReducedCompanyInformation("01234567", "Lambda Microservices", companyStatus))
+          Future successful Some(ReducedCompanyInformation(
+            "01234567",
+            "Lambda Microservices",
+            companyStatus
+          ))
         )
 
       await(service.companyStatusCheck(crn, None)(request, provider))
@@ -206,7 +234,11 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CompaniesHouseStatusCheck, "Check Companies House company status", expectedExtraDetail)(
+          .auditEvent(
+            CompaniesHouseStatusCheck,
+            "Check Companies House company status",
+            expectedExtraDetail
+          )(
             request
           )
       }
@@ -215,4 +247,5 @@ class CompaniesHouseServiceSpec extends UnitSpec with ResettingMockitoSugar with
       stubbedLogger.logMessages.head shouldBe s"Companies House API found nothing for ${crn.value}"
     }
   }
+
 }

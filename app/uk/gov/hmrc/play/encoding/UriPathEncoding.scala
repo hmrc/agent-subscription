@@ -21,9 +21,9 @@ import java.nio.charset.StandardCharsets.UTF_8
 import play.utils.UriEncoding
 
 object UriPathEncoding {
-  def encodePathSegments(pathSegments: String*): String =
-    pathSegments.map(encodePathSegment).mkString("/", "/", "")
 
-  def encodePathSegment(pathSegment: String): String =
-    UriEncoding.encodePathSegment(pathSegment, UTF_8.name)
+  def encodePathSegments(pathSegments: String*): String = pathSegments.map(encodePathSegment).mkString("/", "/", "")
+
+  def encodePathSegment(pathSegment: String): String = UriEncoding.encodePathSegment(pathSegment, UTF_8.name)
+
 }

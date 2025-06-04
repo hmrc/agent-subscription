@@ -19,7 +19,8 @@ package uk.gov.hmrc.agentsubscription.model
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.Decrypter
+import uk.gov.hmrc.crypto.Encrypter
 
 case class BusinessAddress(
   addressLine1: String,
@@ -30,8 +31,12 @@ case class BusinessAddress(
   countryCode: String
 )
 object BusinessAddress {
+
   implicit val format: OFormat[BusinessAddress] = Json.format[BusinessAddress]
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[BusinessAddress] =
+  def databaseFormat(implicit
+    crypto: Encrypter
+      with Decrypter
+  ): Format[BusinessAddress] =
     (
       (__ \ "addressLine1").format[String](stringEncrypterDecrypter) and
         (__ \ "addressLine2").formatNullable[String](stringEncrypterDecrypter) and
@@ -40,4 +45,5 @@ object BusinessAddress {
         (__ \ "postalCode").formatNullable[String](stringEncrypterDecrypter) and
         (__ \ "countryCode").format[String](stringEncrypterDecrypter)
     )(BusinessAddress.apply, unlift(BusinessAddress.unapply))
+
 }

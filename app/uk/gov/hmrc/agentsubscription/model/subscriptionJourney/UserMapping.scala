@@ -16,7 +16,8 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.Json
+import play.api.libs.json.OFormat
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.domain.AgentCode
 
@@ -45,7 +46,10 @@ object UserMapping {
   implicit val format: OFormat[UserMapping] = Json.format
 }
 
-final case class AgentEnrolment(enrolmentType: LegacyAgentEnrolmentType, identifierValue: IdentifierValue)
+final case class AgentEnrolment(
+  enrolmentType: LegacyAgentEnrolmentType,
+  identifierValue: IdentifierValue
+)
 
 object AgentEnrolment {
   implicit val format: OFormat[AgentEnrolment] = Json.format

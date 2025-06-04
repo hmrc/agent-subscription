@@ -24,14 +24,19 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.OverseasDesStubs
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
+import uk.gov.hmrc.agentsubscription.support.BaseISpec
+import uk.gov.hmrc.agentsubscription.support.MetricsTestSupport
 import uk.gov.hmrc.http._
 import play.api.test.Helpers._
 import uk.gov.hmrc.http.client.HttpClientV2
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with MetricsTestSupport with MockitoSugar {
+class DesConnectorForOverseasISpec
+extends BaseISpec
+with OverseasDesStubs
+with MetricsTestSupport
+with MockitoSugar {
 
   private val bearerToken = "secret"
   private val environment = "test"
@@ -46,7 +51,11 @@ class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with 
   private lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   private lazy val connector: DesConnector =
-    new DesConnector(appConfig, http, metrics)
+    new DesConnector(
+      appConfig,
+      http,
+      metrics
+    )
 
   private val overseasRegistrationRequest = OverseasRegistrationRequest(
     "AGSV",
@@ -133,4 +142,5 @@ class DesConnectorForOverseasISpec extends BaseISpec with OverseasDesStubs with 
       ))
     }
   }
+
 }

@@ -18,9 +18,13 @@ package uk.gov.hmrc.agentsubscription.model
 
 import java.util.UUID
 
-import play.api.libs.json.{Json, OFormat}
+import play.api.libs.json.Json
+import play.api.libs.json.OFormat
 
-case class ContactDetails(phoneNumber: String, emailAddress: String)
+case class ContactDetails(
+  phoneNumber: String,
+  emailAddress: String
+)
 
 object ContactDetails {
   implicit val contactDetailsFormat: OFormat[ContactDetails] = Json.format
@@ -46,18 +50,17 @@ object OverseasRegistrationRequest {
 
   implicit val overseasRegistrationRequestFormat: OFormat[OverseasRegistrationRequest] = Json.format
 
-  def apply(fromApplication: CurrentApplication): OverseasRegistrationRequest =
-    OverseasRegistrationRequest(
-      regime = "AGSV",
-      acknowledgementReference = UUID.randomUUID.toString.replaceAll("-", ""),
-      isAnAgent = false,
-      isAGroup = false,
-      Organisation(organisationName = fromApplication.tradingDetails.tradingName),
-      address = fromApplication.tradingDetails.tradingAddress,
-      contactDetails = ContactDetails(
-        phoneNumber = fromApplication.businessContactDetails.businessTelephone,
-        emailAddress = fromApplication.businessContactDetails.businessEmail
-      )
+  def apply(fromApplication: CurrentApplication): OverseasRegistrationRequest = OverseasRegistrationRequest(
+    regime = "AGSV",
+    acknowledgementReference = UUID.randomUUID.toString.replaceAll("-", ""),
+    isAnAgent = false,
+    isAGroup = false,
+    Organisation(organisationName = fromApplication.tradingDetails.tradingName),
+    address = fromApplication.tradingDetails.tradingAddress,
+    contactDetails = ContactDetails(
+      phoneNumber = fromApplication.businessContactDetails.businessTelephone,
+      emailAddress = fromApplication.businessContactDetails.businessEmail
     )
+  )
 
 }

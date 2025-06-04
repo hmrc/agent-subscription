@@ -16,46 +16,63 @@
 
 package uk.gov.hmrc.agentsubscription.audit
 
-import play.api.libs.json.{JsObject, JsString}
+import play.api.libs.json.JsObject
+import play.api.libs.json.JsString
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentsubscription.utils.RequestSupport.hc
 import uk.gov.hmrc.play.audit.AuditExtensions.auditHeaderCarrier
 import uk.gov.hmrc.play.audit.http.connector.AuditConnector
 import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
+import javax.inject.Singleton
 import scala.concurrent.ExecutionContext
 
 @Singleton
 class AuditService @Inject() (auditConnector: AuditConnector)(implicit val ec: ExecutionContext) {
 
-  def auditEvent(event: AgentSubscriptionEvent, transactionName: String, extraDetail: JsObject)(implicit
+  def auditEvent(
+    event: AgentSubscriptionEvent,
+    transactionName: String,
+    extraDetail: JsObject
+  )(implicit
     rh: RequestHeader
-  ): Unit =
-    send(createEvent(event, transactionName, extraDetail))
+  ): Unit = send(createEvent(
+    event,
+    transactionName,
+    extraDetail
+  ))
 
-  private def createEvent(event: AgentSubscriptionEvent, transactionName: String, extraDetail: JsObject)(implicit
+  private def createEvent(
+    event: AgentSubscriptionEvent,
+    transactionName: String,
+    extraDetail: JsObject
+  )(implicit
     rh: RequestHeader
-  ) =
-    ExtendedDataEvent(
-      auditSource = "agent-subscription",
-      auditType = event.toString,
-      tags = hc.toAuditTags(transactionName, rh.path),
-      detail = toJsObject(hc.toAuditDetails()) ++ extraDetail
-    )
+  ) = ExtendedDataEvent(
+    auditSource = "agent-subscription",
+    auditType = event.toString,
+    tags = hc.toAuditTags(transactionName, rh.path),
+    detail = toJsObject(hc.toAuditDetails()) ++ extraDetail
+  )
 
-  private[audit] def toJsObject(fields: Map[String, String]) =
-    JsObject(fields.map { case (name, value) => (name, JsString(value)) })
+  private[audit] def toJsObject(fields: Map[String, String]) = JsObject(fields.map { case (name, value) => (name, JsString(value)) })
 
   private def send(event: ExtendedDataEvent)(implicit rh: RequestHeader): Unit = {
     auditConnector.sendExtendedEvent(event).map(_ => ())
     ()
   }
+
 }
 
 sealed abstract class AgentSubscriptionEvent
-case object AgentSubscription extends AgentSubscriptionEvent
-case object CheckAgencyStatus extends AgentSubscriptionEvent
-case object OverseasAgentSubscription extends AgentSubscriptionEvent
-case object CompaniesHouseOfficerCheck extends AgentSubscriptionEvent
-case object CompaniesHouseStatusCheck extends AgentSubscriptionEvent
+case object AgentSubscription
+extends AgentSubscriptionEvent
+case object CheckAgencyStatus
+extends AgentSubscriptionEvent
+case object OverseasAgentSubscription
+extends AgentSubscriptionEvent
+case object CompaniesHouseOfficerCheck
+extends AgentSubscriptionEvent
+case object CompaniesHouseStatusCheck
+extends AgentSubscriptionEvent

@@ -16,11 +16,17 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import javax.inject.{Inject, Singleton}
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import javax.inject.Inject
+import javax.inject.Singleton
+import play.api.mvc.Action
+import play.api.mvc.AnyContent
+import play.api.mvc.ControllerComponents
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.model.Crn
-import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.{Match, NoMatch, NotAllowed, RecordNotFound}
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.Match
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.NoMatch
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.NotAllowed
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse.RecordNotFound
 import uk.gov.hmrc.agentsubscription.service.CompaniesHouseService
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -32,27 +38,29 @@ class CompaniesHouseController @Inject() (
   val authActions: AuthActions,
   cc: ControllerComponents
 )(implicit ec: ExecutionContext)
-    extends BackendController(cc) {
+extends BackendController(cc) {
 
   import authActions._
 
-  def matchCompanyOfficers(crn: Crn, nameToMatch: String): Action[AnyContent] =
-    authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider =>
-      companiesHouseService.knownFactCheck(crn, nameToMatch).map {
-        case Match                    => Ok
-        case NoMatch | RecordNotFound => NotFound
-        case NotAllowed               => Conflict
-        case _                        => InternalServerError
-      }
+  def matchCompanyOfficers(
+    crn: Crn,
+    nameToMatch: String
+  ): Action[AnyContent] = authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider =>
+    companiesHouseService.knownFactCheck(crn, nameToMatch).map {
+      case Match => Ok
+      case NoMatch | RecordNotFound => NotFound
+      case NotAllowed => Conflict
+      case _ => InternalServerError
     }
+  }
 
-  def statusCheck(crn: Crn): Action[AnyContent] =
-    authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider =>
-      companiesHouseService.companyStatusCheck(crn, None).map {
-        case Match                    => Ok
-        case NoMatch | RecordNotFound => NotFound
-        case NotAllowed               => Conflict
-        case _                        => InternalServerError
-      }
+  def statusCheck(crn: Crn): Action[AnyContent] = authorisedWithAffinityGroupAndCredentials { implicit request => implicit provider =>
+    companiesHouseService.companyStatusCheck(crn, None).map {
+      case Match => Ok
+      case NoMatch | RecordNotFound => NotFound
+      case NotAllowed => Conflict
+      case _ => InternalServerError
     }
+  }
+
 }

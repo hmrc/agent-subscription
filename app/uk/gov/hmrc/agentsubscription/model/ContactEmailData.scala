@@ -19,15 +19,24 @@ package uk.gov.hmrc.agentsubscription.model
 import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.Decrypter
+import uk.gov.hmrc.crypto.Encrypter
 
-case class ContactEmailData(useBusinessEmail: Boolean, contactEmail: Option[String])
+case class ContactEmailData(
+  useBusinessEmail: Boolean,
+  contactEmail: Option[String]
+)
 
 object ContactEmailData {
+
   implicit val format: OFormat[ContactEmailData] = Json.format
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[ContactEmailData] =
+  def databaseFormat(implicit
+    crypto: Encrypter
+      with Decrypter
+  ): Format[ContactEmailData] =
     (
       (__ \ "useBusinessEmail").format[Boolean] and
         (__ \ "contactEmail").formatNullable[String](stringEncrypterDecrypter)
     )(ContactEmailData.apply, unlift(ContactEmailData.unapply))
+
 }

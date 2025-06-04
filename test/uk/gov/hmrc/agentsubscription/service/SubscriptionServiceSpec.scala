@@ -16,28 +16,40 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import org.mockito.ArgumentMatchers.{any, anyString, eq => eqs}
-import org.mockito.Mockito.{verify, when}
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.ArgumentMatchers.{eq => eqs}
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
 import org.scalatest.concurrent.Eventually
 import play.api.i18n.Lang
-import play.api.libs.json.{JsObject, Json}
-import play.api.mvc.{AnyContentAsEmpty, RequestHeader}
+import play.api.libs.json.JsObject
+import play.api.libs.json.Json
+import play.api.mvc.AnyContentAsEmpty
+import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
-import uk.gov.hmrc.agentsubscription.audit.{AgentSubscription, AuditService}
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentsubscription.audit.AgentSubscription
+import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
-import uk.gov.hmrc.agentsubscription.connectors.{Address => _, EnrolmentRequest, _}
+import uk.gov.hmrc.agentsubscription.connectors.EnrolmentRequest
+import uk.gov.hmrc.agentsubscription.connectors.{Address => _, _}
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
-import uk.gov.hmrc.agentsubscription.support.{ResettingMockitoSugar, UnitSpec}
+import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.GatewayTimeoutException
 
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
+class SubscriptionServiceSpec
+extends UnitSpec
+with ResettingMockitoSugar
+with Eventually {
 
   private val desConnector = resettingMock[DesConnector]
   private val taxEnrolmentConnector = resettingMock[TaxEnrolmentsConnector]
@@ -50,19 +62,19 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
   private val authIds = AuthIds("userId", "groupId")
 
-  private val service = new SubscriptionService(
-    desConnector,
-    taxEnrolmentConnector,
-    auditService,
-    subscriptionJourneyRepository,
-    agentAssuranceConnector,
-    agentOverseasAppConn,
-    emailConnector,
-    mappingConnector
-  )
+  private val service =
+    new SubscriptionService(
+      desConnector,
+      taxEnrolmentConnector,
+      auditService,
+      subscriptionJourneyRepository,
+      agentAssuranceConnector,
+      agentOverseasAppConn,
+      emailConnector,
+      mappingConnector
+    )
 
-  private implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] =
-    FakeRequest("POST", "/agent-subscription/subscription")
+  private implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("POST", "/agent-subscription/subscription")
 
   "CreateSubscription" should {
     val businessUtr = Utr("4000000009")
@@ -79,7 +91,12 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
     "audit appropriate values" in {
 
-      subscriptionWillBeCreated(businessUtr, businessPostcode, arn, amlsDetails)
+      subscriptionWillBeCreated(
+        businessUtr,
+        businessPostcode,
+        arn,
+        amlsDetails
+      )
 
       val subscriptionRequest = SubscriptionRequest(
         businessUtr,
@@ -130,7 +147,11 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(AgentSubscription, "Agent services subscription", expectedExtraDetail)(fakeRequest)
+          .auditEvent(
+            AgentSubscription,
+            "Agent services subscription",
+            expectedExtraDetail
+          )(fakeRequest)
       }
     }
 
@@ -141,7 +162,12 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       val businessPostcode = "BU1 1BB"
       val agencyPostcode = "AG1 1CY"
 
-      subscriptionWillBeCreated(utr, businessPostcode, arn.value, amlsDetails)
+      subscriptionWillBeCreated(
+        utr,
+        businessPostcode,
+        arn.value,
+        amlsDetails
+      )
 
       val subscriptionRequest = SubscriptionRequest(
         utr,
@@ -166,12 +192,24 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       await(service.createSubscription(subscriptionRequest, authIds))
 
       verify(taxEnrolmentConnector)
-        .addKnownFacts(eqs(arn.value), eqs("AgencyPostcode"), eqs(agencyPostcode))(any[RequestHeader])
+        .addKnownFacts(
+          eqs(arn.value),
+          eqs("AgencyPostcode"),
+          eqs(agencyPostcode)
+        )(any[RequestHeader])
 
-      val expectedEnrolmentRequest =
-        EnrolmentRequest(authIds.userId, "principal", "Test Agency", Seq(KnownFact("AgencyPostcode", agencyPostcode)))
+      val expectedEnrolmentRequest = EnrolmentRequest(
+        authIds.userId,
+        "principal",
+        "Test Agency",
+        Seq(KnownFact("AgencyPostcode", agencyPostcode))
+      )
       verify(taxEnrolmentConnector)
-        .enrol(anyString, eqs(arn), eqs(expectedEnrolmentRequest))(any[RequestHeader])
+        .enrol(
+          anyString,
+          eqs(arn),
+          eqs(expectedEnrolmentRequest)
+        )(any[RequestHeader])
     }
 
     "fail after retrying 3 times to add known facts and enrol" when {
@@ -202,8 +240,7 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
           Some(amlsDetails)
         )
 
-        val thrown =
-          intercept[IllegalStateException](await(service.createSubscription(subscriptionRequest, authIds))).getMessage
+        val thrown = intercept[IllegalStateException](await(service.createSubscription(subscriptionRequest, authIds))).getMessage
 
         thrown shouldBe "Failed to add known facts and enrol in EMAC for utr: 4000000009 and arn: ARN0001"
 
@@ -211,25 +248,45 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
       }
 
       "the query for existing allocated enrolments fails more than 3 times" in {
-        subscriptionHasPrincipalGroupIdsFailed(utr, businessPostcode, arn.value, amlsDetails)
+        subscriptionHasPrincipalGroupIdsFailed(
+          utr,
+          businessPostcode,
+          arn.value,
+          amlsDetails
+        )
 
         behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES1")
       }
 
       "delete known facts fails more than 3 times" in {
-        subscriptionDeleteKnownFactsFailed(utr, businessPostcode, arn.value, amlsDetails)
+        subscriptionDeleteKnownFactsFailed(
+          utr,
+          businessPostcode,
+          arn.value,
+          amlsDetails
+        )
 
         behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES7")
       }
 
       "create known facts fails more than 3 times" in {
-        subscriptionCreateKnownFactsFailed(utr, businessPostcode, arn.value, amlsDetails)
+        subscriptionCreateKnownFactsFailed(
+          utr,
+          businessPostcode,
+          arn.value,
+          amlsDetails
+        )
 
         behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES6")
       }
 
       "the call to enrol fails more than 3 times" in {
-        subscriptionEnrolmentsFailed(utr, businessPostcode, arn.value, amlsDetails)
+        subscriptionEnrolmentsFailed(
+          utr,
+          businessPostcode,
+          arn.value,
+          amlsDetails
+        )
 
         behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES8")
       }
@@ -285,10 +342,18 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(204))
 
-    when(taxEnrolmentConnector.addKnownFacts(eqs(arn), anyString, anyString)(any[RequestHeader]))
+    when(taxEnrolmentConnector.addKnownFacts(
+      eqs(arn),
+      anyString,
+      anyString
+    )(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(200))
 
-    when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(any[RequestHeader]))
+    when(taxEnrolmentConnector.enrol(
+      anyString,
+      eqs(Arn(arn)),
+      any[EnrolmentRequest]
+    )(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(200))
 
     when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(any[RequestHeader]))
@@ -453,7 +518,11 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(204))
 
-    when(taxEnrolmentConnector.addKnownFacts(eqs(arn), anyString, anyString)(any[RequestHeader]))
+    when(taxEnrolmentConnector.addKnownFacts(
+      eqs(arn),
+      anyString,
+      anyString
+    )(any[RequestHeader]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES6"))
 
     when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(any[RequestHeader]))
@@ -510,10 +579,18 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(204))
 
-    when(taxEnrolmentConnector.addKnownFacts(eqs(arn), anyString, anyString)(any[RequestHeader]))
+    when(taxEnrolmentConnector.addKnownFacts(
+      eqs(arn),
+      anyString,
+      anyString
+    )(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(200))
 
-    when(taxEnrolmentConnector.enrol(anyString, eqs(Arn(arn)), any[EnrolmentRequest])(any[RequestHeader]))
+    when(taxEnrolmentConnector.enrol(
+      anyString,
+      eqs(Arn(arn)),
+      any[EnrolmentRequest]
+    )(any[RequestHeader]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES8"))
 
     when(agentAssuranceConnector.createAmls(any[Utr], any[AmlsDetails])(any[RequestHeader]))
@@ -522,4 +599,5 @@ class SubscriptionServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     when(agentAssuranceConnector.updateAmls(any[Utr], any[Arn])(any[RequestHeader]))
       .thenReturn(Future successful Some(amlsDetails))
   }
+
 }

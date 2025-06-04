@@ -21,15 +21,27 @@ import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.audit.OverseasAgentSubscription
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{AttemptingRegistration, Complete, Registered}
-import uk.gov.hmrc.agentsubscription.model.{EmailInformation, OverseasAmlsDetails, SafeId}
-import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.{writeAuditMergedSucceeds, writeAuditSucceeds}
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
+import uk.gov.hmrc.agentsubscription.model.EmailInformation
+import uk.gov.hmrc.agentsubscription.model.OverseasAmlsDetails
+import uk.gov.hmrc.agentsubscription.model.SafeId
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.writeAuditMergedSucceeds
+import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.writeAuditSucceeds
 import uk.gov.hmrc.agentsubscription.stubs._
-import uk.gov.hmrc.agentsubscription.support.{BaseAuditSpec, Resource}
+import uk.gov.hmrc.agentsubscription.support.BaseAuditSpec
+import uk.gov.hmrc.agentsubscription.support.Resource
 
 class OverseasSubscriptionAuditingSpec
-    extends BaseAuditSpec with Eventually with AuthStub with TaxEnrolmentsStubs with AgentAssuranceStub
-    with OverseasDesStubs with AgentOverseasApplicationStubs with EmailStub {
+extends BaseAuditSpec
+with Eventually
+with AuthStub
+with TaxEnrolmentsStubs
+with AgentAssuranceStub
+with OverseasDesStubs
+with AgentOverseasApplicationStubs
+with EmailStub {
 
   implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
@@ -53,58 +65,67 @@ class OverseasSubscriptionAuditingSpec
       givenValidApplication("accepted")
       givenUpdateApplicationStatus(AttemptingRegistration, 204)
       organisationRegistrationSucceeds()
-      givenUpdateApplicationStatus(Registered, 204, safeIdJson)
+      givenUpdateApplicationStatus(
+        Registered,
+        204,
+        safeIdJson
+      )
       subscriptionSucceeds(safeId.value, agencyDetailsJson)
       allocatedPrincipalEnrolmentNotExists(arn)
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(stubbedGroupId, arn)
       createOverseasAmlsSucceeds(Arn(arn), overseasAmlsDetails)
-      givenUpdateApplicationStatus(Complete, 204, s"""{"arn" : "$arn"}""")
+      givenUpdateApplicationStatus(
+        Complete,
+        204,
+        s"""{"arn" : "$arn"}"""
+      )
       givenEmailSent(emailInfo)
 
       val result = doOverseasSubscriptionRequest()
 
       result.status shouldBe 201
 
-      DataStreamStub.verifyAuditRequestSent(OverseasAgentSubscription, expectedTags, expectedDetails)
+      DataStreamStub.verifyAuditRequestSent(
+        OverseasAgentSubscription,
+        expectedTags,
+        expectedDetails
+      )
     }
   }
 
-  private def doOverseasSubscriptionRequest() =
-    new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
+  private def doOverseasSubscriptionRequest() = new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
 
-  private def expectedDetails: JsObject =
-    Json
-      .parse(s"""
-                |{
-                |  "agencyName": "Agency name",
-                |  "agencyEmail": "agencyemail@domain.com",
-                |  "agencyAddress": {
-                |    "addressLine1": "Mandatory Address Line 1",
-                |    "addressLine2": "Mandatory Address Line 2",
-                |    "countryCode": "IE"
-                |  },
-                |  "agentReferenceNumber": "$arn",
-                |  "agencyEmail": "agencyemail@domain.com",
-                |  "safeId": "${safeId.value}",
-                |  "amlsDetails": {
-                |      "supervisoryBody":"${overseasAmlsDetails.supervisoryBody}",
-                |      "membershipNumber":"${overseasAmlsDetails.membershipNumber.get}"
-                |  }
-                |}
-                |""".stripMargin)
-      .asInstanceOf[JsObject]
+  private def expectedDetails: JsObject = Json
+    .parse(s"""
+              |{
+              |  "agencyName": "Agency name",
+              |  "agencyEmail": "agencyemail@domain.com",
+              |  "agencyAddress": {
+              |    "addressLine1": "Mandatory Address Line 1",
+              |    "addressLine2": "Mandatory Address Line 2",
+              |    "countryCode": "IE"
+              |  },
+              |  "agentReferenceNumber": "$arn",
+              |  "agencyEmail": "agencyemail@domain.com",
+              |  "safeId": "${safeId.value}",
+              |  "amlsDetails": {
+              |      "supervisoryBody":"${overseasAmlsDetails.supervisoryBody}",
+              |      "membershipNumber":"${overseasAmlsDetails.membershipNumber.get}"
+              |  }
+              |}
+              |""".stripMargin)
+    .asInstanceOf[JsObject]
 
-  private def expectedTags: JsObject =
-    Json
-      .parse(s"""
-                |{
-                |  "path": "/agent-subscription/overseas-subscription",
-                |  "transactionName": "Overseas agent subscription"
-                |}
-                |""".stripMargin)
-      .asInstanceOf[JsObject]
+  private def expectedTags: JsObject = Json
+    .parse(s"""
+              |{
+              |  "path": "/agent-subscription/overseas-subscription",
+              |  "transactionName": "Overseas agent subscription"
+              |}
+              |""".stripMargin)
+    .asInstanceOf[JsObject]
 
   private val agencyDetailsJson =
     s"""
@@ -118,4 +139,5 @@ class OverseasSubscriptionAuditingSpec
        |  }
        |}
      """.stripMargin
+
 }

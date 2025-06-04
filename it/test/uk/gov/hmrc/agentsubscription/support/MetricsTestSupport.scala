@@ -24,7 +24,8 @@ import play.api.Application
 import scala.jdk.CollectionConverters._
 
 trait MetricsTestSupport {
-  self: Suite with Matchers =>
+  self: Suite
+    with Matchers =>
 
   def app: Application
 
@@ -40,7 +41,8 @@ trait MetricsTestSupport {
   def verifyTimerExistsAndBeenUpdated(metric: String): Unit = {
     val timers = metricsRegistry.getTimers
     val metrics = timers.get(s"Timer-$metric")
-    if (metrics == null) throw new Exception(s"Metric [$metric] not found, try one of ${timers.keySet()}")
+    if (metrics == null)
+      throw new Exception(s"Metric [$metric] not found, try one of ${timers.keySet()}")
     metrics.getCount should be >= 1L
     ()
   }

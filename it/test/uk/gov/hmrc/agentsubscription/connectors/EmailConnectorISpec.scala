@@ -17,12 +17,16 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, MtdItId, Vrn}
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.MtdItId
+import uk.gov.hmrc.agentmtdidentifiers.model.Vrn
 import uk.gov.hmrc.agentsubscription.model.EmailInformation
 import uk.gov.hmrc.agentsubscription.stubs.EmailStub
 import uk.gov.hmrc.agentsubscription.support.BaseISpec
 import uk.gov.hmrc.domain.Nino
-class EmailConnectorISpec extends BaseISpec with EmailStub {
+class EmailConnectorISpec
+extends BaseISpec
+with EmailStub {
 
   val connector = app.injector.instanceOf[EmailConnector]
 
@@ -32,7 +36,11 @@ class EmailConnectorISpec extends BaseISpec with EmailStub {
   val vrn = Vrn("101747641")
 
   "sendEmail" should {
-    val emailInfo = EmailInformation(Seq("abc@xyz.com"), "template-id", Map("param1" -> "foo", "param2" -> "bar"))
+    val emailInfo = EmailInformation(
+      Seq("abc@xyz.com"),
+      "template-id",
+      Map("param1" -> "foo", "param2" -> "bar")
+    )
 
     "return Unit when the email service responds" in {
       givenEmailSent(emailInfo)
@@ -49,4 +57,5 @@ class EmailConnectorISpec extends BaseISpec with EmailStub {
       result shouldBe (())
     }
   }
+
 }

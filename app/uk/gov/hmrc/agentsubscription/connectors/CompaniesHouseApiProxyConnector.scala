@@ -21,17 +21,24 @@ import play.api.http.Status._
 import play.api.mvc.RequestHeader
 import play.utils.UriEncoding
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.{CompaniesHouseOfficer, Crn, ReducedCompanyInformation}
+import uk.gov.hmrc.agentsubscription.model.CompaniesHouseOfficer
+import uk.gov.hmrc.agentsubscription.model.Crn
+import uk.gov.hmrc.agentsubscription.model.ReducedCompanyInformation
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
 import uk.gov.hmrc.agentsubscription.utils.RequestSupport.hc
 import uk.gov.hmrc.http.HttpErrorFunctions._
 import uk.gov.hmrc.http.HttpReads.Implicits._
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{BadRequestException, HttpResponse, StringContextOps, UpstreamErrorResponse}
+import uk.gov.hmrc.http.BadRequestException
+import uk.gov.hmrc.http.HttpResponse
+import uk.gov.hmrc.http.StringContextOps
+import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject.Inject
+import javax.inject.Singleton
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 @Singleton
 class CompaniesHouseApiProxyConnector @Inject() (
@@ -39,11 +46,15 @@ class CompaniesHouseApiProxyConnector @Inject() (
   http: HttpClientV2,
   val metrics: Metrics
 )(implicit val ec: ExecutionContext)
-    extends Logging with HttpAPIMonitor {
+extends Logging
+with HttpAPIMonitor {
 
   val baseUrl: String = appConfig.companiesHouseApiProxyBaseUrl
 
-  def getCompanyOfficers(crn: Crn, surname: String)(implicit
+  def getCompanyOfficers(
+    crn: Crn,
+    surname: String
+  )(implicit
     rh: RequestHeader
   ): Future[Seq[CompaniesHouseOfficer]] =
     monitor("ConsumedAPI-getCompanyOfficers-GET") {
@@ -54,8 +65,7 @@ class CompaniesHouseApiProxyConnector @Inject() (
         .execute[HttpResponse]
         .map { response =>
           response.status match {
-            case s if is2xx(s) =>
-              (response.json \ "items").as[Seq[CompaniesHouseOfficer]]
+            case s if is2xx(s) => (response.json \ "items").as[Seq[CompaniesHouseOfficer]]
             case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST")
             case s if is4xx(s) =>
               logger.warn(s"getCompanyOfficers http status: $s")
@@ -77,8 +87,7 @@ class CompaniesHouseApiProxyConnector @Inject() (
         .execute[HttpResponse]
         .map { response =>
           response.status match {
-            case s if is2xx(s) =>
-              response.json.asOpt[ReducedCompanyInformation]
+            case s if is2xx(s) => response.json.asOpt[ReducedCompanyInformation]
             case s @ (BAD_REQUEST | UNAUTHORIZED) => throw UpstreamErrorResponse(s"Unexpected response: $s", s)
             case s if is4xx(s) =>
               logger.warn(s"getCompany http status: $s")
@@ -89,4 +98,5 @@ class CompaniesHouseApiProxyConnector @Inject() (
           }
         }
     }
+
 }

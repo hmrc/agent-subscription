@@ -21,37 +21,44 @@ import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
 import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse._
-import uk.gov.hmrc.agentsubscription.model.{Crn, MatchDetailsResponse}
-import uk.gov.hmrc.http.{BadRequestException, NotFoundException}
+import uk.gov.hmrc.agentsubscription.model.Crn
+import uk.gov.hmrc.agentsubscription.model.MatchDetailsResponse
+import uk.gov.hmrc.http.BadRequestException
+import uk.gov.hmrc.http.NotFoundException
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject.Inject
+import javax.inject.Singleton
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 @Singleton
-class CTReferenceService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext) extends Logging {
+class CTReferenceService @Inject() (desConnector: DesConnector)(implicit ec: ExecutionContext)
+extends Logging {
 
-  def matchCorporationTaxUtrWithCrn(utr: Utr, crn: Crn)(implicit
+  def matchCorporationTaxUtrWithCrn(
+    utr: Utr,
+    crn: Crn
+  )(implicit
     rh: RequestHeader
-  ): Future[MatchDetailsResponse] =
-    desConnector
-      .getCorporationTaxUtr(crn)
-      .map { ctUtr =>
-        if (ctUtr == utr)
-          Match
-        else {
-          logger.warn("The supplied utr does not match with the utr from DES records")
-          NoMatch
-        }
+  ): Future[MatchDetailsResponse] = desConnector
+    .getCorporationTaxUtr(crn)
+    .map { ctUtr =>
+      if (ctUtr == utr)
+        Match
+      else {
+        logger.warn("The supplied utr does not match with the utr from DES records")
+        NoMatch
       }
-      .recover {
-        case _: NotFoundException =>
-          logger.warn(s"No ct utr found for the crn ${crn.value}")
-          RecordNotFound
-        case _: BadRequestException =>
-          logger.warn(s"The crn ${crn.value} supplied is invalid")
-          InvalidIdentifier
-        case ex =>
-          logger.warn(s"Some exception occured ${ex.getMessage}")
-          UnknownError
-      }
+    }
+    .recover {
+      case _: NotFoundException =>
+        logger.warn(s"No ct utr found for the crn ${crn.value}")
+        RecordNotFound
+      case _: BadRequestException =>
+        logger.warn(s"The crn ${crn.value} supplied is invalid")
+        InvalidIdentifier
+      case ex =>
+        logger.warn(s"Some exception occured ${ex.getMessage}")
+        UnknownError
+    }
 }

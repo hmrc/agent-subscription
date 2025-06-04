@@ -18,16 +18,21 @@ package uk.gov.hmrc.agentsubscription.service
 
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
-import play.api.{LoggerLike, Logging}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
-import uk.gov.hmrc.agentsubscription.audit.{AuditService, CheckAgencyStatus}
+import play.api.LoggerLike
+import play.api.Logging
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentsubscription.audit.AuditService
+import uk.gov.hmrc.agentsubscription.audit.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.agentsubscription.postcodesMatch
 
-import javax.inject.{Inject, Singleton}
-import scala.concurrent.{ExecutionContext, Future}
+import javax.inject.Inject
+import javax.inject.Singleton
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
 private object CheckAgencyStatusAuditDetail {
   implicit val writes: OWrites[CheckAgencyStatusAuditDetail] = Json.writes[CheckAgencyStatusAuditDetail]
@@ -50,10 +55,14 @@ class RegistrationService @Inject() (
   taxEnrolmentsConnector: TaxEnrolmentsConnector,
   auditService: AuditService
 )(implicit ec: ExecutionContext)
-    extends Logging {
+extends Logging {
+
   protected def getLogger: LoggerLike = logger
 
-  def getRegistration(utr: Utr, postcode: String)(implicit
+  def getRegistration(
+    utr: Utr,
+    postcode: String
+  )(implicit
     rh: RequestHeader,
     provider: Provider
   ): Future[Option[RegistrationDetails]] =
@@ -118,7 +127,16 @@ class RegistrationService @Inject() (
           primaryPhoneNumber,
           safeId
         )
-      case Some(DesRegistrationResponse(isAnASAgent, _, _, agentReferenceNumber, address, _, _, _)) =>
+      case Some(DesRegistrationResponse(
+            isAnASAgent,
+            _,
+            _,
+            agentReferenceNumber,
+            address,
+            _,
+            _,
+            _
+          )) =>
         if (isAnASAgent) {
           getLogger.warn(
             s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${address.postalCode.nonEmpty}"
@@ -131,16 +149,31 @@ class RegistrationService @Inject() (
             Some(isAnASAgent),
             agentReferenceNumber
           )
-        } else {
+        }
+        else {
           getLogger.warn(
             s"The business partner record associated with $utr is not subscribed with postcode: ${address.postalCode.nonEmpty}"
           )
-          auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, Some(isAnASAgent), None)
+          auditCheckAgencyStatus(
+            utr,
+            postcode,
+            knownFactsMatched = false,
+            None,
+            Some(isAnASAgent),
+            None
+          )
         }
         Future.successful(None)
       case None =>
         getLogger.warn(s"No business partner record was associated with $utr")
-        auditCheckAgencyStatus(utr, postcode, knownFactsMatched = false, None, None, None)
+        auditCheckAgencyStatus(
+          utr,
+          postcode,
+          knownFactsMatched = false,
+          None,
+          None,
+          None
+        )
         Future.successful(None)
     }
 
@@ -162,10 +195,11 @@ class RegistrationService @Inject() (
     val knownFactsMatched = desPostcode.exists(postcodesMatch(_, postcode))
 
     if (knownFactsMatched) {
-      val isSubscribedToAgentServices = maybeArn match {
-        case Some(arn) if isAnASAgent => taxEnrolmentsConnector.hasPrincipalGroupIds(arn)
-        case _                        => Future.successful(false)
-      }
+      val isSubscribedToAgentServices =
+        maybeArn match {
+          case Some(arn) if isAnASAgent => taxEnrolmentsConnector.hasPrincipalGroupIds(arn)
+          case _ => Future.successful(false)
+        }
 
       isSubscribedToAgentServices.map { isSubscribed =>
         auditCheckAgencyStatus(
@@ -189,8 +223,16 @@ class RegistrationService @Inject() (
         )
       }
 
-    } else {
-      auditCheckAgencyStatus(utr, postcode, knownFactsMatched, None, Some(isAnASAgent), None)
+    }
+    else {
+      auditCheckAgencyStatus(
+        utr,
+        postcode,
+        knownFactsMatched,
+        None,
+        Some(isAnASAgent),
+        None
+      )
       Future.successful(None)
     }
   }
@@ -202,23 +244,25 @@ class RegistrationService @Inject() (
     isSubscribedToAgentServices: Option[Boolean],
     isAnAsAgentInDes: Option[Boolean],
     agentReferenceNumber: Option[Arn]
-  )(implicit rh: RequestHeader, provider: Provider): Unit =
-    auditService.auditEvent(
-      CheckAgencyStatus,
-      "Check agency status",
-      toJsObject(
-        CheckAgencyStatusAuditDetail(
-          Some(provider.providerId),
-          Some(provider.providerType),
-          utr,
-          postcode,
-          knownFactsMatched,
-          isSubscribedToAgentServices,
-          isAnAsAgentInDes,
-          agentReferenceNumber
-        )
+  )(implicit
+    rh: RequestHeader,
+    provider: Provider
+  ): Unit = auditService.auditEvent(
+    CheckAgencyStatus,
+    "Check agency status",
+    toJsObject(
+      CheckAgencyStatusAuditDetail(
+        Some(provider.providerId),
+        Some(provider.providerType),
+        utr,
+        postcode,
+        knownFactsMatched,
+        isSubscribedToAgentServices,
+        isAnAsAgentInDes,
+        agentReferenceNumber
       )
     )
+  )
 
   private def toJsObject(detail: CheckAgencyStatusAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 

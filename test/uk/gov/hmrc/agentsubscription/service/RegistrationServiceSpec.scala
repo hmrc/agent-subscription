@@ -16,38 +16,54 @@
 
 package uk.gov.hmrc.agentsubscription.service
 
-import org.mockito.ArgumentMatchers.{any, eq => eqs}
-import org.mockito.Mockito.{verify, when}
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.{eq => eqs}
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
 import org.scalatest.concurrent.Eventually
-import org.slf4j.{Logger, Marker}
-import play.api.libs.json.{JsObject, Json}
+import org.slf4j.Logger
+import org.slf4j.Marker
+import play.api.libs.json.JsObject
+import play.api.libs.json.Json
 import play.api.mvc.RequestHeader
 import play.api.test.FakeRequest
 import play.api.test.Helpers._
-import play.api.{LoggerLike, MarkerContext}
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import play.api.LoggerLike
+import play.api.MarkerContext
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.RequestWithAuthority
-import uk.gov.hmrc.agentsubscription.audit.{AuditService, CheckAgencyStatus}
+import uk.gov.hmrc.agentsubscription.audit.AuditService
+import uk.gov.hmrc.agentsubscription.audit.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.support.{ResettingMockitoSugar, UnitSpec}
+import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
+import uk.gov.hmrc.agentsubscription.support.UnitSpec
 
 import java.net.URL
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with Eventually {
+class RegistrationServiceSpec
+extends UnitSpec
+with ResettingMockitoSugar
+with Eventually {
 
   private val desConnector = resettingMock[DesConnector]
   private val teConnector = resettingMock[TaxEnrolmentsConnector]
   private val auditService = resettingMock[AuditService]
 
   val stubbedLogger = new LoggerLikeStub()
-  val service: RegistrationService = new RegistrationService(desConnector, teConnector, auditService) {
-    override def getLogger: LoggerLikeStub = stubbedLogger
-  }
+  val service: RegistrationService =
+    new RegistrationService(
+      desConnector,
+      teConnector,
+      auditService
+    ) {
+      override def getLogger: LoggerLikeStub = stubbedLogger
+    }
 
   private val authorityUrl = new URL("http://localhost/auth/authority")
   private val provider = Provider("provId", "provType")
@@ -61,8 +77,16 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
     ),
     FakeRequest()
   )
-  private val requestWithoutAuthProvider =
-    RequestWithAuthority(Authority(authorityUrl, authProviderId = None, authProviderType = None, "", ""), FakeRequest())
+  private val requestWithoutAuthProvider = RequestWithAuthority(
+    Authority(
+      authorityUrl,
+      authProviderId = None,
+      authProviderType = None,
+      "",
+      ""
+    ),
+    FakeRequest()
+  )
 
   override def beforeEach(): Unit = {
     super.beforeEach()
@@ -119,7 +143,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -175,7 +203,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -226,7 +258,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 0
@@ -275,7 +311,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 0
@@ -330,7 +370,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -386,7 +430,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -437,7 +485,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 0
@@ -486,7 +538,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 0
@@ -535,7 +591,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(requestWithoutAuthProvider)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(requestWithoutAuthProvider)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -586,7 +646,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(requestWithoutAuthProvider)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(requestWithoutAuthProvider)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -613,7 +677,11 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
         .asInstanceOf[JsObject]
       eventually {
         verify(auditService)
-          .auditEvent(CheckAgencyStatus, "Check agency status", expectedExtraDetail)(request)
+          .auditEvent(
+            CheckAgencyStatus,
+            "Check agency status",
+            expectedExtraDetail
+          )(request)
       }
 
       stubbedLogger.logMessages.size shouldBe 1
@@ -623,15 +691,17 @@ class RegistrationServiceSpec extends UnitSpec with ResettingMockitoSugar with E
 
 }
 
-class LoggerLikeStub extends LoggerLike {
+class LoggerLikeStub
+extends LoggerLike {
 
   val logMessages: mutable.Buffer[String] = mutable.Buffer()
 
   override val logger: Logger = null
 
-  implicit val markerContext: MarkerContext = new MarkerContext {
-    override def marker: Option[Marker] = None
-  }
+  implicit val markerContext: MarkerContext =
+    new MarkerContext {
+      override def marker: Option[Marker] = None
+    }
 
   override def warn(msg: => String)(implicit mc: MarkerContext): Unit = {
     logMessages += msg
@@ -647,4 +717,5 @@ class LoggerLikeStub extends LoggerLike {
     logMessages.clear()
     ()
   }
+
 }

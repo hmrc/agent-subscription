@@ -19,10 +19,13 @@ package uk.gov.hmrc.agentsubscription
 import play.api.libs.functional.syntax._
 import play.api.libs.json.JsonValidationError
 import play.api.libs.json.Reads._
-import play.api.mvc.{Request, WrappedRequest}
-import uk.gov.hmrc.agentsubscription.auth.{Authority, Enrolment}
+import play.api.mvc.Request
+import play.api.mvc.WrappedRequest
+import uk.gov.hmrc.agentsubscription.auth.Authority
+import uk.gov.hmrc.agentsubscription.auth.Enrolment
 
 package object model {
+
   val postcodeWithoutSpacesRegex = "^[A-Z]{1,2}[0-9][0-9A-Z]?\\s?[0-9][A-Z]{2}$|BFPO\\s?[0-9]{1,5}$"
   val telephoneRegex = "^[0-9- +()#x ]{0,24}$"
   val noAmpersand = "[^&]*"
@@ -96,9 +99,17 @@ package object model {
     filterNot[String](JsonValidationError("error.crn.invalid"))(_.length == crnLength) andKeep
       filter[String](JsonValidationError("error.crn.invalid"))(_.matches(crnRegex))
   }
+
 }
 
-case class RequestWithAuthority[+A](authority: Authority, request: Request[A]) extends WrappedRequest[A](request)
+case class RequestWithAuthority[+A](
+  authority: Authority,
+  request: Request[A]
+)
+extends WrappedRequest[A](request)
 
-case class RequestWithEnrolments[+A](enrolments: List[Enrolment], request: Request[A])
-    extends WrappedRequest[A](request)
+case class RequestWithEnrolments[+A](
+  enrolments: List[Enrolment],
+  request: Request[A]
+)
+extends WrappedRequest[A](request)

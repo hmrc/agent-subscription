@@ -17,8 +17,11 @@
 package uk.gov.hmrc.agentsubscription.support
 
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
-import uk.gov.hmrc.auth.core.retrieve.{Credentials, ~}
-import uk.gov.hmrc.auth.core.{AffinityGroup, Enrolment, EnrolmentIdentifier}
+import uk.gov.hmrc.auth.core.retrieve.Credentials
+import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.auth.core.AffinityGroup
+import uk.gov.hmrc.auth.core.Enrolment
+import uk.gov.hmrc.auth.core.EnrolmentIdentifier
 
 import scala.concurrent.Future
 
@@ -35,10 +38,8 @@ trait AuthData {
     )
   )
 
-  val agentAffinityWithCredentialsAndGroupId
-    : Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
-    val retrievals =
-      new ~(new ~(Some(AffinityGroup.Agent), Some(Credentials("providerId", "providerType"))), Some("groupId"))
+  val agentAffinityWithCredentialsAndGroupId: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
+    val retrievals = new ~(new ~(Some(AffinityGroup.Agent), Some(Credentials("providerId", "providerType"))), Some("groupId"))
     Future.successful(retrievals)
   }
 
@@ -52,8 +53,7 @@ trait AuthData {
   val individualAffinity: Future[Option[AffinityGroup]] = Future.successful(Some(AffinityGroup.Individual))
 
   val agentIncorrectAffinity: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
-    val retrievals =
-      new ~(new ~(Some(AffinityGroup.Individual), Some(Credentials("providerId", "providerType"))), Some("groupId"))
+    val retrievals = new ~(new ~(Some(AffinityGroup.Individual), Some(Credentials("providerId", "providerType"))), Some("groupId"))
     Future.successful(retrievals)
   }
 

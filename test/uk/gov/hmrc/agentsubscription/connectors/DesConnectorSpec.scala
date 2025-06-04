@@ -21,13 +21,19 @@ import org.scalatestplus.mockito.MockitoSugar
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.client.HttpClientV2
-import uk.gov.hmrc.http.{Authorization, HeaderCarrier, HeaderNames, RequestId, SessionId}
+import uk.gov.hmrc.http.Authorization
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.http.HeaderNames
+import uk.gov.hmrc.http.RequestId
+import uk.gov.hmrc.http.SessionId
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.util.UUID
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DesConnectorSpec extends UnitSpec with MockitoSugar {
+class DesConnectorSpec
+extends UnitSpec
+with MockitoSugar {
 
   val appConfig: AppConfig = mock[AppConfig]
   val hc: HeaderCarrier = mock[HeaderCarrier]
@@ -37,10 +43,19 @@ class DesConnectorSpec extends UnitSpec with MockitoSugar {
   when(appConfig.desAuthToken).thenReturn("testAuthToken")
   when(appConfig.desEnvironment).thenReturn("testEnv")
   when(appConfig.internalHostPatterns).thenReturn(
-    Seq("^.*\\.service$", "^.*\\.mdtp$", "^localhost$").map(_.r)
+    Seq(
+      "^.*\\.service$",
+      "^.*\\.mdtp$",
+      "^localhost$"
+    ).map(_.r)
   )
 
-  val underTest: DesConnector = new DesConnector(appConfig, httpClient, metrics)
+  val underTest: DesConnector =
+    new DesConnector(
+      appConfig,
+      httpClient,
+      metrics
+    )
 
   "desHeaders" should {
     "contain correct headers" when {
@@ -121,4 +136,5 @@ class DesConnectorSpec extends UnitSpec with MockitoSugar {
       }
     }
   }
+
 }

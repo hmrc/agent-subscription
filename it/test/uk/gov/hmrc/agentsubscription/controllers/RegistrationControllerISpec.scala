@@ -19,10 +19,17 @@ package uk.gov.hmrc.agentsubscription.controllers
 import play.api.libs.json.JsValue
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
-import uk.gov.hmrc.agentsubscription.stubs.{AuthStub, DesStubs, TaxEnrolmentsStubs}
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, Resource}
+import uk.gov.hmrc.agentsubscription.stubs.AuthStub
+import uk.gov.hmrc.agentsubscription.stubs.DesStubs
+import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
+import uk.gov.hmrc.agentsubscription.support.BaseISpec
+import uk.gov.hmrc.agentsubscription.support.Resource
 
-class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolmentsStubs with AuthStub {
+class RegistrationControllerISpec
+extends BaseISpec
+with DesStubs
+with TaxEnrolmentsStubs
+with AuthStub {
 
   implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
@@ -178,4 +185,5 @@ class RegistrationControllerISpec extends BaseISpec with DesStubs with TaxEnrolm
     (json \ "address" \ "countryCode").as[String] shouldBe "GB"
     ()
   }
+
 }

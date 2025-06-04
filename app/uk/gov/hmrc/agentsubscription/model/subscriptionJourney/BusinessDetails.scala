@@ -20,12 +20,12 @@ import play.api.libs.functional.syntax._
 import play.api.libs.json._
 import uk.gov.hmrc.agentsubscription.model.DateOfBirth
 import uk.gov.hmrc.crypto.json.JsonEncryption.stringEncrypterDecrypter
-import uk.gov.hmrc.crypto.{Decrypter, Encrypter}
+import uk.gov.hmrc.crypto.Decrypter
+import uk.gov.hmrc.crypto.Encrypter
 
-/** Information about the agent's business. They must always provide a business type, UTR and postcode. But other data
-  * points are only required for some business types and if certain conditions are NOT met e.g. if they provide a NINO,
-  * they must provide date of birth if they are registered for vat, they must provide vat details The record is created
-  * once we have the minimum business details
+/** Information about the agent's business. They must always provide a business type, UTR and postcode. But other data points are only required for some
+  * business types and if certain conditions are NOT met e.g. if they provide a NINO, they must provide date of birth if they are registered for vat, they must
+  * provide vat details The record is created once we have the minimum business details
   */
 
 case class BusinessDetails(
@@ -41,8 +41,12 @@ case class BusinessDetails(
 ) // if registered for VAT
 
 object BusinessDetails {
+
   implicit val format: OFormat[BusinessDetails] = Json.format
-  def databaseFormat(implicit crypto: Encrypter with Decrypter): Format[BusinessDetails] =
+  def databaseFormat(implicit
+    crypto: Encrypter
+      with Decrypter
+  ): Format[BusinessDetails] =
     (
       (__ \ "businessType").format[BusinessType] and
         (__ \ "utr").format[String](stringEncrypterDecrypter) and
@@ -54,4 +58,5 @@ object BusinessDetails {
         (__ \ "registeredForVat").formatNullable[Boolean] and
         (__ \ "vatDetails").formatNullable[VatDetails]
     )(BusinessDetails.apply, unlift(BusinessDetails.unapply))
+
 }

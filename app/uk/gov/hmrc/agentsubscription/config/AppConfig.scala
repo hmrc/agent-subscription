@@ -18,13 +18,17 @@ package uk.gov.hmrc.agentsubscription.config
 
 import play.api.Configuration
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
+import javax.inject.Singleton
 import uk.gov.hmrc.play.bootstrap.config.ServicesConfig
 
 import scala.util.matching.Regex
 
 @Singleton
-class AppConfig @Inject() (servicesConfig: ServicesConfig, config: Configuration) {
+class AppConfig @Inject() (
+  servicesConfig: ServicesConfig,
+  config: Configuration
+) {
 
   val appName = "agent-subscription"
 

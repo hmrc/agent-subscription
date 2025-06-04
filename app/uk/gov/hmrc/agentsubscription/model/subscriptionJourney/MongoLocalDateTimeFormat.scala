@@ -16,33 +16,34 @@
 
 package uk.gov.hmrc.agentsubscription.model.subscriptionJourney
 
-import play.api.libs.json.{Format, Reads, Writes, __}
+import play.api.libs.json.Format
+import play.api.libs.json.Reads
+import play.api.libs.json.Writes
+import play.api.libs.json.__
 
-import java.time.{Instant, LocalDateTime, ZoneOffset}
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 object MongoLocalDateTimeFormat {
 
   // LocalDateTime must be written to DB as ISODate to allow the expiry TTL on createdOn date to work
 
-  final val localDateTimeReads: Reads[LocalDateTime] =
-    Reads
-      .at[String](__ \ "$date" \ "$numberLong")
-      .map { dateTime =>
-        Instant.ofEpochMilli(dateTime.toLong).atZone(ZoneOffset.UTC).toLocalDateTime
-      }
+  final val localDateTimeReads: Reads[LocalDateTime] = Reads
+    .at[String](__ \ "$date" \ "$numberLong")
+    .map { dateTime =>
+      Instant.ofEpochMilli(dateTime.toLong).atZone(ZoneOffset.UTC).toLocalDateTime
+    }
 
   // for data that exists prior to the hmrc-mongo migration - TODO remove this after legacy data expires (30 days)
-  final val legacyDateTimeReads: Reads[LocalDateTime] =
-    Reads
-      .at[String](__)
-      .map(dateTime => LocalDateTime.parse(dateTime))
+  final val legacyDateTimeReads: Reads[LocalDateTime] = Reads
+    .at[String](__)
+    .map(dateTime => LocalDateTime.parse(dateTime))
 
-  final val localDateTimeWrites: Writes[LocalDateTime] =
-    Writes
-      .at[String](__ \ "$date" \ "$numberLong")
-      .contramap(_.toInstant(ZoneOffset.UTC).toEpochMilli.toString)
+  final val localDateTimeWrites: Writes[LocalDateTime] = Writes
+    .at[String](__ \ "$date" \ "$numberLong")
+    .contramap(_.toInstant(ZoneOffset.UTC).toEpochMilli.toString)
 
-  final implicit val localDateTimeFormat: Format[LocalDateTime] =
-    Format(localDateTimeReads.orElse(legacyDateTimeReads), localDateTimeWrites)
+  implicit final val localDateTimeFormat: Format[LocalDateTime] = Format(localDateTimeReads.orElse(legacyDateTimeReads), localDateTimeWrites)
 
 }

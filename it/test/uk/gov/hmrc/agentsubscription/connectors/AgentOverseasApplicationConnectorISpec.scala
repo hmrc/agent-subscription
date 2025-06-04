@@ -19,36 +19,59 @@ package uk.gov.hmrc.agentsubscription.connectors
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.config.AppConfig
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.{Accepted, AttemptingRegistration, Registered}
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Accepted
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.AgentOverseasApplicationStubs
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
+import uk.gov.hmrc.agentsubscription.support.BaseISpec
+import uk.gov.hmrc.agentsubscription.support.MetricsTestSupport
 import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class AgentOverseasApplicationConnectorISpec
-    extends BaseISpec with AgentOverseasApplicationStubs with MetricsTestSupport with MockitoSugar {
+extends BaseISpec
+with AgentOverseasApplicationStubs
+with MetricsTestSupport
+with MockitoSugar {
 
   private lazy val http = app.injector.instanceOf[HttpClientV2]
   private val appConfig = app.injector.instanceOf[AppConfig]
   private val metrics = app.injector.instanceOf[Metrics]
 
   private lazy val connector: AgentOverseasApplicationConnector =
-    new AgentOverseasApplicationConnector(appConfig, http, metrics)
+    new AgentOverseasApplicationConnector(
+      appConfig,
+      http,
+      metrics
+    )
 
   private val agencyDetails = OverseasAgencyDetails(
     "Agency name",
     "agencyemail@domain.com",
-    OverseasAgencyAddress("Mandatory Address Line 1", "Mandatory Address Line 2", None, None, "IE")
+    OverseasAgencyAddress(
+      "Mandatory Address Line 1",
+      "Mandatory Address Line 2",
+      None,
+      None,
+      "IE"
+    )
   )
 
-  private val businessDetails =
-    TradingDetails("tradingName", OverseasBusinessAddress("addressLine1", "addressLine2", None, None, "CC"))
+  private val businessDetails = TradingDetails(
+    "tradingName",
+    OverseasBusinessAddress(
+      "addressLine1",
+      "addressLine2",
+      None,
+      None,
+      "CC"
+    )
+  )
 
-  private val businessContactDetails =
-    OverseasContactDetails(businessTelephone = "BUSINESS PHONE 123456789", businessEmail = "email@domain.com")
+  private val businessContactDetails = OverseasContactDetails(businessTelephone = "BUSINESS PHONE 123456789", businessEmail = "email@domain.com")
 
   "updateApplicationStatus" should {
     val targetAppStatus = AttemptingRegistration
@@ -61,9 +84,17 @@ class AgentOverseasApplicationConnectorISpec
     }
 
     "successful status update with safeId for registered status" in {
-      givenUpdateApplicationStatus(Registered, 204, s"""{"safeId" : "12345"}""")
+      givenUpdateApplicationStatus(
+        Registered,
+        204,
+        s"""{"safeId" : "12345"}"""
+      )
 
-      val result = await(connector.updateApplicationStatus(Registered, "currentUserAuthId", Some(SafeId("12345"))))
+      val result = await(connector.updateApplicationStatus(
+        Registered,
+        "currentUserAuthId",
+        Some(SafeId("12345"))
+      ))
 
       result shouldBe true
     }
@@ -146,4 +177,5 @@ class AgentOverseasApplicationConnectorISpec
     }
 
   }
+
 }

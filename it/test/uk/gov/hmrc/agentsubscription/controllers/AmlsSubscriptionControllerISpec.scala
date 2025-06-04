@@ -24,21 +24,23 @@ import uk.gov.hmrc.agentsubscription.support.BaseISpec
 
 import java.time.LocalDate
 import scala.concurrent.Await
-import scala.concurrent.duration.{Duration, SECONDS}
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.SECONDS
 
-class AmlsSubscriptionControllerISpec extends BaseISpec with DesStubs {
+class AmlsSubscriptionControllerISpec
+extends BaseISpec
+with DesStubs {
 
   implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
   val duration = Duration(5, SECONDS)
 
-  def doRequest(amlsRegNumber: String) =
-    Await.result(
-      ws.url(s"http://localhost:$port/agent-subscription/amls-subscription/$amlsRegNumber")
-        .withHttpHeaders(CONTENT_TYPE -> "application/json")
-        .get(),
-      duration
-    )
+  def doRequest(amlsRegNumber: String) = Await.result(
+    ws.url(s"http://localhost:$port/agent-subscription/amls-subscription/$amlsRegNumber")
+      .withHttpHeaders(CONTENT_TYPE -> "application/json")
+      .get(),
+    duration
+  )
 
   "GET /amls-subscription/:amlsRegistrationNumber" should {
 

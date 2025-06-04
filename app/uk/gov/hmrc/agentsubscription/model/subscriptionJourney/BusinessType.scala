@@ -40,46 +40,53 @@ sealed trait BusinessType {
 
 object BusinessType {
 
-  case object SoleTrader extends BusinessType {
+  case object SoleTrader
+  extends BusinessType {
     override val key: String = "sole_trader"
   }
-  case object LimitedCompany extends BusinessType {
+  case object LimitedCompany
+  extends BusinessType {
     override val key: String = "limited_company"
   }
 
-  case object Partnership extends BusinessType {
+  case object Partnership
+  extends BusinessType {
     override val key: String = "partnership"
   }
 
-  case object Llp extends BusinessType {
+  case object Llp
+  extends BusinessType {
     override val key: String = "llp"
   }
 
-  def apply(convertToType: String): BusinessType = convertToType match {
-    case "limited_company" => LimitedCompany
-    case "sole_trader"     => SoleTrader
-    case "partnership"     => Partnership
-    case "llp"             => Llp
-  }
-
-  implicit val format: Format[BusinessType] = new Format[BusinessType] {
-
-    override def reads(json: JsValue): JsResult[BusinessType] = {
-      json.as[String] match {
-        case "limited_company" => JsSuccess(LimitedCompany)
-        case "sole_trader"     => JsSuccess(SoleTrader)
-        case "partnership"     => JsSuccess(Partnership)
-        case "llp"             => JsSuccess(Llp)
-      }
-      JsSuccess(BusinessType.apply(json.as[String]))
+  def apply(convertToType: String): BusinessType =
+    convertToType match {
+      case "limited_company" => LimitedCompany
+      case "sole_trader" => SoleTrader
+      case "partnership" => Partnership
+      case "llp" => Llp
     }
 
-    override def writes(o: BusinessType): JsValue =
-      o match {
-        case LimitedCompany => JsString("limited_company")
-        case SoleTrader     => JsString("sole_trader")
-        case Partnership    => JsString("partnership")
-        case Llp            => JsString("llp")
+  implicit val format: Format[BusinessType] =
+    new Format[BusinessType] {
+
+      override def reads(json: JsValue): JsResult[BusinessType] = {
+        json.as[String] match {
+          case "limited_company" => JsSuccess(LimitedCompany)
+          case "sole_trader" => JsSuccess(SoleTrader)
+          case "partnership" => JsSuccess(Partnership)
+          case "llp" => JsSuccess(Llp)
+        }
+        JsSuccess(BusinessType.apply(json.as[String]))
       }
-  }
+
+      override def writes(o: BusinessType): JsValue =
+        o match {
+          case LimitedCompany => JsString("limited_company")
+          case SoleTrader => JsString("sole_trader")
+          case Partnership => JsString("partnership")
+          case Llp => JsString("llp")
+        }
+    }
+
 }

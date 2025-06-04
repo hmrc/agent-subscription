@@ -16,9 +16,12 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
+import javax.inject.Singleton
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import play.api.mvc.Action
+import play.api.mvc.AnyContent
+import play.api.mvc.ControllerComponents
 import uk.gov.hmrc.agentsubscription.auth.AuthActions
 import uk.gov.hmrc.agentsubscription.connectors.CitizenDetailsConnector
 import uk.gov.hmrc.domain.Nino
@@ -32,11 +35,12 @@ class CitizenDetailsController @Inject() (
   val authActions: AuthActions,
   cc: ControllerComponents
 )(implicit ec: ExecutionContext)
-    extends BackendController(cc) {
+extends BackendController(cc) {
 
   import authActions._
 
   def getDesignatoryDetails(nino: Nino): Action[AnyContent] = authorisedWithAgentAffinity { implicit request =>
     citizenDetailsConnector.getDesignatoryDetails(nino).map(dd => Ok(Json.toJson(dd)))
   }
+
 }

@@ -17,12 +17,16 @@
 package uk.gov.hmrc.agentsubscription.connectors
 
 import play.api.test.Helpers._
-import uk.gov.hmrc.agentmtdidentifiers.model.{Arn, Utr}
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model
-import uk.gov.hmrc.agentsubscription.model.{AgentRecord, AmlsSubscriptionRecord, Crn}
+import uk.gov.hmrc.agentsubscription.model.AgentRecord
+import uk.gov.hmrc.agentsubscription.model.AmlsSubscriptionRecord
+import uk.gov.hmrc.agentsubscription.model.Crn
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
-import uk.gov.hmrc.agentsubscription.support.{BaseISpec, MetricsTestSupport}
+import uk.gov.hmrc.agentsubscription.support.BaseISpec
+import uk.gov.hmrc.agentsubscription.support.MetricsTestSupport
 import uk.gov.hmrc.domain.Vrn
 import uk.gov.hmrc.http._
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -31,7 +35,10 @@ import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
 
-class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport {
+class DesConnectorISpec
+extends BaseISpec
+with DesStubs
+with MetricsTestSupport {
 
   val utr = Utr("1234567890")
   val crn = Crn("SC123456")
@@ -49,7 +56,11 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
   private lazy val appConfig = app.injector.instanceOf[AppConfig]
 
   private lazy val connector: DesConnector =
-    new DesConnector(appConfig, http, metrics)
+    new DesConnector(
+      appConfig,
+      http,
+      metrics
+    )
 
   "subscribeToAgentServices" should {
     "return an ARN when subscription is successful" in {
@@ -92,15 +103,14 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
   }
 
   "getRegistration" should {
-    val businessAddress =
-      DesBusinessAddress(
-        "AddressLine1 A",
-        Some("AddressLine2 A"),
-        Some("AddressLine3 A"),
-        Some("AddressLine4 A"),
-        Some("AA1 1AA"),
-        "GB"
-      )
+    val businessAddress = DesBusinessAddress(
+      "AddressLine1 A",
+      Some("AddressLine2 A"),
+      Some("AddressLine3 A"),
+      Some("AddressLine4 A"),
+      Some("AA1 1AA"),
+      "GB"
+    )
 
     "return registration details for a organisation UTR that is known by DES" in {
       organisationRegistrationExists(utr)
@@ -170,7 +180,14 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
           None,
           None,
           None,
-          DesBusinessAddress("AddressLine1 A", None, None, None, None, "GB"),
+          DesBusinessAddress(
+            "AddressLine1 A",
+            None,
+            None,
+            None,
+            None,
+            "GB"
+          ),
           Some("agent1@example.com"),
           None,
           None
@@ -189,7 +206,14 @@ class DesConnectorISpec extends BaseISpec with DesStubs with MetricsTestSupport 
           None,
           None,
           None,
-          DesBusinessAddress("AddressLine1 A", None, None, None, Some("AA1 1AA"), "GB"),
+          DesBusinessAddress(
+            "AddressLine1 A",
+            None,
+            None,
+            None,
+            Some("AA1 1AA"),
+            "GB"
+          ),
           None,
           None,
           None

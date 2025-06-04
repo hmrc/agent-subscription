@@ -18,20 +18,28 @@ package uk.gov.hmrc.agentsubscription.audit
 
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
-import org.mockito.Mockito.{verify, when}
+import org.mockito.Mockito.verify
+import org.mockito.Mockito.when
 import org.scalatest.concurrent.Eventually
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.Json
 import play.api.test.FakeRequest
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.HeaderCarrier
-import uk.gov.hmrc.play.audit.http.connector.{AuditConnector, AuditResult}
-import uk.gov.hmrc.play.audit.model.{DataEvent, ExtendedDataEvent}
+import uk.gov.hmrc.play.audit.http.connector.AuditConnector
+import uk.gov.hmrc.play.audit.http.connector.AuditResult
+import uk.gov.hmrc.play.audit.model.DataEvent
+import uk.gov.hmrc.play.audit.model.ExtendedDataEvent
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 
-class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
+class AuditServiceSpec
+extends UnitSpec
+with MockitoSugar
+with Eventually {
+
   "auditEvent" should {
     "send an event with the correct fields" in {
       val mockConnector = mock[AuditConnector]
@@ -40,15 +48,19 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
       val service = new AuditService(mockConnector)
 
       val detail = Json.obj(
-        "agencyName"    -> "Test Agency",
+        "agencyName" -> "Test Agency",
         "agencyAddress" -> Json.obj("addressLine1" -> "1 Test Street", "addressLine2" -> "Test village")
       )
-      service.auditEvent(AgentSubscription, "transaction name", detail)(
+      service.auditEvent(
+        AgentSubscription,
+        "transaction name",
+        detail
+      )(
         FakeRequest("GET", "/path")
           .withHeaders(
-            "Authorisation"    -> "dummy bearer token",
-            "X-Session-ID"     -> "dummy session id",
-            "X-Request-ID"     -> "dummy request id",
+            "Authorisation" -> "dummy bearer token",
+            "X-Session-ID" -> "dummy session id",
+            "X-Request-ID" -> "dummy request id",
             "True-Client-Port" -> "12345"
           )
       )
@@ -84,7 +96,11 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
 
 //      val hc = HeaderCarrier(deviceID = Some("device ID"))
 
-      service.auditEvent(AgentSubscription, "transaction name", Json.obj())(FakeRequest("GET", "/path"))
+      service.auditEvent(
+        AgentSubscription,
+        "transaction name",
+        Json.obj()
+      )(FakeRequest("GET", "/path"))
 
       eventually {
         val captor = ArgumentCaptor.forClass(classOf[DataEvent])
@@ -107,4 +123,5 @@ class AuditServiceSpec extends UnitSpec with MockitoSugar with Eventually {
       (js \ "other name").as[String] shouldBe "other value"
     }
   }
+
 }

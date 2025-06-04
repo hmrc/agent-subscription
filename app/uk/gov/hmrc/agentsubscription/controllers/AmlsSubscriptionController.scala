@@ -18,19 +18,28 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.Logging
 import play.api.libs.json.Json
-import play.api.mvc.{Action, AnyContent, ControllerComponents}
+import play.api.mvc.Action
+import play.api.mvc.AnyContent
+import play.api.mvc.ControllerComponents
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
-import javax.inject.{Inject, Singleton}
+import javax.inject.Inject
+import javax.inject.Singleton
 import scala.concurrent.ExecutionContext
 
 @Singleton
-class AmlsSubscriptionController @Inject() (des: DesConnector, cc: ControllerComponents, appConfig: AppConfig)(implicit
+class AmlsSubscriptionController @Inject() (
+  des: DesConnector,
+  cc: ControllerComponents,
+  appConfig: AppConfig
+)(implicit
   ec: ExecutionContext
-) extends BackendController(cc) with Logging {
+)
+extends BackendController(cc)
+with Logging {
 
   val appName: String = appConfig.appName
 
@@ -43,4 +52,5 @@ class AmlsSubscriptionController @Inject() (des: DesConnector, cc: ControllerCom
         InternalServerError
     }
   }
+
 }
