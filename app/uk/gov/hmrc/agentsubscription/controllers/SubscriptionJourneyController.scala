@@ -17,7 +17,6 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import com.google.inject.Inject
-import com.mongodb.MongoWriteException
 import play.api.Logging
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.JsError
@@ -80,12 +79,15 @@ with Logging {
             Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
           }
           else {
-            val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
-            subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent) recoverWith {
-              case ex: MongoWriteException =>
-                logger.error(ex.getMessage, ex)
-                handleConflict(journeyRecord)
-            }
+            subscriptionJourneyRepository.findByUtr(journeyRecord.businessDetails.utr).map(result =>
+              if (result.isEmpty) {
+                val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
+                subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent)
+              }
+              else {
+                updateExistingRecordWithNewCred(journeyRecord)
+              }
+            ).flatten
           }
         case JsError(errors) =>
           logger.warn(s"Failed to parse request body: $errors")
@@ -95,7 +97,7 @@ with Logging {
 
   // Find the SJR then overwrite the authProviderId, businessDetails and cleanCredsAuthProviderId. This allows the journey to progress when
   // the agent uses a different cred to continue the journey after some days/weeks and during that time some details may have changed e.g. address.
-  def handleConflict(sjr: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Result] = {
+  private def updateExistingRecordWithNewCred(sjr: SubscriptionJourneyRecord)(implicit ec: ExecutionContext): Future[Result] = {
     val utr = sjr.businessDetails.utr
     for {
       modifiedRecord <- subscriptionJourneyRepository
