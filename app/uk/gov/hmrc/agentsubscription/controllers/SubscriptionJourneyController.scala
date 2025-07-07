@@ -80,7 +80,7 @@ with Logging {
           }
           else {
             subscriptionJourneyRepository.findByUtr(journeyRecord.businessDetails.utr).map(result =>
-              if (result.isEmpty) {
+              if (result.isEmpty || result.exists(_.authProviderId == authProviderId)) {
                 val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
                 subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent)
               }
