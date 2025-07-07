@@ -16,13 +16,10 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import com.mongodb.MongoWriteException
-import com.mongodb.WriteError
 import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyString
 import org.mockito.ArgumentMatchers.{eq => eqs}
 import org.mockito.Mockito._
-import org.mongodb.scala.ServerAddress
-import org.mongodb.scala.bson.BsonDocument
 import org.scalatestplus.mockito.MockitoSugar
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
@@ -42,7 +39,6 @@ import uk.gov.hmrc.crypto.Decrypter
 import uk.gov.hmrc.crypto.Encrypter
 import uk.gov.hmrc.http.HeaderCarrier
 
-import java.util.Collections
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
@@ -189,6 +185,8 @@ with MockitoSugar {
     }
 
     "return no content when a successful update has been done" in {
+      when(mockRepo.findByUtr(anyString()))
+        .thenReturn(Future.successful(None))
       when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord]))
         .thenReturn(Future.successful(Some(RecordUpdated)))
 
@@ -203,21 +201,6 @@ with MockitoSugar {
       val newAuthProviderId = AuthProviderId("cred-new")
       val newRecord = minimalRecord.copy(authProviderId = newAuthProviderId) // The new record (that we're trying to store)
       val updatedExistingRecord = existingRecord.copy(authProviderId = newAuthProviderId) // The existing record, modified with the new record's authId
-
-      when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord]))
-        .thenReturn(
-          Future.failed(
-            new MongoWriteException(
-              new WriteError(
-                1100,
-                "duplicate exception",
-                BsonDocument.apply(Json.toJson(existingRecord).toString())
-              ),
-              ServerAddress.apply(),
-              Collections.emptySet()
-            )
-          )
-        )
 
       when(mockRepo.updateOnUtr(
         any[String],
@@ -262,21 +245,6 @@ with MockitoSugar {
         businessDetails = newBusinessDetails
       ) // The existing record, modified with the new record's authId and clean credID
 
-      when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord]))
-        .thenReturn(
-          Future.failed(
-            new MongoWriteException(
-              new WriteError(
-                1100,
-                "duplicate exception",
-                BsonDocument.apply(Json.toJson(existingRecord).toString)
-              ),
-              ServerAddress.apply(),
-              Collections.emptySet()
-            )
-          )
-        )
-
       when(mockRepo.updateOnUtr(
         any[String],
         any[AuthProviderId],
@@ -297,6 +265,30 @@ with MockitoSugar {
         .asOpt[AuthProviderId] shouldBe updatedExistingRecord.cleanCredsAuthProviderId
       (contentAsJson(result) \ "businessDetails")
         .as[BusinessDetails] shouldBe updatedExistingRecord.businessDetails
+    }
+
+    "throw IllegalStateException if there's a conflict updating existing record" in {
+      val existingRecord = minimalRecord // The existing record in the repo
+      val newAuthProviderId = AuthProviderId("cred-new")
+      val newRecord = minimalRecord.copy(authProviderId = newAuthProviderId) // The new record (that we're trying to store)
+
+      when(mockRepo.updateOnUtr(
+        any[String],
+        any[AuthProviderId],
+        any[BusinessDetails],
+        any[Option[AuthProviderId]]
+      ))
+        .thenReturn(Future.successful((None)))
+
+      when(mockRepo.findByUtr(any[String]))
+        .thenReturn(Future.successful(Some(existingRecord)))
+
+      val request = FakeRequest().withBody[JsValue](Json.toJson(newRecord))
+
+      intercept[IllegalStateException] {
+        await(controller.createOrUpdate(newAuthProviderId).apply(request))
+      }
+
     }
   }
 
