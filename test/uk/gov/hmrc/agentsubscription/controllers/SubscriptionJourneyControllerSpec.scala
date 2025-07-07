@@ -75,6 +75,10 @@ with MockitoSugar {
     verifiedEmails = VerifiedEmails(Set.empty)
   )
 
+  val recordWithData: SubscriptionJourneyRecord = minimalRecord.copy(
+    continueId = Some("XXX")
+  )
+
   val mockRepo: SubscriptionJourneyRepository = mock[SubscriptionJourneyRepository]
   import play.api.test.Helpers.stubControllerComponents
 
@@ -184,7 +188,7 @@ with MockitoSugar {
       contentAsString(result) shouldBe "Duplicate mapped auth ids in request body"
     }
 
-    "return no content when a successful update has been done" in {
+    "return no content when a successful create has been done" in {
       when(mockRepo.findByUtr(anyString()))
         .thenReturn(Future.successful(None))
       when(mockRepo.upsert(any[AuthProviderId], any[SubscriptionJourneyRecord]))
@@ -196,8 +200,20 @@ with MockitoSugar {
       result.header.status shouldBe 204
     }
 
+    "return no content when a successful update has been done" in {
+      when(mockRepo.findByUtr(anyString()))
+        .thenReturn(Future.successful(Some(minimalRecord)))
+      when(mockRepo.upsert(any[AuthProviderId], eqs(recordWithData)))
+        .thenReturn(Future.successful(Some(RecordUpdated)))
+
+      val request = FakeRequest().withBody[JsValue](Json.toJson(recordWithData))
+
+      val result: Result = await(controller.createOrUpdate(AuthProviderId("cred-1234")).apply(request))
+      result.header.status shouldBe 204
+    }
+
     "return 200 with authProviderID updated when there is already an existing record" in {
-      val existingRecord = minimalRecord // The existing record in the repo
+      val existingRecord = recordWithData // The existing record in the repo
       val newAuthProviderId = AuthProviderId("cred-new")
       val newRecord = minimalRecord.copy(authProviderId = newAuthProviderId) // The new record (that we're trying to store)
       val updatedExistingRecord = existingRecord.copy(authProviderId = newAuthProviderId) // The existing record, modified with the new record's authId
@@ -208,7 +224,7 @@ with MockitoSugar {
         any[BusinessDetails],
         any[Option[AuthProviderId]]
       ))
-        .thenReturn(Future.successful((Some(newRecord))))
+        .thenReturn(Future.successful(Some(updatedExistingRecord)))
 
       when(mockRepo.findByUtr(any[String]))
         .thenReturn(Future.successful(Some(existingRecord)))
@@ -251,7 +267,7 @@ with MockitoSugar {
         any[BusinessDetails],
         any[Option[AuthProviderId]]
       ))
-        .thenReturn(Future.successful((Some(newRecord))))
+        .thenReturn(Future.successful(Some(updatedExistingRecord)))
 
       when(mockRepo.findByUtr(any[String]))
         .thenReturn(Future.successful(Some(existingRecord)))
