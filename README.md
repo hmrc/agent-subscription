@@ -10,6 +10,12 @@ interact with their clients. The domain is Subscriptions to Agent Services follo
 
     sbt test it:test
 
+### Automated testing
+This service is tested by the following automated test repositories:
+- [agent-onboarding-ui-tests](https://github.com/hmrc/agent-onboarding-ui-tests)
+- [agent-overseas-ui-tests](https://github.com/hmrc/agent-overseas-ui-tests)
+- [agent-subscription-performance-tests](https://github.com/hmrc/agent-subscription-performance-tests)
+
 ## Running the app locally
 
     sm2 --start AGENT_ONBOARDING
