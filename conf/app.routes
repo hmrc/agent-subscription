@@ -5,13 +5,13 @@ GET     /registration/:utr/postcode/:postcode  @uk.gov.hmrc.agentsubscription.co
 POST    /subscription                          @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createSubscription()
 PUT     /subscription                          @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.updateSubscription()
 
-PUT    /overseas-subscription                 @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createOverseasSubscription()
+PUT     /overseas-subscription                 @uk.gov.hmrc.agentsubscription.controllers.SubscriptionController.createOverseasSubscription()
 
-GET    /corporation-tax-utr/:utr/crn/:crn     @uk.gov.hmrc.agentsubscription.controllers.CTReferenceController.matchCorporationTaxUtr(utr:uk.gov.hmrc.agentmtdidentifiers.model.Utr, crn:uk.gov.hmrc.agentsubscription.model.Crn)
+GET     /corporation-tax-utr/:utr/crn/:crn     @uk.gov.hmrc.agentsubscription.controllers.CTReferenceController.matchCorporationTaxUtr(utr:uk.gov.hmrc.agentmtdidentifiers.model.Utr, crn:uk.gov.hmrc.agentsubscription.model.Crn)
 
-GET    /vat-known-facts/vrn/:vrn/dateOfRegistration/:dateOfReg     @uk.gov.hmrc.agentsubscription.controllers.VatKnownfactsController.matchVatKnownfacts(vrn:uk.gov.hmrc.domain.Vrn, dateOfReg:String)
+GET     /vat-known-facts/vrn/:vrn/dateOfRegistration/:dateOfReg     @uk.gov.hmrc.agentsubscription.controllers.VatKnownfactsController.matchVatKnownfacts(vrn:uk.gov.hmrc.domain.Vrn, dateOfReg:String)
 
-GET    /citizen-details/:nino/designatory-details     @uk.gov.hmrc.agentsubscription.controllers.CitizenDetailsController.getDesignatoryDetails(nino: uk.gov.hmrc.domain.Nino)
+GET     /citizen-details/:nino/designatory-details     @uk.gov.hmrc.agentsubscription.controllers.CitizenDetailsController.getDesignatoryDetails(nino: uk.gov.hmrc.domain.Nino)
 
 GET     /companies-house-api-proxy/company/:crn/officers/:nameToMatch @uk.gov.hmrc.agentsubscription.controllers.CompaniesHouseController.matchCompanyOfficers(crn: uk.gov.hmrc.agentsubscription.model.Crn, nameToMatch: String)
 
@@ -24,6 +24,6 @@ GET     /subscription/journey/utr/:utr           @uk.gov.hmrc.agentsubscription.
 
 GET     /subscription/journey/continueId/:uuid   @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.findByContinueId(uuid: String)
 
-POST /subscription/journey/primaryId/:authProviderId @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.createOrUpdate(authProviderId: AuthProviderId)
+POST    /subscription/journey/primaryId/:authProviderId @uk.gov.hmrc.agentsubscription.controllers.SubscriptionJourneyController.createOrUpdate(authProviderId: AuthProviderId)
 
 GET     /amls-subscription/:amlsRegistrationNumber  @uk.gov.hmrc.agentsubscription.controllers.AmlsSubscriptionController.getAmlsSubscription(amlsRegistrationNumber: String)

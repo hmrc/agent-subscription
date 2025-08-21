@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentsubscription.stubs
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import play.api.libs.json.Json
 import uk.gov.hmrc.agentsubscription.support.WireMockSupport
 
 trait AuthStub {
@@ -39,30 +40,39 @@ trait AuthStub {
         .willReturn(
           aResponse()
             .withStatus(200)
-            .withBody(s"""
-                         |{
-                         |  "new-session":"/auth/oid/$oid/session",
-                         |  "enrolments":"/auth/oid/$oid/enrolments",
-                         |  "uri":"/auth/oid/$oid",
-                         |  "loggedInAt":"2016-06-20T10:44:29.634Z",
-                         |  "optionalCredentials":{
-                         |    "providerId": "12345",
-                         |    "providerType": "GovernmentGateway"
-                         |  },
-                         |  "accounts":{
-                         |  },
-                         |  "lastUpdated":"2016-06-20T10:44:29.634Z",
-                         |  "credentialStrength":"strong",
-                         |  "confidenceLevel":50,
-                         |  "userDetailsLink":"$wireMockBaseUrl/user-details/id/$oid",
-                         |  "levelOfAssurance":"1",
-                         |  "previouslyLoggedInAt":"2016-06-20T09:48:37.112Z",
-                         |  "groupIdentifier": "groupId",
-                         |  "affinityGroup": "$affinityGroup",
-                         |  "allEnrolments": []
-                         |}
-       """.stripMargin)
+            .withBody(
+              s"""
+                 |{
+                 |  "new-session":"/auth/oid/$oid/session",
+                 |  "enrolments":"/auth/oid/$oid/enrolments",
+                 |  "uri":"/auth/oid/$oid",
+                 |  "loggedInAt":"2016-06-20T10:44:29.634Z",
+                 |  "optionalCredentials":{
+                 |    "providerId": "12345",
+                 |    "providerType": "GovernmentGateway"
+                 |  },
+                 |  "accounts":{
+                 |  },
+                 |  "lastUpdated":"2016-06-20T10:44:29.634Z",
+                 |  "credentialStrength":"strong",
+                 |  "confidenceLevel":50,
+                 |  "userDetailsLink":"$wireMockBaseUrl/user-details/id/$oid",
+                 |  "levelOfAssurance":"1",
+                 |  "previouslyLoggedInAt":"2016-06-20T09:48:37.112Z",
+                 |  "groupIdentifier": "groupId",
+                 |  "affinityGroup": "$affinityGroup",
+                 |  "allEnrolments": []
+                 |}
+       """.stripMargin
+            )
         )
+    )
+    this
+  }
+
+  def givenAuthorised(): AuthStub = {
+    stubFor(
+      post(urlEqualTo("/auth/authorise")).willReturn(aResponse().withStatus(200).withBody(Json.obj().toString()))
     )
     this
   }

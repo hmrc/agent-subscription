@@ -16,6 +16,7 @@
 
 package uk.gov.hmrc.agentsubscription.support
 
+import com.google.inject.AbstractModule
 import org.scalatestplus.play.guice.GuiceOneServerPerSuite
 import play.api.Application
 import play.api.inject.guice.GuiceApplicationBuilder
@@ -30,6 +31,8 @@ with WireMockSupport {
 
   override implicit lazy val app: Application = appBuilder
     .build()
+
+  def moduleWithOverrides: AbstractModule = new AbstractModule() {}
 
   protected def appBuilder: GuiceApplicationBuilder = new GuiceApplicationBuilder()
     .configure(
@@ -47,7 +50,7 @@ with WireMockSupport {
       "microservice.services.agent-mapping.host" -> wireMockHost,
       "microservice.services.companies-house-api-proxy.port" -> wireMockPort,
       "microservice.services.companies-house-api-proxy.host" -> wireMockHost
-    )
+    ).overrides(moduleWithOverrides)
 
   implicit val fakeRequest: Request[AnyContent] = FakeRequest().withHeaders("Authorization" -> "Bearer secret")
 

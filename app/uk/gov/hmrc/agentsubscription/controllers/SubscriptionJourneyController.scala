@@ -27,6 +27,8 @@ import play.api.mvc.AnyContent
 import play.api.mvc.ControllerComponents
 import play.api.mvc.Result
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.AuthorisedFunctions
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
@@ -39,35 +41,47 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 class SubscriptionJourneyController @Inject() (
+  val authConnector: AuthConnector,
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   cc: ControllerComponents
 )(implicit ec: ExecutionContext)
 extends BackendController(cc)
-with Logging {
+with Logging
+with AuthorisedFunctions {
 
   def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async {
-    subscriptionJourneyRepository.findByAuthId(authProviderId).map {
-      case Some(record) => Ok(toJson(record))
-      case None => NoContent
-    }
+    implicit request =>
+      authorised() {
+        subscriptionJourneyRepository.findByAuthId(authProviderId).map {
+          case Some(record) => Ok(toJson(record))
+          case None => NoContent
+        }
+      }
   }
 
   def findByUtr(utr: Utr): Action[AnyContent] = Action.async {
-    subscriptionJourneyRepository.findByUtr(utr.value).map {
-      case Some(record) => Ok(toJson(record))
-      case None => NoContent
-    }
+    implicit request =>
+      authorised() {
+        subscriptionJourneyRepository.findByUtr(utr.value).map {
+          case Some(record) => Ok(toJson(record))
+          case None => NoContent
+        }
+      }
   }
 
   def findByContinueId(continueId: String): Action[AnyContent] = Action.async {
-    subscriptionJourneyRepository.findByContinueId(continueId).map {
-      case Some(record) => Ok(toJson(record))
-      case None => NoContent
-    }
+    implicit request =>
+      authorised() {
+        subscriptionJourneyRepository.findByContinueId(continueId).map {
+          case Some(record) => Ok(toJson(record))
+          case None => NoContent
+        }
+      }
   }
 
   def createOrUpdate(authProviderId: AuthProviderId): Action[JsValue] =
     Action.async(parse.json) { implicit request =>
+      authorised()
       request.body.validate[SubscriptionJourneyRecord] match {
         case JsSuccess(journeyRecord, _) =>
           val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
