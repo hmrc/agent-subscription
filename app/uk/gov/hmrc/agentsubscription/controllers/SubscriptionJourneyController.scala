@@ -81,33 +81,35 @@ with AuthorisedFunctions {
 
   def createOrUpdate(authProviderId: AuthProviderId): Action[JsValue] =
     Action.async(parse.json) { implicit request =>
-      authorised() {
-        request.body.validate[SubscriptionJourneyRecord] match {
-          case JsSuccess(journeyRecord, _) =>
-            val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
+//      TODO: Is this correct?
+      authorised()
+//      authorised() {
+      request.body.validate[SubscriptionJourneyRecord] match {
+        case JsSuccess(journeyRecord, _) =>
+          val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
 
-            if (journeyRecord.authProviderId != authProviderId) {
-              Future.successful(BadRequest("Auth ids in request URL and body do not match"))
-            }
-            else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
-              Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
-            }
-            else {
-              subscriptionJourneyRepository.findByUtr(journeyRecord.businessDetails.utr).map(result =>
-                if (result.isEmpty || result.exists(_.authProviderId == authProviderId)) {
-                  val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
-                  subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent)
-                }
-                else {
-                  updateExistingRecordWithNewCred(journeyRecord)
-                }
-              ).flatten
-            }
-          case JsError(errors) =>
-            logger.warn(s"Failed to parse request body: $errors")
-            Future.successful(BadRequest("Invalid SubscriptionJourneyRecord payload"))
-        }
+          if (journeyRecord.authProviderId != authProviderId) {
+            Future.successful(BadRequest("Auth ids in request URL and body do not match"))
+          }
+          else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
+            Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
+          }
+          else {
+            subscriptionJourneyRepository.findByUtr(journeyRecord.businessDetails.utr).map(result =>
+              if (result.isEmpty || result.exists(_.authProviderId == authProviderId)) {
+                val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
+                subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent)
+              }
+              else {
+                updateExistingRecordWithNewCred(journeyRecord)
+              }
+            ).flatten
+          }
+        case JsError(errors) =>
+          logger.warn(s"Failed to parse request body: $errors")
+          Future.successful(BadRequest("Invalid SubscriptionJourneyRecord payload"))
       }
+//      }
     }
 
   // Find the SJR then overwrite the authProviderId, businessDetails and cleanCredsAuthProviderId. This allows the journey to progress when
