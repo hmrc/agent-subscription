@@ -203,7 +203,8 @@ with CleanMongoCollectionSupport {
       val newAuthProviderId = "auth-id2"
       val newSubscriptionJourneyRecord = subscriptionJourneyRecord.copy(
         authProviderId = AuthProviderId(newAuthProviderId),
-        cleanCredsAuthProviderId = Some(AuthProviderId("auth-id-clean-creds")))
+        cleanCredsAuthProviderId = Some(AuthProviderId("auth-id-clean-creds"))
+      )
       val response = new Resource(s"/agent-subscription/subscription/journey/primaryId/$newAuthProviderId", port).postAsJson(
         Json.toJson(newSubscriptionJourneyRecord).toString()
       )
