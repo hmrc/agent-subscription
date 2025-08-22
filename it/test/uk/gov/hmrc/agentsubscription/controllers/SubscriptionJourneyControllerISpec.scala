@@ -113,12 +113,16 @@ with CleanMongoCollectionSupport {
 
       val response = new Resource("/agent-subscription/subscription/journey/id/auth-id", port).get()
       response.status shouldBe 200
+
+      await(repo.delete(subscriptionJourneyRecord.businessDetails.utr))
     }
 
     "return NoContent when not found by auth id" in {
       givenAuthorised()
       val response = new Resource("/agent-subscription/subscription/journey/id/missing", port).get()
       response.status shouldBe 204
+
+      await(repo.delete(subscriptionJourneyRecord.businessDetails.utr))
     }
 
     "return OK with record body when record found by utr" in {
@@ -126,6 +130,8 @@ with CleanMongoCollectionSupport {
       await(repo.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
       val response = new Resource(s"/agent-subscription/subscription/journey/utr/${validUtr.value}", port).get()
       response.status shouldBe 200
+
+      await(repo.delete(subscriptionJourneyRecord.businessDetails.utr))
     }
 
     "return NoContent when record not found by utr" in {
@@ -139,6 +145,8 @@ with CleanMongoCollectionSupport {
       await(repo.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
       val response = new Resource(s"/agent-subscription/subscription/journey/continueId/${subscriptionJourneyRecord.continueId.get}", port).get()
       response.status shouldBe 200
+
+      await(repo.delete(subscriptionJourneyRecord.businessDetails.utr))
     }
 
     "return NoContent when record not found by continueId" in {
@@ -147,14 +155,16 @@ with CleanMongoCollectionSupport {
       response.status shouldBe 204
     }
 
-//    "return bad request when invalid json provided in createOrUpdate" in {
-//      givenAuthorised()
-//      await(repo.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
-//      val response = new Resource("/agent-subscription/subscription/journey/primaryId/auth-id", port).postAsJson(
-//        Json.toJson(subscriptionJourneyRecord).toString()
-//      )
-//      response.status shouldBe 400
-//    }
+    "return bad request when invalid json provided in createOrUpdate" in {
+      givenAuthorised()
+      await(repo.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
+      val response = new Resource("/agent-subscription/subscription/journey/primaryId/auth-id", port).postAsJson(
+        "invalid json"
+      )
+      response.status shouldBe 400
+
+      await(repo.delete(subscriptionJourneyRecord.businessDetails.utr))
+    }
 
     "return bad request when provided auth id doesn't match record primary auth id" in {
       givenAuthorised()
@@ -163,6 +173,8 @@ with CleanMongoCollectionSupport {
         Json.toJson(subscriptionJourneyRecord).toString()
       )
       response.status shouldBe 400
+
+      await(repo.delete(subscriptionJourneyRecord.businessDetails.utr))
     }
 
     "return no content when a successful create has been done" in {
@@ -171,6 +183,8 @@ with CleanMongoCollectionSupport {
         Json.toJson(subscriptionJourneyRecord).toString()
       )
       response.status shouldBe 204
+
+      await(repo.delete(subscriptionJourneyRecord.businessDetails.utr))
     }
 
     "return no content when a successful update has been done" in {
@@ -180,6 +194,8 @@ with CleanMongoCollectionSupport {
         Json.toJson(subscriptionJourneyRecord).toString()
       )
       response.status shouldBe 204
+
+      await(repo.delete(subscriptionJourneyRecord.businessDetails.utr))
     }
 
     "return 200 with authProviderID updated when there is already an existing record" in {
@@ -189,20 +205,24 @@ with CleanMongoCollectionSupport {
         Json.toJson(subscriptionJourneyRecord.copy(authProviderId = AuthProviderId("auth-id2"))).toString()
       )
       response.status shouldBe 200
+
+      await(repo.delete(subscriptionJourneyRecord.businessDetails.utr))
     }
 
-//    "return 200 with authProviderID, cleanCredsAuthProviderID updated when there is already an existing record" in {
-//      givenAuthorised()
-//      await(repo.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
-//
-//      val newSubscriptionJourneyRecord = subscriptionJourneyRecord.copy(
-//        authProviderId = AuthProviderId("auth-id2"),
-//        cleanCredsAuthProviderId = Some(AuthProviderId("auth-id-clean-creds")))
-//      val response = new Resource("/agent-subscription/subscription/journey/primaryId/auth-id2", port).postAsJson(
-//        Json.toJson(newSubscriptionJourneyRecord).toString()
-//      )
-//      response.status shouldBe 200
-//    }
+    "return 200 with authProviderID, cleanCredsAuthProviderID updated when there is already an existing record" in {
+      givenAuthorised()
+      await(repo.upsert(subscriptionJourneyRecord.authProviderId, subscriptionJourneyRecord))
+
+      val newSubscriptionJourneyRecord = subscriptionJourneyRecord.copy(
+        authProviderId = AuthProviderId("auth-id2"),
+        cleanCredsAuthProviderId = Some(AuthProviderId("auth-id-clean-creds")))
+      val response = new Resource("/agent-subscription/subscription/journey/primaryId/auth-id2", port).postAsJson(
+        Json.toJson(newSubscriptionJourneyRecord).toString()
+      )
+      response.status shouldBe 200
+
+      await(repo.delete(subscriptionJourneyRecord.businessDetails.utr))
+    }
 
     "throw IllegalStateException if there's a conflict updating existing record" in {}
   }
