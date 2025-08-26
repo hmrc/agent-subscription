@@ -49,34 +49,31 @@ extends BackendController(cc)
 with Logging
 with AuthorisedFunctions {
 
-  def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async {
-    implicit request =>
-      authorised() {
-        subscriptionJourneyRepository.findByAuthId(authProviderId).map {
-          case Some(record) => Ok(toJson(record))
-          case None => NoContent
-        }
+  def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
+    authorised() {
+      subscriptionJourneyRepository.findByAuthId(authProviderId).map {
+        case Some(record) => Ok(toJson(record))
+        case None => NoContent
       }
+    }
   }
 
-  def findByUtr(utr: Utr): Action[AnyContent] = Action.async {
-    implicit request =>
-      authorised() {
-        subscriptionJourneyRepository.findByUtr(utr.value).map {
-          case Some(record) => Ok(toJson(record))
-          case None => NoContent
-        }
+  def findByUtr(utr: Utr): Action[AnyContent] = Action.async { implicit request =>
+    authorised() {
+      subscriptionJourneyRepository.findByUtr(utr.value).map {
+        case Some(record) => Ok(toJson(record))
+        case None => NoContent
       }
+    }
   }
 
-  def findByContinueId(continueId: String): Action[AnyContent] = Action.async {
-    implicit request =>
-      authorised() {
-        subscriptionJourneyRepository.findByContinueId(continueId).map {
-          case Some(record) => Ok(toJson(record))
-          case None => NoContent
-        }
+  def findByContinueId(continueId: String): Action[AnyContent] = Action.async { implicit request =>
+    authorised() {
+      subscriptionJourneyRepository.findByContinueId(continueId).map {
+        case Some(record) => Ok(toJson(record))
+        case None => NoContent
       }
+    }
   }
 
   def createOrUpdate(authProviderId: AuthProviderId): Action[JsValue] =
