@@ -23,6 +23,8 @@ import play.api.mvc.AnyContent
 import play.api.mvc.ControllerComponents
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.DesConnector
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.AuthorisedFunctions
 import uk.gov.hmrc.http.UpstreamErrorResponse
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
@@ -32,6 +34,7 @@ import scala.concurrent.ExecutionContext
 
 @Singleton
 class AmlsSubscriptionController @Inject() (
+  val authConnector: AuthConnector,
   des: DesConnector,
   cc: ControllerComponents,
   appConfig: AppConfig
@@ -39,17 +42,20 @@ class AmlsSubscriptionController @Inject() (
   ec: ExecutionContext
 )
 extends BackendController(cc)
-with Logging {
+with Logging
+with AuthorisedFunctions {
 
   val appName: String = appConfig.appName
 
   private def is5xx(u: UpstreamErrorResponse): Boolean = u.statusCode >= 500 && u.statusCode < 600
 
   def getAmlsSubscription(amlsRegistrationNumber: String): Action[AnyContent] = Action.async { implicit request =>
-    des.getAmlsSubscriptionStatus(amlsRegistrationNumber).map(amls => Ok(Json.toJson(amls))).recover {
-      case e: UpstreamErrorResponse if is5xx(e) =>
-        logger.warn(s"DES return status ${e.statusCode} ${e.message}")
-        InternalServerError
+    authorised() {
+      des.getAmlsSubscriptionStatus(amlsRegistrationNumber).map(amls => Ok(Json.toJson(amls))).recover {
+        case e: UpstreamErrorResponse if is5xx(e) =>
+          logger.warn(s"DES return status ${e.statusCode} ${e.message}")
+          InternalServerError
+      }
     }
   }
 

@@ -27,6 +27,8 @@ import play.api.mvc.AnyContent
 import play.api.mvc.ControllerComponents
 import play.api.mvc.Result
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.auth.core.AuthConnector
+import uk.gov.hmrc.auth.core.AuthorisedFunctions
 import uk.gov.hmrc.agentsubscription.model.AuthProviderId
 import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.SubscriptionJourneyRecord
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
@@ -39,59 +41,69 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
 class SubscriptionJourneyController @Inject() (
+  val authConnector: AuthConnector,
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   cc: ControllerComponents
 )(implicit ec: ExecutionContext)
 extends BackendController(cc)
-with Logging {
+with Logging
+with AuthorisedFunctions {
 
-  def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async {
-    subscriptionJourneyRepository.findByAuthId(authProviderId).map {
-      case Some(record) => Ok(toJson(record))
-      case None => NoContent
+  def findByAuthId(authProviderId: AuthProviderId): Action[AnyContent] = Action.async { implicit request =>
+    authorised() {
+      subscriptionJourneyRepository.findByAuthId(authProviderId).map {
+        case Some(record) => Ok(toJson(record))
+        case None => NoContent
+      }
     }
   }
 
-  def findByUtr(utr: Utr): Action[AnyContent] = Action.async {
-    subscriptionJourneyRepository.findByUtr(utr.value).map {
-      case Some(record) => Ok(toJson(record))
-      case None => NoContent
+  def findByUtr(utr: Utr): Action[AnyContent] = Action.async { implicit request =>
+    authorised() {
+      subscriptionJourneyRepository.findByUtr(utr.value).map {
+        case Some(record) => Ok(toJson(record))
+        case None => NoContent
+      }
     }
   }
 
-  def findByContinueId(continueId: String): Action[AnyContent] = Action.async {
-    subscriptionJourneyRepository.findByContinueId(continueId).map {
-      case Some(record) => Ok(toJson(record))
-      case None => NoContent
+  def findByContinueId(continueId: String): Action[AnyContent] = Action.async { implicit request =>
+    authorised() {
+      subscriptionJourneyRepository.findByContinueId(continueId).map {
+        case Some(record) => Ok(toJson(record))
+        case None => NoContent
+      }
     }
   }
 
   def createOrUpdate(authProviderId: AuthProviderId): Action[JsValue] =
     Action.async(parse.json) { implicit request =>
-      request.body.validate[SubscriptionJourneyRecord] match {
-        case JsSuccess(journeyRecord, _) =>
-          val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
+      authorised() {
+        request.body.validate[SubscriptionJourneyRecord] match {
+          case JsSuccess(journeyRecord, _) =>
+            val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
 
-          if (journeyRecord.authProviderId != authProviderId) {
-            Future.successful(BadRequest("Auth ids in request URL and body do not match"))
-          }
-          else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
-            Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
-          }
-          else {
-            subscriptionJourneyRepository.findByUtr(journeyRecord.businessDetails.utr).map(result =>
-              if (result.isEmpty || result.exists(_.authProviderId == authProviderId)) {
-                val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
-                subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent)
-              }
-              else {
-                updateExistingRecordWithNewCred(journeyRecord)
-              }
-            ).flatten
-          }
-        case JsError(errors) =>
-          logger.warn(s"Failed to parse request body: $errors")
-          Future.successful(BadRequest("Invalid SubscriptionJourneyRecord payload"))
+            if (journeyRecord.authProviderId != authProviderId) {
+              Future.successful(BadRequest("Auth ids in request URL and body do not match"))
+            }
+            else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
+              Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
+            }
+            else {
+              subscriptionJourneyRepository.findByUtr(journeyRecord.businessDetails.utr).map(result =>
+                if (result.isEmpty || result.exists(_.authProviderId == authProviderId)) {
+                  val updatedRecord = journeyRecord.copy(lastModifiedDate = Some(LocalDateTime.now(ZoneOffset.UTC)))
+                  subscriptionJourneyRepository.upsert(authProviderId, updatedRecord).map(_ => NoContent)
+                }
+                else {
+                  updateExistingRecordWithNewCred(journeyRecord)
+                }
+              ).flatten
+            }
+          case JsError(errors) =>
+            logger.warn(s"Failed to parse request body: $errors")
+            Future.successful(BadRequest("Invalid SubscriptionJourneyRecord payload"))
+        }
       }
     }
 

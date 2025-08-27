@@ -16,8 +16,6 @@
 
 package uk.gov.hmrc.agentsubscription.auth
 
-import javax.inject.Inject
-import javax.inject.Singleton
 import play.api.libs.json.Json.toJson
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
@@ -25,8 +23,6 @@ import play.api.libs.json.OFormat
 import play.api.libs.json.Writes
 import play.api.mvc.Results.Forbidden
 import play.api.mvc.Results.Unauthorized
-import play.api.mvc.AnyContent
-import play.api.mvc.Result
 import play.api.mvc._
 import uk.gov.hmrc.agentsubscription.auth.AuthActions._
 import uk.gov.hmrc.agentsubscription.utils.valueOps
@@ -40,6 +36,8 @@ import uk.gov.hmrc.auth.core.retrieve.Credentials
 import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.play.bootstrap.backend.controller.BackendController
 
+import javax.inject.Inject
+import javax.inject.Singleton
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 

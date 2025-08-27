@@ -17,8 +17,10 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.libs.ws.WSClient
+import play.api.test.Helpers.AUTHORIZATION
 import play.api.test.Helpers.CONTENT_TYPE
 import uk.gov.hmrc.agentsubscription.model.AmlsSubscriptionRecord
+import uk.gov.hmrc.agentsubscription.stubs.AuthStub
 import uk.gov.hmrc.agentsubscription.stubs.DesStubs
 import uk.gov.hmrc.agentsubscription.support.BaseISpec
 
@@ -29,6 +31,7 @@ import scala.concurrent.duration.SECONDS
 
 class AmlsSubscriptionControllerISpec
 extends BaseISpec
+with AuthStub
 with DesStubs {
 
   implicit val ws: WSClient = app.injector.instanceOf[WSClient]
@@ -37,10 +40,15 @@ with DesStubs {
 
   def doRequest(amlsRegNumber: String) = Await.result(
     ws.url(s"http://localhost:$port/agent-subscription/amls-subscription/$amlsRegNumber")
-      .withHttpHeaders(CONTENT_TYPE -> "application/json")
+      .withHttpHeaders(CONTENT_TYPE -> "application/json", AUTHORIZATION -> "Bearer XYZ")
       .get(),
     duration
   )
+
+  override protected def beforeEach(): Unit = {
+    super.beforeEach()
+    givenAuthorised()
+  }
 
   "GET /amls-subscription/:amlsRegistrationNumber" should {
 
