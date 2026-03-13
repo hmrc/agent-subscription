@@ -40,6 +40,7 @@ with AuthStub
 with TaxEnrolmentsStubs
 with AgentAssuranceStub
 with OverseasDesStubs
+with HipStubs
 with AgentOverseasApplicationStubs
 with EmailStub {
 
@@ -70,12 +71,11 @@ with EmailStub {
         204,
         safeIdJson
       )
-      subscriptionSucceeds(safeId.value, agencyDetailsJson)
+      hipSubscriptionSucceeds(safeId.value, agencyDetailsJson)
       allocatedPrincipalEnrolmentNotExists(arn)
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
       enrolmentSucceeds(stubbedGroupId, arn)
-      createOverseasAmlsSucceeds(Arn(arn), overseasAmlsDetails)
       givenUpdateApplicationStatus(
         Complete,
         204,
@@ -128,16 +128,19 @@ with EmailStub {
     .asInstanceOf[JsObject]
 
   private val agencyDetailsJson =
-    s"""
-       |{
-       |  "agencyName": "Agency name",
-       |  "agencyEmail": "agencyemail@domain.com",
-       |  "agencyAddress": {
-       |    "addressLine1": "Mandatory Address Line 1",
-       |    "addressLine2": "Mandatory Address Line 2",
-       |    "countryCode": "IE"
-       |  }
-       |}
-     """.stripMargin
+    Json.obj(
+      "name" -> "Agency name",
+      "addr1" -> "Mandatory Address Line 1",
+      "addr2" -> "Mandatory Address Line 2",
+      "country" -> "IE",
+      "email" -> "agencyemail@domain.com",
+      "supervisoryBody" -> "supervisoryName",
+      "membershipNumber" -> "supervisoryId",
+      "updateDetailsStatus" -> "REQUIRED",
+      "amlSupervisionUpdateStatus" -> "REQUIRED",
+      "directorPartnerUpdateStatus" -> "REQUIRED",
+      "acceptNewTermsStatus" -> "REQUIRED",
+      "reriskStatus" -> "REQUIRED"
+    ).toString
 
 }

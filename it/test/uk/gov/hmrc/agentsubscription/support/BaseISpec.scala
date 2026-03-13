@@ -38,6 +38,7 @@ with WireMockSupport {
     .configure(
       "microservice.services.auth.port" -> wireMockPort,
       "microservice.services.des.port" -> wireMockPort,
+      "microservice.services.hip.port" -> wireMockPort,
       "microservice.services.gg.port" -> wireMockPort,
       "microservice.services.tax-enrolments.port" -> wireMockPort,
       "microservice.services.enrolment-store-proxy.port" -> wireMockPort,

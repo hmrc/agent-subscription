@@ -27,6 +27,7 @@ import uk.gov.hmrc.agentsubscription.audit.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.audit.OverseasAgentSubscription
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
@@ -73,13 +74,15 @@ extends Exception(message)
 @Singleton
 class SubscriptionService @Inject() (
   desConnector: DesConnector,
+  hipConnector: HipConnector,
   taxEnrolmentsConnector: TaxEnrolmentsConnector,
   auditService: AuditService,
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   agentAssuranceConnector: AgentAssuranceConnector,
   agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
   emailConnector: EmailConnector,
-  mappingConnector: MappingConnector
+  mappingConnector: MappingConnector,
+  appConfig: AppConfig
 )(implicit ec: ExecutionContext)
 extends Logging {
 
@@ -340,7 +343,16 @@ extends Logging {
     agencyDetails: OverseasAgencyDetails
   )(implicit rh: RequestHeader) =
     for {
-      arn <- desConnector.subscribeToAgentServices(safeId, agencyDetails)
+      arn <- {
+        if (appConfig.useHipForOverseas)
+          hipConnector.subscribeToAgentServices(
+            safeId,
+            agencyDetails,
+            amlsDetailsOpt
+          )
+        else
+          desConnector.subscribeToAgentServices(safeId, agencyDetails)
+      }
       _ <- addKnownFactsAndEnrolOverseas(
         arn,
         agencyDetails,
@@ -348,8 +360,8 @@ extends Logging {
       )
       _ <-
         amlsDetailsOpt match {
-          case Some(amlsDetails) => agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
-          case None => Future(())
+          case Some(amlsDetails) if !appConfig.useHipForOverseas => agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
+          case _ => Future.unit
         }
       _ <- agentOverseasApplicationConnector
         .updateApplicationStatus(

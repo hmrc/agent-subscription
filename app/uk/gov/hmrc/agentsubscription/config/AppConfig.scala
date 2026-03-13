@@ -38,6 +38,10 @@ class AppConfig @Inject() (
   val desEnvironment: String = getConf("microservice.services.des.environment")
   val desAuthToken: String = getConf("microservice.services.des.authorization-token")
 
+  val useHipForOverseas: Boolean = servicesConfig.getBoolean("features.useHipForOverseas")
+  val hipBaseUrl: String = servicesConfig.baseUrl("hip")
+  val hipAuthToken: String = getConf("microservice.services.hip.authorization-token")
+
   val taxEnrolmentsBaseUrl: String = servicesConfig.baseUrl("tax-enrolments")
 
   val enrolmentStoreProxyBaseUrl: String = servicesConfig.baseUrl("enrolment-store-proxy")

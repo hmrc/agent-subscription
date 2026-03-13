@@ -106,4 +106,26 @@ object OverseasAgencyDetails {
       (__ \ "agencyEmail").read[String](overseasEmailValidation) and
       (__ \ "agencyAddress").read[OverseasAgencyAddress])(OverseasAgencyDetails.apply _)
 
+  def hipWrites(amlsDetails: Option[OverseasAmlsDetails]): Writes[OverseasAgencyDetails] = Writes { agencyDetails =>
+    JsObject(Json.obj(
+      "name" -> agencyDetails.agencyName,
+      "addr1" -> agencyDetails.agencyAddress.addressLine1,
+      "addr2" -> agencyDetails.agencyAddress.addressLine2,
+      "addr3" -> agencyDetails.agencyAddress.addressLine3,
+      "addr4" -> agencyDetails.agencyAddress.addressLine4,
+//      "postcode" -> None, Not collected for overseas
+      "country" -> agencyDetails.agencyAddress.countryCode,
+//      "phone" -> None, Not collected for overseas
+      "email" -> agencyDetails.agencyEmail,
+      "supervisoryBody" -> amlsDetails.map(_.supervisoryBody),
+      "membershipNumber" -> amlsDetails.flatMap(_.membershipNumber),
+//      "evidenceObjectReference" -> None, Not collected for overseas
+      "updateDetailsStatus" -> "REQUIRED", // Not used in MMTAR phase 1
+      "amlSupervisionUpdateStatus" -> "REQUIRED", // Not used in MMTAR phase 1
+      "directorPartnerUpdateStatus" -> "REQUIRED", // Not used in MMTAR phase 1
+      "acceptNewTermsStatus" -> "REQUIRED", // Not used in MMTAR phase 1
+      "reriskStatus" -> "REQUIRED" // Not used in MMTAR phase 1
+    ).fields.filterNot(_._2 == JsNull))
+  }
+
 }
