@@ -34,6 +34,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.EnrolmentRequest
 import uk.gov.hmrc.agentsubscription.connectors.{Address => _, _}
 import uk.gov.hmrc.agentsubscription.model._
@@ -52,6 +53,7 @@ with ResettingMockitoSugar
 with Eventually {
 
   private val desConnector = resettingMock[DesConnector]
+  private val hipConnector = resettingMock[HipConnector]
   private val taxEnrolmentConnector = resettingMock[TaxEnrolmentsConnector]
   private val auditService = resettingMock[AuditService]
   private val subscriptionJourneyRepository = resettingMock[SubscriptionJourneyRepository]
@@ -59,19 +61,22 @@ with Eventually {
   private val agentOverseasAppConn = resettingMock[AgentOverseasApplicationConnector]
   private val emailConnector = resettingMock[EmailConnector]
   private val mappingConnector = resettingMock[MappingConnector]
+  private val appConfig = resettingMock[AppConfig]
 
   private val authIds = AuthIds("userId", "groupId")
 
   private val service =
     new SubscriptionService(
       desConnector,
+      hipConnector,
       taxEnrolmentConnector,
       auditService,
       subscriptionJourneyRepository,
       agentAssuranceConnector,
       agentOverseasAppConn,
       emailConnector,
-      mappingConnector
+      mappingConnector,
+      appConfig
     )
 
   private implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("POST", "/agent-subscription/subscription")

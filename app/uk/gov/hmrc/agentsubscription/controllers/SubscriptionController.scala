@@ -82,7 +82,7 @@ extends BackendController(cc) {
       }
       .recover {
         case _: EnrolmentAlreadyAllocated => Conflict
-        case _: IllegalStateException | _: UpstreamErrorResponse => InternalServerError
+        case _: IllegalStateException => InternalServerError
       }
 
   }
