@@ -2,7 +2,7 @@
 <configuration>
 
     <appender name="FILE" class="ch.qos.logback.core.FileAppender">
-        <file>logs/agent-services-account.log</file>
+        <file>logs/agent-subscriptions.log</file>
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
             <pattern>%date{ISO8601} level=[%level] logger=[%logger] thread=[%thread] message=[%message] %replace(exception=[%xException]){'^exception=\[\]$',''}%n</pattern>
         </encoder>
@@ -10,7 +10,7 @@
 
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.classic.encoder.PatternLayoutEncoder">
-            <pattern>%date{ISO8601} level=[%highlight(%level)] logger=[%logger] thread=[%thread] rid=[%X{X-Request-ID}] user=[%X{Authorization}] message=[%message] %replace(exception=[%xException]){'^exception=\[\]$',''}%n</pattern>
+            <pattern>%date{ISO8601} level=[%level] logger=[%logger] thread=[%thread] rid=[%X{X-Request-ID}] user=[%X{Authorization}] message=[%message] %replace(exception=[%xException]){'^exception=\[\]$',''}%n</pattern>
         </encoder>
     </appender>
 
@@ -21,18 +21,31 @@
         </encoder>
     </appender>
 
-
-    <logger name="com.google.inject" level="INFO"/>
+    <logger name="application" level="ERROR"/>
 
     <logger name="uk.gov" level="INFO"/>
 
-    <logger name="application" level="INFO"/>
+    <logger name="play" level="INFO"/>
 
-    <logger name="connector" level="TRACE">
+    <logger name="uk.gov.hmrc.audit" level="ERROR"/>
+
+    <logger name="uk.gov.hmrc.agentclientrelationships" level="INFO"/>
+
+    <logger name="uk.gov.hmrc.agentclientrelationships.repository" level="WARN"/>
+
+    <logger name="reactivemongo" level="ERROR"/>
+
+    <logger name="org.asynchttpclient" level="ERROR"/>
+
+    <logger name="org.eclipse.jetty" level="ERROR"/>
+
+    <logger name="com.google.inject" level="ERROR"/>
+
+    <logger name="connector" level="ERROR">
         <appender-ref ref="STDOUT"/>
     </logger>
 
-    <root level="INFO">
+    <root level="ERROR">
         <appender-ref ref="FILE"/>
         <appender-ref ref="STDOUT"/>
     </root>
