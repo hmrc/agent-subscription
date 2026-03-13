@@ -29,10 +29,6 @@
 
     <logger name="uk.gov.hmrc.audit" level="ERROR"/>
 
-    <logger name="uk.gov.hmrc.agentclientrelationships" level="INFO"/>
-
-    <logger name="uk.gov.hmrc.agentclientrelationships.repository" level="WARN"/>
-
     <logger name="reactivemongo" level="ERROR"/>
 
     <logger name="org.asynchttpclient" level="ERROR"/>
