@@ -81,13 +81,9 @@ with AuthorisedFunctions {
       authorised() {
         request.body.validate[SubscriptionJourneyRecord] match {
           case JsSuccess(journeyRecord, _) =>
-            val mappedAuthIds = journeyRecord.userMappings.map(_.authProviderId)
 
             if (journeyRecord.authProviderId != authProviderId) {
               Future.successful(BadRequest("Auth ids in request URL and body do not match"))
-            }
-            else if (mappedAuthIds.distinct.size != mappedAuthIds.size) {
-              Future.successful(BadRequest("Duplicate mapped auth ids in request body"))
             }
             else {
               subscriptionJourneyRepository.findByUtr(journeyRecord.businessDetails.utr).map(result =>

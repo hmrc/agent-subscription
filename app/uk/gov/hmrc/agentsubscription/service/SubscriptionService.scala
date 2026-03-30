@@ -81,7 +81,6 @@ class SubscriptionService @Inject() (
   agentAssuranceConnector: AgentAssuranceConnector,
   agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
   emailConnector: EmailConnector,
-  mappingConnector: MappingConnector,
   appConfig: AppConfig
 )(implicit ec: ExecutionContext)
 extends Logging {
@@ -146,8 +145,6 @@ extends Logging {
         case _ =>
           for {
             arn <- desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
-            _ <- mappingConnector.createMappings(arn)
-            _ <- mappingConnector.createMappingDetails(arn)
             _ <- subscriptionJourneyRepository.delete(utr.value)
           } yield arn
       }

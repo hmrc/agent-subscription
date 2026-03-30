@@ -60,7 +60,6 @@ with Eventually {
   private val agentAssuranceConnector = resettingMock[AgentAssuranceConnector]
   private val agentOverseasAppConn = resettingMock[AgentOverseasApplicationConnector]
   private val emailConnector = resettingMock[EmailConnector]
-  private val mappingConnector = resettingMock[MappingConnector]
   private val appConfig = resettingMock[AppConfig]
 
   private val authIds = AuthIds("userId", "groupId")
@@ -75,7 +74,6 @@ with Eventually {
       agentAssuranceConnector,
       agentOverseasAppConn,
       emailConnector,
-      mappingConnector,
       appConfig
     )
 
@@ -335,12 +333,6 @@ with Eventually {
     when(subscriptionJourneyRepository.delete(any[String]))
       .thenReturn(Future successful (Some(1L)))
 
-    when(mappingConnector.createMappings(any[Arn])(any[RequestHeader]))
-      .thenReturn(Future successful (()))
-
-    when(mappingConnector.createMappingDetails(any[Arn])(any[RequestHeader]))
-      .thenReturn(Future successful [Unit] (()))
-
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)
 
@@ -406,12 +398,6 @@ with Eventually {
     when(subscriptionJourneyRepository.delete(any[String]))
       .thenReturn(Future successful (Some(1L)))
 
-    when(mappingConnector.createMappings(any[Arn])(any[RequestHeader]))
-      .thenReturn(Future successful (()))
-
-    when(mappingConnector.createMappingDetails(any[Arn])(any[RequestHeader]))
-      .thenReturn(Future successful [Unit] (()))
-
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES1"))
 
@@ -456,12 +442,6 @@ with Eventually {
 
     when(subscriptionJourneyRepository.delete(any[String]))
       .thenReturn(Future successful (Some(1L)))
-
-    when(mappingConnector.createMappings(any[Arn])(any[RequestHeader]))
-      .thenReturn(Future successful (()))
-
-    when(mappingConnector.createMappingDetails(any[Arn])(any[RequestHeader]))
-      .thenReturn(Future successful [Unit] (()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)
@@ -510,12 +490,6 @@ with Eventually {
 
     when(subscriptionJourneyRepository.delete(any[String]))
       .thenReturn(Future successful (Some(1L)))
-
-    when(mappingConnector.createMappings(any[Arn])(any[RequestHeader]))
-      .thenReturn(Future successful (()))
-
-    when(mappingConnector.createMappingDetails(any[Arn])(any[RequestHeader]))
-      .thenReturn(Future successful [Unit] (()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)
@@ -571,12 +545,6 @@ with Eventually {
 
     when(subscriptionJourneyRepository.delete(any[String]))
       .thenReturn(Future successful (Some(1L)))
-
-    when(mappingConnector.createMappings(any[Arn])(any[RequestHeader]))
-      .thenReturn(Future successful (()))
-
-    when(mappingConnector.createMappingDetails(any[Arn])(any[RequestHeader]))
-      .thenReturn(Future successful [Unit] (()))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)

@@ -54,8 +54,6 @@ class AppConfig @Inject() (
 
   val emailBaseUrl: String = servicesConfig.baseUrl("email")
 
-  val agentMappingBaseUrl: String = servicesConfig.baseUrl("agent-mapping")
-
   val mongodbSubscriptionJourneyTTL: Long = servicesConfig.getInt("mongodb.subscriptionjourney.ttl")
 
   val companiesHouseApiProxyBaseUrl: String = servicesConfig.baseUrl("companies-house-api-proxy")

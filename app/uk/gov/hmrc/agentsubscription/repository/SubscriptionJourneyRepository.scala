@@ -84,10 +84,6 @@ extends PlayMongoRepository[SubscriptionJourneyRecord](
       IndexOptions().unique(true).name("primaryAuthId")
     ),
     IndexModel(
-      ascending("userMappings.authProviderId"),
-      IndexOptions().unique(true).sparse(true).name("mappedAuthId")
-    ),
-    IndexModel(
       ascending("cleanCredsAuthProviderId"),
       IndexOptions().unique(true).sparse(true).name("cleanCredsAuthProviderId")
     ),
@@ -163,8 +159,7 @@ with Logging {
     .find(
       or(
         equal("authProviderId", authProviderId),
-        equal("cleanCredsAuthProviderId", authProviderId),
-        equal("userMappings.authProviderId", authProviderId)
+        equal("cleanCredsAuthProviderId", authProviderId)
       )
     )
     .headOption()

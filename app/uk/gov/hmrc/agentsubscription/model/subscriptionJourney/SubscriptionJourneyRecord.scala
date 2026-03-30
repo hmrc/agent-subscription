@@ -33,7 +33,6 @@ final case class SubscriptionJourneyRecord(
   continueId: Option[String], // once allocated, should not be changed?
   businessDetails: BusinessDetails,
   amlsData: Option[AmlsData],
-  userMappings: List[UserMapping],
   mappingComplete: Boolean,
   cleanCredsAuthProviderId: Option[AuthProviderId],
   lastModifiedDate: Option[LocalDateTime],
@@ -54,7 +53,6 @@ object SubscriptionJourneyRecord {
       (JsPath \ "continueId").writeNullable[String] and
       (JsPath \ "businessDetails").write[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
       (JsPath \ "amlsData").writeNullable[AmlsData] and
-      (JsPath \ "userMappings").write[List[UserMapping]] and
       (JsPath \ "mappingComplete").write[Boolean] and
       (JsPath \ "cleanCredsAuthProviderId").writeNullable[AuthProviderId] and
       (JsPath \ "lastModifiedDate").writeNullable[LocalDateTime] and
@@ -80,7 +78,6 @@ object SubscriptionJourneyRecord {
       (JsPath \ "continueId").readNullable[String] and
       (JsPath \ "businessDetails").read[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
       (JsPath \ "amlsData").readNullable[AmlsData] and
-      (JsPath \ "userMappings").read[List[UserMapping]] and
       (JsPath \ "mappingComplete").read[Boolean] and
       (JsPath \ "cleanCredsAuthProviderId").readNullable[AuthProviderId] and
       (JsPath \ "lastModifiedDate").readNullable[LocalDateTime] and
