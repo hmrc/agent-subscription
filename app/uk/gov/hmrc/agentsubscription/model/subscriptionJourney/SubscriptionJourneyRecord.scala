@@ -33,7 +33,6 @@ final case class SubscriptionJourneyRecord(
   continueId: Option[String], // once allocated, should not be changed?
   businessDetails: BusinessDetails,
   amlsData: Option[AmlsData],
-  mappingComplete: Boolean,
   cleanCredsAuthProviderId: Option[AuthProviderId],
   lastModifiedDate: Option[LocalDateTime],
   contactEmailData: Option[ContactEmailData],
@@ -53,7 +52,6 @@ object SubscriptionJourneyRecord {
       (JsPath \ "continueId").writeNullable[String] and
       (JsPath \ "businessDetails").write[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
       (JsPath \ "amlsData").writeNullable[AmlsData] and
-      (JsPath \ "mappingComplete").write[Boolean] and
       (JsPath \ "cleanCredsAuthProviderId").writeNullable[AuthProviderId] and
       (JsPath \ "lastModifiedDate").writeNullable[LocalDateTime] and
       (JsPath \ "contactEmailData").writeNullable[ContactEmailData](ContactEmailData.databaseFormat(crypto)) and
@@ -78,7 +76,6 @@ object SubscriptionJourneyRecord {
       (JsPath \ "continueId").readNullable[String] and
       (JsPath \ "businessDetails").read[BusinessDetails](BusinessDetails.databaseFormat(crypto)) and
       (JsPath \ "amlsData").readNullable[AmlsData] and
-      (JsPath \ "mappingComplete").read[Boolean] and
       (JsPath \ "cleanCredsAuthProviderId").readNullable[AuthProviderId] and
       (JsPath \ "lastModifiedDate").readNullable[LocalDateTime] and
       (JsPath \ "contactEmailData").readNullable[ContactEmailData](ContactEmailData.databaseFormat(crypto)) and
