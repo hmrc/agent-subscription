@@ -36,8 +36,7 @@ with DesStubs
 with AuthStub
 with TaxEnrolmentsStubs
 with AgentAssuranceStub
-with EmailStub
-with MappingStubs {
+with EmailStub {
 
   val utr = Utr("7000000002")
 
@@ -83,8 +82,6 @@ with MappingStubs {
         Arn(arn),
         amlsDetails
       )
-      givenMappingCreationWithStatus(Arn(arn), 201)
-      givenMappingDetailsCreatedWithStatus(Arn(arn), 201)
       givenEmailSent(emailInfo)
     }
 

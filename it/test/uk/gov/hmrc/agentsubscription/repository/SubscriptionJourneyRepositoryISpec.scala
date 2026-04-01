@@ -79,8 +79,6 @@ with DefaultPlayMongoRepositorySupport[SubscriptionJourneyRecord] {
       nino = Some("AE123456C")
     ),
     amlsData = None,
-    userMappings = List(),
-    mappingComplete = false,
     cleanCredsAuthProviderId = None,
     lastModifiedDate = None,
     contactEmailData = Some(ContactEmailData(useBusinessEmail = true, Some("email@email.com"))),
