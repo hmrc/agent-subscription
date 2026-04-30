@@ -34,6 +34,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.LegacyAgentEnrolment
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.EnrolmentRequest
 import uk.gov.hmrc.agentsubscription.connectors.{Address => _, _}
@@ -62,7 +63,11 @@ with Eventually {
   private val emailConnector = resettingMock[EmailConnector]
   private val appConfig = resettingMock[AppConfig]
 
-  private val authIds = AuthIds("userId", "groupId")
+  private val authIds = AuthIds(
+    "userId",
+    "groupId",
+    Set.empty
+  )
 
   private val service =
     new SubscriptionService(
@@ -156,6 +161,115 @@ with Eventually {
             expectedExtraDetail
           )(fakeRequest)
       }
+    }
+
+    "send a service-specific email when the matching mapped journey contains a supported legacy enrolment" in {
+
+      subscriptionWillBeCreated(
+        businessUtr,
+        businessPostcode,
+        arn,
+        amlsDetails
+      )
+
+      val payeAuthIds = AuthIds(
+        "userId",
+        "groupId",
+        Set(LegacyAgentEnrolment("IR-PAYE-AGENT", "AB1234"))
+      )
+
+      val subscriptionRequest = SubscriptionRequest(
+        businessUtr,
+        KnownFacts(businessPostcode),
+        Agency(
+          "Test Agency",
+          Address(
+            "1 Test Street",
+            Some("address line 2"),
+            Some("address line 3"),
+            Some("address line 4"),
+            postcode = "BB1 1BB",
+            countryCode = "GB"
+          ),
+          Some("01234 567890"),
+          "testagency@example.com"
+        ),
+        Some(Lang("en")),
+        Some(amlsDetails)
+      )
+
+      await(service.createSubscription(subscriptionRequest, payeAuthIds))
+
+      verify(emailConnector)
+        .sendEmail(
+          eqs(
+            EmailInformation(
+              Seq("testagency@example.com"),
+              "agent_services_account_created",
+              Map(
+                "agencyName" -> "Test Agency",
+                "arn" -> arn,
+                "serviceName" -> "PAYE/CIS",
+                "agentCode" -> "AB1234"
+              )
+            )
+          )
+        )(any[RequestHeader])
+    }
+
+    "fall back to the generic email when the journey service is ambiguous" in {
+
+      subscriptionWillBeCreated(
+        businessUtr,
+        businessPostcode,
+        arn,
+        amlsDetails
+      )
+
+      val ambiguousAuthIds = AuthIds(
+        "userId",
+        "groupId",
+        Set(
+          LegacyAgentEnrolment("IR-SA-AGENT", "SA1234"),
+          LegacyAgentEnrolment("IR-PAYE-AGENT", "AB1234")
+        )
+      )
+
+      val subscriptionRequest = SubscriptionRequest(
+        businessUtr,
+        KnownFacts(businessPostcode),
+        Agency(
+          "Test Agency",
+          Address(
+            "1 Test Street",
+            Some("address line 2"),
+            Some("address line 3"),
+            Some("address line 4"),
+            postcode = "BB1 1BB",
+            countryCode = "GB"
+          ),
+          Some("01234 567890"),
+          "testagency@example.com"
+        ),
+        Some(Lang("en")),
+        Some(amlsDetails)
+      )
+
+      await(service.createSubscription(subscriptionRequest, ambiguousAuthIds))
+
+      verify(emailConnector)
+        .sendEmail(
+          eqs(
+            EmailInformation(
+              Seq("testagency@example.com"),
+              "agent_services_account_created",
+              Map(
+                "agencyName" -> "Test Agency",
+                "arn" -> arn
+              )
+            )
+          )
+        )(any[RequestHeader])
     }
 
     "add the agency postcode, not the business postcode, to the HMRC-AS-AGENT enrolment known facts" in {

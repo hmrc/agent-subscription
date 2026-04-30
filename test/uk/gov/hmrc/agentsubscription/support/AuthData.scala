@@ -22,6 +22,7 @@ import uk.gov.hmrc.auth.core.retrieve.~
 import uk.gov.hmrc.auth.core.AffinityGroup
 import uk.gov.hmrc.auth.core.Enrolment
 import uk.gov.hmrc.auth.core.EnrolmentIdentifier
+import uk.gov.hmrc.auth.core.Enrolments
 
 import scala.concurrent.Future
 
@@ -38,8 +39,8 @@ trait AuthData {
     )
   )
 
-  val agentAffinityWithCredentialsAndGroupId: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
-    val retrievals = new ~(new ~(Some(AffinityGroup.Agent), Some(Credentials("providerId", "providerType"))), Some("groupId"))
+  val agentAffinityWithCredentialsAndGroupId: Future[~[~[~[Enrolments, Option[AffinityGroup]], Option[Credentials]], Option[String]]] = {
+    val retrievals = new ~(new ~(new ~(Enrolments(Set.empty), Some(AffinityGroup.Agent)), Some(Credentials("providerId", "providerType"))), Some("groupId"))
     Future.successful(retrievals)
   }
 
@@ -52,13 +53,14 @@ trait AuthData {
 
   val individualAffinity: Future[Option[AffinityGroup]] = Future.successful(Some(AffinityGroup.Individual))
 
-  val agentIncorrectAffinity: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
-    val retrievals = new ~(new ~(Some(AffinityGroup.Individual), Some(Credentials("providerId", "providerType"))), Some("groupId"))
+  val agentIncorrectAffinity: Future[~[~[~[Enrolments, Option[AffinityGroup]], Option[Credentials]], Option[String]]] = {
+    val retrievals =
+      new ~(new ~(new ~(Enrolments(Set.empty), Some(AffinityGroup.Individual)), Some(Credentials("providerId", "providerType"))), Some("groupId"))
     Future.successful(retrievals)
   }
 
-  val neitherHaveAffinityOrEnrolment: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]] = {
-    val retrievals = new ~(new ~(None, Some(Credentials("providerId", "providerType"))), Some("groupId"))
+  val neitherHaveAffinityOrEnrolment: Future[~[~[~[Enrolments, Option[AffinityGroup]], Option[Credentials]], Option[String]]] = {
+    val retrievals = new ~(new ~(new ~(Enrolments(Set.empty), None), Some(Credentials("providerId", "providerType"))), Some("groupId"))
     Future.successful(retrievals)
   }
 

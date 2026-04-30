@@ -50,15 +50,20 @@ extends BackendController(cc)
 with AuthorisedFunctions {
 
   private val AuthProvider: AuthProviders = AuthProviders(GovernmentGateway)
+  private val LegacyAgentReferenceIdentifier = "IRAgentReference"
 
   def authorisedWithAffinityGroup(action: SubscriptionAuthAction): Action[JsValue] =
     Action.async(parse.json) {
       implicit request =>
         authorised(AuthProvider)
-          .retrieve(affinityGroup and credentials and groupIdentifier) {
-            case Some(affinityG) ~ Some(Credentials(providerId, _)) ~ Some(groupId) =>
+          .retrieve(allEnrolments and affinityGroup and credentials and groupIdentifier) {
+            case enrolments ~ Some(affinityG) ~ Some(Credentials(providerId, _)) ~ Some(groupId) =>
               if (isAgent(affinityG)) {
-                action(request)(AuthIds(providerId, groupId))
+                action(request)(AuthIds(
+                  providerId,
+                  groupId,
+                  activeLegacyAgentEnrolments(enrolments)
+                ))
               }
               else
                 NotAnAgent.toFuture
@@ -93,7 +98,11 @@ with AuthorisedFunctions {
           else if (enrolments.enrolments.nonEmpty)
             AgentCannotSubscribe.toFuture
           else
-            action(request)(AuthIds(providerId, groupId))
+            action(request)(AuthIds(
+              providerId,
+              groupId,
+              Set.empty
+            ))
         case _ => GenericUnauthorized.toFuture
       } recover {
       handleFailure()
@@ -125,6 +134,14 @@ with AuthorisedFunctions {
 
   private def isAgent(group: AffinityGroup): Boolean = group.toString.contains("Agent")
 
+  private def activeLegacyAgentEnrolments(enrolments: Enrolments): Set[LegacyAgentEnrolment] = enrolments.enrolments
+    .filter(_.isActivated)
+    .flatMap { enrolment =>
+      enrolment.identifiers
+        .find(_.key == LegacyAgentReferenceIdentifier)
+        .map(identifier => LegacyAgentEnrolment(enrolment.key, identifier.value))
+    }
+
 }
 
 object AuthActions {
@@ -140,11 +157,21 @@ object AuthActions {
 
   case class AuthIds(
     userId: String,
-    groupId: String
+    groupId: String,
+    legacyAgentEnrolments: Set[LegacyAgentEnrolment]
   )
 
   object AuthIds {
     implicit val authIdsFormat: OFormat[AuthIds] = Json.format[AuthIds]
+  }
+
+  case class LegacyAgentEnrolment(
+    key: String,
+    agentCode: String
+  )
+
+  object LegacyAgentEnrolment {
+    implicit val legacyAgentEnrolmentFormat: OFormat[LegacyAgentEnrolment] = Json.format[LegacyAgentEnrolment]
   }
 
   case class ErrorBody(

@@ -34,6 +34,8 @@ import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.OverseasAuthAction
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.RegistrationAuthAction
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.SubscriptionAuthAction
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
+import uk.gov.hmrc.agentsubscription.auth.AuthActions.LegacyAgentEnrolment
 import uk.gov.hmrc.agentsubscription.support.AuthData
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.auth.core.authorise.Predicate
@@ -45,7 +47,7 @@ import uk.gov.hmrc.http.HeaderCarrier
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-class AuthActionsSpec(implicit val ec: ExecutionContext)
+class AuthActionsSpec
 extends UnitSpec
 with MockitoSugar
 with BeforeAndAfterEach
@@ -55,10 +57,11 @@ with AuthData {
   import uk.gov.hmrc.auth.core.authorise
   import uk.gov.hmrc.auth.core._
 
+  implicit val ec: ExecutionContext = ExecutionContext.global
+
   val mockPlayAuthConnector = mock[PlayAuthConnector]
-  val mockCC = mock[ControllerComponents]
-  val mockAuthConnector = mock[AuthConnector]
-  val mockAuthActions: AuthActions = new AuthActions(mockCC, mockAuthConnector)
+  val mockCC: ControllerComponents = stubControllerComponents()
+  val mockAuthActions: AuthActions = new AuthActions(mockCC, mockPlayAuthConnector)
 
   val subscriptionAction: SubscriptionAuthAction = { request => authIds => Future successful Ok }
   val registrationAction: RegistrationAuthAction = { request => provider => Future successful Ok }
@@ -66,12 +69,12 @@ with AuthData {
   val agentAction: Request[AnyContent] => Future[Result] = { request => Future successful Ok }
 
   private def agentAuthStub(
-    returnValue: Future[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]]
-  ): OngoingStubbing[Future[Option[AffinityGroup] ~ Option[Credentials] ~ Option[String]]] = when(
+    returnValue: Future[~[~[~[Enrolments, Option[AffinityGroup]], Option[Credentials]], Option[String]]]
+  ): OngoingStubbing[Future[Enrolments ~ Option[AffinityGroup] ~ Option[Credentials] ~ Option[String]]] = when(
     mockPlayAuthConnector
       .authorise(
         any[authorise.Predicate](),
-        any[Retrieval[~[~[Option[AffinityGroup], Option[Credentials]], Option[String]]]]()
+        any[Retrieval[~[~[~[Enrolments, Option[AffinityGroup]], Option[Credentials]], Option[String]]]]()
       )(any[HeaderCarrier](), any[ExecutionContext]())
   )
     .thenReturn(returnValue)
@@ -96,6 +99,49 @@ with AuthData {
       val response: Result = await(mockAuthActions.authorisedWithAffinityGroup(subscriptionAction).apply(fakeRequest))
 
       status(response) shouldBe OK
+    }
+
+    "pass retrieved active legacy enrolment agent codes to the subscription action" in {
+      val enrolments = Enrolments(Set(
+        Enrolment(
+          "IR-SA-AGENT",
+          Seq(EnrolmentIdentifier("IRAgentReference", "SA1234")),
+          state = "Activated",
+          delegatedAuthRule = None
+        ),
+        Enrolment(
+          "IR-PAYE-AGENT",
+          Seq(EnrolmentIdentifier("IRAgentReference", "PAYE1234")),
+          state = "Activated",
+          delegatedAuthRule = None
+        ),
+        Enrolment(
+          "IR-CT-AGENT",
+          Seq(EnrolmentIdentifier("IRAgentReference", "CT1234")),
+          state = "NotYetActivated",
+          delegatedAuthRule = None
+        )
+      ))
+      val retrievals = new ~(new ~(new ~(enrolments, Some(AffinityGroup.Agent)), Some(Credentials("providerId", "providerType"))), Some("groupId"))
+      agentAuthStub(Future.successful(retrievals))
+
+      var capturedAuthIds: Option[AuthIds] = None
+      val action: SubscriptionAuthAction = { _ => authIds =>
+        capturedAuthIds = Some(authIds)
+        Future.successful(Ok)
+      }
+
+      val response: Result = await(mockAuthActions.authorisedWithAffinityGroup(action).apply(fakeRequest))
+
+      status(response) shouldBe OK
+      capturedAuthIds shouldBe Some(AuthIds(
+        "providerId",
+        "groupId",
+        Set(
+          LegacyAgentEnrolment("IR-SA-AGENT", "SA1234"),
+          LegacyAgentEnrolment("IR-PAYE-AGENT", "PAYE1234")
+        )
+      ))
     }
 
     "return UNAUTHORISED when the user does not belong to Agent affinity group" in {
@@ -209,7 +255,7 @@ with AuthData {
 
     "return the same error when auth throws an error" in {
       when(
-        mockPlayAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(
+        mockPlayAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Option[Credentials]]]]())(
           any[HeaderCarrier](),
           any[ExecutionContext]()
         )
@@ -278,7 +324,7 @@ with AuthData {
 
     "return the same error when auth throws an error" in {
       when(
-        mockPlayAuthConnector.authorise(any[Predicate](), any[Retrieval[~[Option[AffinityGroup], Credentials]]]())(
+        mockPlayAuthConnector.authorise(any[Predicate](), any[Retrieval[~[~[~[Enrolments, Option[AffinityGroup]], Option[Credentials]], Option[String]]]]())(
           any[HeaderCarrier](),
           any[ExecutionContext]()
         )
@@ -299,9 +345,9 @@ with AuthData {
       val retrievedCredentials = Credentials("credId", "credType")
       val retrievedGroupId = Some("groupId")
 
-      type Retrievals = ~[~[~[Enrolments, Option[AffinityGroup]], Credentials], Option[String]]
+      type Retrievals = ~[~[~[Enrolments, Option[AffinityGroup]], Option[Credentials]], Option[String]]
 
-      val retrievalResponse: Future[Retrievals] = Future successful new ~(new ~(new ~(enrolments, affinityGroup), retrievedCredentials), retrievedGroupId)
+      val retrievalResponse: Future[Retrievals] = Future successful new ~(new ~(new ~(enrolments, affinityGroup), Some(retrievedCredentials)), retrievedGroupId)
 
       when(
         mockPlayAuthConnector

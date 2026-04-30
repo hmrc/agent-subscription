@@ -33,6 +33,10 @@ import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistrat
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
 import uk.gov.hmrc.agentsubscription.model._
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.IRAgentReference
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.IRAgentReferenceCt
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.IRAgentReferencePaye
+import uk.gov.hmrc.agentsubscription.model.subscriptionJourney.LegacyAgentEnrolmentType
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
 import uk.gov.hmrc.http.NotFoundException
@@ -71,6 +75,11 @@ object OverseasSubscriptionAuditDetail {
 case class EnrolmentAlreadyAllocated(message: String)
 extends Exception(message)
 
+private case class EmailServiceDetails(
+  legacyEnrolmentType: LegacyAgentEnrolmentType,
+  agentCode: String
+)
+
 @Singleton
 class SubscriptionService @Inject() (
   desConnector: DesConnector,
@@ -106,6 +115,7 @@ extends Logging {
     email: String,
     agencyName: String,
     arn: Arn,
+    maybeEmailServiceDetails: Option[EmailServiceDetails],
     langForEmail: Option[Lang]
   )(implicit
     rh: RequestHeader
@@ -123,9 +133,67 @@ extends Logging {
       EmailInformation(
         Seq(email),
         templateId,
-        Map("agencyName" -> agencyName, "arn" -> arn.value)
+        Map("agencyName" -> agencyName, "arn" -> arn.value) ++ emailServiceParameters(maybeEmailServiceDetails, langForEmail)
       )
     )
+  }
+
+  private def emailServiceParameters(
+    maybeEmailServiceDetails: Option[EmailServiceDetails],
+    langForEmail: Option[Lang]
+  ): Map[String, String] = maybeEmailServiceDetails.flatMap { details =>
+    serviceName(details.legacyEnrolmentType, langForEmail).map { serviceName =>
+      Map(
+        "serviceName" -> serviceName,
+        "agentCode" -> details.agentCode
+      )
+    }
+  }.getOrElse(Map.empty)
+
+  private def serviceName(
+    legacyEnrolmentType: LegacyAgentEnrolmentType,
+    langForEmail: Option[Lang]
+  ): Option[String] =
+    legacyEnrolmentType match {
+      case IRAgentReference =>
+        Some(if (langForEmail.contains(Lang("cy")))
+          "Hunanasesiad"
+        else
+          "Self Assessment")
+      case IRAgentReferenceCt =>
+        Some(if (langForEmail.contains(Lang("cy")))
+          "Treth Gorfforaeth"
+        else
+          "Corporation Tax")
+      case IRAgentReferencePaye =>
+        Some(if (langForEmail.contains(Lang("cy")))
+          "TWE/CIS"
+        else
+          "PAYE/CIS")
+      case _ => None
+    }
+
+  private def findEmailServiceDetails(
+    subscriptionUtr: Utr,
+    authIds: AuthIds
+  ): Future[Option[EmailServiceDetails]] = {
+    val relevantServices = authIds.legacyAgentEnrolments.flatMap { enrolment =>
+      LegacyAgentEnrolmentType.find(enrolment.key).collect {
+        case legacyEnrolmentType @ (IRAgentReference | IRAgentReferenceCt | IRAgentReferencePaye) =>
+          EmailServiceDetails(legacyEnrolmentType, enrolment.agentCode)
+      }
+    }
+
+    val result =
+      if (relevantServices.size == 1)
+        relevantServices.headOption
+      else
+        None
+
+    if (relevantServices.size > 1)
+      logger.warn(s"Ambiguous legacy enrolments for ${subscriptionUtr.value}; using generic subscription email")
+
+    Future.successful(result)
   }
 
   def createSubscription(
@@ -172,6 +240,7 @@ extends Logging {
           ) =>
         if (postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode)) {
           for {
+            emailServiceDetails <- findEmailServiceDetails(utr, authIds)
             _ <- subscriptionRequest.amlsDetails
               .map(agentAssuranceConnector.createAmls(utr, _))
               .getOrElse(Future.successful(false))
@@ -190,6 +259,7 @@ extends Logging {
               subscriptionRequest.agency.email,
               subscriptionRequest.agency.name,
               arn,
+              emailServiceDetails,
               subscriptionRequest.langForEmail
             )
           } yield {
@@ -234,6 +304,7 @@ extends Logging {
         val arn = agentRecord.arn
         val subscriptionRequest = mergeSubscriptionRequest(updateSubscriptionRequest, agentRecord)
         for {
+          emailServiceDetails <- findEmailServiceDetails(updateSubscriptionRequest.utr, authIds)
           updatedAmlsDetails <- agentAssuranceConnector.updateAmls(updateSubscriptionRequest.utr, arn)
           _ <- addKnownFactsAndEnrolUk(
             arn,
@@ -244,6 +315,7 @@ extends Logging {
             subscriptionRequest.agency.email,
             subscriptionRequest.agency.name,
             arn,
+            emailServiceDetails,
             subscriptionRequest.langForEmail
           )
         } yield {
@@ -371,6 +443,7 @@ extends Logging {
         agencyDetails.agencyEmail,
         agencyDetails.agencyName,
         arn,
+        None,
         None
       )
     } yield Some(arn)
