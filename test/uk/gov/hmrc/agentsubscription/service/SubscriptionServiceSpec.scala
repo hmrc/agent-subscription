@@ -327,7 +327,7 @@ with Eventually {
         )
       )
 
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(any[RequestHeader]))
+    when(hipConnector.subscribeToAgentServicesUk(any[SafeId], any[SubscriptionRequest])(any[RequestHeader]))
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
@@ -392,7 +392,7 @@ with Eventually {
         )
       )
 
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(any[RequestHeader]))
+    when(hipConnector.subscribeToAgentServicesUk(any[SafeId], any[SubscriptionRequest])(any[RequestHeader]))
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
@@ -437,7 +437,7 @@ with Eventually {
         )
       )
 
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(any[RequestHeader]))
+    when(hipConnector.subscribeToAgentServicesUk(any[SafeId], any[SubscriptionRequest])(any[RequestHeader]))
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
@@ -485,7 +485,7 @@ with Eventually {
         )
       )
 
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(any[RequestHeader]))
+    when(hipConnector.subscribeToAgentServicesUk(any[SafeId], any[SubscriptionRequest])(any[RequestHeader]))
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
@@ -540,7 +540,7 @@ with Eventually {
         )
       )
 
-    when(desConnector.subscribeToAgentServices(any[Utr], any[DesSubscriptionRequest])(any[RequestHeader]))
+    when(hipConnector.subscribeToAgentServicesUk(any[SafeId], any[SubscriptionRequest])(any[RequestHeader]))
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))

@@ -36,12 +36,14 @@ class SubscriptionAuditingSpec
 extends BaseAuditSpec
 with Eventually
 with DesStubs
+with HipStubs
 with AuthStub
 with TaxEnrolmentsStubs
 with AgentAssuranceStub
 with EmailStub {
 
   private val utr = Utr("7000000002")
+  val safeId = "safeId"
 
   val arn = "TARN0000001"
   val groupId = "groupId"
@@ -73,7 +75,10 @@ with EmailStub {
         isAnASAgent = false,
         arn = arn
       )
-      subscriptionSucceeds(utr, Json.parse(subscriptionRequest(utr)).as[SubscriptionRequest])
+      hipSubscriptionSucceeds(
+        safeId,
+        Json.toJson(Json.parse(subscriptionRequest(utr)).as[SubscriptionRequest])(SubscriptionRequest.hipWrites).toString()
+      )
       allocatedPrincipalEnrolmentNotExists(arn)
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)

@@ -82,7 +82,7 @@ with MetricsTestSupport {
     "return an ARN when subscription is successful with amls details" in {
       hipSubscriptionSucceeds(safeId.value, agencyDetailsJson)
 
-      val result = await(connector.subscribeToAgentServices(
+      val result = await(connector.subscribeToAgentServicesOverseas(
         safeId,
         overseasAgencyDetails,
         Some(overseasAmlsDetails)
@@ -94,7 +94,7 @@ with MetricsTestSupport {
     "return an ARN when subscription is successful without amls details" in {
       hipSubscriptionSucceeds(safeId.value, agencyDetailsJsonWithoutAmls)
 
-      val result = await(connector.subscribeToAgentServices(
+      val result = await(connector.subscribeToAgentServicesOverseas(
         safeId,
         overseasAgencyDetails,
         None
@@ -111,7 +111,7 @@ with MetricsTestSupport {
       )
 
       val exception = intercept[UpstreamErrorResponse] {
-        await(connector.subscribeToAgentServices(
+        await(connector.subscribeToAgentServicesOverseas(
           safeId,
           overseasAgencyDetails,
           Some(overseasAmlsDetails)
