@@ -32,12 +32,14 @@ import java.time.LocalDate
 
 class SubscriptionControllerISpec
 extends BaseISpec
+with HipStubs
 with DesStubs
 with AuthStub
 with TaxEnrolmentsStubs
 with AgentAssuranceStub
 with EmailStub {
 
+  val safeId = "safeId"
   val utr = Utr("7000000002")
 
   val arn = "TARN0000001"
@@ -72,7 +74,10 @@ with EmailStub {
         arn = arn
       )
       createAmlsSucceeds(utr, amlsDetails)
-      subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+      hipSubscriptionSucceeds(
+        safeId,
+        Json.toJson(Json.parse(subscriptionRequest).as[SubscriptionRequest])(SubscriptionRequest.hipWrites).toString()
+      )
       allocatedPrincipalEnrolmentNotExists(arn)
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)
@@ -92,7 +97,7 @@ with EmailStub {
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
 
-        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(s"/etmp/RESTAdapter/generic/agent/subscription/$safeId")))
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
       }
 
@@ -102,14 +107,17 @@ with EmailStub {
           address \ "addressLine3",
           address \ "addressLine4"
         )
-        subscriptionSucceeds(utr, Json.parse(removeFields(fields)).as[SubscriptionRequest])
+        hipSubscriptionSucceeds(
+          safeId,
+          Json.toJson(Json.parse(removeFields(fields)).as[SubscriptionRequest])(SubscriptionRequest.hipWrites).toString()
+        )
 
         val result = doSubscriptionRequest(removeFields(fields))
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
 
-        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(s"/etmp/RESTAdapter/generic/agent/subscription/$safeId")))
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
       }
 
@@ -125,19 +133,24 @@ with EmailStub {
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
 
-        verify(0, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+        verify(0, postRequestedFor(urlEqualTo(s"/etmp/RESTAdapter/generic/agent/subscription/$safeId")))
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
       }
 
       "all fields except telephone number are populated" in new TestSetup {
-        subscriptionSucceedsWithoutTelephoneNo(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        val request: SubscriptionRequest = Json.parse(subscriptionRequest).as[SubscriptionRequest]
+        val requestWithoutTelephone: SubscriptionRequest = request.copy(agency = request.agency.copy(telephone = None))
+        hipSubscriptionSucceeds(
+          safeId,
+          Json.toJson(requestWithoutTelephone)(SubscriptionRequest.hipWrites).toString()
+        )
 
-        val result = doSubscriptionRequest(subscriptionRequestWithoutTelephoneNo)
+        val result = doSubscriptionRequest(Json.toJson(requestWithoutTelephone).toString())
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
 
-        verify(1, postRequestedFor(urlEqualTo(s"/registration/agents/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(s"/etmp/RESTAdapter/generic/agent/subscription/$safeId")))
         verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
       }
     }
@@ -307,41 +320,14 @@ with EmailStub {
 
         result.status shouldBe 400
       }
-
-      "store amls fails with 400 error from agent assurance" in {
-
-        requestIsAuthenticatedWithNoEnrolments()
-        organisationRegistrationExists(
-          utr,
-          isAnASAgent = false,
-          arn = arn
-        )
-        createAmlsFailsWithStatus(400)
-
-        val result = doSubscriptionRequest()
-
-        result.status shouldBe 400
-      }
-
-      "create amls succeeds but update amls fails with 400 error from agent assurance" in new TestSetup {
-        updateAmlsFailsWithStatus(
-          utr,
-          Arn(arn),
-          400
-        )
-
-        val result = doSubscriptionRequest()
-
-        result.status shouldBe 400
-      }
     }
 
     "throw a 500 error if " when {
       "DES API #1173 Subscribe to Agent Services fails" in new TestSetup {
         requestIsAuthenticatedWithNoEnrolments()
-        subscriptionFails(
-          utr,
-          Json.parse(subscriptionRequest).as[SubscriptionRequest],
+        hipSubscriptionFails(
+          safeId,
+          Json.toJson(Json.parse(subscriptionRequest).as[SubscriptionRequest])(SubscriptionRequest.hipWrites).toString(),
           503
         )
 

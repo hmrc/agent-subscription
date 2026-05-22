@@ -37,7 +37,8 @@ lazy val microservice = (project in file("."))
   )
   .settings(
     Test / parallelExecution := false,
-    CodeCoverageSettings.scoverageSettings
+    CodeCoverageSettings.scoverageSettings,
+    Test / logBuffered := false
   )
   .enablePlugins(PlayScala, SbtDistributablesPlugin)
   .disablePlugins(JUnitXmlReportPlugin)
@@ -50,5 +51,6 @@ lazy val it = project
   .settings(libraryDependencies ++= AppDependencies.test)
   .settings(
     Compile / scalafmtOnCompile := true,
-    Test / scalafmtOnCompile := true
+    Test / scalafmtOnCompile := true,
+    Test / logBuffered := false
   )

@@ -85,23 +85,6 @@ class SubscriptionService @Inject() (
 )(implicit ec: ExecutionContext)
 extends Logging {
 
-  private def desRequest(subscriptionRequest: SubscriptionRequest) = {
-    val address = subscriptionRequest.agency.address
-    DesSubscriptionRequest(
-      agencyName = subscriptionRequest.agency.name,
-      agencyEmail = subscriptionRequest.agency.email,
-      telephoneNumber = subscriptionRequest.agency.telephone,
-      agencyAddress = connectors.Address(
-        address.addressLine1,
-        address.addressLine2,
-        address.addressLine3,
-        address.addressLine4,
-        address.postcode,
-        address.countryCode
-      )
-    )
-  }
-
   private def sendEmail(
     email: String,
     agencyName: String,
@@ -137,6 +120,7 @@ extends Logging {
 
     def subscribeAndMap(
       maybeArn: Option[Arn],
+      safeId: SafeId,
       utr: Utr,
       isAnAsAgent: Boolean
     ): Future[Arn] =
@@ -144,7 +128,7 @@ extends Logging {
         case Some(arn) if isAnAsAgent => Future.successful(arn)
         case _ =>
           for {
-            arn <- desConnector.subscribeToAgentServices(utr, desRequest(subscriptionRequest))
+            arn <- hipConnector.subscribeToAgentServicesUk(safeId, subscriptionRequest)
             _ <- subscriptionJourneyRepository.delete(utr.value)
           } yield arn
       }
@@ -167,20 +151,18 @@ extends Logging {
               ),
               _,
               _,
-              _
+              Some(safeId)
             )
           ) =>
         if (postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode)) {
+          //
           for {
-            _ <- subscriptionRequest.amlsDetails
-              .map(agentAssuranceConnector.createAmls(utr, _))
-              .getOrElse(Future.successful(false))
             arn <- subscribeAndMap(
               maybeArn,
+              SafeId(safeId),
               utr,
               isAnAsAgent
             )
-            updatedAmlsDetails <- agentAssuranceConnector.updateAmls(utr, arn)
             _ <- addKnownFactsAndEnrolUk(
               arn,
               subscriptionRequest,
@@ -199,7 +181,7 @@ extends Logging {
               auditDetailJsObject(
                 arn,
                 subscriptionRequest,
-                updatedAmlsDetails
+                subscriptionRequest.amlsDetails
               )
             )
             Some(arn)
@@ -342,7 +324,7 @@ extends Logging {
     for {
       arn <- {
         if (appConfig.useHipForOverseas)
-          hipConnector.subscribeToAgentServices(
+          hipConnector.subscribeToAgentServicesOverseas(
             safeId,
             agencyDetails,
             amlsDetailsOpt

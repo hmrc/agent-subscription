@@ -64,6 +64,28 @@ object SubscriptionRequest {
       (__ \ "langForEmail").readNullable[Lang] and
       (__ \ "amlsDetails").readNullable[AmlsDetails])(SubscriptionRequest.apply _)
 
+  val hipWrites: Writes[SubscriptionRequest] = Writes { subscriptionRequest =>
+    JsObject(Json.obj(
+      "name" -> subscriptionRequest.agency.name,
+      "addr1" -> subscriptionRequest.agency.address.addressLine1,
+      "addr2" -> subscriptionRequest.agency.address.addressLine2,
+      "addr3" -> subscriptionRequest.agency.address.addressLine3,
+      "addr4" -> subscriptionRequest.agency.address.addressLine4,
+      "postcode" -> subscriptionRequest.agency.address.postcode,
+      "country" -> subscriptionRequest.agency.address.countryCode,
+      "phone" -> subscriptionRequest.agency.telephone,
+      "email" -> subscriptionRequest.agency.email,
+      "supervisoryBody" -> subscriptionRequest.amlsDetails.map(_.supervisoryBody),
+      "membershipNumber" -> subscriptionRequest.amlsDetails.map(_.membershipNumber),
+      //      "evidenceObjectReference" -> None, Not collected for legacy flow
+      "updateDetailsStatus" -> "REQUIRED", // Not used in MMTAR phase 1
+      "amlSupervisionUpdateStatus" -> "REQUIRED", // Not used in MMTAR phase 1
+      "directorPartnerUpdateStatus" -> "REQUIRED", // Not used in MMTAR phase 1
+      "acceptNewTermsStatus" -> "REQUIRED", // Not used in MMTAR phase 1
+      "reriskStatus" -> "REQUIRED" // Not used in MMTAR phase 1
+    ).fields.filterNot(_._2 == JsNull))
+  }
+
 }
 
 case class Address(

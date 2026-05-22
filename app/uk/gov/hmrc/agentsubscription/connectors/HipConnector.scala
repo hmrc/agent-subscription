@@ -65,7 +65,7 @@ with Logging {
     )
   }
 
-  def subscribeToAgentServices(
+  def subscribeToAgentServicesOverseas(
     safeId: SafeId,
     agencyDetails: OverseasAgencyDetails,
     amlsDetails: Option[OverseasAmlsDetails]
@@ -83,7 +83,32 @@ with Logging {
           case CREATED => (response.json \ "success" \ "arn").as[Arn]
           case status =>
             throw UpstreamErrorResponse(
-              s"Failed to create subscription in ETMP for safeId: $safeId, reason: ${response.body}",
+              s"Failed to create overseas subscription in ETMP for safeId: $safeId, reason: ${response.body}",
+              status,
+              INTERNAL_SERVER_ERROR
+            )
+        }
+      }
+  }
+
+  def subscribeToAgentServicesUk(
+    safeId: SafeId,
+    subscriptionRequest: SubscriptionRequest
+  )(implicit
+    rh: RequestHeader
+  ): Future[Arn] = {
+    val url = s"$baseUrl/etmp/RESTAdapter/generic/agent/subscription/${encodePathSegment(safeId.value)}"
+    http
+      .post(url"$url")
+      .setHeader(hipHeaders: _*)
+      .withBody(Json.toJson(subscriptionRequest)(SubscriptionRequest.hipWrites))
+      .execute[HttpResponse]
+      .map { response =>
+        response.status match {
+          case CREATED => (response.json \ "success" \ "arn").as[Arn]
+          case status =>
+            throw UpstreamErrorResponse(
+              s"Failed to create UK subscription in ETMP for safeId: $safeId, reason: ${response.body}",
               status,
               INTERNAL_SERVER_ERROR
             )
