@@ -55,7 +55,7 @@ with Logging {
   private val originatingSystem = "MDTP-ASA"
   private val transmittingSystem = "HIP"
 
-  private val hipHeaders: Seq[(String, String)] = {
+  private def hipHeaders: Seq[(String, String)] = {
     Seq(
       "Authorization" -> s"Basic $authToken",
       "correlationid" -> UUID.randomUUID().toString,
