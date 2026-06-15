@@ -136,11 +136,11 @@ with EmailStub {
       "email" -> "agencyemail@domain.com",
       "supervisoryBody" -> "supervisoryName",
       "membershipNumber" -> "supervisoryId",
-      "updateDetailsStatus" -> "REQUIRED",
-      "amlSupervisionUpdateStatus" -> "REQUIRED",
-      "directorPartnerUpdateStatus" -> "REQUIRED",
-      "acceptNewTermsStatus" -> "REQUIRED",
-      "reriskStatus" -> "REQUIRED"
+      "updateDetailsStatus" -> "ACCEPTED",
+      "amlSupervisionUpdateStatus" -> "ACCEPTED",
+      "directorPartnerUpdateStatus" -> "ACCEPTED",
+      "acceptNewTermsStatus" -> "ACCEPTED",
+      "reriskStatus" -> "ACCEPTED"
     ).toString
 
 }
