@@ -78,11 +78,11 @@ object SubscriptionRequest {
       "supervisoryBody" -> subscriptionRequest.amlsDetails.map(_.supervisoryBody),
       "membershipNumber" -> subscriptionRequest.amlsDetails.map(_.membershipNumber),
       //      "evidenceObjectReference" -> None, Not collected for legacy flow
-      "updateDetailsStatus" -> "REQUIRED", // Not used in MMTAR phase 1
-      "amlSupervisionUpdateStatus" -> "REQUIRED", // Not used in MMTAR phase 1
-      "directorPartnerUpdateStatus" -> "REQUIRED", // Not used in MMTAR phase 1
-      "acceptNewTermsStatus" -> "REQUIRED", // Not used in MMTAR phase 1
-      "reriskStatus" -> "REQUIRED" // Not used in MMTAR phase 1
+      "updateDetailsStatus" -> "ACCEPTED", // Not used in MMTAR phase 1
+      "amlSupervisionUpdateStatus" -> "ACCEPTED", // Not used in MMTAR phase 1
+      "directorPartnerUpdateStatus" -> "ACCEPTED", // Not used in MMTAR phase 1
+      "acceptNewTermsStatus" -> "ACCEPTED", // Not used in MMTAR phase 1
+      "reriskStatus" -> "ACCEPTED" // Not used in MMTAR phase 1
     ).fields.filterNot(_._2 == JsNull))
   }
 

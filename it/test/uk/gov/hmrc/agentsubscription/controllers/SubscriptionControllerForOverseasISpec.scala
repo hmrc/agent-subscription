@@ -475,11 +475,11 @@ with EmailStub {
       "email" -> "agencyemail@domain.com",
       "supervisoryBody" -> "supervisoryName",
       "membershipNumber" -> "supervisoryId",
-      "updateDetailsStatus" -> "REQUIRED",
-      "amlSupervisionUpdateStatus" -> "REQUIRED",
-      "directorPartnerUpdateStatus" -> "REQUIRED",
-      "acceptNewTermsStatus" -> "REQUIRED",
-      "reriskStatus" -> "REQUIRED"
+      "updateDetailsStatus" -> "ACCEPTED",
+      "amlSupervisionUpdateStatus" -> "ACCEPTED",
+      "directorPartnerUpdateStatus" -> "ACCEPTED",
+      "acceptNewTermsStatus" -> "ACCEPTED",
+      "reriskStatus" -> "ACCEPTED"
     ).toString
 
   private val agencyDetailsJsonWithoutAmls =
@@ -489,11 +489,11 @@ with EmailStub {
       "addr2" -> "Mandatory Address Line 2",
       "country" -> "IE",
       "email" -> "agencyemail@domain.com",
-      "updateDetailsStatus" -> "REQUIRED",
-      "amlSupervisionUpdateStatus" -> "REQUIRED",
-      "directorPartnerUpdateStatus" -> "REQUIRED",
-      "acceptNewTermsStatus" -> "REQUIRED",
-      "reriskStatus" -> "REQUIRED"
+      "updateDetailsStatus" -> "ACCEPTED",
+      "amlSupervisionUpdateStatus" -> "ACCEPTED",
+      "directorPartnerUpdateStatus" -> "ACCEPTED",
+      "acceptNewTermsStatus" -> "ACCEPTED",
+      "reriskStatus" -> "ACCEPTED"
     ).toString
 
   private def verifyApiCalls(
