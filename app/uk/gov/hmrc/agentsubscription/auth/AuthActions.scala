@@ -90,7 +90,7 @@ with AuthorisedFunctions {
         case enrolments ~ Some(affinityG) ~ Some(Credentials(providerId, _)) ~ Some(groupId) =>
           if (!isAgent(affinityG))
             NotAnAgent.toFuture
-          else if (enrolments.enrolments.nonEmpty)
+          else if (enrolments.enrolments.exists(_.key equals "HMRC-AS-AGENT"))
             AgentCannotSubscribe.toFuture
           else
             action(request)(AuthIds(providerId, groupId))

@@ -26,7 +26,6 @@ import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 import play.api.mvc.Results.Ok
 import play.api.mvc.AnyContent
-import play.api.mvc.ControllerComponents
 import play.api.mvc.Request
 import play.api.mvc.Result
 import play.api.test.FakeRequest
@@ -40,25 +39,24 @@ import uk.gov.hmrc.auth.core.authorise.Predicate
 import uk.gov.hmrc.auth.core.retrieve.Credentials
 import uk.gov.hmrc.auth.core.retrieve.Retrieval
 import uk.gov.hmrc.auth.core.retrieve.~
+import uk.gov.hmrc.auth.core.Enrolment
+import uk.gov.hmrc.auth.core.authorise
+import uk.gov.hmrc.auth.core._
 import uk.gov.hmrc.http.HeaderCarrier
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 
-class AuthActionsSpec(implicit val ec: ExecutionContext)
+class AuthActionsSpec
 extends UnitSpec
 with MockitoSugar
 with BeforeAndAfterEach
 with AuthData {
 
-  import uk.gov.hmrc.auth.core.Enrolment
-  import uk.gov.hmrc.auth.core.authorise
-  import uk.gov.hmrc.auth.core._
-
   val mockPlayAuthConnector = mock[PlayAuthConnector]
-  val mockCC = mock[ControllerComponents]
-  val mockAuthConnector = mock[AuthConnector]
-  val mockAuthActions: AuthActions = new AuthActions(mockCC, mockAuthConnector)
+  val mockCC = stubControllerComponents()
+  val mockAuthActions = new AuthActions(mockCC, mockPlayAuthConnector)
 
   val subscriptionAction: SubscriptionAuthAction = { request => authIds => Future successful Ok }
   val registrationAction: RegistrationAuthAction = { request => provider => Future successful Ok }
@@ -259,21 +257,24 @@ with AuthData {
       status(response) shouldBe FORBIDDEN
     }
 
-    "return UNAUTHORISED when Agent has some other enrolment already" in {
+    "return OK when Agent has a non HMRC-AS-AGENT enrolment" in {
       val someOtherEnrolments = Set(
         Enrolment(
-          "SOME-ENROLMENT",
-          Seq(EnrolmentIdentifier("SomeId", "SomeValue")),
+          "IR-SA-AGENT",
+          Seq(EnrolmentIdentifier("IRAgentReference", "12345")),
           state = "Activated",
           delegatedAuthRule = None
         )
       )
 
-      mockAuthRetrieval(affinityGroup = Some(AffinityGroup.Agent), enrolments = Enrolments(someOtherEnrolments))
+      mockAuthRetrieval(
+        affinityGroup = Some(AffinityGroup.Agent),
+        enrolments = Enrolments(someOtherEnrolments)
+      )
 
       val response: Result = await(mockAuthActions.overseasAgentAuth(overseasAgentAction).apply(fakeRequest))
 
-      status(response) shouldBe FORBIDDEN
+      status(response) shouldBe OK
     }
 
     "return the same error when auth throws an error" in {
@@ -296,12 +297,14 @@ with AuthData {
       affinityGroup: Option[AffinityGroup],
       enrolments: Enrolments
     ) = {
-      val retrievedCredentials = Credentials("credId", "credType")
+      val retrievedCredentials = Some(Credentials("credId", "credType"))
       val retrievedGroupId = Some("groupId")
 
-      type Retrievals = ~[~[~[Enrolments, Option[AffinityGroup]], Credentials], Option[String]]
+      type Retrievals = ~[~[~[Enrolments, Option[AffinityGroup]], Option[Credentials]], Option[String]]
 
-      val retrievalResponse: Future[Retrievals] = Future successful new ~(new ~(new ~(enrolments, affinityGroup), retrievedCredentials), retrievedGroupId)
+      val retrievalResponse: Future[Retrievals] = Future.successful(
+        new ~(new ~(new ~(enrolments, affinityGroup), retrievedCredentials), retrievedGroupId)
+      )
 
       when(
         mockPlayAuthConnector
