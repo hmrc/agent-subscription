@@ -110,31 +110,4 @@ with MockitoSugar {
     }
   }
 
-  "creating Overseas AMLS" should {
-    "return a successful response" in {
-
-      createOverseasAmlsSucceeds(arn, overseasAmlsDetails)
-
-      val result = await(connector.createOverseasAmls(arn, overseasAmlsDetails))
-
-      result shouldBe (())
-    }
-
-    "handle conflict responses" in {
-
-      createOverseasAmlsFailsWithStatus(409)
-
-      val result = await(connector.createOverseasAmls(arn, overseasAmlsDetails))
-
-      result shouldBe (())
-    }
-
-    "handle failure responses" in {
-
-      createOverseasAmlsFailsWithStatus(500)
-
-      an[Exception] should be thrownBy (await(connector.createOverseasAmls(arn, overseasAmlsDetails)))
-    }
-  }
-
 }

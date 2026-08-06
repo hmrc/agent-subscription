@@ -16,11 +16,9 @@
 
 package uk.gov.hmrc.agentsubscription.controllers
 
-import com.github.tomakehurst.wiremock.client.WireMock.verify
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
@@ -45,7 +43,35 @@ with EmailStub {
   implicit val ws: WSClient = app.injector.instanceOf[WSClient]
   private val safeIdJson = s"""{ "safeId": "${safeId.value}"}"""
   private val eacdRetryCount = 3
-  private val amlsDetails = OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))
+  private val agencyDetailsJson =
+    Json.obj(
+      "name" -> "Agency name",
+      "addr1" -> "Mandatory Address Line 1",
+      "addr2" -> "Mandatory Address Line 2",
+      "country" -> "IE",
+      "email" -> "agencyemail@domain.com",
+      "supervisoryBody" -> "supervisoryName",
+      "membershipNumber" -> "supervisoryId",
+      "updateDetailsStatus" -> "ACCEPTED",
+      "amlSupervisionUpdateStatus" -> "ACCEPTED",
+      "directorPartnerUpdateStatus" -> "ACCEPTED",
+      "acceptNewTermsStatus" -> "ACCEPTED",
+      "reriskStatus" -> "ACCEPTED"
+    ).toString
+  private val agencyDetailsJsonWithoutAmls =
+    Json.obj(
+      "name" -> "Agency name",
+      "addr1" -> "Mandatory Address Line 1",
+      "addr2" -> "Mandatory Address Line 2",
+      "country" -> "IE",
+      "email" -> "agencyemail@domain.com",
+      "updateDetailsStatus" -> "ACCEPTED",
+      "amlSupervisionUpdateStatus" -> "ACCEPTED",
+      "directorPartnerUpdateStatus" -> "ACCEPTED",
+      "acceptNewTermsStatus" -> "ACCEPTED",
+      "reriskStatus" -> "ACCEPTED"
+    ).toString
+
   val emailInfo = EmailInformation(
     Seq("agencyemail@domain.com"),
     "agent_services_account_created",
@@ -76,7 +102,7 @@ with EmailStub {
         )
         givenEmailSent(emailInfo)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe arn
@@ -116,7 +142,7 @@ with EmailStub {
         )
         givenEmailSent(emailInfo)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe arn
@@ -142,7 +168,7 @@ with EmailStub {
         aSuccessfulSubscriptionForAlreadyRegisteredAcceptedApplication("complete")
       }
 
-      def aSuccessfulSubscriptionForAlreadyRegisteredAcceptedApplication(applicationStatus: String) = {
+      def aSuccessfulSubscriptionForAlreadyRegisteredAcceptedApplication(applicationStatus: String): Unit = {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication(applicationStatus, Some(safeId.value))
         hipSubscriptionSucceeds(safeId.value, agencyDetailsJson)
@@ -157,7 +183,7 @@ with EmailStub {
         )
         givenEmailSent(emailInfo)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe arn
@@ -182,7 +208,7 @@ with EmailStub {
       hipSubscriptionSucceeds(safeId.value, agencyDetailsJson)
       allocatedPrincipalEnrolmentExists(arn, "someOtherGroupId")
 
-      val result = doSubscriptionRequest
+      val result = doSubscriptionRequest()
 
       result.status shouldBe 409
 
@@ -191,11 +217,7 @@ with EmailStub {
         etmpRegistration = 0,
         registered = 0,
         subscription = 1,
-        allocatedPrincipalEnrolment = 1,
-        deleteKnownFact = 0,
-        createKnownFact = 0,
-        enrol = 0,
-        complete = 0
+        allocatedPrincipalEnrolment = 1
       )
 
     }
@@ -205,7 +227,7 @@ with EmailStub {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("attempting_registration")
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 403
         verifyApiCalls(0, 0, 0, 0, 0)
@@ -213,9 +235,9 @@ with EmailStub {
 
       "the user does not have Agent affinity" in {
         requestIsAuthenticatedWithNoEnrolments(affinityGroup = "Individual")
-        doSubscriptionRequest.status shouldBe 403
+        doSubscriptionRequest().status shouldBe 403
 
-        verify(0, getRequestedFor(urlEqualTo(getApplicationUrl.toString)))
+        verify(0, getRequestedFor(urlEqualTo(getApplicationUrl)))
       }
     }
 
@@ -226,7 +248,7 @@ with EmailStub {
         val invalidAgencyName = "Acme & Sons" // Ampersands are not allowed for the agency name
         givenValidApplication("accepted", agencyName = invalidAgencyName)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
         (result.json \ "statusCode").as[Int] shouldBe 500
@@ -238,11 +260,7 @@ with EmailStub {
           etmpRegistration = 0,
           registered = 0,
           subscription = 0,
-          allocatedPrincipalEnrolment = 0,
-          deleteKnownFact = 0,
-          createKnownFact = 0,
-          enrol = 0,
-          complete = 0
+          allocatedPrincipalEnrolment = 0
         )
       }
 
@@ -256,7 +274,7 @@ with EmailStub {
           422
         )
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
 
@@ -268,7 +286,7 @@ with EmailStub {
         givenValidApplication("accepted")
         givenUpdateApplicationStatus(AttemptingRegistration, 409)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
 
@@ -286,7 +304,7 @@ with EmailStub {
           safeIdJson
         )
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
 
@@ -305,7 +323,7 @@ with EmailStub {
         )
         subscriptionAlreadyExists(safeId.value, agencyDetailsJson)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
 
@@ -325,7 +343,7 @@ with EmailStub {
         hipSubscriptionSucceeds(safeId.value, agencyDetailsJson)
         allocatedPrincipalEnrolmentFails(arn)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
 
@@ -352,7 +370,7 @@ with EmailStub {
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsFails(arn)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
 
@@ -381,7 +399,7 @@ with EmailStub {
         deleteKnownFactsSucceeds(arn)
         createKnownFactsFails(arn)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
 
@@ -412,7 +430,7 @@ with EmailStub {
         createKnownFactsSucceeds(arn)
         enrolmentFails(stubbedGroupId, arn)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
 
@@ -445,7 +463,7 @@ with EmailStub {
         enrolmentSucceeds(stubbedGroupId, arn)
         givenUpdateApplicationStatus(Complete, 409)
 
-        val result = doSubscriptionRequest
+        val result = doSubscriptionRequest()
 
         result.status shouldBe 500
 
@@ -464,37 +482,7 @@ with EmailStub {
     }
   }
 
-  private def doSubscriptionRequest = new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
-
-  private val agencyDetailsJson =
-    Json.obj(
-      "name" -> "Agency name",
-      "addr1" -> "Mandatory Address Line 1",
-      "addr2" -> "Mandatory Address Line 2",
-      "country" -> "IE",
-      "email" -> "agencyemail@domain.com",
-      "supervisoryBody" -> "supervisoryName",
-      "membershipNumber" -> "supervisoryId",
-      "updateDetailsStatus" -> "ACCEPTED",
-      "amlSupervisionUpdateStatus" -> "ACCEPTED",
-      "directorPartnerUpdateStatus" -> "ACCEPTED",
-      "acceptNewTermsStatus" -> "ACCEPTED",
-      "reriskStatus" -> "ACCEPTED"
-    ).toString
-
-  private val agencyDetailsJsonWithoutAmls =
-    Json.obj(
-      "name" -> "Agency name",
-      "addr1" -> "Mandatory Address Line 1",
-      "addr2" -> "Mandatory Address Line 2",
-      "country" -> "IE",
-      "email" -> "agencyemail@domain.com",
-      "updateDetailsStatus" -> "ACCEPTED",
-      "amlSupervisionUpdateStatus" -> "ACCEPTED",
-      "directorPartnerUpdateStatus" -> "ACCEPTED",
-      "acceptNewTermsStatus" -> "ACCEPTED",
-      "reriskStatus" -> "ACCEPTED"
-    ).toString
+  private def doSubscriptionRequest() = new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
 
   private def verifyApiCalls(
     attemptingRegistration: Int,
@@ -506,8 +494,8 @@ with EmailStub {
     createKnownFact: Int = 0,
     enrol: Int = 0,
     complete: Int = 0
-  ) = {
-    verify(1, getRequestedFor(urlEqualTo(getApplicationUrl.toString)))
+  ): Unit = {
+    verify(1, getRequestedFor(urlEqualTo(getApplicationUrl)))
     verify(
       attemptingRegistration,
       putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/attempting_registration"))

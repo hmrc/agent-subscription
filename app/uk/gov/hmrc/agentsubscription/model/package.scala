@@ -22,16 +22,15 @@ import play.api.libs.json.Reads._
 import play.api.mvc.Request
 import play.api.mvc.WrappedRequest
 import uk.gov.hmrc.agentsubscription.auth.Authority
-import uk.gov.hmrc.agentsubscription.auth.Enrolment
 
 package object model {
 
   val postcodeWithoutSpacesRegex = "^[A-Z]{1,2}[0-9][0-9A-Z]?\\s?[0-9][A-Z]{2}$|BFPO\\s?[0-9]{1,5}$"
-  val telephoneRegex = "^[0-9- +()#x ]{0,24}$"
-  val noAmpersand = "[^&]*"
-  val addressMax = 35
-  val nameMax = 40
-  def nameAndAddressRegex(max: Int) = s"^[A-Za-z0-9 \\-,.&'\\/]{0,$max}$$"
+  private val telephoneRegex = "^[0-9- +()#x ]{0,24}$"
+  private val noAmpersand = "[^&]*"
+  private val addressMax = 35
+  private val nameMax = 40
+  private def nameAndAddressRegex(max: Int) = s"^[A-Za-z0-9 \\-,.&'\\/]{0,$max}$$"
 
   private[model] val telephoneNumberValidation =
     filterNot[String](JsonValidationError("error.whitespace.or.empty"))(_.replaceAll("\\s", "").isEmpty) andKeep
@@ -104,12 +103,6 @@ package object model {
 
 case class RequestWithAuthority[+A](
   authority: Authority,
-  request: Request[A]
-)
-extends WrappedRequest[A](request)
-
-case class RequestWithEnrolments[+A](
-  enrolments: List[Enrolment],
   request: Request[A]
 )
 extends WrappedRequest[A](request)

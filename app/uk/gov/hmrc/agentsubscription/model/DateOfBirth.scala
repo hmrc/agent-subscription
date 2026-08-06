@@ -29,7 +29,7 @@ case class DateOfBirth(value: LocalDate)
 
 object DateOfBirth {
 
-  val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
+  private val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd")
 
   implicit val format: Format[DateOfBirth] =
     new Format[DateOfBirth] {

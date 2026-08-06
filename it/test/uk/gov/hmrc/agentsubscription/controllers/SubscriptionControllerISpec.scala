@@ -27,6 +27,7 @@ import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs._
 import uk.gov.hmrc.agentsubscription.support.BaseISpec
 import uk.gov.hmrc.agentsubscription.support.Resource
+import uk.gov.hmrc.http.HttpResponse
 
 import java.time.LocalDate
 
@@ -61,6 +62,46 @@ with EmailStub {
     Map("agencyName" -> "My Agency", "arn" -> "TARN0000001")
   )
 
+  private val subscriptionRequest: String =
+    s"""
+       |{
+       |  "utr": "${utr.value}",
+       |  "knownFacts": {
+       |    "postcode": "AA1 1AA"
+       |  },
+       |  "agency": {
+       |    "name": "My Agency",
+       |    "address": {
+       |      "addressLine1": "Flat 1",
+       |      "addressLine2": "1 Some Street",
+       |      "addressLine3": "Anytown",
+       |      "addressLine4": "County",
+       |      "postcode": "AA1 2AA",
+       |      "countryCode": "GB"
+       |    },
+       |    "email": "agency@example.com",
+       |    "telephone": "0123 456 7890"
+       |   },
+       |    "langForEmail" : "en",
+       |   "amlsDetails": {
+       |      "supervisoryBody":"supervisory",
+       |      "membershipNumber":"12345",
+       |      "membershipExpiresOn":"${LocalDate.now()}",
+       |      "amlsSafeId": "amlsSafeId",
+       |      "agentBPRSafeId": "agentBPRSafeId"
+       |    }
+       |}
+     """.stripMargin
+  private val updateSubscriptionRequest =
+    s"""
+       |{
+       |  "utr": "${utr.value}" ,
+       |  "knownFacts": {
+       |    "postcode": "TF3 4ER"
+       |  }
+       |}
+    """.stripMargin
+
   "creating a subscription" should {
     val agency = __ \ "agency"
     val address = agency \ "address"
@@ -92,7 +133,7 @@ with EmailStub {
 
     "return a response containing the ARN" when {
       "all fields are populated" in new TestSetup {
-        val result = doSubscriptionRequest()
+        val result: HttpResponse = doSubscriptionRequest()
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
@@ -102,7 +143,7 @@ with EmailStub {
       }
 
       "addressLine2, addressLine3 and addressLine4 are missing" in new TestSetup {
-        val fields = Seq(
+        val fields: Seq[JsPath] = Seq(
           address \ "addressLine2",
           address \ "addressLine3",
           address \ "addressLine4"
@@ -112,7 +153,7 @@ with EmailStub {
           Json.toJson(Json.parse(removeFields(fields)).as[SubscriptionRequest])(SubscriptionRequest.hipWrites).toString()
         )
 
-        val result = doSubscriptionRequest(removeFields(fields))
+        val result: HttpResponse = doSubscriptionRequest(removeFields(fields))
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
@@ -124,11 +165,10 @@ with EmailStub {
       "BPR has isAnAsAgent=true and there is no previous allocation for HMRC-AS-AGENT for the arn" in new TestSetup {
         organisationRegistrationExists(
           utr,
-          isAnASAgent = true,
           arn = arn
         )
 
-        val result = doSubscriptionRequest()
+        val result: HttpResponse = doSubscriptionRequest()
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
@@ -145,7 +185,7 @@ with EmailStub {
           Json.toJson(requestWithoutTelephone)(SubscriptionRequest.hipWrites).toString()
         )
 
-        val result = doSubscriptionRequest(Json.toJson(requestWithoutTelephone).toString())
+        val result: HttpResponse = doSubscriptionRequest(Json.toJson(requestWithoutTelephone).toString())
 
         result.status shouldBe 201
         (result.json \ "arn").as[String] shouldBe "TARN0000001"
@@ -158,12 +198,11 @@ with EmailStub {
     "return Conflict if already subscribed (both ETMP has isAnAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in new TestSetup {
       organisationRegistrationExists(
         utr,
-        isAnASAgent = true,
         arn = arn
       )
       allocatedPrincipalEnrolmentExists(arn, "someGroupId")
 
-      val result = doSubscriptionRequest()
+      val result: HttpResponse = doSubscriptionRequest()
 
       result.status shouldBe 409
 
@@ -331,7 +370,7 @@ with EmailStub {
           503
         )
 
-        val result = doSubscriptionRequest()
+        val result: HttpResponse = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -340,7 +379,7 @@ with EmailStub {
         requestIsAuthenticatedWithNoEnrolments()
         allocatedPrincipalEnrolmentFails(arn)
 
-        val result = doSubscriptionRequest()
+        val result: HttpResponse = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -349,7 +388,7 @@ with EmailStub {
         requestIsAuthenticatedWithNoEnrolments()
         deleteKnownFactsFails(arn)
 
-        val result = doSubscriptionRequest()
+        val result: HttpResponse = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -358,7 +397,7 @@ with EmailStub {
         requestIsAuthenticatedWithNoEnrolments()
         createKnownFactsFails(arn)
 
-        val result = doSubscriptionRequest()
+        val result: HttpResponse = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -366,7 +405,7 @@ with EmailStub {
       "create enrolment fails in EACD " in new TestSetup {
         enrolmentFails(groupId, arn)
 
-        val result = doSubscriptionRequest()
+        val result: HttpResponse = doSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -376,18 +415,30 @@ with EmailStub {
   "updating a partial subscription" should {
     "return a response containing the ARN a valid utr is given as input and when the user is not enrolled in EACD but is subscribed in ETMP" when {
       "with full DES-GetAgentRecord" in {
-        testPartialSubscriptionWith(agentRecordExists(utr, true, arn))
+        testPartialSubscriptionWith(agentRecordExists(
+          utr,
+          isAnASAgent = true,
+          arn
+        ))
       }
 
       "the DES-GetAgentRecord does not contain a telephone number" in {
-        testPartialSubscriptionWith(agentRecordExistsWithoutPhoneNumber(utr, true, arn))
+        testPartialSubscriptionWith(agentRecordExistsWithoutPhoneNumber(
+          utr,
+          isAnASAgent = true,
+          arn
+        ))
       }
 
       "DES-GetAgentRecord does not contain contact details" in {
-        testPartialSubscriptionWith(agentRecordExistsWithoutContactDetails(utr, true, arn))
+        testPartialSubscriptionWith(agentRecordExistsWithoutContactDetails(
+          utr,
+          isAnASAgent = true,
+          arn
+        ))
       }
 
-      def testPartialSubscriptionWith[A](givenAgentRecord: => A) = {
+      def testPartialSubscriptionWith[A](givenAgentRecord: => A): Unit = {
         requestIsAuthenticatedWithNoEnrolments()
         givenAgentRecord
         allocatedPrincipalEnrolmentNotExists(arn)
@@ -413,7 +464,11 @@ with EmailStub {
 
     "return Conflict if already subscribed (both ETMP has isAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in {
       requestIsAuthenticatedWithNoEnrolments()
-      agentRecordExists(utr, true, arn)
+      agentRecordExists(
+        utr,
+        isAnASAgent = true,
+        arn
+      )
       allocatedPrincipalEnrolmentExists(arn, "someGroupId")
       createAmlsSucceeds(utr, amlsDetails)
       updateAmlsSucceeds(
@@ -507,7 +562,11 @@ with EmailStub {
 
       class TestSetup {
         requestIsAuthenticatedWithNoEnrolments()
-        agentRecordExists(utr, true, arn)
+        agentRecordExists(
+          utr,
+          isAnASAgent = true,
+          arn
+        )
         createAmlsSucceeds(utr, amlsDetails)
         subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
         updateAmlsSucceeds(
@@ -528,7 +587,7 @@ with EmailStub {
       }
 
       "query allocated enrolment fails in EMAC " in new TestSetup {
-        val result = doUpdateSubscriptionRequest()
+        val result: HttpResponse = doUpdateSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -537,7 +596,7 @@ with EmailStub {
         allocatedPrincipalEnrolmentNotExists(arn)
         deleteKnownFactsFails("")
 
-        val result = doUpdateSubscriptionRequest()
+        val result: HttpResponse = doUpdateSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -547,7 +606,7 @@ with EmailStub {
         deleteKnownFactsSucceeds("")
         createKnownFactsFails("")
 
-        val result = doUpdateSubscriptionRequest()
+        val result: HttpResponse = doUpdateSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -557,7 +616,7 @@ with EmailStub {
         createKnownFactsSucceeds(arn)
         enrolmentFails(groupId, arn)
 
-        val result = doUpdateSubscriptionRequest()
+        val result: HttpResponse = doUpdateSubscriptionRequest()
 
         result.status shouldBe 500
       }
@@ -603,68 +662,5 @@ with EmailStub {
       case e: JsError => throw new RuntimeException(s"Unable to transform JSON: $e")
     }
   }
-
-  private val subscriptionRequest: String =
-    s"""
-       |{
-       |  "utr": "${utr.value}",
-       |  "knownFacts": {
-       |    "postcode": "AA1 1AA"
-       |  },
-       |  "agency": {
-       |    "name": "My Agency",
-       |    "address": {
-       |      "addressLine1": "Flat 1",
-       |      "addressLine2": "1 Some Street",
-       |      "addressLine3": "Anytown",
-       |      "addressLine4": "County",
-       |      "postcode": "AA1 2AA",
-       |      "countryCode": "GB"
-       |    },
-       |    "email": "agency@example.com",
-       |    "telephone": "0123 456 7890"
-       |   },
-       |    "langForEmail" : "en",
-       |   "amlsDetails": {
-       |      "supervisoryBody":"supervisory",
-       |      "membershipNumber":"12345",
-       |      "membershipExpiresOn":"${LocalDate.now()}",
-       |      "amlsSafeId": "amlsSafeId",
-       |      "agentBPRSafeId": "agentBPRSafeId"
-       |    }
-       |}
-     """.stripMargin
-
-  private val subscriptionRequestWithoutTelephoneNo: String =
-    s"""
-       |{
-       |  "utr": "${utr.value}",
-       |  "knownFacts": {
-       |    "postcode": "AA1 1AA"
-       |  },
-       |  "agency": {
-       |    "name": "My Agency",
-       |    "address": {
-       |      "addressLine1": "Flat 1",
-       |      "addressLine2": "1 Some Street",
-       |      "addressLine3": "Anytown",
-       |      "addressLine4": "County",
-       |      "postcode": "AA1 2AA",
-       |      "countryCode": "GB"
-       |    },
-       |    "email": "agency@example.com"
-       |  }
-       |}
-     """.stripMargin
-
-  private val updateSubscriptionRequest =
-    s"""
-       |{
-       |  "utr": "${utr.value}" ,
-       |  "knownFacts": {
-       |    "postcode": "TF3 4ER"
-       |  }
-       |}
-    """.stripMargin
 
 }

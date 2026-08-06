@@ -43,17 +43,6 @@ case class AmlsData(
 
 object AmlsData {
 
-  val registeredUserNoDataEntered = AmlsData(
-    amlsRegistered = true,
-    None,
-    None
-  )
-  val nonRegisteredUserNoDataEntered = AmlsData(
-    amlsRegistered = false,
-    None,
-    None
-  )
-
   implicit val format: Format[AmlsData] = Json.format
 
 }

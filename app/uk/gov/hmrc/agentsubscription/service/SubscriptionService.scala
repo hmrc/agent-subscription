@@ -27,7 +27,6 @@ import uk.gov.hmrc.agentsubscription.audit.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.audit.OverseasAgentSubscription
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
-import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
@@ -80,8 +79,7 @@ class SubscriptionService @Inject() (
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   agentAssuranceConnector: AgentAssuranceConnector,
   agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
-  emailConnector: EmailConnector,
-  appConfig: AppConfig
+  emailConnector: EmailConnector
 )(implicit ec: ExecutionContext)
 extends Logging {
 
@@ -322,26 +320,16 @@ extends Logging {
     agencyDetails: OverseasAgencyDetails
   )(implicit rh: RequestHeader) =
     for {
-      arn <- {
-        if (appConfig.useHipForOverseas)
-          hipConnector.subscribeToAgentServicesOverseas(
-            safeId,
-            agencyDetails,
-            amlsDetailsOpt
-          )
-        else
-          desConnector.subscribeToAgentServices(safeId, agencyDetails)
-      }
+      arn <- hipConnector.subscribeToAgentServicesOverseas(
+        safeId,
+        agencyDetails,
+        amlsDetailsOpt
+      )
       _ <- addKnownFactsAndEnrolOverseas(
         arn,
         agencyDetails,
         authIds
       )
-      _ <-
-        amlsDetailsOpt match {
-          case Some(amlsDetails) if !appConfig.useHipForOverseas => agentAssuranceConnector.createOverseasAmls(arn, amlsDetails)
-          case _ => Future.unit
-        }
       _ <- agentOverseasApplicationConnector
         .updateApplicationStatus(
           ApplicationStatus.Complete,

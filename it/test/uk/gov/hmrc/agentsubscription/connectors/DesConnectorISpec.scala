@@ -62,46 +62,6 @@ with MetricsTestSupport {
       metrics
     )
 
-  "subscribeToAgentServices" should {
-    "return an ARN when subscription is successful" in {
-      subscriptionSucceeds(utr, request)
-
-      val result = await(connector.subscribeToAgentServices(utr, request))
-
-      result shouldBe Arn("TARN0000001")
-    }
-
-    "return an ARN when subscription is successful and the request does not have a telephone number" in {
-      subscriptionSucceedsWithoutTelephoneNo(utr, request.copy(telephoneNumber = None))
-
-      val result = await(connector.subscribeToAgentServices(utr, request.copy(telephoneNumber = None)))
-
-      result shouldBe Arn("TARN0000001")
-    }
-
-    "propagate an exception containing the utr if there is a duplicate submission" in {
-      subscriptionAlreadyExists(utr)
-
-      val exception = intercept[RuntimeException] {
-        await(connector.subscribeToAgentServices(utr, request))
-      }
-
-      exception.getMessage.contains(utr.value) shouldBe true
-      exception.getCause.asInstanceOf[UpstreamErrorResponse].statusCode shouldBe 409
-    }
-
-    "propagate an exception containing the utr if the agency is not registered" in {
-      agencyNotRegistered(utr)
-
-      val exception = intercept[RuntimeException] {
-        await(connector.subscribeToAgentServices(utr, request))
-      }
-
-      exception.getMessage.contains(utr.value) shouldBe true
-    }
-
-  }
-
   "getRegistration" should {
     val businessAddress = DesBusinessAddress(
       "AddressLine1 A",

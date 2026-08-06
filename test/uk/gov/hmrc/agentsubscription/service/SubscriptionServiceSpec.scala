@@ -34,7 +34,6 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
-import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.EnrolmentRequest
 import uk.gov.hmrc.agentsubscription.connectors.{Address => _, _}
 import uk.gov.hmrc.agentsubscription.model._
@@ -60,7 +59,6 @@ with Eventually {
   private val agentAssuranceConnector = resettingMock[AgentAssuranceConnector]
   private val agentOverseasAppConn = resettingMock[AgentOverseasApplicationConnector]
   private val emailConnector = resettingMock[EmailConnector]
-  private val appConfig = resettingMock[AppConfig]
 
   private val authIds = AuthIds("userId", "groupId")
 
@@ -73,8 +71,7 @@ with Eventually {
       subscriptionJourneyRepository,
       agentAssuranceConnector,
       agentOverseasAppConn,
-      emailConnector,
-      appConfig
+      emailConnector
     )
 
   private implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("POST", "/agent-subscription/subscription")
@@ -222,7 +219,7 @@ with Eventually {
       val businessPostcode = "BU1 1BB"
       val agencyPostcode = "AG1 1CY"
 
-      def addKnownFactsAndEnrolFailsMoreThan3Times(recoveryMsgContains: String): Unit = {
+      def addKnownFactsAndEnrolFailsMoreThan3Times(): Unit = {
         val subscriptionRequest = SubscriptionRequest(
           utr,
           KnownFacts(businessPostcode),
@@ -258,7 +255,7 @@ with Eventually {
           amlsDetails
         )
 
-        behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES1")
+        behave like addKnownFactsAndEnrolFailsMoreThan3Times()
       }
 
       "delete known facts fails more than 3 times" in {
@@ -269,7 +266,7 @@ with Eventually {
           amlsDetails
         )
 
-        behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES7")
+        behave like addKnownFactsAndEnrolFailsMoreThan3Times()
       }
 
       "create known facts fails more than 3 times" in {
@@ -280,7 +277,7 @@ with Eventually {
           amlsDetails
         )
 
-        behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES6")
+        behave like addKnownFactsAndEnrolFailsMoreThan3Times()
       }
 
       "the call to enrol fails more than 3 times" in {
@@ -291,7 +288,7 @@ with Eventually {
           amlsDetails
         )
 
-        behave like addKnownFactsAndEnrolFailsMoreThan3Times("Failed to contact ES8")
+        behave like addKnownFactsAndEnrolFailsMoreThan3Times()
       }
 
     }
@@ -331,10 +328,10 @@ with Eventually {
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
-      .thenReturn(Future successful (Some(1L)))
+      .thenReturn(Future.successful(Some(1L)))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
-      .thenReturn(Future successful false)
+      .thenReturn(Future.successful(false))
 
     when(taxEnrolmentConnector.deleteKnownFacts(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful Integer.valueOf(204))
@@ -360,7 +357,7 @@ with Eventually {
       .thenReturn(Future successful Some(amlsDetails))
 
     when(emailConnector.sendEmail(any[EmailInformation])(any[RequestHeader]))
-      .thenReturn(Future successful [Unit] (()))
+      .thenReturn(Future.successful[Unit](()))
   }
 
   private def subscriptionHasPrincipalGroupIdsFailed(
@@ -396,7 +393,7 @@ with Eventually {
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
-      .thenReturn(Future successful (Some(1L)))
+      .thenReturn(Future.successful(Some(1L)))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future failed new GatewayTimeoutException("Failed to contact ES1"))
@@ -441,7 +438,7 @@ with Eventually {
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
-      .thenReturn(Future successful (Some(1L)))
+      .thenReturn(Future.successful(Some(1L)))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)
@@ -489,7 +486,7 @@ with Eventually {
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
-      .thenReturn(Future successful (Some(1L)))
+      .thenReturn(Future.successful(Some(1L)))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)
@@ -544,7 +541,7 @@ with Eventually {
       .thenReturn(Future successful Arn(arn))
 
     when(subscriptionJourneyRepository.delete(any[String]))
-      .thenReturn(Future successful (Some(1L)))
+      .thenReturn(Future.successful(Some(1L)))
 
     when(taxEnrolmentConnector.hasPrincipalGroupIds(eqs(Arn(arn)))(any[RequestHeader]))
       .thenReturn(Future successful false)

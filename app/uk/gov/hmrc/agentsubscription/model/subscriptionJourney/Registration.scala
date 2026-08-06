@@ -52,21 +52,3 @@ object Registration {
   implicit val format: OFormat[Registration] = Json.format[Registration]
 
 }
-
-case class UpdateBusinessAddressForm(
-  addressLine1: String,
-  addressLine2: Option[String],
-  addressLine3: Option[String] = None,
-  addressLine4: Option[String] = None,
-  postCode: String
-)
-
-object UpdateBusinessAddressForm {
-  def apply(businessAddress: BusinessAddress): UpdateBusinessAddressForm = UpdateBusinessAddressForm(
-    businessAddress.addressLine1,
-    businessAddress.addressLine2,
-    businessAddress.addressLine3,
-    businessAddress.addressLine4,
-    businessAddress.postalCode.getOrElse(throw new Exception("Postcode is mandatory"))
-  )
-}

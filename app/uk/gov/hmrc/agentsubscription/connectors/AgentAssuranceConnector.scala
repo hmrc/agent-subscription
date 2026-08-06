@@ -25,7 +25,6 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.AgentAssuranceConnector.CreateAmlsRequest
-import uk.gov.hmrc.agentsubscription.connectors.AgentAssuranceConnector.CreateOverseasAmlsRequest
 import uk.gov.hmrc.agentsubscription.model.AmlsDetails
 import uk.gov.hmrc.agentsubscription.model.OverseasAmlsDetails
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
@@ -91,30 +90,6 @@ with HttpAPIMonitor {
           response.status match {
             case s if is2xx(s) => response.json.asOpt[AmlsDetails]
             case NOT_FOUND => None // 404 -> Partially subscribed agents may not have any stored amls details, then updating fails with 404
-            case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST")
-            case s =>
-              val message = s"Unexpected response: $s"
-              logger.error(message)
-              throw UpstreamErrorResponse(message, s)
-          }
-        }
-    }
-
-  def createOverseasAmls(
-    arn: Arn,
-    amlsDetails: OverseasAmlsDetails
-  )(implicit
-    rh: RequestHeader
-  ): Future[Unit] =
-    monitor("ConsumedAPI-AgentAssurance-overseas-agents-amls-POST") {
-      http
-        .post(url"$baseUrl/agent-assurance/overseas-agents/amls")
-        .withBody(Json.toJson(CreateOverseasAmlsRequest(arn, amlsDetails)))
-        .execute[HttpResponse]
-        .map { response =>
-          response.status match {
-            case s if is2xx(s) => ()
-            case CONFLICT => ()
             case BAD_REQUEST => throw new BadRequestException(s"BAD_REQUEST")
             case s =>
               val message = s"Unexpected response: $s"

@@ -19,7 +19,6 @@ package uk.gov.hmrc.agentsubscription.controllers
 import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.agentmtdidentifiers.model.Arn
 import uk.gov.hmrc.agentsubscription.audit.OverseasAgentSubscription
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
@@ -51,6 +50,23 @@ with EmailStub {
   private val safeId = SafeId("XE0001234567890")
   private val safeIdJson = s"""{ "safeId": "${safeId.value}"}"""
   private val overseasAmlsDetails = OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))
+
+  private val agencyDetailsJson =
+    Json.obj(
+      "name" -> "Agency name",
+      "addr1" -> "Mandatory Address Line 1",
+      "addr2" -> "Mandatory Address Line 2",
+      "country" -> "IE",
+      "email" -> "agencyemail@domain.com",
+      "supervisoryBody" -> "supervisoryName",
+      "membershipNumber" -> "supervisoryId",
+      "updateDetailsStatus" -> "ACCEPTED",
+      "amlSupervisionUpdateStatus" -> "ACCEPTED",
+      "directorPartnerUpdateStatus" -> "ACCEPTED",
+      "acceptNewTermsStatus" -> "ACCEPTED",
+      "reriskStatus" -> "ACCEPTED"
+    ).toString
+
   val emailInfo = EmailInformation(
     Seq("agencyemail@domain.com"),
     "agent_services_account_created",
@@ -126,21 +142,5 @@ with EmailStub {
               |}
               |""".stripMargin)
     .asInstanceOf[JsObject]
-
-  private val agencyDetailsJson =
-    Json.obj(
-      "name" -> "Agency name",
-      "addr1" -> "Mandatory Address Line 1",
-      "addr2" -> "Mandatory Address Line 2",
-      "country" -> "IE",
-      "email" -> "agencyemail@domain.com",
-      "supervisoryBody" -> "supervisoryName",
-      "membershipNumber" -> "supervisoryId",
-      "updateDetailsStatus" -> "ACCEPTED",
-      "amlSupervisionUpdateStatus" -> "ACCEPTED",
-      "directorPartnerUpdateStatus" -> "ACCEPTED",
-      "acceptNewTermsStatus" -> "ACCEPTED",
-      "reriskStatus" -> "ACCEPTED"
-    ).toString
 
 }

@@ -35,7 +35,7 @@ import uk.gov.hmrc.http.client.HttpClientV2
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegment
 
-import java.net.URL
+import java.net.URI
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -151,61 +151,6 @@ with Logging {
     }
   }
 
-  def subscribeToAgentServices(
-    safeId: SafeId,
-    agencyDetails: OverseasAgencyDetails
-  )(implicit
-    rh: RequestHeader
-  ): Future[Arn] = {
-    val url = desOverseasSubscribeUrl(safeId)
-    val headersConfig = makeHeadersConfig(url)
-    monitor("ConsumedAPI-DES-SubscribeOverseasAgent-POST") {
-      http
-        .post(url"$url")
-        .setHeader(headersConfig.explicitHeaders: _*)
-        .withBody(Json.toJson(agencyDetails))
-        .execute[HttpResponse]
-        .map { response =>
-          response.status match {
-            case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
-            case s =>
-              throw new RuntimeException(
-                s"Failed to create subscription in ETMP for safeId: $safeId status $s",
-                UpstreamErrorResponse(s"Upstream Error at: $url", s)
-              )
-          }
-        }
-    }
-  }
-
-  def subscribeToAgentServices(
-    utr: Utr,
-    request: DesSubscriptionRequest
-  )(implicit
-    rh: RequestHeader
-  ): Future[Arn] = {
-    val url = desSubscribeUrl(utr)
-    val headersConfig = makeHeadersConfig(url)
-    monitor("ConsumedAPI-DES-SubscribeAgent-POST") {
-      http
-        .post(url"$url")
-        .setHeader(headersConfig.explicitHeaders: _*)
-        .withBody(Json.toJson(request))
-        .execute[HttpResponse]
-        .map { response =>
-          response.status match {
-            case s if is2xx(s) => (response.json \ "agentRegistrationNumber").as[Arn]
-            case s if s == CONFLICT =>
-              throw new RuntimeException(
-                s"Failed to create subscription in ETMP for $utr status: $s",
-                UpstreamErrorResponse(s"Unexpected response: $s from: $url", s)
-              )
-            case s => throw new RuntimeException(s"Failed to create subscription in ETMP for $utr status: $s")
-          }
-        }
-    }
-  }
-
   def getRegistration(
     utr: Utr
   )(implicit
@@ -311,15 +256,11 @@ with Logging {
       }
   }
 
-  private def desSubscribeUrl(utr: Utr): String = s"$baseUrl/registration/agents/utr/${encodePathSegment(utr.value)}"
-
-  private def desOverseasSubscribeUrl(safeId: SafeId): String = s"$baseUrl/registration/agents/safeId/${encodePathSegment(safeId.value)}"
-
   private def desRegistrationUrl(utr: Utr): String = s"$baseUrl/registration/individual/utr/${encodePathSegment(utr.value)}"
 
   def makeHeadersConfig(url: String)(implicit hc: HeaderCarrier): HeadersConfig = {
 
-    val isInternalHost = appConfig.internalHostPatterns.exists(_.pattern.matcher(new URL(url).getHost).matches())
+    val isInternalHost = appConfig.internalHostPatterns.exists(_.pattern.matcher(new URI(url).toURL.getHost).matches())
 
     val baseHeaders = Seq(
       Environment -> s"$environment",
@@ -379,7 +320,7 @@ extends RuntimeException(reason, cause)
 
 sealed trait DesResponseJsonException
 extends RuntimeException {
-  def error =
+  def error: RuntimeException =
     this match {
       case InvalidBusinessAddressException => new RuntimeException("Invalid business address found in DES response")
       case InvalidIsAnASAgentException => new RuntimeException("Invalid IsAnASAgent found in DES response")

@@ -45,7 +45,6 @@ with MockitoSugar {
       metrics
     )
 
-  private implicit val hc: HeaderCarrier = HeaderCarrier()
   private val arn = Arn("AARN1234567")
   private val postcode = "SY12 8RN"
   private val knownFactKey = "TestKnownFactKey"
@@ -153,7 +152,7 @@ with MockitoSugar {
 
     "propagate an exception for a failed query" when {
       "failed with 500" in {
-        allocatedPrincipalEnrolmentFails(arn.value, 500)
+        allocatedPrincipalEnrolmentFails(arn.value)
 
         val exception = intercept[UpstreamErrorResponse] {
           await(connector.hasPrincipalGroupIds(arn))
