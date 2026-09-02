@@ -73,7 +73,11 @@ with TaxEnrolmentsStubs {
         DataStreamStub.verifyAuditRequestSent(
           CheckAgencyStatus,
           expectedTags(path),
-          expectedDetails(utr, postcode)
+          expectedDetails(
+            utr,
+            postcode,
+            getLastProviderId
+          )
         )
       }
     }
@@ -81,11 +85,12 @@ with TaxEnrolmentsStubs {
 
   private def expectedDetails(
     utr: Utr,
-    postcode: String
+    postcode: String,
+    providerId: String
   ): JsObject = Json
     .parse(s"""
               |{
-              |  "authProviderId": "12345",
+              |  "authProviderId": "$providerId",
               |  "authProviderType": "GovernmentGateway",
               |  "utr": "${utr.value}",
               |  "postcode": "$postcode",

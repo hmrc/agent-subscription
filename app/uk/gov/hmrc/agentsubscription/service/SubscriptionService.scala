@@ -28,14 +28,18 @@ import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.audit.OverseasAgentSubscription
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
 import uk.gov.hmrc.agentsubscription.connectors._
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.agentsubscription.utils.Retry
 import uk.gov.hmrc.http.NotFoundException
+import uk.gov.hmrc.mongo.CurrentTimestampSupport
+import uk.gov.hmrc.mongo.MongoComponent
+import uk.gov.hmrc.mongo.lock.MongoLockRepository
+import uk.gov.hmrc.mongo.lock.TimePeriodLockService
 
+import scala.concurrent.duration._
 import javax.inject.Inject
 import javax.inject.Singleton
 import scala.concurrent.ExecutionContext
@@ -79,9 +83,26 @@ class SubscriptionService @Inject() (
   subscriptionJourneyRepository: SubscriptionJourneyRepository,
   agentAssuranceConnector: AgentAssuranceConnector,
   agentOverseasApplicationConnector: AgentOverseasApplicationConnector,
-  emailConnector: EmailConnector
+  emailConnector: EmailConnector,
+  mongoComponent: MongoComponent
 )(implicit ec: ExecutionContext)
 extends Logging {
+
+  private lazy val mongoLockRepository = new MongoLockRepository(mongoComponent, new CurrentTimestampSupport)
+
+  private def withOverseasSubscriptionLock[T](userId: String)(body: => Future[Option[T]]): Future[Option[T]] = TimePeriodLockService(
+    mongoLockRepository,
+    lockId = s"create-overseas-subscription-$userId",
+    ttl = 5.minutes
+  ).withRenewedLock(body)
+    .map {
+      case Some(result) =>
+        logger.info(s"Acquired lock for $userId")
+        result
+      case None =>
+        logger.warn(s"Lock already held for $userId")
+        None
+    }
 
   private def sendEmail(
     email: String,
@@ -246,72 +267,61 @@ extends Logging {
 
   def createOverseasSubscription(
     authIds: AuthIds
-  )(implicit rh: RequestHeader): Future[Option[Arn]] = {
-    val userId = authIds.userId
-
-    agentOverseasApplicationConnector.currentApplication.flatMap {
-      case CurrentApplication(
-            AttemptingRegistration,
-            _,
-            _,
-            _,
-            _,
-            _
-          ) =>
-        Future.successful(None)
-      case CurrentApplication(
-            Registered | Complete,
-            Some(safeId),
-            amlsDetails,
-            _,
-            _,
-            agencyDetails
-          ) =>
-        subscribeAndEnrolOverseas(
-          authIds,
-          safeId,
-          amlsDetails,
-          agencyDetails
-        )
-      case application =>
-        for {
-          _ <- agentOverseasApplicationConnector.updateApplicationStatus(ApplicationStatus.AttemptingRegistration, userId)
-          safeId <- desConnector.createOverseasBusinessPartnerRecord(OverseasRegistrationRequest(application))
-          _ <- agentOverseasApplicationConnector
-            .updateApplicationStatus(
-              ApplicationStatus.Registered,
-              userId,
-              Some(safeId)
-            )
-          arnOpt <- subscribeAndEnrolOverseas(
+  )(implicit rh: RequestHeader): Future[Option[Arn]] =
+    withOverseasSubscriptionLock(authIds.userId) {
+      agentOverseasApplicationConnector.currentApplication.flatMap {
+        case CurrentApplication(
+              Registered | Complete,
+              Some(safeId),
+              amlsDetails,
+              _,
+              _,
+              agencyDetails
+            ) =>
+          subscribeAndEnrolOverseas(
             authIds,
             safeId,
-            application.amlsDetails,
-            application.agencyDetails
+            amlsDetails,
+            agencyDetails
           )
-        } yield {
-          val auditJson = Json
-            .toJson(
-              OverseasSubscriptionAuditDetail(
-                arnOpt,
-                safeId,
-                application.agencyDetails.agencyName,
-                application.agencyDetails.agencyEmail,
-                application.agencyDetails.agencyAddress,
-                application.amlsDetails
+        case application =>
+          for {
+            safeId <- desConnector.createOverseasBusinessPartnerRecord(OverseasRegistrationRequest(application))
+            _ <- agentOverseasApplicationConnector
+              .updateApplicationStatus(
+                ApplicationStatus.Registered,
+                authIds.userId,
+                Some(safeId)
               )
+            arnOpt <- subscribeAndEnrolOverseas(
+              authIds,
+              safeId,
+              application.amlsDetails,
+              application.agencyDetails
             )
-            .as[JsObject]
+          } yield {
+            val auditJson = Json
+              .toJson(
+                OverseasSubscriptionAuditDetail(
+                  arnOpt,
+                  safeId,
+                  application.agencyDetails.agencyName,
+                  application.agencyDetails.agencyEmail,
+                  application.agencyDetails.agencyAddress,
+                  application.amlsDetails
+                )
+              )
+              .as[JsObject]
 
-          auditService.auditEvent(
-            OverseasAgentSubscription,
-            "Overseas agent subscription",
-            auditJson
-          )
-          arnOpt
-        }
+            auditService.auditEvent(
+              OverseasAgentSubscription,
+              "Overseas agent subscription",
+              auditJson
+            )
+            arnOpt
+          }
+      }
     }
-  }
 
   private def subscribeAndEnrolOverseas(
     authIds: AuthIds,

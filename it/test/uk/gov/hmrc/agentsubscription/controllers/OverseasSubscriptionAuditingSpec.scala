@@ -20,7 +20,6 @@ import org.scalatest.concurrent.Eventually
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentsubscription.audit.OverseasAgentSubscription
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
 import uk.gov.hmrc.agentsubscription.model.EmailInformation
@@ -80,7 +79,6 @@ with EmailStub {
 
       requestIsAuthenticatedWithNoEnrolments()
       givenValidApplication("accepted")
-      givenUpdateApplicationStatus(AttemptingRegistration, 204)
       organisationRegistrationSucceeds()
       givenUpdateApplicationStatus(
         Registered,

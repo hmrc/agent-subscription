@@ -177,22 +177,16 @@ in user.
 
 If the application is in the "accepted" state, the following main steps
 are followed and the ARN is returned in the response if successful:
-1. updates the application status to "attempting_registration"
-2. registers the organisation in ETMP (creates a Business Partner record)
-3. updates the application status to "registered"
-4. subscribes them to Agent Services in ETMP, obtaining a new Agent Reference Number
-5. enrols the currently logged in agent to HMRC-AS-AGENT with their new Agent Reference Number.
-6. updates the application status to "complete"
+1. registers the organisation in ETMP (creates a Business Partner record)
+2. updates the application status to "registered"
+3. subscribes them to Agent Services in ETMP, obtaining a new Agent Reference Number
+4. enrols the currently logged in agent to HMRC-AS-AGENT with their new Agent Reference Number.
+5. updates the application status to "complete"
 
-If the application is in the "attempting_registration" state, no further
-progress will be made. It is assumed that the call to Register them in
-ETMP has previously failed and ETMP must be contacted to resolve the
-failure.
-
-If the application is in the "registered" state, then steps 4 through 6
+If the application is in the "registered" state, then steps 3 through 5
 are re-attempted and the ARN is returned in the response if successful.
 
-If the application is in the "complete" state, then step 5 is
+If the application is in the "complete" state, then step 4 is
 re-attempted (which would fix any enrolment that may have been removed),
 and the ARN is returned in the response if successful.
 
@@ -204,7 +198,6 @@ Response 401 if there is no logged in user
 #### Forbidden
 Response 403 if:
 - the logged in user is not an Agent
-- the application status is 'attempting_registration'
 
 #### Conflict
 Response 409 if the HMRC-AS-AGENT enrolment is already allocated to a group

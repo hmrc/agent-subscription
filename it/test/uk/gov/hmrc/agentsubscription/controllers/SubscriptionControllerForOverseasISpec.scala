@@ -19,8 +19,8 @@ package uk.gov.hmrc.agentsubscription.controllers
 import com.github.tomakehurst.wiremock.client.WireMock._
 import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
+import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Pending
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs._
@@ -83,7 +83,6 @@ with EmailStub {
       "all fields are populated" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
-        givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(
           Registered,
@@ -108,7 +107,6 @@ with EmailStub {
         (result.json \ "arn").as[String] shouldBe arn
 
         verifyApiCalls(
-          attemptingRegistration = 1,
           etmpRegistration = 1,
           registered = 1,
           subscription = 1,
@@ -123,7 +121,6 @@ with EmailStub {
       "there are no amls details" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted", hasAmls = false)
-        givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(
           Registered,
@@ -148,7 +145,6 @@ with EmailStub {
         (result.json \ "arn").as[String] shouldBe arn
 
         verifyApiCalls(
-          attemptingRegistration = 1,
           etmpRegistration = 1,
           registered = 1,
           subscription = 1,
@@ -189,7 +185,6 @@ with EmailStub {
         (result.json \ "arn").as[String] shouldBe arn
 
         verifyApiCalls(
-          attemptingRegistration = 0,
           etmpRegistration = 0,
           registered = 0,
           subscription = 1,
@@ -213,7 +208,6 @@ with EmailStub {
       result.status shouldBe 409
 
       verifyApiCalls(
-        attemptingRegistration = 0,
         etmpRegistration = 0,
         registered = 0,
         subscription = 1,
@@ -223,16 +217,6 @@ with EmailStub {
     }
 
     "return Forbidden" when {
-      "current application status is attempting_registration" in {
-        requestIsAuthenticatedWithNoEnrolments()
-        givenValidApplication("attempting_registration")
-
-        val result = doSubscriptionRequest()
-
-        result.status shouldBe 403
-        verifyApiCalls(0, 0, 0, 0, 0)
-      }
-
       "the user does not have Agent affinity" in {
         requestIsAuthenticatedWithNoEnrolments(affinityGroup = "Individual")
         doSubscriptionRequest().status shouldBe 403
@@ -256,7 +240,6 @@ with EmailStub {
           .as[String] shouldBe "JsResultException(errors:List((/agencyName,List(JsonValidationError(List(error.name.invalid),List())))))"
 
         verifyApiCalls(
-          attemptingRegistration = 0,
           etmpRegistration = 0,
           registered = 0,
           subscription = 0,
@@ -267,24 +250,11 @@ with EmailStub {
       "etmp registration fails" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
-        givenUpdateApplicationStatus(AttemptingRegistration, 204)
         hipSubscriptionFails(
           safeId.value,
           agencyDetailsJson,
           422
         )
-
-        val result = doSubscriptionRequest()
-
-        result.status shouldBe 500
-
-        verifyApiCalls(1, 1, 0, 0, 0)
-      }
-
-      "updating AttemptingRegistration overseas application status fails with 409" in {
-        requestIsAuthenticatedWithNoEnrolments()
-        givenValidApplication("accepted")
-        givenUpdateApplicationStatus(AttemptingRegistration, 409)
 
         val result = doSubscriptionRequest()
 
@@ -296,7 +266,6 @@ with EmailStub {
       "updating Registered overseas application status fails with 409" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
-        givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(
           Registered,
@@ -308,13 +277,12 @@ with EmailStub {
 
         result.status shouldBe 500
 
-        verifyApiCalls(1, 1, 1, 0, 0)
+        verifyApiCalls(1, 1, 0, 0, 0)
       }
 
       "subscribe to etmp fails" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
-        givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(
           Registered,
@@ -327,13 +295,12 @@ with EmailStub {
 
         result.status shouldBe 500
 
-        verifyApiCalls(1, 1, 1, 1, 0)
+        verifyApiCalls(1, 1, 1, 0, 0)
       }
 
       "query via EACD for the ARN already being allocated fails" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
-        givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(
           Registered,
@@ -348,7 +315,6 @@ with EmailStub {
         result.status shouldBe 500
 
         verifyApiCalls(
-          attemptingRegistration = 1,
           etmpRegistration = 1,
           registered = 1,
           subscription = 1,
@@ -359,7 +325,6 @@ with EmailStub {
       "delete known facts via EACD fails" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
-        givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(
           Registered,
@@ -375,7 +340,6 @@ with EmailStub {
         result.status shouldBe 500
 
         verifyApiCalls(
-          attemptingRegistration = 1,
           etmpRegistration = 1,
           registered = 1,
           subscription = 1,
@@ -387,7 +351,6 @@ with EmailStub {
       "create known facts via EACD fails" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
-        givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(
           Registered,
@@ -404,7 +367,6 @@ with EmailStub {
         result.status shouldBe 500
 
         verifyApiCalls(
-          attemptingRegistration = 1,
           etmpRegistration = 1,
           registered = 1,
           subscription = 1,
@@ -417,7 +379,6 @@ with EmailStub {
       "enrolment via EACD fails" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
-        givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(
           Registered,
@@ -435,7 +396,6 @@ with EmailStub {
         result.status shouldBe 500
 
         verifyApiCalls(
-          attemptingRegistration = 1,
           etmpRegistration = 1,
           registered = 1,
           subscription = 1,
@@ -449,7 +409,6 @@ with EmailStub {
       "updating Complete overseas application status fails with 409" in {
         requestIsAuthenticatedWithNoEnrolments()
         givenValidApplication("accepted")
-        givenUpdateApplicationStatus(AttemptingRegistration, 204)
         organisationRegistrationSucceeds()
         givenUpdateApplicationStatus(
           Registered,
@@ -468,7 +427,6 @@ with EmailStub {
         result.status shouldBe 500
 
         verifyApiCalls(
-          attemptingRegistration = 1,
           etmpRegistration = 1,
           registered = 1,
           subscription = 1,
@@ -485,7 +443,6 @@ with EmailStub {
   private def doSubscriptionRequest() = new Resource(s"/agent-subscription/overseas-subscription", port).putAsJson("")
 
   private def verifyApiCalls(
-    attemptingRegistration: Int,
     etmpRegistration: Int,
     registered: Int,
     subscription: Int,
@@ -496,10 +453,6 @@ with EmailStub {
     complete: Int = 0
   ): Unit = {
     verify(1, getRequestedFor(urlEqualTo(getApplicationUrl)))
-    verify(
-      attemptingRegistration,
-      putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/attempting_registration"))
-    )
     verify(etmpRegistration, postRequestedFor(urlEqualTo(s"/registration/02.00.00/organisation")))
     verify(registered, putRequestedFor(urlEqualTo(s"/agent-overseas-application/application/registered")))
     verify(subscription, postRequestedFor(urlEqualTo(s"/etmp/RESTAdapter/generic/agent/subscription/${safeId.value}")))

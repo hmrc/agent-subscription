@@ -33,8 +33,12 @@ trait AuthStub {
     )
     this
   }
+  private var lastProviderId: String = ""
 
   def requestIsAuthenticatedWithNoEnrolments(affinityGroup: String = "Agent"): AuthStub = {
+    val providerId = java.util.UUID.randomUUID().toString
+    lastProviderId = providerId
+
     stubFor(
       post(urlEqualTo("/auth/authorise"))
         .willReturn(
@@ -48,7 +52,7 @@ trait AuthStub {
                  |  "uri":"/auth/oid/$oid",
                  |  "loggedInAt":"2016-06-20T10:44:29.634Z",
                  |  "optionalCredentials":{
-                 |    "providerId": "12345",
+                 |    "providerId": "$providerId",
                  |    "providerType": "GovernmentGateway"
                  |  },
                  |  "accounts":{
@@ -69,6 +73,8 @@ trait AuthStub {
     )
     this
   }
+
+  def getLastProviderId: String = lastProviderId
 
   def givenAuthorised(): AuthStub = {
     stubFor(

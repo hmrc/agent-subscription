@@ -20,7 +20,6 @@ import org.scalatestplus.mockito.MockitoSugar
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Accepted
-import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.AttemptingRegistration
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.stubs.AgentOverseasApplicationStubs
@@ -74,9 +73,13 @@ with MockitoSugar {
   private val businessContactDetails = OverseasContactDetails(businessTelephone = "BUSINESS PHONE 123456789", businessEmail = "email@domain.com")
 
   "updateApplicationStatus" should {
-    val targetAppStatus = AttemptingRegistration
+    val targetAppStatus = Registered
     "successful status update" in {
-      givenUpdateApplicationStatus(AttemptingRegistration, 204)
+      givenUpdateApplicationStatus(
+        Registered,
+        204,
+        """{"safeId":""}"""
+      )
 
       val result = await(connector.updateApplicationStatus(targetAppStatus, "currentUserAuthId"))
 
@@ -101,14 +104,14 @@ with MockitoSugar {
 
     "failure, status not changed" when {
       "receives NotFound" in {
-        givenUpdateApplicationStatus(AttemptingRegistration, 404)
+        givenUpdateApplicationStatus(Registered, 404)
 
         an[RuntimeException] shouldBe thrownBy(
           await(connector.updateApplicationStatus(targetAppStatus, "currentUserAuthId"))
         )
       }
       "receives conflict" in {
-        givenUpdateApplicationStatus(AttemptingRegistration, 409)
+        givenUpdateApplicationStatus(Registered, 409)
 
         an[RuntimeException] shouldBe thrownBy(
           await(connector.updateApplicationStatus(targetAppStatus, "currentUserAuthId"))

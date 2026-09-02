@@ -41,6 +41,7 @@ import uk.gov.hmrc.agentsubscription.repository.SubscriptionJourneyRepository
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.GatewayTimeoutException
+import uk.gov.hmrc.mongo.MongoComponent
 
 import java.time.LocalDate
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -59,7 +60,7 @@ with Eventually {
   private val agentAssuranceConnector = resettingMock[AgentAssuranceConnector]
   private val agentOverseasAppConn = resettingMock[AgentOverseasApplicationConnector]
   private val emailConnector = resettingMock[EmailConnector]
-
+  private val mongoComponent = resettingMock[MongoComponent]
   private val authIds = AuthIds("userId", "groupId")
 
   private val service =
@@ -71,7 +72,8 @@ with Eventually {
       subscriptionJourneyRepository,
       agentAssuranceConnector,
       agentOverseasAppConn,
-      emailConnector
+      emailConnector,
+      mongoComponent
     )
 
   private implicit val fakeRequest: FakeRequest[AnyContentAsEmpty.type] = FakeRequest("POST", "/agent-subscription/subscription")
