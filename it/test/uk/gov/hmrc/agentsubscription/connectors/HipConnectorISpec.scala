@@ -121,6 +121,23 @@ with MetricsTestSupport {
       exception.getMessage.contains(safeId.value) shouldBe true
       exception.statusCode shouldBe 409
     }
+
+    "return the ARN if HIP returns a pre-existing ARN error (error code 061)" in {
+      hipSubscriptionFails(
+        safeId.value,
+        agencyDetailsJson,
+        422,
+        Some(s"""{"errors":{"processingDate":"2026-09-08T16:01:57Z","code":"061","text":"BP has already a valid Agent Subscription TARN0000001"}}""")
+      )
+
+      val result = await(connector.subscribeToAgentServicesOverseas(
+        safeId,
+        overseasAgencyDetails,
+        Some(overseasAmlsDetails)
+      ))
+
+      result shouldBe Arn("TARN0000001")
+    }
   }
 
 }

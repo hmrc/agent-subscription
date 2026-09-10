@@ -81,6 +81,12 @@ with Logging {
       .map { response =>
         response.status match {
           case CREATED => (response.json \ "success" \ "arn").as[Arn]
+          case UNPROCESSABLE_ENTITY if (response.json \ "errors" \ "code").asOpt[String].contains("061") =>
+            val arn = (response.json \ "errors" \ "text").as[String].split(" ").last
+            if (Arn.isValid(arn))
+              Arn(arn)
+            else
+              throw new RuntimeException(s"$arn is not a valid Arn")
           case status =>
             throw UpstreamErrorResponse(
               s"Failed to create overseas subscription in ETMP for safeId: $safeId, reason: ${response.body}",

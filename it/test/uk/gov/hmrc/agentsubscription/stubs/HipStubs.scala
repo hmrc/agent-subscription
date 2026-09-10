@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentsubscription.stubs
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import com.github.tomakehurst.wiremock.http.Body
 import play.api.libs.json.Json
 
 trait HipStubs {
@@ -41,12 +42,14 @@ trait HipStubs {
   def hipSubscriptionFails(
     safeId: String,
     requestJson: String,
-    status: Int
+    status: Int,
+    body: Option[String] = None
   ): Unit = stubFor(
     subscriptionRequest(safeId, requestJson)
       .willReturn(
         aResponse()
           .withStatus(status)
+          .withBody(body.orNull)
       )
   )
 
