@@ -59,6 +59,7 @@ with MetricsTestSupport {
     new DesConnector(
       appConfig,
       http,
+      app.injector.instanceOf[HipConnector],
       metrics
     )
 

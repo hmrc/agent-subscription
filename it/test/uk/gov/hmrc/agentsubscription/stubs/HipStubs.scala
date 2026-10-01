@@ -19,8 +19,24 @@ package uk.gov.hmrc.agentsubscription.stubs
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.http.Body
 import play.api.libs.json.Json
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 
 trait HipStubs {
+
+  def hipRegistrationExists(
+    utr: Utr,
+    responseJson: String
+  ): Unit = stubFor(
+    post(urlEqualTo(s"/RESTAdapter/registration/utr/${utr.value}"))
+      .withRequestBody(equalToJson(
+        """{"requiresNameMatch":false,"regime":"ITSA","isAnAgent":false}"""
+      ))
+      .willReturn(
+        aResponse()
+          .withStatus(200)
+          .withBody(responseJson)
+      )
+  )
 
   def hipSubscriptionSucceeds(
     safeId: String,

@@ -21,6 +21,7 @@ import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
@@ -120,6 +121,31 @@ with Logging {
             )
         }
       }
+  }
+
+  def getRegistration(
+    utr: Utr
+  )(implicit rh: RequestHeader): Future[Option[JsValue]] = {
+    val url = s"$baseUrl/RESTAdapter/registration/utr/${encodePathSegment(utr.value)}"
+    monitor("HIP-GetAgentRegistration-POST") {
+      http
+        .post(url"$url")
+        .setHeader(hipHeaders: _*)
+        .withBody(Json.toJson(DesRegistrationRequest(isAnAgent = false)))
+        .execute[HttpResponse]
+        .map { response =>
+          response.status match {
+            case OK => Some(response.json)
+            case NOT_FOUND => None
+            case status =>
+              throw UpstreamErrorResponse(
+                s"[HIP-GetAgentRegistration-POST] returned status: $status",
+                status,
+                INTERNAL_SERVER_ERROR
+              )
+          }
+        }
+    }
   }
 
 }

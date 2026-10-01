@@ -19,6 +19,7 @@ package uk.gov.hmrc.agentsubscription.connectors
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.OverseasAgencyAddress
 import uk.gov.hmrc.agentsubscription.model.OverseasAgencyDetails
 import uk.gov.hmrc.agentsubscription.model.OverseasAmlsDetails
@@ -36,6 +37,7 @@ with MetricsTestSupport {
   private lazy val connector: HipConnector = app.injector.instanceOf[HipConnector]
 
   private val safeId = SafeId("XE0001234567890")
+  private val utr = Utr("1234567890")
   private val overseasAmlsDetails = OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))
   private val overseasAgencyDetails: OverseasAgencyDetails = OverseasAgencyDetails(
     agencyName = "Agency name",
@@ -137,6 +139,23 @@ with MetricsTestSupport {
       ))
 
       result shouldBe Arn("TARN0000001")
+    }
+  }
+
+  "getRegistration" should {
+    "post registration requests to the HIP adapter endpoint" in {
+      val registrationJson =
+        Json.obj(
+          "isAnASAgent" -> false,
+          "address" -> Json.obj(
+            "addressLine1" -> "Address line 1",
+            "countryCode" -> "GB",
+            "postalCode" -> "AA1 1AA"
+          )
+        ).toString
+      hipRegistrationExists(utr, registrationJson)
+
+      await(connector.getRegistration(utr)) shouldBe Some(Json.parse(registrationJson))
     }
   }
 

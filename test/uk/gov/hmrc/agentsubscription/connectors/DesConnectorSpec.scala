@@ -18,6 +18,10 @@ package uk.gov.hmrc.agentsubscription.connectors
 
 import org.mockito.Mockito.when
 import org.scalatestplus.mockito.MockitoSugar
+import play.api.libs.json.Json
+import play.api.mvc.RequestHeader
+import play.api.test.FakeRequest
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
 import uk.gov.hmrc.http.client.HttpClientV2
@@ -29,6 +33,7 @@ import uk.gov.hmrc.http.SessionId
 import uk.gov.hmrc.play.bootstrap.metrics.Metrics
 
 import java.util.UUID
+import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 class DesConnectorSpec
@@ -38,6 +43,7 @@ with MockitoSugar {
   val appConfig: AppConfig = mock[AppConfig]
   val hc: HeaderCarrier = mock[HeaderCarrier]
   val httpClient: HttpClientV2 = mock[HttpClientV2]
+  val hipConnector: HipConnector = mock[HipConnector]
   val metrics: Metrics = mock[Metrics]
 
   when(appConfig.desAuthToken).thenReturn("testAuthToken")
@@ -54,6 +60,7 @@ with MockitoSugar {
     new DesConnector(
       appConfig,
       httpClient,
+      hipConnector,
       metrics
     )
 
@@ -134,6 +141,44 @@ with MockitoSugar {
         headersMap should contain(HeaderNames.xRequestId -> "requestId")
         headerCarrier == hc should be(true)
       }
+    }
+  }
+
+  "getRegistration" should {
+    "use HIP when the HIP registration feature switch is enabled" in {
+      val utr = Utr("1234567890")
+      implicit val requestHeader: RequestHeader = FakeRequest()
+      val registrationJson = Json.obj(
+        "isAnASAgent" -> false,
+        "address" -> Json.obj(
+          "addressLine1" -> "Address line 1",
+          "countryCode" -> "GB",
+          "postalCode" -> "AA1 1AA"
+        )
+      )
+      when(appConfig.hipRegistrationEnabled).thenReturn(true)
+      when(hipConnector.getRegistration(utr)(requestHeader))
+        .thenReturn(Future.successful(Some(registrationJson)))
+
+      underTest.getRegistration(utr).futureValue shouldBe Some(
+        DesRegistrationResponse(
+          isAnASAgent = false,
+          organisationName = None,
+          individual = None,
+          agentReferenceNumber = None,
+          address = DesBusinessAddress(
+            "Address line 1",
+            None,
+            None,
+            None,
+            Some("AA1 1AA"),
+            "GB"
+          ),
+          emailAddress = None,
+          primaryPhoneNumber = None,
+          safeId = None
+        )
+      )
     }
   }
 
