@@ -34,6 +34,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.audit.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors.EnrolmentRequest
 import uk.gov.hmrc.agentsubscription.connectors.{Address => _, _}
 import uk.gov.hmrc.agentsubscription.model._
@@ -54,6 +55,7 @@ with Eventually {
 
   private val desConnector = resettingMock[DesConnector]
   private val hipConnector = resettingMock[HipConnector]
+  private val appConfig = resettingMock[AppConfig]
   private val taxEnrolmentConnector = resettingMock[TaxEnrolmentsConnector]
   private val auditService = resettingMock[AuditService]
   private val subscriptionJourneyRepository = resettingMock[SubscriptionJourneyRepository]
@@ -65,6 +67,7 @@ with Eventually {
 
   private val service =
     new SubscriptionService(
+      appConfig,
       desConnector,
       hipConnector,
       taxEnrolmentConnector,
@@ -90,6 +93,38 @@ with Eventually {
       amlsSafeId = Some("amlsSafeId"),
       agentBPRSafeId = Some("agentBPRSafeId")
     )
+
+    "use HIP to retrieve registration when the HIP registration feature switch is enabled" in {
+      when(appConfig.hipRegistrationEnabled).thenReturn(true)
+      when(hipConnector.getRegistration(eqs(businessUtr))(any[RequestHeader]))
+        .thenReturn(Future.successful(None))
+
+      val request = SubscriptionRequest(
+        businessUtr,
+        KnownFacts(businessPostcode),
+        Agency(
+          "Test Agency",
+          Address(
+            "1 Test Street",
+            Some("address line 2"),
+            None,
+            None,
+            "BB1 1BB",
+            "GB"
+          ),
+          Some("01234 567890"),
+          "testagency@example.com"
+        ),
+        None,
+        None
+      )
+
+      await(service.createSubscription(request, authIds)) shouldBe None
+      eventually {
+        verify(hipConnector).getRegistration(eqs(businessUtr))(any[RequestHeader])
+        ()
+      }
+    }
 
     "audit appropriate values" in {
 

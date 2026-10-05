@@ -117,7 +117,6 @@ case class HeadersConfig(
 class DesConnector @Inject() (
   appConfig: AppConfig,
   http: HttpClientV2,
-  hipConnector: HipConnector,
   val metrics: Metrics
 )(implicit
   val ec: ExecutionContext
@@ -230,15 +229,6 @@ with Logging {
   }
 
   private def getRegistrationJson(
-    utr: Utr
-  )(implicit rh: RequestHeader): Future[Option[JsValue]] = {
-    if (appConfig.hipRegistrationEnabled)
-      hipConnector.getRegistration(utr)
-    else
-      getDesRegistrationJson(utr)
-  }
-
-  private def getDesRegistrationJson(
     utr: Utr
   )(implicit rh: RequestHeader): Future[Option[JsValue]] = {
     val url = desRegistrationUrl(utr)

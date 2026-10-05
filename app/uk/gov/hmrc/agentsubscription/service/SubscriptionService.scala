@@ -27,6 +27,7 @@ import uk.gov.hmrc.agentsubscription.audit.AgentSubscription
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.audit.OverseasAgentSubscription
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.AuthIds
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Complete
 import uk.gov.hmrc.agentsubscription.model.ApplicationStatus.Registered
@@ -76,6 +77,7 @@ extends Exception(message)
 
 @Singleton
 class SubscriptionService @Inject() (
+  appConfig: AppConfig,
   desConnector: DesConnector,
   hipConnector: HipConnector,
   taxEnrolmentsConnector: TaxEnrolmentsConnector,
@@ -153,7 +155,7 @@ extends Logging {
       }
 
     val utr = subscriptionRequest.utr
-    desConnector.getRegistration(utr) flatMap {
+    registrationConnector(utr) flatMap {
       case Some(
             DesRegistrationResponse(
               isAnAsAgent,
@@ -217,6 +219,12 @@ extends Logging {
         Future successful None
     }
   }
+
+  private def registrationConnector(utr: Utr)(implicit rh: RequestHeader) =
+    if (appConfig.hipRegistrationEnabled)
+      hipConnector.getRegistration(utr)
+    else
+      desConnector.getRegistration(utr)
 
   def updateSubscription(
     updateSubscriptionRequest: UpdateSubscriptionRequest,

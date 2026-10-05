@@ -25,6 +25,7 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.audit.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.model.RegistrationDetails
 import uk.gov.hmrc.agentsubscription.postcodesMatch
@@ -51,7 +52,9 @@ private case class CheckAgencyStatusAuditDetail(
 
 @Singleton
 class RegistrationService @Inject() (
+  appConfig: AppConfig,
   desConnector: DesConnector,
+  hipConnector: HipConnector,
   taxEnrolmentsConnector: TaxEnrolmentsConnector,
   auditService: AuditService
 )(implicit ec: ExecutionContext)
@@ -65,117 +68,127 @@ extends Logging {
   )(implicit
     rh: RequestHeader,
     provider: Provider
-  ): Future[Option[RegistrationDetails]] =
-    desConnector.getRegistration(utr) flatMap {
-      case Some(
-            DesRegistrationResponse(
-              isAnASAgent,
-              organisationName,
-              None,
-              agentReferenceNumber,
-              businessAddress,
-              email,
-              primaryPhoneNumber,
-              safeId
-            )
-          ) if businessAddress.postalCode.nonEmpty =>
-        if (isAnASAgent) {
-          getLogger.warn(
-            s"The business partner record of type organisation associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned"
-          )
-        }
-
-        checkRegistrationAndEnrolment(
+  ): Future[Option[RegistrationDetails]] = {
+    if (appConfig.hipRegistrationEnabled)
+      hipConnector.getRegistration(utr).flatMap(response =>
+        handleRegistrationResponse(
           utr,
           postcode,
-          businessAddress.postalCode,
-          isAnASAgent,
-          organisationName,
-          agentReferenceNumber,
-          businessAddress,
-          email,
-          primaryPhoneNumber,
-          safeId
+          response
         )
-      case Some(
-            DesRegistrationResponse(
-              isAnASAgent,
-              _,
-              Some(DesIndividual(first, last)),
-              agentReferenceNumber,
-              businessAddress,
-              email,
-              primaryPhoneNumber,
-              safeId
-            )
-          ) if businessAddress.postalCode.nonEmpty =>
-        if (isAnASAgent) {
-          getLogger.warn(
-            s"The business partner record of type individual associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned"
-          )
-        }
-
-        checkRegistrationAndEnrolment(
-          utr,
-          postcode,
-          businessAddress.postalCode,
-          isAnASAgent,
-          Some(s"$first $last"),
-          agentReferenceNumber,
-          businessAddress,
-          email,
-          primaryPhoneNumber,
-          safeId
-        )
-      case Some(DesRegistrationResponse(
+      )
+    else
+      desConnector.getRegistration(utr) flatMap {
+        case Some(
+          DesRegistrationResponse(
             isAnASAgent,
-            _,
-            _,
+            organisationName,
+            None,
             agentReferenceNumber,
-            address,
-            _,
-            _,
-            _
-          )) =>
-        if (isAnASAgent) {
-          getLogger.warn(
-            s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${address.postalCode.nonEmpty}"
+            businessAddress,
+            email,
+            primaryPhoneNumber,
+            safeId
           )
-          auditCheckAgencyStatus(
+        ) if businessAddress.postalCode.nonEmpty =>
+          if (isAnASAgent) {
+            getLogger.warn(
+              s"The business partner record of type organisation associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned"
+            )
+          }
+
+          checkRegistrationAndEnrolment(
             utr,
             postcode,
-            knownFactsMatched = false,
-            Some(true),
-            Some(isAnASAgent),
-            agentReferenceNumber
+            businessAddress.postalCode,
+            isAnASAgent,
+            organisationName,
+            agentReferenceNumber,
+            businessAddress,
+            email,
+            primaryPhoneNumber,
+            safeId
           )
-        }
-        else {
-          getLogger.warn(
-            s"The business partner record associated with $utr is not subscribed with postcode: ${address.postalCode.nonEmpty}"
+        case Some(
+          DesRegistrationResponse(
+            isAnASAgent,
+            _,
+            Some(DesIndividual(first, last)),
+            agentReferenceNumber,
+            businessAddress,
+            email,
+            primaryPhoneNumber,
+            safeId
           )
+        ) if businessAddress.postalCode.nonEmpty =>
+          if (isAnASAgent) {
+            getLogger.warn(
+              s"The business partner record of type individual associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned"
+            )
+          }
+
+          checkRegistrationAndEnrolment(
+            utr,
+            postcode,
+            businessAddress.postalCode,
+            isAnASAgent,
+            Some(s"$first $last"),
+            agentReferenceNumber,
+            businessAddress,
+            email,
+            primaryPhoneNumber,
+            safeId
+          )
+        case Some(DesRegistrationResponse(
+          isAnASAgent,
+          _,
+          _,
+          agentReferenceNumber,
+          address,
+          _,
+          _,
+          _
+        )) =>
+          if (isAnASAgent) {
+            getLogger.warn(
+              s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${address.postalCode.nonEmpty}"
+            )
+            auditCheckAgencyStatus(
+              utr,
+              postcode,
+              knownFactsMatched = false,
+              Some(true),
+              Some(isAnASAgent),
+              agentReferenceNumber
+            )
+          }
+          else {
+            getLogger.warn(
+              s"The business partner record associated with $utr is not subscribed with postcode: ${address.postalCode.nonEmpty}"
+            )
+            auditCheckAgencyStatus(
+              utr,
+              postcode,
+              knownFactsMatched = false,
+              None,
+              Some(isAnASAgent),
+              None
+            )
+          }
+          Future.successful(None)
+        case None =>
+          getLogger.warn(s"No business partner record was associated with $utr")
           auditCheckAgencyStatus(
             utr,
             postcode,
             knownFactsMatched = false,
             None,
-            Some(isAnASAgent),
+            None,
             None
           )
-        }
-        Future.successful(None)
-      case None =>
-        getLogger.warn(s"No business partner record was associated with $utr")
-        auditCheckAgencyStatus(
-          utr,
-          postcode,
-          knownFactsMatched = false,
-          None,
-          None,
-          None
-        )
-        Future.successful(None)
-    }
+          Future.successful(None)
+      }
+  }
 
   private def checkRegistrationAndEnrolment(
     utr: Utr,
@@ -266,4 +279,124 @@ extends Logging {
 
   private def toJsObject(detail: CheckAgencyStatusAuditDetail): JsObject = Json.toJson(detail).as[JsObject]
 
+  private def handleRegistrationResponse(
+    utr: Utr,
+    postcode: String,
+    registrationResponse: Option[HipRegistrationResponse]
+  )(implicit
+    rh: RequestHeader,
+    provider: Provider
+  ): Future[Option[RegistrationDetails]] =
+
+    registrationResponse match {
+
+      case Some(
+        HipRegistrationResponse(
+          isAnASAgent,
+          organisationName,
+          None,
+          agentReferenceNumber,
+          businessAddress,
+          email,
+          primaryPhoneNumber,
+          safeId
+        )
+      ) if businessAddress.postalCode.nonEmpty =>
+        if (isAnASAgent) {
+          getLogger.warn(
+            s"The business partner record of type organisation associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned"
+          )
+        }
+
+        checkRegistrationAndEnrolment(
+          utr,
+          postcode,
+          businessAddress.postalCode,
+          isAnASAgent,
+          organisationName,
+          agentReferenceNumber,
+          businessAddress,
+          email,
+          primaryPhoneNumber,
+          safeId
+        )
+      case Some(
+        HipRegistrationResponse(
+          isAnASAgent,
+          _,
+          Some(Individual(first, last)),
+          agentReferenceNumber,
+          businessAddress,
+          email,
+          primaryPhoneNumber,
+          safeId
+        )
+      ) if businessAddress.postalCode.nonEmpty =>
+        if (isAnASAgent) {
+          getLogger.warn(
+            s"The business partner record of type individual associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned"
+          )
+        }
+
+        checkRegistrationAndEnrolment(
+          utr,
+          postcode,
+          businessAddress.postalCode,
+          isAnASAgent,
+          Some(s"$first $last"),
+          agentReferenceNumber,
+          businessAddress,
+          email,
+          primaryPhoneNumber,
+          safeId
+        )
+      case Some(HipRegistrationResponse(
+        isAnASAgent,
+        _,
+        _,
+        agentReferenceNumber,
+        address,
+        _,
+        _,
+        _
+      )) =>
+        if (isAnASAgent) {
+          getLogger.warn(
+            s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${address.postalCode.nonEmpty}"
+          )
+          auditCheckAgencyStatus(
+            utr,
+            postcode,
+            knownFactsMatched = false,
+            Some(true),
+            Some(isAnASAgent),
+            agentReferenceNumber
+          )
+        }
+        else {
+          getLogger.warn(
+            s"The business partner record associated with $utr is not subscribed with postcode: ${address.postalCode.nonEmpty}"
+          )
+          auditCheckAgencyStatus(
+            utr,
+            postcode,
+            knownFactsMatched = false,
+            None,
+            Some(isAnASAgent),
+            None
+          )
+        }
+        Future.successful(None)
+      case None =>
+        getLogger.warn(s"No business partner record was associated with $utr")
+        auditCheckAgencyStatus(
+          utr,
+          postcode,
+          knownFactsMatched = false,
+          None,
+          None,
+          None
+        )
+        Future.successful(None)
+    }
 }

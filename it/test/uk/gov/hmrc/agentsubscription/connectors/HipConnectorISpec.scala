@@ -146,16 +146,35 @@ with MetricsTestSupport {
     "post registration requests to the HIP adapter endpoint" in {
       val registrationJson =
         Json.obj(
-          "isAnASAgent" -> false,
-          "address" -> Json.obj(
-            "addressLine1" -> "Address line 1",
-            "countryCode" -> "GB",
-            "postalCode" -> "AA1 1AA"
+          "success" -> Json.obj(
+            "isAnASAgent" -> false,
+            "address" -> Json.obj(
+              "addressLine1" -> "Address line 1",
+              "countryCode" -> "GB",
+              "postalCode" -> "AA1 1AA"
+            )
           )
         ).toString
       hipRegistrationExists(utr, registrationJson)
-
-      await(connector.getRegistration(utr)) shouldBe Some(Json.parse(registrationJson))
+      await(connector.getRegistration(utr)) shouldBe Some(
+        HipRegistrationResponse(
+          isAnASAgent = false,
+          organisationName = None,
+          individual = None,
+          agentReferenceNumber = None,
+          address = DesBusinessAddress(
+            "Address line 1",
+            None,
+            None,
+            None,
+            Some("AA1 1AA"),
+            "GB"
+          ),
+          emailAddress = None,
+          primaryPhoneNumber = None,
+          safeId = None
+        )
+      )
     }
   }
 

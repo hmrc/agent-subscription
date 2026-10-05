@@ -51,7 +51,6 @@ with MockitoSugar {
     new DesConnector(
       appConfig,
       http,
-      app.injector.instanceOf[HipConnector],
       metrics
     )
 

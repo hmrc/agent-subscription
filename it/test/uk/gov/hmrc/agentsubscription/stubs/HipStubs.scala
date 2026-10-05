@@ -33,7 +33,7 @@ trait HipStubs {
       ))
       .willReturn(
         aResponse()
-          .withStatus(200)
+          .withStatus(201)
           .withBody(responseJson)
       )
   )
