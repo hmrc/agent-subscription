@@ -176,7 +176,6 @@ extends Logging {
             )
           ) =>
         if (postcodesMatch(desPostcode, subscriptionRequest.knownFacts.postcode)) {
-          //
           for {
             arn <- subscribeAndMap(
               maybeArn,
@@ -214,6 +213,66 @@ extends Logging {
           )
           Future successful None
         }
+
+      case Some(
+            HipRegistrationResponse(
+              isAnAsAgent,
+              _,
+              _,
+              maybeArn,
+              businessAddress,
+              _,
+              _,
+              Some(safeId)
+            )
+          ) if businessAddress.postalCode.nonEmpty =>
+
+        if (
+          postcodesMatch(
+            businessAddress.postalCode.get,
+            subscriptionRequest.knownFacts.postcode
+          )
+        ) {
+
+          for {
+            arn <- subscribeAndMap(
+              maybeArn,
+              SafeId(safeId),
+              utr,
+              isAnAsAgent
+            )
+            _ <- addKnownFactsAndEnrolUk(
+              arn,
+              subscriptionRequest,
+              authIds
+            )
+            _ <- sendEmail(
+              subscriptionRequest.agency.email,
+              subscriptionRequest.agency.name,
+              arn,
+              subscriptionRequest.langForEmail
+            )
+          } yield {
+            auditService.auditEvent(
+              AgentSubscription,
+              "Agent services subscription",
+              auditDetailJsObject(
+                arn,
+                subscriptionRequest,
+                subscriptionRequest.amlsDetails
+              )
+            )
+            Some(arn)
+          }
+
+        }
+        else {
+          logger.warn(
+            "the postcode from the business partner record did not match that in the subscription request known facts"
+          )
+          Future.successful(None)
+        }
+
       case _ =>
         logger.warn(s"No business partner record was associated with $utr")
         Future successful None

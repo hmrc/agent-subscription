@@ -80,17 +80,17 @@ extends Logging {
     else
       desConnector.getRegistration(utr) flatMap {
         case Some(
-          DesRegistrationResponse(
-            isAnASAgent,
-            organisationName,
-            None,
-            agentReferenceNumber,
-            businessAddress,
-            email,
-            primaryPhoneNumber,
-            safeId
-          )
-        ) if businessAddress.postalCode.nonEmpty =>
+              DesRegistrationResponse(
+                isAnASAgent,
+                organisationName,
+                None,
+                agentReferenceNumber,
+                businessAddress,
+                email,
+                primaryPhoneNumber,
+                safeId
+              )
+            ) if businessAddress.postalCode.nonEmpty =>
           if (isAnASAgent) {
             getLogger.warn(
               s"The business partner record of type organisation associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned"
@@ -110,17 +110,17 @@ extends Logging {
             safeId
           )
         case Some(
-          DesRegistrationResponse(
-            isAnASAgent,
-            _,
-            Some(DesIndividual(first, last)),
-            agentReferenceNumber,
-            businessAddress,
-            email,
-            primaryPhoneNumber,
-            safeId
-          )
-        ) if businessAddress.postalCode.nonEmpty =>
+              DesRegistrationResponse(
+                isAnASAgent,
+                _,
+                Some(DesIndividual(first, last)),
+                agentReferenceNumber,
+                businessAddress,
+                email,
+                primaryPhoneNumber,
+                safeId
+              )
+            ) if businessAddress.postalCode.nonEmpty =>
           if (isAnASAgent) {
             getLogger.warn(
               s"The business partner record of type individual associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned"
@@ -140,15 +140,15 @@ extends Logging {
             safeId
           )
         case Some(DesRegistrationResponse(
-          isAnASAgent,
-          _,
-          _,
-          agentReferenceNumber,
-          address,
-          _,
-          _,
-          _
-        )) =>
+              isAnASAgent,
+              _,
+              _,
+              agentReferenceNumber,
+              address,
+              _,
+              _,
+              _
+            )) =>
           if (isAnASAgent) {
             getLogger.warn(
               s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${address.postalCode.nonEmpty}"
@@ -291,17 +291,17 @@ extends Logging {
     registrationResponse match {
 
       case Some(
-        HipRegistrationResponse(
-          isAnASAgent,
-          organisationName,
-          None,
-          agentReferenceNumber,
-          businessAddress,
-          email,
-          primaryPhoneNumber,
-          safeId
-        )
-      ) if businessAddress.postalCode.nonEmpty =>
+            HipRegistrationResponse(
+              isAnASAgent,
+              organisationName,
+              None,
+              agentReferenceNumber,
+              businessAddress,
+              email,
+              primaryPhoneNumber,
+              safeId
+            )
+          ) if businessAddress.postalCode.nonEmpty =>
         if (isAnASAgent) {
           getLogger.warn(
             s"The business partner record of type organisation associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned"
@@ -321,17 +321,17 @@ extends Logging {
           safeId
         )
       case Some(
-        HipRegistrationResponse(
-          isAnASAgent,
-          _,
-          Some(Individual(first, last)),
-          agentReferenceNumber,
-          businessAddress,
-          email,
-          primaryPhoneNumber,
-          safeId
-        )
-      ) if businessAddress.postalCode.nonEmpty =>
+            HipRegistrationResponse(
+              isAnASAgent,
+              _,
+              Some(Individual(first, last)),
+              agentReferenceNumber,
+              businessAddress,
+              email,
+              primaryPhoneNumber,
+              safeId
+            )
+          ) if businessAddress.postalCode.nonEmpty =>
         if (isAnASAgent) {
           getLogger.warn(
             s"The business partner record of type individual associated with $utr is already subscribed with arn $agentReferenceNumber and a postcode was returned"
@@ -351,15 +351,15 @@ extends Logging {
           safeId
         )
       case Some(HipRegistrationResponse(
-        isAnASAgent,
-        _,
-        _,
-        agentReferenceNumber,
-        address,
-        _,
-        _,
-        _
-      )) =>
+            isAnASAgent,
+            _,
+            _,
+            agentReferenceNumber,
+            address,
+            _,
+            _,
+            _
+          )) =>
         if (isAnASAgent) {
           getLogger.warn(
             s"The business partner record associated with $utr is already subscribed with arn $agentReferenceNumber with postcode: ${address.postalCode.nonEmpty}"
@@ -399,4 +399,5 @@ extends Logging {
         )
         Future.successful(None)
     }
+
 }
