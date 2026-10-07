@@ -27,7 +27,7 @@ trait HipStubs {
     utr: Utr,
     responseJson: String
   ): Unit = stubFor(
-    post(urlEqualTo(s"/RESTAdapter/registration/utr/${utr.value}"))
+    post(urlEqualTo(s"/RESTAdapter/registration/UTR/${utr.value}"))
       .withRequestBody(equalToJson(
         """{"requiresNameMatch":false,"regime":"ITSA","isAnAgent":false}"""
       ))

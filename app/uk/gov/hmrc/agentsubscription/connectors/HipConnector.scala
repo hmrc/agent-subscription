@@ -43,11 +43,11 @@ import scala.concurrent.Future
 case class HipRegistrationRequest(
   requiresNameMatch: Boolean = false,
   regime: String = "ITSA",
-  isAnAgent: Boolean
+  isAnAgent: Boolean = false
 )
 
 object HipRegistrationRequest {
-  implicit val formats: Format[HipRegistrationRequest] = Json.format[HipRegistrationRequest]
+  implicit val formats: OFormat[HipRegistrationRequest] = Json.format[HipRegistrationRequest]
 }
 
 @Singleton
@@ -137,46 +137,17 @@ with Logging {
     utr: Utr
   )(implicit
     rh: RequestHeader
-  ): Future[Option[HipRegistrationResponse]] = getRegistrationJson(utr).map {
-    case Some(r) =>
-      val innerJson = (r \ "success").as[JsObject]
-      Some(
-        HipRegistrationResponse(
-          isAnASAgent = (innerJson \ "isAnASAgent").as[Boolean],
-          organisationName = (innerJson \ "organisation" \ "organisationName").asOpt[String],
-          agentReferenceNumber = (innerJson \ "agentReferenceNumber").asOpt[Arn],
-          individual =
-            for {
-              firstName <- (innerJson \ "individual" \ "firstName").asOpt[String]
-              lastName <- (innerJson \ "individual" \ "lastName").asOpt[String]
-            } yield Individual(
-              firstName = firstName,
-              lastName = lastName
-            ),
-          address =
-            (innerJson \ "address").validate[DesBusinessAddress] match {
-              case JsSuccess(value, _) => value
-              case JsError(_) => throw new Exception("HIP response has a bad address format")
-            },
-          emailAddress = (innerJson \ "agencyDetails" \ "agencyEmail")
-            .asOpt[String]
-            .orElse((innerJson \ "contactDetails" \ "emailAddress").asOpt[String]),
-          primaryPhoneNumber = (innerJson \ "contactDetails" \ "primaryPhoneNumber").asOpt[String],
-          safeId = (r \ "safeId").asOpt[String]
-        )
-      )
-    case _ => None
-  }
+  ): Future[Option[HipRegistrationResponse]] = getRegistrationJson(utr).map(_.map(HipRegistrationResponse.RegistrationResponse.fromJson))
 
   private def getRegistrationJson(
     utr: Utr
   )(implicit rh: RequestHeader): Future[Option[JsValue]] = {
-    val url = s"$baseUrl/RESTAdapter/registration/utr/${encodePathSegment(utr.value)}"
+    val url = s"$baseUrl/RESTAdapter/registration/UTR/${encodePathSegment(utr.value)}"
     monitor("HIP-GetAgentRegistration-POST") {
       http
         .post(url"$url")
         .setHeader(hipHeaders: _*)
-        .withBody(Json.toJson(HipRegistrationRequest(isAnAgent = false)))
+        .withBody(Json.toJson(HipRegistrationRequest()))
         .execute[HttpResponse]
         .map { response =>
           response.status match {

@@ -60,28 +60,29 @@ case class HipRegistrationResponse(
 object HipRegistrationResponse {
   object RegistrationResponse {
     def fromJson(json: JsValue): HipRegistrationResponse = {
+      val registration = (json \ "success").as[JsValue]
       val address =
-        (json \ "address").validate[DesBusinessAddress] match {
+        (registration \ "address").validate[DesBusinessAddress] match {
           case JsSuccess(value, _) => value
           case JsError(_) => throw InvalidBusinessAddressException
         }
 
       val isAnASAgent =
-        (json \ "isAnASAgent").validate[Boolean] match {
+        (registration \ "isAnASAgent").validate[Boolean] match {
           case JsSuccess(value, _) => value
           case JsError(_) => throw InvalidIsAnASAgentException
         }
 
       HipRegistrationResponse(
         isAnASAgent,
-        (json \ "organisation" \ "organisationName").asOpt[String],
-        (json \ "individual").asOpt[Individual],
-        (json \ "agentReferenceNumber").asOpt[Arn],
+        (registration \ "organisation" \ "organisationName").asOpt[String],
+        (registration \ "individual").asOpt[Individual],
+        (registration \ "agentReferenceNumber").asOpt[Arn],
         address,
-        (json \ "agencyDetails" \ "agencyEmail")
+        (registration \ "agencyDetails" \ "agencyEmail")
           .asOpt[String]
-          .orElse((json \ "contactDetails" \ "emailAddress").asOpt[String]),
-        (json \ "contactDetails" \ "primaryPhoneNumber").asOpt[String],
+          .orElse((registration \ "contactDetails" \ "emailAddress").asOpt[String]),
+        (registration \ "contactDetails" \ "primaryPhoneNumber").asOpt[String],
         (json \ "safeId").asOpt[String]
       )
     }
