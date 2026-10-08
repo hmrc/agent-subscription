@@ -142,7 +142,7 @@ with Logging {
   private def getRegistrationJson(
     utr: Utr
   )(implicit rh: RequestHeader): Future[Option[JsValue]] = {
-    val url = s"$baseUrl/RESTAdapter/registration/UTR/${encodePathSegment(utr.value)}"
+    val url = s"$baseUrl/etmp/RESTAdapter/registration/UTR/${encodePathSegment(utr.value)}"
     monitor("HIP-GetAgentRegistration-POST") {
       http
         .post(url"$url")
