@@ -145,7 +145,7 @@ with Logging {
         .execute[HttpResponse]
         .map { response =>
           response.status match {
-            case CREATED => Some(response.json.as[HipRegistrationResponse])
+            case CREATED => response.json.asOpt[HipRegistrationResponse]
             case UNPROCESSABLE_ENTITY if isNotFound(response.json) => None
             case error =>
               throw UpstreamErrorResponse(

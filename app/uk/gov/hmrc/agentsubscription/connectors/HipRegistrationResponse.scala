@@ -68,7 +68,7 @@ object HipRegistrationResponse {
         (innerJson \ "individual").readNullable[Individual] and
         (innerJson \ "agentReferenceNumber").readNullable[Arn] and
         (innerJson \ "address").read[DesBusinessAddress] and
-        (innerJson \ "emailAddress").readNullable[String] and
+        (innerJson \ "agencyDetails" \ "agencyEmail").readNullable[String].orElse((innerJson \ "contactDetails" \ "emailAddress").readNullable[String]) and
         (innerJson \ "primaryPhoneNumber").readNullable[String] and
         (innerJson \ "safeId").readNullable[String]
     )(HipRegistrationResponse.apply _)
