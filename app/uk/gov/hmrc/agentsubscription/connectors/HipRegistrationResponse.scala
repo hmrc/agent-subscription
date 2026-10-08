@@ -16,13 +16,13 @@
 
 package uk.gov.hmrc.agentsubscription.connectors
 
-import play.api.libs.json.JsError
 import play.api.libs.json.Format
+import play.api.libs.json.JsPath
 import play.api.libs.json.Json
 import play.api.libs.json.OFormat
-import play.api.libs.json.JsSuccess
-import play.api.libs.json.JsValue
+import play.api.libs.json.Reads
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import play.api.libs.functional.syntax._
 
 case class Individual(
   firstName: String,
@@ -58,33 +58,19 @@ case class HipRegistrationResponse(
 )
 
 object HipRegistrationResponse {
-  object RegistrationResponse {
-    def fromJson(json: JsValue): HipRegistrationResponse = {
-      val registration = (json \ "success").as[JsValue]
-      val address =
-        (registration \ "address").validate[DesBusinessAddress] match {
-          case JsSuccess(value, _) => value
-          case JsError(_) => throw InvalidBusinessAddressException
-        }
 
-      val isAnASAgent =
-        (registration \ "isAnASAgent").validate[Boolean] match {
-          case JsSuccess(value, _) => value
-          case JsError(_) => throw InvalidIsAnASAgentException
-        }
+  private val innerJson = (JsPath \ "success")
 
-      HipRegistrationResponse(
-        isAnASAgent,
-        (registration \ "organisation" \ "organisationName").asOpt[String],
-        (registration \ "individual").asOpt[Individual],
-        (registration \ "agentReferenceNumber").asOpt[Arn],
-        address,
-        (registration \ "agencyDetails" \ "agencyEmail")
-          .asOpt[String]
-          .orElse((registration \ "contactDetails" \ "emailAddress").asOpt[String]),
-        (registration \ "contactDetails" \ "primaryPhoneNumber").asOpt[String],
-        (json \ "safeId").asOpt[String]
-      )
-    }
-  }
+  implicit val reads: Reads[HipRegistrationResponse] =
+    (
+      (innerJson \ "isAnASAgent").read[Boolean] and
+        (innerJson \ "organisation" \ "organisationName").readNullable[String] and
+        (innerJson \ "individual").readNullable[Individual] and
+        (innerJson \ "agentReferenceNumber").readNullable[Arn] and
+        (innerJson \ "address").read[DesBusinessAddress] and
+        (innerJson \ "emailAddress").readNullable[String] and
+        (innerJson \ "primaryPhoneNumber").readNullable[String] and
+        (innerJson \ "safeId").readNullable[String]
+    )(HipRegistrationResponse.apply _)
+
 }

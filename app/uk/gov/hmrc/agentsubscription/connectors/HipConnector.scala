@@ -135,13 +135,7 @@ with Logging {
 
   def getRegistration(
     utr: Utr
-  )(implicit
-    rh: RequestHeader
-  ): Future[Option[HipRegistrationResponse]] = getRegistrationJson(utr).map(_.map(HipRegistrationResponse.RegistrationResponse.fromJson))
-
-  private def getRegistrationJson(
-    utr: Utr
-  )(implicit rh: RequestHeader): Future[Option[JsValue]] = {
+  )(implicit rh: RequestHeader): Future[Option[HipRegistrationResponse]] = {
     val url = s"$baseUrl/etmp/RESTAdapter/registration/UTR/${encodePathSegment(utr.value)}"
     monitor("HIP-GetAgentRegistration-POST") {
       http
@@ -151,7 +145,7 @@ with Logging {
         .execute[HttpResponse]
         .map { response =>
           response.status match {
-            case CREATED => Some(response.json)
+            case CREATED => Some(response.json.as[HipRegistrationResponse])
             case UNPROCESSABLE_ENTITY if isNotFound(response.json) => None
             case error =>
               throw UpstreamErrorResponse(

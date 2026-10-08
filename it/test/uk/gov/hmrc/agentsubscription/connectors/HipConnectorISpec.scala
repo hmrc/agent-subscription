@@ -143,8 +143,8 @@ with MetricsTestSupport {
   }
 
   "getRegistration" should {
-    "post registration requests to the HIP adapter endpoint" in {
-      val registrationJson =
+    "return Some HipRegistrationResponse when API returns a 201 CREATED successful response" in {
+      val successResponse =
         Json.obj(
           "success" -> Json.obj(
             "isAnASAgent" -> false,
@@ -155,7 +155,13 @@ with MetricsTestSupport {
             )
           )
         ).toString
-      hipRegistrationExists(utr, registrationJson)
+
+      hipRegistrationReturns(
+        201,
+        utr,
+        successResponse
+      )
+
       await(connector.getRegistration(utr)) shouldBe Some(
         HipRegistrationResponse(
           isAnASAgent = false,
@@ -175,6 +181,43 @@ with MetricsTestSupport {
           safeId = None
         )
       )
+    }
+
+    "return None when API returns a 422 UNPROCESSABLE_ENTITY with error code 002 response" in {
+      val failedResponse =
+        Json.obj(
+          "errors" -> Json.obj(
+            "processingDate" -> "2026-09-08T16:01:57Z",
+            "code" -> "002",
+            "text" -> "No record found for the given UTR"
+          )
+        ).toString
+
+      hipRegistrationReturns(
+        422,
+        utr,
+        failedResponse
+      )
+
+      await(connector.getRegistration(utr)) shouldBe None
+    }
+
+    "throws UpstreamErrorResponse when API returns an unexpected error" in {
+      val failedResponse =
+        Json.obj(
+          "errors" -> Json.obj(
+            "processingDate" -> "2026-09-08T16:01:57Z",
+            "code" -> "003",
+            "text" -> "Suspended"
+          )
+        ).toString
+
+      hipRegistrationReturns(
+        422,
+        utr,
+        failedResponse
+      )
+      an[UpstreamErrorResponse] shouldBe thrownBy(await(connector.getRegistration(utr)))
     }
   }
 

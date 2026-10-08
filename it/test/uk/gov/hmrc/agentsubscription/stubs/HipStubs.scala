@@ -23,7 +23,8 @@ import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 
 trait HipStubs {
 
-  def hipRegistrationExists(
+  def hipRegistrationReturns(
+    status: Int,
     utr: Utr,
     responseJson: String
   ): Unit = stubFor(
@@ -33,7 +34,7 @@ trait HipStubs {
       ))
       .willReturn(
         aResponse()
-          .withStatus(201)
+          .withStatus(status)
           .withBody(responseJson)
       )
   )
