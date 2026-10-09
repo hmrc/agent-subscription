@@ -19,6 +19,7 @@ package uk.gov.hmrc.agentsubscription.connectors
 import play.api.libs.json.Json
 import play.api.test.Helpers._
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.model.OverseasAgencyAddress
 import uk.gov.hmrc.agentsubscription.model.OverseasAgencyDetails
 import uk.gov.hmrc.agentsubscription.model.OverseasAmlsDetails
@@ -36,6 +37,7 @@ with MetricsTestSupport {
   private lazy val connector: HipConnector = app.injector.instanceOf[HipConnector]
 
   private val safeId = SafeId("XE0001234567890")
+  private val utr = Utr("1234567890")
   private val overseasAmlsDetails = OverseasAmlsDetails("supervisoryName", Some("supervisoryId"))
   private val overseasAgencyDetails: OverseasAgencyDetails = OverseasAgencyDetails(
     agencyName = "Agency name",
@@ -137,6 +139,85 @@ with MetricsTestSupport {
       ))
 
       result shouldBe Arn("TARN0000001")
+    }
+  }
+
+  "getRegistration" should {
+    "return Some HipRegistrationResponse when API returns a 201 CREATED successful response" in {
+      val successResponse =
+        Json.obj(
+          "success" -> Json.obj(
+            "isAnASAgent" -> false,
+            "address" -> Json.obj(
+              "addressLine1" -> "Address line 1",
+              "countryCode" -> "GB",
+              "postalCode" -> "AA1 1AA"
+            )
+          )
+        ).toString
+
+      hipRegistrationReturns(
+        201,
+        utr,
+        successResponse
+      )
+
+      await(connector.getRegistration(utr)) shouldBe Some(
+        HipRegistrationResponse(
+          isAnASAgent = false,
+          organisationName = None,
+          individual = None,
+          agentReferenceNumber = None,
+          address = DesBusinessAddress(
+            "Address line 1",
+            None,
+            None,
+            None,
+            Some("AA1 1AA"),
+            "GB"
+          ),
+          emailAddress = None,
+          primaryPhoneNumber = None,
+          safeId = None
+        )
+      )
+    }
+
+    "return None when API returns a 422 UNPROCESSABLE_ENTITY with error code 002 response" in {
+      val failedResponse =
+        Json.obj(
+          "errors" -> Json.obj(
+            "processingDate" -> "2026-09-08T16:01:57Z",
+            "code" -> "002",
+            "text" -> "No record found for the given UTR"
+          )
+        ).toString
+
+      hipRegistrationReturns(
+        422,
+        utr,
+        failedResponse
+      )
+
+      await(connector.getRegistration(utr)) shouldBe None
+    }
+
+    "throws UpstreamErrorResponse when API returns an unexpected error" in {
+      val failedResponse =
+        Json.obj(
+          "errors" -> Json.obj(
+            "processingDate" -> "2026-09-08T16:01:57Z",
+            "code" -> "003",
+            "text" -> "Suspended"
+          )
+        ).toString
+
+      hipRegistrationReturns(
+        422,
+        utr,
+        failedResponse
+      )
+      an[UpstreamErrorResponse] shouldBe thrownBy(await(connector.getRegistration(utr)))
     }
   }
 

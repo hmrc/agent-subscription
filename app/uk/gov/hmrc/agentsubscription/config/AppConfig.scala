@@ -40,6 +40,7 @@ class AppConfig @Inject() (
 
   val hipBaseUrl: String = servicesConfig.baseUrl("hip")
   val hipAuthToken: String = getConf("microservice.services.hip.authorization-token")
+  val hipRegistrationEnabled: Boolean = config.get[Boolean]("microservice.services.hip.feature.hip-registration-enabled")
 
   val taxEnrolmentsBaseUrl: String = servicesConfig.baseUrl("tax-enrolments")
 

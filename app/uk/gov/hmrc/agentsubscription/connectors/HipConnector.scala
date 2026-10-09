@@ -21,6 +21,7 @@ import play.api.http.Status._
 import play.api.libs.json._
 import play.api.mvc.RequestHeader
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.model._
 import uk.gov.hmrc.agentsubscription.utils.HttpAPIMonitor
@@ -38,6 +39,16 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+
+case class HipRegistrationRequest(
+  requiresNameMatch: Boolean = false,
+  regime: String = "ITSA",
+  isAnAgent: Boolean = false
+)
+
+object HipRegistrationRequest {
+  implicit val formats: OFormat[HipRegistrationRequest] = Json.format[HipRegistrationRequest]
+}
 
 @Singleton
 class HipConnector @Inject() (
@@ -121,5 +132,31 @@ with Logging {
         }
       }
   }
+
+  def getRegistration(
+    utr: Utr
+  )(implicit rh: RequestHeader): Future[Option[HipRegistrationResponse]] = {
+    val url = s"$baseUrl/etmp/RESTAdapter/registration/UTR/${encodePathSegment(utr.value)}"
+    monitor("HIP-GetAgentRegistration-POST") {
+      http
+        .post(url"$url")
+        .setHeader(hipHeaders: _*)
+        .withBody(Json.toJson(HipRegistrationRequest()))
+        .execute[HttpResponse]
+        .map { response =>
+          response.status match {
+            case CREATED => response.json.asOpt[HipRegistrationResponse]
+            case UNPROCESSABLE_ENTITY if isNotFound(response.json) => None
+            case error =>
+              throw UpstreamErrorResponse(
+                s"[HIP-GetAgentRegistration-POST] returned status: $error",
+                INTERNAL_SERVER_ERROR
+              )
+          }
+        }
+        .recover { case badRequest: BadRequestException => throw new Exception(s"400 Bad Request response from HIP for utr ${utr.value}", badRequest) }
+    }
+  }
+  private def isNotFound(r: JsValue): Boolean = (r \ "errors" \ "code").as[String].contains("002")
 
 }

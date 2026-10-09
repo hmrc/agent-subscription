@@ -37,6 +37,7 @@ import uk.gov.hmrc.agentsubscription.audit.AuditService
 import uk.gov.hmrc.agentsubscription.audit.CheckAgencyStatus
 import uk.gov.hmrc.agentsubscription.auth.AuthActions.Provider
 import uk.gov.hmrc.agentsubscription.auth.Authority
+import uk.gov.hmrc.agentsubscription.config.AppConfig
 import uk.gov.hmrc.agentsubscription.connectors._
 import uk.gov.hmrc.agentsubscription.support.ResettingMockitoSugar
 import uk.gov.hmrc.agentsubscription.support.UnitSpec
@@ -52,13 +53,17 @@ with ResettingMockitoSugar
 with Eventually {
 
   private val desConnector = resettingMock[DesConnector]
+  private val hipConnector = resettingMock[HipConnector]
+  private val appConfig = resettingMock[AppConfig]
   private val teConnector = resettingMock[TaxEnrolmentsConnector]
   private val auditService = resettingMock[AuditService]
 
   val stubbedLogger = new LoggerLikeStub()
   val service: RegistrationService =
     new RegistrationService(
+      appConfig,
       desConnector,
+      hipConnector,
       teConnector,
       auditService
     ) {
@@ -94,6 +99,19 @@ with Eventually {
   }
 
   "getRegistration" should {
+    "use HIP when the HIP registration feature switch is enabled" in {
+      val utr = Utr("4000000009")
+      when(appConfig.hipRegistrationEnabled).thenReturn(true)
+      when(hipConnector.getRegistration(eqs(utr))(any[RequestHeader]))
+        .thenReturn(Future.successful(None))
+
+      await(service.getRegistration(utr, "AA1 1AA")(request, provider)) shouldBe None
+      eventually {
+        verify(hipConnector).getRegistration(eqs(utr))(any[RequestHeader])
+        ()
+      }
+    }
+
     "audit appropriate values when a matching subscribed organisation registration is found and a matching HMRC-AS-AGENT enrolment is found" in {
       val utr = Utr("4000000009")
       val postcode = "AA1 1AA"
