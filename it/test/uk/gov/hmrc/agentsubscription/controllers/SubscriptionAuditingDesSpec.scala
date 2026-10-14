@@ -18,6 +18,7 @@ package uk.gov.hmrc.agentsubscription.controllers
 
 import java.time.LocalDate
 import org.scalatest.concurrent.Eventually
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Arn
@@ -32,7 +33,7 @@ import uk.gov.hmrc.agentsubscription.stubs._
 import uk.gov.hmrc.agentsubscription.support.BaseAuditSpec
 import uk.gov.hmrc.agentsubscription.support.Resource
 
-class SubscriptionAuditingSpec
+class SubscriptionAuditingDesSpec
 extends BaseAuditSpec
 with Eventually
 with DesStubs
@@ -48,6 +49,10 @@ with EmailStub {
   val arn = "TARN0000001"
   val groupId = "groupId"
   implicit val ws: WSClient = app.injector.instanceOf[WSClient]
+
+  override protected def appBuilder: GuiceApplicationBuilder = super.appBuilder.configure(
+    "microservice.services.hip.feature.hip-registration-enabled" -> false
+  )
 
   val amlsDetails: AmlsDetails = AmlsDetails(
     "supervisory",
@@ -111,7 +116,11 @@ with EmailStub {
       writeAuditSucceeds()
 
       requestIsAuthenticatedWithNoEnrolments()
-      agentRecordExists(utr, true, arn)
+      agentRecordExists(
+        utr,
+        isAnASAgent = true,
+        arn
+      )
       allocatedPrincipalEnrolmentNotExists(arn)
       deleteKnownFactsSucceeds(arn)
       createKnownFactsSucceeds(arn)

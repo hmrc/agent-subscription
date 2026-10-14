@@ -1,0 +1,693 @@
+/*
+ * Copyright 2026 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package uk.gov.hmrc.agentsubscription.controllers
+
+import com.github.tomakehurst.wiremock.client.WireMock._
+import play.api.libs.json.Json.stringify
+import play.api.libs.json.Json.toJson
+import play.api.libs.json._
+import play.api.libs.ws.WSClient
+import uk.gov.hmrc.agentmtdidentifiers.model.Arn
+import uk.gov.hmrc.agentmtdidentifiers.model.Utr
+import uk.gov.hmrc.agentsubscription.model._
+import uk.gov.hmrc.agentsubscription.stubs._
+import uk.gov.hmrc.agentsubscription.support.BaseISpec
+import uk.gov.hmrc.agentsubscription.support.Resource
+import uk.gov.hmrc.http.HttpResponse
+
+import java.time.LocalDate
+
+class SubscriptionControllerHipISpec
+extends BaseISpec
+with HipStubs
+with DesStubs
+with AuthStub
+with TaxEnrolmentsStubs
+with AgentAssuranceStub
+with EmailStub {
+
+  val safeId = "safeId"
+  val utr = Utr("7000000002")
+
+  val arn = "TARN0000001"
+  val groupId = "groupId"
+  implicit val ws: WSClient = app.injector.instanceOf[WSClient]
+
+  private def hipRegistrationResponse(
+    isAnASAgent: Boolean = false,
+    postcode: String = "AA1 1AA"
+  ): String =
+    Json.obj(
+      "success" -> Json.obj(
+        "isAnASAgent" -> isAnASAgent,
+        "organisation" -> Json.obj("organisationName" -> "My Agency"),
+        "agentReferenceNumber" -> arn,
+        "address" -> Json.obj(
+          "addressLine1" -> "AddressLine1 A",
+          "addressLine2" -> "AddressLine2 A",
+          "addressLine3" -> "AddressLine3 A",
+          "addressLine4" -> "AddressLine4 A",
+          "postalCode" -> postcode,
+          "countryCode" -> "GB"
+        ),
+        "safeId" -> safeId
+      )
+    ).toString
+
+  val amlsDetails: AmlsDetails = AmlsDetails(
+    "supervisory",
+    membershipNumber = Some("12345"),
+    appliedOn = None,
+    membershipExpiresOn = Some(LocalDate.now()),
+    amlsSafeId = Some("amlsSafeId"),
+    agentBPRSafeId = Some("agentBPRSafeId")
+  )
+
+  val emailInfo = EmailInformation(
+    Seq("agency@example.com"),
+    "agent_services_account_created",
+    Map("agencyName" -> "My Agency", "arn" -> "TARN0000001")
+  )
+
+  private val subscriptionRequest: String =
+    s"""
+       |{
+       |  "utr": "${utr.value}",
+       |  "knownFacts": {
+       |    "postcode": "AA1 1AA"
+       |  },
+       |  "agency": {
+       |    "name": "My Agency",
+       |    "address": {
+       |      "addressLine1": "Flat 1",
+       |      "addressLine2": "1 Some Street",
+       |      "addressLine3": "Anytown",
+       |      "addressLine4": "County",
+       |      "postcode": "AA1 2AA",
+       |      "countryCode": "GB"
+       |    },
+       |    "email": "agency@example.com",
+       |    "telephone": "0123 456 7890"
+       |   },
+       |    "langForEmail" : "en",
+       |   "amlsDetails": {
+       |      "supervisoryBody":"supervisory",
+       |      "membershipNumber":"12345",
+       |      "membershipExpiresOn":"${LocalDate.now()}",
+       |      "amlsSafeId": "amlsSafeId",
+       |      "agentBPRSafeId": "agentBPRSafeId"
+       |    }
+       |}
+     """.stripMargin
+  private val updateSubscriptionRequest =
+    s"""
+       |{
+       |  "utr": "${utr.value}" ,
+       |  "knownFacts": {
+       |    "postcode": "TF3 4ER"
+       |  }
+       |}
+    """.stripMargin
+
+  "creating a subscription" should {
+    val agency = __ \ "agency"
+    val address = agency \ "address"
+    val invalidAddress = "Invalid road %@"
+
+    class TestSetup {
+      requestIsAuthenticatedWithNoEnrolments()
+      hipRegistrationReturns(
+        201,
+        utr,
+        hipRegistrationResponse()
+      )
+      createAmlsSucceeds(utr, amlsDetails)
+      hipSubscriptionSucceeds(
+        safeId,
+        Json.toJson(Json.parse(subscriptionRequest).as[SubscriptionRequest])(SubscriptionRequest.hipWrites).toString()
+      )
+      allocatedPrincipalEnrolmentNotExists(arn)
+      deleteKnownFactsSucceeds(arn)
+      createKnownFactsSucceeds(arn)
+      enrolmentSucceeds(groupId, arn)
+      updateAmlsSucceeds(
+        utr,
+        Arn(arn),
+        amlsDetails
+      )
+      givenEmailSent(emailInfo)
+    }
+
+    "return a response containing the ARN" when {
+      "all fields are populated" in new TestSetup {
+        val result: HttpResponse = doSubscriptionRequest()
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verify(1, postRequestedFor(urlEqualTo(s"/etmp/RESTAdapter/generic/agent/subscription/$safeId")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+      }
+
+      "addressLine2, addressLine3 and addressLine4 are missing" in new TestSetup {
+        val fields: Seq[JsPath] = Seq(
+          address \ "addressLine2",
+          address \ "addressLine3",
+          address \ "addressLine4"
+        )
+        hipSubscriptionSucceeds(
+          safeId,
+          Json.toJson(Json.parse(removeFields(fields)).as[SubscriptionRequest])(SubscriptionRequest.hipWrites).toString()
+        )
+
+        val result: HttpResponse = doSubscriptionRequest(removeFields(fields))
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verify(1, postRequestedFor(urlEqualTo(s"/etmp/RESTAdapter/generic/agent/subscription/$safeId")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+      }
+
+      "BPR has isAnAsAgent=true and there is no previous allocation for HMRC-AS-AGENT for the arn" in new TestSetup {
+        hipRegistrationReturns(
+          201,
+          utr,
+          hipRegistrationResponse(isAnASAgent = true)
+        )
+
+        val result: HttpResponse = doSubscriptionRequest()
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verify(0, postRequestedFor(urlEqualTo(s"/etmp/RESTAdapter/generic/agent/subscription/$safeId")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+      }
+
+      "all fields except telephone number are populated" in new TestSetup {
+        val request: SubscriptionRequest = Json.parse(subscriptionRequest).as[SubscriptionRequest]
+        val requestWithoutTelephone: SubscriptionRequest = request.copy(agency = request.agency.copy(telephone = None))
+        hipSubscriptionSucceeds(
+          safeId,
+          Json.toJson(requestWithoutTelephone)(SubscriptionRequest.hipWrites).toString()
+        )
+
+        val result: HttpResponse = doSubscriptionRequest(Json.toJson(requestWithoutTelephone).toString())
+
+        result.status shouldBe 201
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verify(1, postRequestedFor(urlEqualTo(s"/etmp/RESTAdapter/generic/agent/subscription/$safeId")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+      }
+    }
+
+    "return Conflict if already subscribed (both ETMP has isAnAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in new TestSetup {
+      hipRegistrationReturns(
+        201,
+        utr,
+        hipRegistrationResponse(isAnASAgent = true)
+      )
+      allocatedPrincipalEnrolmentExists(arn, "someGroupId")
+
+      val result: HttpResponse = doSubscriptionRequest()
+
+      result.status shouldBe 409
+
+      verify(0, deleteRequestedFor(urlEqualTo(s"$deleteKnownFactsUrl$arn")))
+      verify(0, putRequestedFor(urlEqualTo(s"$createKnownFactsUrl$arn")))
+      verify(0, postRequestedFor(urlEqualTo(enrolmentUrl("groupId", arn))))
+    }
+
+    "return forbidden" when {
+      "no registration exists" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        givenHipGetRegistrationNotFound(utr)
+
+        val result = doSubscriptionRequest()
+
+        result.status shouldBe 403
+      }
+
+      "postcodes don't match" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        hipRegistrationReturns(
+          201,
+          utr,
+          hipRegistrationResponse()
+        )
+        val request = Json.parse(subscriptionRequest).as[SubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
+
+        val result = doSubscriptionRequest(stringify(toJson(request)))
+
+        result.status shouldBe 403
+      }
+    }
+
+    "return Bad Request " when {
+      "utr is missing" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(removeFields(Seq(__ \ "utr")))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains non-numeric characters" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345"))))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains fewer than 10 digits" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345"))))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains more than 10 digits" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901"))))
+
+        result.status shouldBe 400
+      }
+
+      "name contains invalid characters" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "name", "InvalidAgencyName!@"))))
+
+        result.status shouldBe 400
+      }
+
+      "address is missing" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(removeFields(Seq(address)))
+
+        result.status shouldBe 400
+      }
+
+      "address line 1 contains invalid characters" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((address, "addressLine1", invalidAddress))))
+
+        result.status shouldBe 400
+      }
+
+      "address line 2 contains invalid characters" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((address, "addressLine2", invalidAddress))))
+        result.status shouldBe 400
+      }
+
+      "address line 3 contains invalid characters" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((address, "addressLine3", invalidAddress))))
+        result.status shouldBe 400
+      }
+
+      "address line 4 contains invalid characters" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((address, "addressLine4", invalidAddress))))
+        result.status shouldBe 400
+      }
+
+      "email is missing" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(removeFields(Seq(agency \ "email")))
+
+        result.status shouldBe 400
+      }
+      "email has no local part" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "email", "@domain"))))
+
+        result.status shouldBe 400
+      }
+      "email has no domain part" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "email", "local@"))))
+
+        result.status shouldBe 400
+      }
+      "email has no @" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "email", "local"))))
+
+        result.status shouldBe 400
+      }
+
+      "telephone number contains words" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "telephone", "0123 456 78aa"))))
+
+        result.status shouldBe 400
+      }
+
+      "telephone number is provided but empty" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((agency, "telephone", ""))))
+
+        result.status shouldBe 400
+      }
+
+      "postcode is missing" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(removeFields(Seq(address \ "postcode")))
+
+        result.status shouldBe 400
+      }
+
+      "known facts postcode is not valid" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567"))))
+
+        result.status shouldBe 400
+      }
+
+      "countryCode is missing" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doSubscriptionRequest(removeFields(Seq(address \ "countryCode")))
+
+        result.status shouldBe 400
+      }
+    }
+
+    "throw a 500 error if " when {
+      "DES API #1173 Subscribe to Agent Services fails" in new TestSetup {
+        requestIsAuthenticatedWithNoEnrolments()
+        hipSubscriptionFails(
+          safeId,
+          Json.toJson(Json.parse(subscriptionRequest).as[SubscriptionRequest])(SubscriptionRequest.hipWrites).toString(),
+          503
+        )
+
+        val result: HttpResponse = doSubscriptionRequest()
+
+        result.status shouldBe 500
+      }
+
+      "query allocated enrolment fails in EACD " in new TestSetup {
+        requestIsAuthenticatedWithNoEnrolments()
+        allocatedPrincipalEnrolmentFails(arn)
+
+        val result: HttpResponse = doSubscriptionRequest()
+
+        result.status shouldBe 500
+      }
+
+      "delete known facts fails in EACD " in new TestSetup {
+        requestIsAuthenticatedWithNoEnrolments()
+        deleteKnownFactsFails(arn)
+
+        val result: HttpResponse = doSubscriptionRequest()
+
+        result.status shouldBe 500
+      }
+
+      "create known facts fails in EACD " in new TestSetup {
+        requestIsAuthenticatedWithNoEnrolments()
+        createKnownFactsFails(arn)
+
+        val result: HttpResponse = doSubscriptionRequest()
+
+        result.status shouldBe 500
+      }
+
+      "create enrolment fails in EACD " in new TestSetup {
+        enrolmentFails(groupId, arn)
+
+        val result: HttpResponse = doSubscriptionRequest()
+
+        result.status shouldBe 500
+      }
+    }
+  }
+
+  "updating a partial subscription" should {
+    "return a response containing the ARN a valid utr is given as input and when the user is not enrolled in EACD but is subscribed in ETMP" when {
+      "with full DES-GetAgentRecord" in {
+        testPartialSubscriptionWith(agentRecordExists(
+          utr,
+          isAnASAgent = true,
+          arn
+        ))
+      }
+
+      "the DES-GetAgentRecord does not contain a telephone number" in {
+        testPartialSubscriptionWith(agentRecordExistsWithoutPhoneNumber(
+          utr,
+          isAnASAgent = true,
+          arn
+        ))
+      }
+
+      "DES-GetAgentRecord does not contain contact details" in {
+        testPartialSubscriptionWith(agentRecordExistsWithoutContactDetails(
+          utr,
+          isAnASAgent = true,
+          arn
+        ))
+      }
+
+      def testPartialSubscriptionWith[A](givenAgentRecord: => A): Unit = {
+        requestIsAuthenticatedWithNoEnrolments()
+        givenAgentRecord
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentSucceeds(groupId, arn)
+        createAmlsSucceeds(utr, amlsDetails)
+        updateAmlsSucceeds(
+          utr,
+          Arn(arn),
+          amlsDetails
+        )
+
+        val result = doUpdateSubscriptionRequest()
+
+        result.status shouldBe 200
+        (result.json \ "arn").as[String] shouldBe "TARN0000001"
+
+        verify(1, getRequestedFor(urlEqualTo(s"/registration/personal-details/utr/${utr.value}")))
+        verify(1, postRequestedFor(urlEqualTo(enrolmentUrl(groupId, arn))))
+      }
+    }
+
+    "return Conflict if already subscribed (both ETMP has isAsAgent=true and there is an existing HMRC-AS-AGENT enrolment for their Arn)" in {
+      requestIsAuthenticatedWithNoEnrolments()
+      agentRecordExists(
+        utr,
+        isAnASAgent = true,
+        arn
+      )
+      allocatedPrincipalEnrolmentExists(arn, "someGroupId")
+      createAmlsSucceeds(utr, amlsDetails)
+      updateAmlsSucceeds(
+        utr,
+        Arn(arn),
+        amlsDetails
+      )
+
+      val result = doUpdateSubscriptionRequest()
+
+      result.status shouldBe 409
+
+      verify(0, deleteRequestedFor(urlEqualTo(s"$deleteKnownFactsUrl$arn")))
+      verify(0, putRequestedFor(urlEqualTo(s"$createKnownFactsUrl$arn")))
+      verify(0, postRequestedFor(urlEqualTo(enrolmentUrl("groupId", arn))))
+    }
+
+    "return forbidden" when {
+      "no registration exists" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        agentRecordDoesNotExist(utr)
+
+        val result = doUpdateSubscriptionRequest()
+
+        result.status shouldBe 403
+      }
+
+      "postcodes don't match" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        agentRecordExists(utr)
+        val request = Json.parse(updateSubscriptionRequest).as[UpdateSubscriptionRequest].copy(knownFacts = KnownFacts("AA1 2AA"))
+
+        val result = doUpdateSubscriptionRequest(stringify(toJson(request)))
+
+        result.status shouldBe 403
+      }
+
+      "the user already has enrolments" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doUpdateSubscriptionRequest()
+
+        result.status shouldBe 403
+      }
+    }
+
+    "return Bad Request " when {
+      "utr is missing" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doUpdateSubscriptionRequest(removeFields(Seq(__ \ "utr")))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains non-numeric characters" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "ABCDE12345"))))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains fewer than 10 digits" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345"))))
+
+        result.status shouldBe 400
+      }
+
+      "utr contains more than 10 digits" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doUpdateSubscriptionRequest(replaceFields(Seq((__, "utr", "12345678901"))))
+
+        result.status shouldBe 400
+      }
+
+      "postcode is missing" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", ""))))
+
+        result.status shouldBe 400
+      }
+
+      "known facts postcode is not valid" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        val result = doUpdateSubscriptionRequest(replaceFields(Seq((__ \ "knownFacts", "postcode", "1234567"))))
+
+        result.status shouldBe 400
+      }
+    }
+
+    "throw a 500 error if " when {
+
+      class TestSetup {
+        requestIsAuthenticatedWithNoEnrolments()
+        agentRecordExists(
+          utr,
+          isAnASAgent = true,
+          arn
+        )
+        createAmlsSucceeds(utr, amlsDetails)
+        subscriptionSucceeds(utr, Json.parse(subscriptionRequest).as[SubscriptionRequest])
+        updateAmlsSucceeds(
+          utr,
+          Arn(arn),
+          amlsDetails
+        )
+        allocatedPrincipalEnrolmentFails(arn)
+      }
+
+      "DES API #1170 Get Agent Record fails" in {
+        requestIsAuthenticatedWithNoEnrolments()
+        agentRecordFails()
+
+        val result = doUpdateSubscriptionRequest()
+
+        result.status shouldBe 500
+      }
+
+      "query allocated enrolment fails in EMAC " in new TestSetup {
+        val result: HttpResponse = doUpdateSubscriptionRequest()
+
+        result.status shouldBe 500
+      }
+
+      "delete known facts fails in EMAC " in new TestSetup {
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsFails("")
+
+        val result: HttpResponse = doUpdateSubscriptionRequest()
+
+        result.status shouldBe 500
+      }
+
+      "create known facts fails in EMAC " in new TestSetup {
+        allocatedPrincipalEnrolmentNotExists(arn)
+        deleteKnownFactsSucceeds("")
+        createKnownFactsFails("")
+
+        val result: HttpResponse = doUpdateSubscriptionRequest()
+
+        result.status shouldBe 500
+      }
+
+      "create enrolment fails in EMAC " in new TestSetup {
+        allocatedPrincipalEnrolmentNotExists(arn)
+        createKnownFactsSucceeds(arn)
+        enrolmentFails(groupId, arn)
+
+        val result: HttpResponse = doUpdateSubscriptionRequest()
+
+        result.status shouldBe 500
+      }
+    }
+  }
+
+  private def doSubscriptionRequest(request: String = subscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
+  private def doUpdateSubscriptionRequest(
+    request: String = updateSubscriptionRequest
+  ) = new Resource(s"/agent-subscription/subscription", port).putAsJson(request)
+
+  private def removeFields(fields: Seq[JsPath]): String = {
+    val request = Json.parse(subscriptionRequest).as[JsObject]
+    val filtered: JsObject = removeFields(request, fields)
+
+    stringify(filtered)
+  }
+
+  private def removeFields(
+    jsObject: JsObject,
+    fields: Seq[JsPath]
+  ): JsObject = {
+    val transformer = fields.map(field => field.json.prune).reduce((a, b) => a andThen b)
+    jsObject.transform(transformer).get
+  }
+
+  private def replaceFields(fields: Seq[(JsPath, String, String)]): String = {
+    val request = Json.parse(subscriptionRequest).as[JsObject]
+    val filtered: JsObject = replaceFields(request, fields)
+
+    stringify(filtered)
+  }
+
+  private def replaceFields(
+    jsObject: JsObject,
+    fields: Seq[(JsPath, String, String)]
+  ): JsObject = {
+    val transformer = fields
+      .map(field => field._1.json.update(__.read[JsObject].map(o => o ++ Json.obj(field._2 -> field._3))))
+      .reduce((a, b) => a andThen b)
+    jsObject.transform(transformer) match {
+      case s: JsSuccess[JsObject] => s.get
+      case e: JsError => throw new RuntimeException(s"Unable to transform JSON: $e")
+    }
+  }
+
+}

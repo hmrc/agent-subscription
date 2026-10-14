@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,21 +25,21 @@ import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.writeAuditMergedSuccee
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub.writeAuditSucceeds
 import uk.gov.hmrc.agentsubscription.stubs.AuthStub
 import uk.gov.hmrc.agentsubscription.stubs.DataStreamStub
-import uk.gov.hmrc.agentsubscription.stubs.DesStubs
+import uk.gov.hmrc.agentsubscription.stubs.HipStubs
 import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
 import uk.gov.hmrc.agentsubscription.support.BaseAuditSpec
 import uk.gov.hmrc.agentsubscription.support.Resource
 import uk.gov.hmrc.play.encoding.UriPathEncoding.encodePathSegments
 
-class RegistrationAuditingSpec
+class RegistrationAuditingHipSpec
 extends BaseAuditSpec
-with DesStubs
+with HipStubs
 with AuthStub
 with TaxEnrolmentsStubs {
 
   private val utr = Utr("2000000000")
-  private val postcode = "AA1 1AA"
-  val arn = "TARN0000001"
+  private val postcode = "TF3 4ER"
+  val arn = "SARN0001028"
   implicit val ws: WSClient = app.injector.instanceOf[WSClient]
 
   "GET of /registration/:utr/postcode/:postcode" should {
@@ -48,10 +48,9 @@ with TaxEnrolmentsStubs {
       writeAuditSucceeds()
 
       requestIsAuthenticatedWithNoEnrolments()
-      organisationRegistrationExists(
+      givenHipGetRegistrationData(
         utr,
-        isAnASAgent = true,
-        arn
+        isIndividual = false
       )
       allocatedPrincipalEnrolmentExists(arn, "groupId")
 
