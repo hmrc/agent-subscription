@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 HM Revenue & Customs
+ * Copyright 2026 HM Revenue & Customs
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,21 +17,66 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import play.api.libs.json.JsValue
+import play.api.libs.json.Json
 import play.api.libs.ws.WSClient
 import uk.gov.hmrc.agentmtdidentifiers.model.Utr
 import uk.gov.hmrc.agentsubscription.stubs.AuthStub
-import uk.gov.hmrc.agentsubscription.stubs.DesStubs
+import uk.gov.hmrc.agentsubscription.stubs.HipStubs
 import uk.gov.hmrc.agentsubscription.stubs.TaxEnrolmentsStubs
 import uk.gov.hmrc.agentsubscription.support.BaseISpec
 import uk.gov.hmrc.agentsubscription.support.Resource
 
-class RegistrationControllerISpec
+class RegistrationControllerHipISpec
 extends BaseISpec
-with DesStubs
+with HipStubs
 with TaxEnrolmentsStubs
 with AuthStub {
 
   implicit val ws: WSClient = app.injector.instanceOf[WSClient]
+
+  private def hipRegistrationExists(
+    utr: Utr,
+    isAnASAgent: Option[Boolean] = Some(true),
+    isIndividual: Boolean = false,
+    postcode: Option[String] = Some("AA1 1AA"),
+    addressLine1: Option[String] = Some("AddressLine1 A"),
+    name: Option[String] = Some("My Agency"),
+    emailAddress: Option[String] = Some("agency@example.com")
+  ): Unit = {
+    val address =
+      Json.obj(
+        "addressLine2" -> "AddressLine2 A",
+        "addressLine3" -> "AddressLine3 A",
+        "addressLine4" -> "AddressLine4 A",
+        "countryCode" -> "GB"
+      ) ++
+        addressLine1.map(value => Json.obj("addressLine1" -> value)).getOrElse(Json.obj()) ++
+        postcode.map(value => Json.obj("postalCode" -> value)).getOrElse(Json.obj())
+
+    val party =
+      if (isIndividual)
+        Json.obj("individual" -> Json.obj("firstName" -> "First", "lastName" -> "Last"))
+      else
+        name.map(value => Json.obj("organisation" -> Json.obj("organisationName" -> value))).getOrElse(Json.obj())
+
+    val agencyDetails = emailAddress.map(value => Json.obj("agencyDetails" -> Json.obj("agencyEmail" -> value))).getOrElse(Json.obj())
+
+    val response =
+      Json.obj(
+        "address" -> address,
+        "safeId" -> "safeId",
+        "agentReferenceNumber" -> "TARN0000001"
+      ) ++
+        isAnASAgent.map(value => Json.obj("isAnASAgent" -> value)).getOrElse(Json.obj()) ++
+        party ++
+        agencyDetails
+
+    hipRegistrationReturns(
+      201,
+      utr,
+      Json.obj("success" -> response).toString
+    )
+  }
 
   "GET of /registration/:utr/postcode/:postcode" should {
     "return a 401 when the user is not authenticated" in {
@@ -46,39 +91,42 @@ with AuthStub {
       response.status shouldBe 401
     }
 
-    "return 404 when no match is found in des" in {
+    "return 404 when no match is found in HIP" in {
       requestIsAuthenticatedWithNoEnrolments()
 
-      registrationDoesNotExist(Utr("8000000007"))
+      givenHipGetRegistrationNotFound(Utr("8000000007"))
       val response = new Resource("/agent-subscription/registration/8000000007/postcode/AA1%201AA", port).get()
       response.status shouldBe 404
     }
 
     "return 400 when the UTR is invalid" in {
       requestIsAuthenticatedWithNoEnrolments()
-      utrIsInvalid()
       val response = new Resource("/agent-subscription/registration/xyz/postcode/AA1%201AA", port).get()
       response.status shouldBe 400
       (response.json \ "code").as[String] shouldBe "INVALID_UTR"
     }
 
-    "return 500 when agent-subscription considers a UTR valid but DES unexpectedly reports it as invalid" in {
+    "return 500 when agent-subscription considers a UTR valid but HIP unexpectedly reports it as invalid" in {
       requestIsAuthenticatedWithNoEnrolments()
-      utrIsUnexpectedlyInvalid(Utr("7000000002"))
+      hipRegistrationReturns(
+        400,
+        Utr("7000000002"),
+        "{}"
+      )
       val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 500
     }
 
-    "return 404 when des returns a match for the utr but the post codes do not match" in {
+    "return 404 when HIP returns a match for the utr but the post codes do not match" in {
       requestIsAuthenticatedWithNoEnrolments()
-      organisationRegistrationExists(Utr("7000000002"))
+      hipRegistrationExists(Utr("7000000002"))
       val response = new Resource("/agent-subscription/registration/7000000002/postcode/BB11BB", port).get()
       response.status shouldBe 404
     }
 
-    "return 404 when des returns a response with no postcode" in {
+    "return 404 when HIP returns a response with no postcode" in {
       requestIsAuthenticatedWithNoEnrolments()
-      registrationExistsWithNoPostcode(Utr("7000000002"))
+      hipRegistrationExists(Utr("7000000002"), postcode = None)
       val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 404
     }
@@ -89,24 +137,24 @@ with AuthStub {
       response.status shouldBe 400
     }
 
-    "return 404 when DES response does not contain addressline1 mandatory field" in {
+    "return 404 when HIP response does not contain addressline1 mandatory field" in {
       requestIsAuthenticatedWithNoEnrolments()
-      registrationExistsWithNoAddress(Utr("7000000002"))
+      hipRegistrationExists(Utr("7000000002"), addressLine1 = None)
       val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 404
     }
 
-    "return 500 when DES response does not contain isAnASAgent mandatory field" in {
+    "return 404 when HIP response does not contain isAnASAgent mandatory field" in {
       requestIsAuthenticatedWithNoEnrolments()
-      registrationExistsWithNoIsAnASAgent(Utr("7000000002"))
+      hipRegistrationExists(Utr("7000000002"), isAnASAgent = None)
       val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
-      response.status shouldBe 500
+      response.status shouldBe 404
     }
 
-    "return 200 when des returns an AS Agent for the utr and the postcodes match" when {
+    "return 200 when HIP returns an AS Agent for the utr and the postcodes match" when {
       "there is a group already allocated the HMRC-AS-AGENT enrolment with their AgentReferenceNumber" in {
         requestIsAuthenticatedWithNoEnrolments()
-        organisationRegistrationExists(Utr("7000000002"), true)
+        hipRegistrationExists(Utr("7000000002"), isAnASAgent = Some(true))
         allocatedPrincipalEnrolmentExists("TARN0000001", "SomeAllocatedGroupId")
         val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
         response.status shouldBe 200
@@ -119,7 +167,7 @@ with AuthStub {
 
       "there is no group already allocated the HMRC-AS-AGENT enrolment with their AgentReferenceNumber" in {
         requestIsAuthenticatedWithNoEnrolments()
-        organisationRegistrationExists(Utr("7000000002"), true)
+        hipRegistrationExists(Utr("7000000002"), isAnASAgent = Some(true))
         allocatedPrincipalEnrolmentNotExists("TARN0000001")
         val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
         response.status shouldBe 200
@@ -131,9 +179,9 @@ with AuthStub {
       }
     }
 
-    "return 200 when des returns a non-AS Agent for the utr and the postcodes match" in {
+    "return 200 when HIP returns a non-AS Agent for the utr and the postcodes match" in {
       requestIsAuthenticatedWithNoEnrolments()
-      organisationRegistrationExists(Utr("7000000002"), false)
+      hipRegistrationExists(Utr("7000000002"), isAnASAgent = Some(false))
       val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
@@ -143,9 +191,14 @@ with AuthStub {
       (response.json \ "emailAddress").as[String] shouldBe "agency@example.com"
     }
 
-    "return 200 when des returns an individual for the utr and the postcodes match" in {
+    "return 200 when HIP returns an individual for the utr and the postcodes match" in {
       requestIsAuthenticatedWithNoEnrolments()
-      individualRegistrationExists(Utr("7000000002"), false)
+      hipRegistrationExists(
+        Utr("7000000002"),
+        isAnASAgent = Some(false),
+        isIndividual = true,
+        emailAddress = Some("individual@example.com")
+      )
       val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
@@ -155,9 +208,13 @@ with AuthStub {
       (response.json \ "emailAddress").as[String] shouldBe "individual@example.com"
     }
 
-    "return 200 when des returns no organisation name" in {
+    "return 200 when HIP returns no organisation name" in {
       requestIsAuthenticatedWithNoEnrolments()
-      registrationExistsWithNoOrganisationName(Utr("7000000002"), false)
+      hipRegistrationExists(
+        Utr("7000000002"),
+        isAnASAgent = Some(false),
+        name = None
+      )
       val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
@@ -165,9 +222,13 @@ with AuthStub {
       testBusinessAddress(response.json)
     }
 
-    "return 200 when des returns no email address" in {
+    "return 200 when HIP returns no email address" in {
       requestIsAuthenticatedWithNoEnrolments()
-      registrationExistsWithNoEmail(Utr("7000000002"))
+      hipRegistrationExists(
+        Utr("7000000002"),
+        isAnASAgent = Some(false),
+        emailAddress = None
+      )
       val response = new Resource("/agent-subscription/registration/7000000002/postcode/AA1%201AA", port).get()
       response.status shouldBe 200
       (response.json \ "isSubscribedToAgentServices").as[Boolean] shouldBe false
