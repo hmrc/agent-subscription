@@ -17,6 +17,7 @@
 package uk.gov.hmrc.agentsubscription.controllers
 
 import com.github.tomakehurst.wiremock.client.WireMock._
+import play.api.inject.guice.GuiceApplicationBuilder
 import play.api.libs.json.Json.stringify
 import play.api.libs.json.Json.toJson
 import play.api.libs.json._
@@ -31,7 +32,7 @@ import uk.gov.hmrc.http.HttpResponse
 
 import java.time.LocalDate
 
-class SubscriptionControllerISpec
+class SubscriptionControllerDesISpec
 extends BaseISpec
 with HipStubs
 with DesStubs
@@ -46,6 +47,10 @@ with EmailStub {
   val arn = "TARN0000001"
   val groupId = "groupId"
   implicit val ws: WSClient = app.injector.instanceOf[WSClient]
+
+  override protected def appBuilder: GuiceApplicationBuilder = super.appBuilder.configure(
+    "features.hip-registration.enabled" -> false
+  )
 
   val amlsDetails: AmlsDetails = AmlsDetails(
     "supervisory",
@@ -624,6 +629,7 @@ with EmailStub {
   }
 
   private def doSubscriptionRequest(request: String = subscriptionRequest) = new Resource(s"/agent-subscription/subscription", port).postAsJson(request)
+
   private def doUpdateSubscriptionRequest(
     request: String = updateSubscriptionRequest
   ) = new Resource(s"/agent-subscription/subscription", port).putAsJson(request)
