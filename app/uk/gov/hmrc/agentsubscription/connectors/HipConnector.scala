@@ -63,10 +63,11 @@ with Logging {
 
   private val baseUrl = appConfig.hipBaseUrl
   private val authToken = appConfig.hipAuthToken
-  private val originatingSystem = "MDTP-ASA"
+  private val originatingSystemForAgentSubscription = "MDTP-ASA"
+  private val originatingSystemForETMPRegistrationServices = "MDTP"
   private val transmittingSystem = "HIP"
 
-  private def hipHeaders(originatingSystem: String = originatingSystem): Seq[(String, String)] = {
+  private def hipHeaders(originatingSystem: String = originatingSystemForAgentSubscription): Seq[(String, String)] = {
     Seq(
       "Authorization" -> s"Basic $authToken",
       "correlationid" -> UUID.randomUUID().toString,
@@ -140,7 +141,7 @@ with Logging {
     monitor("HIP-GetAgentRegistration-POST") {
       http
         .post(url"$url")
-        .setHeader(hipHeaders(originatingSystem = "MDTP"): _*)
+        .setHeader(hipHeaders(originatingSystem = originatingSystemForETMPRegistrationServices): _*)
         .withBody(Json.toJson(HipRegistrationRequest()))
         .execute[HttpResponse]
         .map { response =>
