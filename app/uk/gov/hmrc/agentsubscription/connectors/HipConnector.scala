@@ -63,7 +63,7 @@ with Logging {
 
   private val baseUrl = appConfig.hipBaseUrl
   private val authToken = appConfig.hipAuthToken
-  private val originatingSystem = "MDTP-ASA"
+  private val originatingSystem = "MDTP"
   private val transmittingSystem = "HIP"
 
   private def hipHeaders: Seq[(String, String)] = {
