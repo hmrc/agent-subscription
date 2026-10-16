@@ -63,10 +63,11 @@ with Logging {
 
   private val baseUrl = appConfig.hipBaseUrl
   private val authToken = appConfig.hipAuthToken
-  private val originatingSystem = "MDTP"
+  private val originatingSystemForAgentSubscription = "MDTP-ASA"
+  private val originatingSystemForETMPRegistrationServices = "MDTP"
   private val transmittingSystem = "HIP"
 
-  private def hipHeaders: Seq[(String, String)] = {
+  private def hipHeaders(originatingSystem: String = originatingSystemForAgentSubscription): Seq[(String, String)] = {
     Seq(
       "Authorization" -> s"Basic $authToken",
       "correlationid" -> UUID.randomUUID().toString,
@@ -86,7 +87,7 @@ with Logging {
     val url = s"$baseUrl/etmp/RESTAdapter/generic/agent/subscription/${encodePathSegment(safeId.value)}"
     http
       .post(url"$url")
-      .setHeader(hipHeaders: _*)
+      .setHeader(hipHeaders(): _*)
       .withBody(Json.toJson(agencyDetails)(OverseasAgencyDetails.hipWrites(amlsDetails)))
       .execute[HttpResponse]
       .map { response =>
@@ -117,7 +118,7 @@ with Logging {
     val url = s"$baseUrl/etmp/RESTAdapter/generic/agent/subscription/${encodePathSegment(safeId.value)}"
     http
       .post(url"$url")
-      .setHeader(hipHeaders: _*)
+      .setHeader(hipHeaders(): _*)
       .withBody(Json.toJson(subscriptionRequest)(SubscriptionRequest.hipWrites))
       .execute[HttpResponse]
       .map { response =>
@@ -140,7 +141,7 @@ with Logging {
     monitor("HIP-GetAgentRegistration-POST") {
       http
         .post(url"$url")
-        .setHeader(hipHeaders: _*)
+        .setHeader(hipHeaders(originatingSystem = originatingSystemForETMPRegistrationServices): _*)
         .withBody(Json.toJson(HipRegistrationRequest()))
         .execute[HttpResponse]
         .map { response =>
